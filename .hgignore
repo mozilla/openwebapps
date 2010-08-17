@@ -1,0 +1,2 @@
+.*\.pyc$
+server/server_data.sqlite
