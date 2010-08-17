@@ -1,0 +1,19 @@
+This is an experiment around an open "application store"
+
+What you'll find here:
+
+addon/ 
+       A firefox addon capable of rendering, installing and managing
+       available applications
+
+server/ 
+       An application server, which renders the application store for
+       a user.  Including browsing available applications and developers,
+       and installation of applications
+
+wallet/ 
+       Abstractions which allow bi-directional comminication between
+       applications and the wallet server, which allows web applications to
+       trigger installation, and check installed status.  The javascript
+       abstraction simplifies secure cross domain to the application
+       server.
