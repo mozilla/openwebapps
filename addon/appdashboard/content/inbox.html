@@ -1,0 +1,142 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <base href="chrome://appdashboard/content/" />
+  <script type="text/javascript" src="jquery-unified.js"></script>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+  <title>Application Inbox</title>
+
+<style>
+
+body {
+	padding: 0px;
+	margin: 0px;
+	font-family: "Helvetica Neue", Helvetica, Arial;
+  background-color:#f0f0f0;
+}
+a {
+  color:#3875D7;
+  text-decoration:none;
+}
+a:hover {
+  text-decoration:underline;
+}
+#control {
+  font:9pt Helvetica;
+  float:right
+}
+#servers {
+  font:9pt Helvetica;
+  float:right
+}
+
+.ticket {
+  display:inline-block;
+  padding:12px;
+  width:120px;
+  height:120px;
+  text-align:center;
+  position:relative;
+}
+.closebox {
+  position:absolute;
+  left:110px;
+  top:8px;
+  background-image:url("white_close.png");
+  background-repeat:no-repeat;
+  width:16px;
+  height:16px;
+  cursor:pointer;
+}
+.ticket > .ticket_name {
+  padding-top:2px;
+  font:bold 9pt Helvetica
+}
+#header {
+  float:left;
+  padding-left:16px;
+  padding-top:8px;
+  font:bold 10pt Helvetica;
+  color:#303030;
+}
+
+
+#controlBox {
+  float:right;
+}
+#controls {
+  display:inline-block;
+  background-color:#303030;
+  color:#b0b0b0;
+  border-left:1px solid #d0d0d0;
+  border-bottom:1px solid #d0d0d0;
+
+  font:bold 9pt Arial;
+  padding:4px 4px 4px 12px;
+ -moz-border-radius-bottomleft:12px;
+}
+.ctlmenu {
+  cursor:pointer;
+  display:inline-block;
+  margin-left:16px;
+  margin-right:16px;
+  
+}
+.droparrow_light {
+  background:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAFCAMAAACgjTZZAAAABlBMVEUAAADr7+fnWB52AAAAGUlEQVQImWNghAEGBjgDymRggDIZoADMAAADawAa+i/IvAAAAABJRU5ErkJggg==") repeat scroll 0 0 transparent;
+  height:5px;
+  width:9px;
+  display:inline-block;
+}
+
+.droparrow {
+  background:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAFCAMAAACgjTZZAAAABlBMVEUAAACgoKAEzvuuAAAAGUlEQVQImWNghAEGBjgDymRggDIZoADMAAADawAa+i/IvAAAAABJRU5ErkJggg==") repeat scroll 0 0 transparent;
+  height:5px;
+  width:9px;
+  margin-left:4px;
+  margin-right:4px;
+  display:inline-block;
+  margin-bottom:2px;
+}
+#apps {
+  -moz-border-radius:8px;
+  border-top:1px solid #d0d0ff;
+  border-left:1px solid #d0d0ff;
+  border-right:1px solid #b0b0dd;
+  border-bottom:1px solid #b0b0dd;
+  margin-left:16px;
+  margin-right:16px;
+  margin-top:16px;
+  background-color:white;
+}
+
+.menu {
+  cursor:pointer;
+  font:bold 8pt Arial;
+  padding:6px;
+  background-color:#303030;
+  color:#b0b0b0;
+  border-top:1px solid #404040;
+  border-left:1px solid #404040;
+  border-right:1px solid #d0d0d0;
+  border-bottom:1px solid #d0d0d0;
+}
+.menu a {
+  color:#5895f7;
+ 
+}
+</style>
+
+</head>
+<body style="position:relative">
+
+<div id="header">Firefox Application Inbox
+</div>
+
+<div id="inbox"></div>
+<iframe style="display:none;position:absolute;left:-999px;top:-999px" id="wallet" onload="walletReady()" src="http://wamwallet.org"></iframe>
+
+<script type="text/javascript;version=1.8" src="inbox.js"></script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<html>
+<head>
+<link rel="stylesheet" href="/static/style.css" type="text/css" />
+<title>Mozilla Web Application Marketplace</title>
+</head>
+<body>
+
+<div class="content">
+
+<div>
+The application <b>{{ app.name }}</b> is asking you to provide your name and password
+to the Marketplace to it can verify your purchase.
+</div>
+
+Log In:<br><br>
+
+{% if error %}
+<div class="error">{{ error }}</div>
+{% end %}
+
+
+<form method="POST" action="/verify">
+<input type="hidden" name="app" value="{{app.id}}">
+<input type="hidden" name="domain" value="{{domain}}">
+<input type="hidden" name="user" value="{{user}}">
+
+<div class="label">Account Name:</div>
+<div class="value"><input type="text" value="{{user}}" name="un"></div><br/>
+
+<div class="label">Password:</div>
+<div class="value"><input type="password" name="pw"></div><br/>
+
+<input type="submit" value="Log In">
+</form>
+</div>
+
+</body>
+</html>

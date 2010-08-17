@@ -1,0 +1,57 @@
+<html>
+<head>
+<link rel="stylesheet" href="/static/style.css" type="text/css" />
+<title>Vapour Developer Home: %{{ dev.name }}</title>
+</head>
+<body>
+
+<div class="topbar">
+<div class="breadcrumb">
+<a href="/">Vapour</a> : <a href="/browsedevs">Developers</a> : {{ dev.name }}
+</div>
+
+<div class="user">
+{% if user %}
+{{ user.username }} <div class="droparrow"></div>
+{% else %}
+<a href="/login">Login</a>
+{% end %}
+</div>
+<div class="lvertbar"></div>
+
+<div class="content">
+
+<div class="devname">{{dev.name}}</div>
+
+{% if apps and len(apps) > 0 %}
+<div class="applicationlist">
+<ul>
+{% for app in apps %}
+<li class="applistitem">
+<div class="applisticon">
+  <a href="/detail?id={{app.id}}"><img width="96" height="96" src="{{app.icon96}}"/></a>
+</div>
+<div class="applistdetail">
+  <a href="/detail?id={{app.id}}">{{ app.name }}</a><br>
+  {{ app.category }}<br>
+  Released {{ app.releaseDateObj.strftime("%b %d, %Y")}}<br>
+  <br/>
+  <b>Free</b><br>
+</div>
+</li>
+{% end %}
+</ul>
+</div>
+{% else %}
+<div class="noapplicationlist">
+This developer has no published applications yet.
+</div>
+{% end %}
+
+
+
+
+</div>
+
+</body>
+</html>

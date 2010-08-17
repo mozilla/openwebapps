@@ -1,0 +1,35 @@
+<html>
+<head>
+<link rel="stylesheet" href="/static/style.css" type="text/css" />
+<title>Vapour</title>
+</head>
+<body>
+
+<div class="topbar">
+<div class="breadcrumb">
+Vapour Home
+</div>
+
+<div class="user">
+{% if user %}
+{{ user.username }} <div class="droparrow"></div>
+{% else %}
+<a href="/login">Login</a>
+{% end %}
+</div>
+<div class="lvertbar"></div>
+
+<div class="content">
+<h1>Mozilla Web Application Marketplace</h1>
+
+<h3><a href="/browse">Browse the Marketplace</a></h3>
+<h3><a href="/browsedevs">Browse Developers</a></h3>
+
+<hr>
+<h3><a href="/devregister">Sign Up As a Developer</a></h3>
+<h3><a href="/appregister">Register an Application</a></h3>
+
+</div>
+
+</body>
+</html>

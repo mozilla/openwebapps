@@ -1,0 +1,42 @@
+<html>
+<head>
+<link rel="stylesheet" href="/static/style.css" type="text/css" />
+<title>Vapour: Register New Developer</title>
+</head>
+<body>
+
+<div class="topbar">
+<div class="breadcrumb">
+Vapour : Register New Developer
+</div>
+
+<div class="user">
+{% if user %}
+{{ user.username }} <div class="droparrow"></div>
+{% else %}
+<a href="/login">Login</a>
+{% end %}
+</div>
+<div class="lvertbar"></div>
+
+<div class="content">
+
+{% if error %}
+<div class="error">{{ error }}</div>
+{% end %}
+
+<form method="POST" action="/devregister">
+
+<div class="label">Developer Name:</div>
+<div class="value"><input style="width:300px" type="text" name="name"></div><br/>
+
+<input type="submit" value="Create Developer">
+</form>
+
+Once you create a developer account, you can link your user account to it from the Account Management page.
+
+
+</div>
+
+</body>
+</html>

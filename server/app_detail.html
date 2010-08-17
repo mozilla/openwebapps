@@ -1,0 +1,70 @@
+<html>
+<head>
+<link rel="stylesheet" href="/static/style.css" type="text/css" />
+<title>Mozilla Web Application Marketplace</title>
+<script src="http://wamwallet.org/wallet.js"></script>
+<script>
+function init()
+{
+  Wallet.check({callback:finishedCheck, domain: "{{ app.domain }}"});
+}
+function finishedCheck(callbackResult)
+{
+  if (callbackResult.result) {
+    document.getElementById("installTextField").style.display = 'block';
+  } else {
+    document.getElementById("installButton").style.display = 'block';  
+  }
+}
+</script>
+</head>
+<body onload="init()">
+
+<div class="topbar">
+<div class="breadcrumb">
+<a href="/">Vapour</a> : <a href="/browse">Applications</a> : <a href="/browse/{{ app.category }}">{{ app.category }}</a> : <a href="/developer/{{ dev.id }}">{{ dev.name }}</a>
+</div>
+
+<div class="user">
+{% if user %}
+{{ user.username }} <div class="droparrow"></div>
+{% else %}
+<a href="/login">Login</a>
+{% end %}
+</div>
+<div class="lvertbar"></div>
+
+<div class="content">
+
+<div class="leftsidebar">
+<img src="{{ app.icon192 }}" width="192" height="192"></img>
+<div style="height:18px;"></div>
+<div class="appfineprint">
+Developer: <a href="/developer/{{ dev.id }}">{{ dev.name }}</a><br>
+Released: {{ app.releaseDateObj.strftime("%b %d, %Y")}}<br>
+Domain: {{ app.domain }}<br>
+</div>
+
+</div>
+
+<div class="rightsidebar">
+<div class="appname">{{ app.name }}</div>
+<div class="apphead">Description</div>
+<div class="appdesc">{{ app.description }}</div>
+<div class="apphead">Links</div>
+<a href="{{ app.homeURL }}">Developer Home</a>
+
+</div>
+
+<div class="rightfloater">
+<form method="POST" action="/install">
+<input type="hidden" name="id" value="{{ app.id }}">
+<input id="installButton" type="submit" class="installbutton" style="display:none" value="INSTALL">
+<div id="installTextField" style="display:none">INSTALLED</div>
+</form>
+</div>
+
+</div>
+
+</body>
+</html>

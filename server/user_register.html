@@ -1,0 +1,38 @@
+<html>
+<head>
+<link rel="stylesheet" href="/static/style.css" type="text/css" />
+<title>Mozilla Web Application Marketplace</title>
+</head>
+<body>
+
+<div class="content">
+
+
+Create an Account:<br><br>
+
+{% if error %}
+<div class="error">{{ error }}</div>
+{% end %}
+
+
+<form method="POST" action="/register">
+
+<div class="label">Account Name:</div>
+<div class="value"><input type="text" name="un"></div><br/>
+
+<div class="label">Password:</div>
+<div class="value"><input type="password" name="pw"></div><br/>
+
+<div class="label">Verify Password:</div>
+<div class="value"><input type="password" name="pw2"></div><br/>
+
+<input type="submit" value="Create Account">
+
+</form>
+
+Or, if you already have an account, <a href="/login">Log In</a>
+
+</div>
+
+</body>
+</html>
