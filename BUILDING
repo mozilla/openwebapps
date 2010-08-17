@@ -1,0 +1,33 @@
+* How to build and run what exists here:
+
+** Prerequisites
+
+0. python 2.6
+1. tornado webserver python extension: http://www.tornadoweb.org/
+2. sqlite python extension
+
+** Running
+
+1. Run the application server: cd server && ./server.py
+2. install the firefox addon: cd addon && ./manage.py install
+3. restart firefox
+4. navigate to chrome://appdashboard/content/appdashboard.html  
+
+** Adding an application
+
+(psst, write me)
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
