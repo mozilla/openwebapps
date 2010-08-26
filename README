@@ -11,9 +11,7 @@ server/
        a user.  Including browsing available applications and developers,
        and installation of applications
 
-wallet/ 
-       Abstractions which allow bi-directional comminication between
-       applications and the wallet server, which allows web applications to
-       trigger installation, and check installed status.  The javascript
-       abstraction simplifies secure cross domain to the application
-       server.
+site/ 
+       The website and javascript libraries tools that allow the user to
+       view their installed applications and allow application developers
+       to render a secure "installation upsell" to their users.
