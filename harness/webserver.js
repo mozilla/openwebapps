@@ -41,7 +41,7 @@ function createServer(port) {
 
     var siteroot = null;
     for (s in sites) {
-      if (hostname == sites[s].testhost == 0) {
+      if (hostname == sites[s].testhost) {
         console.log("req for host: " + s + " ("+ sites[s].testhost  + ")");
         siteroot = sites[s].dir;
         break;
