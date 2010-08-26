@@ -85,8 +85,15 @@ function createServer(port) {
 
           // if filename extension is .js, .css, or .html, let's search and replace
           // all occurances of any of the hostnames with test hostnames
-          for (s in sites) {
-            data = data.replace(s, sites[s].testhost);
+          var textual = false;
+          for (textext in [ ".js", ".css", ".html" ]) {
+            if (true == (textual = (path.extname(filename) === textext))) break;
+          }
+
+          if (textual && data) { 
+            for (s in sites) {
+              data = data.replace(s, sites[s].testhost);
+            }
           }
 
           response.writeHead(200);
@@ -99,7 +106,7 @@ function createServer(port) {
 
     // automatically serve index.html if this is a directory
     fs.stat(filename, function(err, s) {
-      if (s.isDirectory) {
+      if (err === null && s.isDirectory()) {
         serveFile(path.join(filename, "index.html"));
       } else {
         serveFile(filename);
