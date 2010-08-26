@@ -49,9 +49,9 @@ function createServer(port) {
     }
 
     if (siteroot === null) {
-    	response.writeHead(404, {"Content-Type": "text/plain"});
-    	response.write("404 Not Found");
-    	response.end();
+      response.writeHead(404, {"Content-Type": "text/plain"});
+      response.write("404 Not Found");
+      response.end();
       console.log("404 " + hostname);
       return;
     }
@@ -67,21 +67,21 @@ function createServer(port) {
       console.log("serving " + filename);
       path.exists(filename, function(exists) {
         if(!exists) {
-    		  response.writeHead(404, {"Content-Type": "text/plain"});
-    		  response.write("404 Not Found");
-    		  response.end();
+          response.writeHead(404, {"Content-Type": "text/plain"});
+          response.write("404 Not Found");
+          response.end();
           sys.puts("404 " + filename);
-    		  return;
-    	  }
+          return;
+        }
 
-    	  fs.readFile(filename, "binary", function(err, data) {
-    		  if(err) {
-    			  response.writeHead(500, {"Content-Type": "text/plain"});
-    			  response.write(err + "n");
-    			  response.end();
+        fs.readFile(filename, "binary", function(err, data) {
+          if(err) {
+            response.writeHead(500, {"Content-Type": "text/plain"});
+            response.write(err + "n");
+            response.end();
             sys.puts("500 " + filename);
-    			  return;
-    		  }
+            return;
+          }
 
           // if filename extension is .js, .css, or .html, let's search and replace
           // all occurances of any of the hostnames with test hostnames
@@ -89,12 +89,12 @@ function createServer(port) {
             data = data.replace(s, sites[s].testhost);
           }
 
-    		  response.writeHead(200);
-    		  response.write(data, "binary");
-    		  response.end();
+          response.writeHead(200);
+          response.write(data, "binary");
+          response.end();
           sys.puts("200 " + filename);
         });
-    	});
+      });
     };
 
     // automatically serve index.html if this is a directory
