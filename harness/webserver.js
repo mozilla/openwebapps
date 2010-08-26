@@ -86,13 +86,14 @@ function createServer(port) {
           // if filename extension is .js, .css, or .html, let's search and replace
           // all occurances of any of the hostnames with test hostnames
           var textual = false;
-          for (textext in [ ".js", ".css", ".html" ]) {
-            if (true == (textual = (path.extname(filename) === textext))) break;
+          var exts = [ ".js", ".css", ".html" ];
+          for (i in exts) {
+            if (true == (textual = (path.extname(filename) === exts[i]))) break;
           }
 
           if (textual && data) { 
             for (s in sites) {
-              data = data.replace(s, sites[s].testhost);
+              data = data.split(s).join(sites[s].testhost);
             }
           }
 
