@@ -157,6 +157,12 @@ describe("Client", function() {
       badManifest.app.launch.web_url = "http://baddomain.com";
       expectToFailInstallation(badManifest);
     });
+
+    it("when the user cancels the installation", function() {
+      // reach into trusted space and cause a simulated user cancellation
+      document.getElementById("myappsTrustedIFrame").contentWindow.window.AUTODISMISS = false;
+      expectToFailInstallation(manifest);
+    });
   });
 
 
