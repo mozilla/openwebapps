@@ -85,33 +85,31 @@ body {
 <script>
 
 function displayInstallPrompt(originHostname, manifest, clientCB) {
-  if (evt.event === "install") {
-    // whenever client's callback is invoked, we should first cleanup (and hide the dialog)
-    cb = function(r) {
-      delete document.getElementById("installButton").onclick;
-      delete document.getElementById("cancelButton").onclick;
-      ClientBridge.hideDialog(); clientCB(r);
-    };
-
-    document.getElementById("site").textContent = originHostname;
-    // !!! think about this.  These values cannot be trusted!
-    document.getElementById("appname").textContent = manifest.name;
-    if (manifest.description) {
-      document.getElementById("appdesc").textContent = manifest.description;
-    }
-
-    // now that the content is setup, message untrusted javascript to display us
-    ClientBridge.showDialog();
-
-    document.getElementById("installButton").onclick = function() { cb(true); };
-    document.getElementById("cancelButton").onclick = function() { cb(false); };
-
-    // if autodismiss is set to true, this suggests that we're being
-    // driven by a trusted client such as a unit tests.
-    if (window.AUTODISMISS != undefined) {
-      setTimeout(function() { cb(window.AUTODISMISS); }, 0);
-    }
+  // whenever client's callback is invoked, we should first cleanup (and hide the dialog)
+  cb = function(r) {
+    delete document.getElementById("installButton").onclick;
+    delete document.getElementById("cancelButton").onclick;
+    ClientBridge.hideDialog(); clientCB(r);
   };
+
+  document.getElementById("site").textContent = originHostname;
+  // !!! think about this.  These values cannot be trusted!
+  document.getElementById("appname").textContent = manifest.name;
+  if (manifest.description) {
+    document.getElementById("appdesc").textContent = manifest.description;
+  }
+
+  // now that the content is setup, message untrusted javascript to display us
+  ClientBridge.showDialog();
+
+  document.getElementById("installButton").onclick = function() { cb(true); };
+  document.getElementById("cancelButton").onclick = function() { cb(false); };
+
+  // if autodismiss is set to true, this suggests that we're being
+  // driven by a trusted client such as a unit tests.
+  if (window.AUTODISMISS != undefined) {
+    setTimeout(function() { cb(window.AUTODISMISS); }, 0);
+  }
 } 
 
 </script>
