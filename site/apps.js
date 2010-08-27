@@ -34,28 +34,155 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-function Apps() {
+function Apps(storage) {
   this.installs = [];
+  if (!storage) this.storage = window.localStorage;
+  else this.storage = storage;
   this.reload();
 }
 
+Apps.prototype.logError = function(message) {
+  if(window.console && window.console.log) {
+    window.console.log("Error: " + message);
+  }
+}
+
 Apps.prototype.reload = function() {
-  var storage = window.localStorage;
   this.installs = [];
 
-  for (var i =0 ; i < storage.length; i++)
+  for (var i =0 ; i < this.storage.length; i++)
   {
-    var key = storage.key(i);
-    var item = storage.getItem(key);
+    var key = this.storage.key(i);
+    if (key == "appclient_unit_test") continue;
+
+    var item = this.storage.getItem(key);
     var install = JSON.parse(item);
     this.installs.push(install);
   }
-
   this.installs.sort(function (a,b) { 
       return a.app.name.localeCompare(b.app.name); 
     } 
   );
 }
-Apps.prototype.install = function() {
 
+Apps.prototype.install = function(manf) {
+  if (manf.expiration) {
+    var numericValue = Number(manf.expiration); // Cast to numeric timestamp
+    var dateCheck = new Date(numericValue);
+    if(dateCheck < new Date()) { // If you pass garbage into the date, this will be false
+      this.logError('Invalid manifest: malformed expiration');
+      return false;
+    }
+    manf.expiration = numericValue;
+  }
+  if (!manf.name) {
+    this.logError('Invalid manifest: missing application name');
+    return false;
+  }
+  if (!manf.app) {
+    this.logError('Invalid manifest: missing "app" property');
+    return false;
+  }
+  if (!manf.app.urls) {
+    this.logError('Invalid manifest: missing "urls" property of "app"');
+    return false;
+  }
+  if (!manf.app.launch) {
+    this.logError('Invalid request: missing "launch" property of "app"');
+    return false;
+  }
+  if (!manf.app.launch.web_url) {
+    this.logError('Invalid request: missing "web_url" property of "app.launch"');
+    return false;
+  }
+  // Launch URL must be part of the set of app.urls
+  // TODO perform check
+  
+  var key = manf.app.launch.web_url;
+
+  // Create installation data structure
+  var installation = {
+    app: manf,
+    installTime: new Date().getTime(),
+    installURL: window.location
+  }
+  // Save - blow away any existing value
+  this.storage.setItem(key, JSON.stringify(installation));
+  this.reload();
+  return true;
+}
+
+Apps.prototype.removeAll = function() {
+  for (var i = this.storage.length - 1 ; i >= 0; i--)
+  {
+    var key = this.storage.key(i);
+    if (key == "appclient_unit_test") continue;
+    this.storage.removeItem(key);
+  }
+}
+
+Apps.prototype.remove = function(install) {
+
+  // Cautious technique here: don't want to have to worry about
+  // corruption of this.installs or anything like that.
+  var compareValue = JSON.stringify(install);
+  for (var i = this.storage.length-1 ; i >= 0; i--)
+  {
+    var key = this.storage.key(i);
+    if (key == "appclient_unit_test") continue;
+
+    var item = this.storage.getItem(key);
+    if (item == compareValue) {
+      this.storage.removeItem(key);
+      // keep looking; shouldn't ever happen, but weird things happen sometimes.
+    }
+  }
+  this.reload();
+}
+
+
+Apps.prototype.searchApps = function(term) {
+  var lcterm = term.toLowerCase();
+  var result = [];
+  for (var i=0;i<this.installs.length;i++)
+  {
+    if (this.installs[i].app.name.toLowerCase().indexOf(lcterm) >= 0) {
+      result.push(this.installs[i]);
+    }
+  }
+  return result;
+}
+
+Apps.prototype.refreshNotifications = function(callback) 
+{
+  for (var i=0;i<this.installs.length;i++)
+  {
+    if (this.installs[i].app.notification)
+    {
+      this.initiateNotificationRefresh(this.installs[i].app, callback);
+    }
+  }
+}
+
+Apps.prototype.initiateNotificationRefresh = function(app, callback) 
+{
+  var xhr = new XMLHttpRequest();
+  
+  // TODO perhaps send a "updatedSince" argument along with this?
+  xhr.open("GET", app.notification, true);
+  xhr.onreadystatechange = function(aEvt) {
+    if (xhr.readyState == 4) {
+      if (xhr.status == 200) {
+        try {
+          var result = JSON.parse(xhr.responseText);
+          // okay... now... are any of these new?
+          // if so... put it somewhere?
+          // and let somebody know?
+        } catch (e) {
+
+        }
+      }
+    }
+  }
+  xhr.send(null);
 }

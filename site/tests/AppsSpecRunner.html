@@ -14,12 +14,29 @@
   <script type="text/javascript" src="spec/SpecHelper.js"></script>
   <script type="text/javascript" src="spec/AppsSpec.js"></script>
 
+
+<script type="text/javascript">
+var gClientDone=0;
+var gServerDone=0;
+function clientDone() {
+  gClientDone = 1;
+  checkStart();
+}
+function serverDone() {
+  gServerDone = 1;
+  checkStart();
+}
+function checkStart() {
+  if (gServerDone && gClientDone) {
+    jasmine.getEnv().addReporter(new jasmine.TrivialReporter());
+    jasmine.getEnv().execute();
+  }
+}
+</script>
 </head>
 <body>
-<script type="text/javascript">
-  jasmine.getEnv().addReporter(new jasmine.TrivialReporter());
-  jasmine.getEnv().execute();
-</script>
+<iframe style="display:none" onload="clientDone()" src="http://localhost:8123/deleteLocalStorage.html"></iframe>
+<iframe style="display:none" onload="serverDone()" src="http://localhost:8124/deleteLocalStorage.html"></iframe>
 
 </body>
 </html>

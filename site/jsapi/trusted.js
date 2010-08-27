@@ -82,7 +82,7 @@
     for (var i=0;i<application.app.urls.length;i++)
     {
       var testURL = application.app.urls[i];
-      var re = RegExp("^" + testURL.replace("*", ".*") + "$");
+      var re = RegExp("^" + testURL.replace("*", ".*"));// no trailing $
       if (re.exec(url) != null) return true;
     }
     return false;
@@ -164,11 +164,27 @@
         logError(requestObj, 'Invalid request: missing "launch" property of "app"', originHostname);
         return null;
       }
+      if (!manf.app.launch.web_url) {
+        logError(requestObj, 'Invalid request: missing "web_url" property of "app.launch"', originHostname);
+        return false;
+      }
 
       // cache the installOrigin
       installOrigin = origin;
 
       // Launch URL must be part of the set of app.urls
+      if (!applicationMatchesURL(manf, manf.app.launch.web_url)) {
+        logError(requestObj, 'Invalid request: "web_url" property of "app.launch" must be a subset of app.urls.', originHostname);
+        return false;
+      } 
+      var key = manf.app.launch.web_url;
+
+			// Create installation data structure
+			var installation = {
+				app: manf,
+        installTime: new Date().getTime(),
+        installURL: origin
+			}
 
       // cause the UI to display a prompt to the user, this 
       displayInstallPrompt(originHostname, manf, function (allowed) {
@@ -181,6 +197,13 @@
             installTime: new Date().getTime(),
             installURL: origin
           }
+
+          if (requestObj.identity && requestObj.idserver)
+          {
+            installation.identity = requestObj.identity;
+            installation.idserver = requestObj.idserver;
+          }
+
           // Save - blow away any existing value
           storage.setItem(key, JSON.stringify(installation));
           
