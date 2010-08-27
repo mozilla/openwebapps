@@ -40,17 +40,17 @@
 
 
 var AppClient = (function() {
+  console.log("AppClient interpreted");
+		
 	// Reference shortcut so minifier can save on characters
 	var win = window;
 
 	// Check for browser capabilities
 	var unsupported = !(win.postMessage && win.localStorage && win.JSON);
 	
-	var WalletHostname = "wamwallet.org";
-  if (win.localStorage.getItem("appclient_unit_test")) WalletHostname = "localhost:8124";
-
 	// TODO: https support. Needs CDN to have a proper cert
-	var WalletServerUrl = "http://" + WalletHostname + "/server.html";
+  var WalletHostname = "myapps.org";
+	var WalletServerUrl = "http://"+WalletHostname+"/jsapi/include.html";
 
 	// Cached references
 	var iframe = null;
@@ -70,13 +70,13 @@ var AppClient = (function() {
 	// Listener for window message events, receives messages from only
 	// the wallet host:port that we set up in the iframe
 	function onMessage(event) {
-    //dump("Wallet got message: " + event.data + "\n");
+    console.log("Wallet got message: " + event.data + "\n");
 		// event.origin will always be of the format scheme://hostname:port
 		// http://www.whatwg.org/specs/web-apps/current-work/multipage/comms.html#dom-messageevent-origin
 
 		var originHostname = event.origin.split('://')[1]; //.split(':')[0];
 		if(originHostname != WalletHostname) {
-			// Doesn't match wamwallet.org, reject
+			// Doesn't match myapps.org, reject
 			return;
 		}
 		
@@ -94,6 +94,18 @@ var AppClient = (function() {
 			setTimeout(makePendingRequests, 0);
 			return;
 		}
+		// Check for special iframe requests to become visible/hidden and
+    // do the right thing.
+		else if(msg.cmd == 'wallet::showme') {
+			// Cache the reference to the iframe window object
+      showInstallDialog();
+			return;
+		}
+		else if(msg.cmd == 'wallet::hideme') {
+			// Cache the reference to the iframe window object
+      hideInstallDialog();
+			return;
+		}
 
 		// Look up saved request object and send response message to callback
 		var request = openRequests[msg.id];
@@ -105,16 +117,54 @@ var AppClient = (function() {
 		}
 	}
 
-	// Called once on first command to create the iframe to wamwallet.org
+  var overlayId = "myappsOrgInstallOverlay";
+  var dialogId = "myappsDialogInstallOverlay";
+
+	function showInstallDialog() {
+    // create a opacity overlay to focus the users attention 
+    var od = document.createElement("div");
+    od.id = overlayId;
+    od.style.background = "#000";
+    od.style.opacity = ".66";
+    od.style.filter = "alpha(opacity=66)";
+    od.style.position = "fixed";
+    od.style.top = "0";
+    od.style.left = "0";
+    od.style.height = "100%";
+    od.style.width = "100%";
+    od.style.zIndex ="998";
+    document.body.appendChild(od);
+    document.getElementById(dialogId).style.display = "inline";
+  }
+
+	function hideInstallDialog() {
+    document.getElementById(dialogId).style.display = "none";
+    document.body.removeChild(document.getElementById(overlayId));
+  }
+
+	// Called once on first command to create the iframe to myapps.org
 	function setupWindow() {
 		if(iframe || postWindow) { return; }
-		
+
 		// Create hidden iframe dom element
 		var doc = win.document;
-		iframe = doc.createElement('iframe');
-		var iframeStyle = iframe.style;
-		iframeStyle.position = 'absolute';
-		iframeStyle.left = iframeStyle.top = '-999px';
+    iframe = document.createElement("iframe");
+    iframe.id = dialogId;
+    iframe.style.position = "absolute";
+    iframe.style.left = "200";
+    iframe.style.top = "100";
+    iframe.style.width = "400";
+    iframe.style.height = "250";
+    iframe.style.zIndex ="999";
+    iframe.style.opacity = "1";
+    iframe.style.border = "0";
+    iframe.style.MozBorderRadius = "8px";
+    iframe.style.WebkitBorderRadius = "8px";
+    iframe.style.orderRadius = "8px";
+    iframe.style.border = "8px solid black";
+
+    // the "hidden" part
+    iframe.style.display = "none";
 
 		// Setup postMessage event listeners
 		if (win.addEventListener) {
@@ -123,8 +173,7 @@ var AppClient = (function() {
 		} else if(win.attachEvent) {
 			win.attachEvent('onmessage', onMessage);
 		}
-
-		// Append iframe to the dom and load up wamwallet.org inside
+		// Append iframe to the dom and load up myapps.org inside
 		doc.body.appendChild(iframe);
 		iframe.src = WalletServerUrl;
 	}
@@ -137,7 +186,7 @@ var AppClient = (function() {
 	}
 
 	// Simple wrapper for the postMessage command that sends serialized requests
-	// to the wamwallet.org iframe window
+	// to the myapps.org iframe window
 	function makeRequest(requestObj) {
     //dump("postMessage: " + JSON.stringify(requestObj) + "\n");
 		postWindow.postMessage(JSON.stringify(requestObj), WalletServerUrl);
@@ -163,7 +212,6 @@ var AppClient = (function() {
 	// Following three functions are just API wrappers that clean up the
 	// the arguments passed in before they're sent and attach the
 	// appropriate command strings to the request objects
-
 	function callInstall(args) {
 		if(!args) { args = {}; }
 		var requestObj = {
@@ -192,12 +240,11 @@ var AppClient = (function() {
 		}
 		queueRequest(requestObj);
 	}
-		
+
 	// Return AppClient object with exposed API calls
 	return {
 		install: callInstall,
 		verify: callVerify,
     getInstalled: callGetInstalled
 	};
-
 })();

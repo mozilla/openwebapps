@@ -54,9 +54,19 @@
 *
 */
 
-;(function() {
+;ClientBridge = (function() {
+  function callUIHook(args, cb) {
+    if (uihooks && typeof(uihooks) == 'function') {
+      uihooks(args, cb);
+    }
+  }
+
 	// Reference shortcut so minifier can save on characters
 	var win = window;
+
+  // when we recieve an install message we'll cache the origin
+  // so we can instruct the client on how to handle visibility
+  var installOrigin;
 
 	// We're the top window, don't do anything
 	if(win.top == win) {
@@ -128,7 +138,6 @@
 		**/
 	
 		'wallet::install': function(originHostname, requestObj, origin) {
-    		
 			// Validate and clean the request
 			if(!requestObj.manifest) {
 				logError(requestObj, 'Invalid request: missing manifest', originHostname);
@@ -161,25 +170,39 @@
         logError(requestObj, 'Invalid request: missing "launch" property of "app"', originHostname);
         return null;
       }
-      // Launch URL must be part of the set of app.urls
-      // TODO perform check
-      
-      var key = manf.app.launch.web_url;
 
-			// Create installation data structure
-			var installation = {
-				app: manf,
-        installTime: new Date().getTime(),
-        installURL: origin
-			}
-			// Save - blow away any existing value
-			storage.setItem(key, JSON.stringify(installation));
-		
-			// Send Response Object
-			return {
-				cmd: requestObj.cmd,
-				id: requestObj.id
-			};
+      // cache the installOrigin
+      installOrigin = origin;
+
+      // Launch URL must be part of the set of app.urls
+      
+      // query the user
+      callUIHook({
+        event: "install",
+        site: originHostname,
+        manifest: manf
+      }, function (allowed) {
+        if (allowed) {
+          var key = manf.app.launch.web_url;
+
+			    // Create installation data structure
+			    var installation = {
+				    app: manf,
+            installTime: new Date().getTime(),
+            installURL: origin
+			    }
+			    // Save - blow away any existing value
+			    storage.setItem(key, JSON.stringify(installation));
+		      
+			    // Send Response Object
+			    return {
+				    cmd: requestObj.cmd,
+				    id: requestObj.id
+			    };
+        } else {
+          logError(requestObj, 'User denied installation request', originHostname);
+        }
+      });
 		},
 
 		/**
@@ -240,7 +263,7 @@
 
 	/**
 		help with debugging issues
-		We can eventually toggle this using a debug.wamwallet.org store
+		We can eventually toggle this using a debug.myapps.org store
 	**/
 	function logError(requestObj, message, originHostname) {
 		if(!requestObj || (typeof requestObj.id != 'number') ) {
@@ -308,4 +331,8 @@
  // dump("Posting ready\n");
 	win.parent.postMessage(JSON.stringify({cmd: 'wallet::ready'}),"*");
 
+  return {
+    showDialog: function() { sendResponse( { id: -1, cmd: "wallet::showme" }, installOrigin); },
+    hideDialog: function() { sendResponse( { id: -1, cmd: "wallet::hideme" }, installOrigin); }
+  }
 })();
