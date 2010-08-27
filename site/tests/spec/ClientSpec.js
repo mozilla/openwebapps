@@ -3,7 +3,6 @@
 * Your should run ClientSpecRunner on 8123.
 *
 */
-
 describe("Client", function() {
   var firstTestDelay = 200; // seems to work on my MB pro
   var laterTestDelay = 50;
@@ -50,18 +49,29 @@ describe("Client", function() {
   it("should correctly install a simple application", function() {
     var callback = jasmine.createSpy();
 
+    // set a flag causing trusted.js to automatically dismiss prompt
     runs(function() {
+      // set a global which causes installation to occur automatically
       AppClient.install({manifest:manifest, callback:callback});
+      // hokey hack.  given that we're on the same domain as trusted.js, we can
+      // reach in to flip a flag that will cause dialogs to autodismiss
+      document.getElementById("myappsTrustedIFrame").contentWindow.window.AUTODISMISS = true;
     });
+
     waits(firstTestDelay);
+
     runs(function() {
       expect(callback).toHaveBeenCalled();
+
       callback = jasmine.createSpy("'getInstalled callback'");
       AppClient.getInstalled({callback:callback});
     });
+
     waits(laterTestDelay);
+
     runs(function() {
       expect(callback).toHaveBeenCalled();
+
       var result = callback.mostRecentCall.args;
       expect(result[0].installed.length).toEqual(1);
       var app = result[0].installed[0];
@@ -147,6 +157,12 @@ describe("Client", function() {
       var badManifest = JSON.parse(JSON.stringify(manifest));
       badManifest.app.launch.web_url = "http://baddomain.com";
       expectToFailInstallation(badManifest);
+    });
+
+    it("when the user cancels the installation", function() {
+      // reach into trusted space and cause a simulated user cancellation
+      document.getElementById("myappsTrustedIFrame").contentWindow.window.AUTODISMISS = false;
+      expectToFailInstallation(manifest);
     });
   });
 

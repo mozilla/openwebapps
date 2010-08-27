@@ -1,0 +1,121 @@
+<html>
+<head>
+<title>Install Apps</title>
+<style type="text/css" media="screen">
+body {
+  font-family:sans-serif;
+  background: #FFF;
+  height: 224px;
+  width: 384px;
+}
+
+#logo {
+  width:48;
+  height:48;
+  position: block;
+  left:10;
+  top:8;
+}
+
+#title {
+  font-size: 160%;
+  font-weight: bold;
+  position: absolute;
+  left:68;
+  top:14;
+}
+
+#description {
+  font-size: 100%;
+  position: block;
+  margin: 10px;
+  top:60;
+}
+
+#appinfo {
+  padding: 5px;
+  margin: 20px;
+  font-size: 70%;
+  border: 2px solid red;
+  scroll: auto;
+  height: 55px;
+}
+
+#appname {
+  font-weight: bold;
+}
+
+#site {
+  color: #F00;
+}
+
+#installButton {
+  position: absolute;
+  right: 50px;
+  bottom: 20px;
+}
+
+#cancelButton {
+  position: absolute;
+  right: 120px;
+  bottom: 20px;
+}
+
+#appicon {
+  margin-right:5px;
+  margin-bottom:5px;
+  float:left;
+}
+
+</style>
+<body>
+<div id="logo"><img  width="48" height="48" src="logo.png"></div> 
+<div id="title">Install a Web App?</div>
+<div id="description">
+  <span id="site"></span> would like to install a WebApp.  You should approve this
+  request only if you trust this site and use it often. The application is:
+</div>
+<div id="appinfo">
+  <img id="appicon" src="unknown" width="36" height="36">
+  <span id="appname"></span><br>
+  <span id="appdesc"></span>
+</div>
+<div id="cancelButton"><input type="button" value="Cancel"></div>
+<div id="installButton"><input type="button" value="Install"></div>
+<script>
+
+function displayInstallPrompt(originHostname, manifest, clientCB) {
+  // whenever client's callback is invoked, we should first cleanup (and hide the dialog)
+  cb = function(r) {
+    delete document.getElementById("installButton").onclick;
+    delete document.getElementById("cancelButton").onclick;
+    ClientBridge.hideDialog(); clientCB(r);
+  };
+
+  document.getElementById("site").textContent = originHostname;
+  // !!! think about this.  These values cannot be trusted!
+  document.getElementById("appname").textContent = manifest.name;
+  if (manifest.description) {
+    document.getElementById("appdesc").textContent = manifest.description;
+  }
+
+  // now that the content is setup, message untrusted javascript to display us
+  ClientBridge.showDialog();
+
+  document.getElementById("installButton").onclick = function() { cb(true); };
+  document.getElementById("cancelButton").onclick = function() { cb(false); };
+
+  // if autodismiss is set to true, this suggests that we're being
+  // driven by a trusted client such as a unit tests.
+  if (window.AUTODISMISS != undefined) {
+    setTimeout(function() { cb(window.AUTODISMISS); }, 0);
+  }
+} 
+
+</script>
+<!-- TODO There should be a build step which minifies and inlines these
+     bits for production -->
+<script src="/js/manifest.js"></script>
+<script src="trusted.js"></script>
+</body>
+</html>
