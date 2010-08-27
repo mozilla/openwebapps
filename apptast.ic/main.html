@@ -1,0 +1,47 @@
+<html>
+<head>
+<title>Apptast.ic</title>
+<style>
+body {
+  background:#f7f4f4 url("/static/apptastic.jpg") no-repeat left top;
+}
+#form {
+  position:absolute;
+  left:250px;
+  top:200px;
+  font:16pt "Gill Sans",Arial,sans-serif;
+}
+#form div {
+  margin-bottom:16px;
+}
+#inputfield {
+  width:400px;
+}
+#button {
+  margin-top:16px;
+  width:200px;
+  font:14pt "Gill Sans",Arial,sans-serif;
+}
+</style>
+</head>
+<body>
+
+<div id="form">
+<div>turn any website into an app.</div>
+
+<div>just enter a website address here:</div>
+
+{% if error %}
+<div id="error">
+{{ error }}
+</div>
+{% end %}
+
+<form method="POST" action="make_app">
+<input id="inputfield" type="text" name="url" placeholder="http://somewebsite.com"><br>
+
+<input id="button" type="submit" value="make it apptastic!">
+</form>
+</div>
+
+
