@@ -48,11 +48,43 @@ inbox icons from http://kateengland.bigcartel.com/product/workflow-desktop-icons
  we do not yet have license - redo, or negotiate with her!
 */
 
+const Cc = Components.classes;
+const Ci = Components.interfaces;
+const Cu = Components.utils;
+
+AppsLibrary = {};
+Cu.import("resource://appdashboard/content/apps.js", AppsLibrary);
+var gApps = null;
+
+function init() {
+  try { 
+    // We need to get a nodePrincipal to access the storage manager for
+    // the myapps.org domain.  Right now, the only way to do that
+    // is to construct an iframe that points to it, so we do that with
+    // a hidden frame, and wait for it to be constructed, and then
+    // call this function.
+    
+    var d = document.getElementById("content");  
+    var wallet = document.getElementById("wallet");  
+    var principal = wallet.contentWindow.document.nodePrincipal;
+
+    var storageManagerService = Cc["@mozilla.org/dom/storagemanager;1"].
+                                getService(Ci.nsIDOMStorageManager);
+    storage = storageManagerService.getLocalStorageForPrincipal(principal, {});
+    gApps = new AppsLibrary.Apps(storage);
+    gApps.removeAll();
+
+    render();
+  } catch (e) {
+    alert(e);
+  }
+}
+
+
 var installsByName = [];
 var servers = {};
 var storage;
 var manageMode = false;
-var canvases = [];
 var serverAppLookup = {}; // maps from server+appID to ticket
 var gIconSize = 96;// get from pref
 
@@ -68,6 +100,12 @@ function elem(type, clazz) {
   return e;
 }
 
+function findAppTabForURL(url)
+{
+  // Scan all the applications
+  
+}
+
 function makeOpenAppTabFn(targetURL)
 {
   return function(evt) { 
@@ -78,8 +116,10 @@ function makeOpenAppTabFn(targetURL)
                              .rootTreeItem
                              .QueryInterface(Components.interfaces.nsIInterfaceRequestor)
                              .getInterface(Components.interfaces.nsIDOMWindow);
+
+      // Should check whether the app is already running
+
       var tab = mainWindow.gBrowser.addTab(targetURL);
-      
       var idx = mainWindow.gBrowser._numPinnedTabs;
       mainWindow.gBrowser.moveTabTo(tab, idx);
       tab.setAttribute("pinned", "true");
@@ -96,9 +136,7 @@ function makeOpenAppTabFn(targetURL)
 function render() {
   var box = document.getElementById("apps");
   box.innerHTML = "";
-  
-  canvases = [];
-  
+ 
   if (true) { /*(showInbox) {*/
     var div = elem("div", "ticket");
     div.style.cursor = "pointer";
@@ -117,40 +155,24 @@ function render() {
     box.appendChild(div);
   }
   
-  for (let i=0;i<installsByName.length;i++)
+  for (let i=0;i<apps.installs.length;i++)
   {
-    let install = installsByName[i];
-    
+    let install = apps.installs[i];
     var div = elem("div", "ticket");
-    //let a = elem("a");
-    //a.setAttribute("href", install.ticket.homeURL);
     div.style.cursor = "pointer";
-    div.onclick = makeOpenAppTabFn(install.ticket.homeURL);
+    div.onclick = makeOpenAppTabFn(install.app.launch.web_url);
     if (manageMode) {
       var close = elem("div", "closebox");
       div.appendChild(close);
       
       close.onclick = function() {
-        storage.removeItem(install.ticket.domain);
-        loadInstalled();
+        app.remove(install);
         render();
       }
     }
-
-/*    var img = elem("img");
-    img.setAttribute("border", "0");
-    img.width = gIconSize;
-    img.height = gIconSize;
-    if (install.ticket.icon96) {
-      img.setAttribute("src", install.ticket.icon96);
-    } else {
-      img.setAttribute("src", "generic-icon.png");
-    }*/
-    img = createAppCanvas(install.ticket);
-    canvases.push(img);
+    img = createAppCanvas(install.app);
     var label = elem("div", "ticket_name");
-    label.appendChild(document.createTextNode(install.ticket.name));
-    //a.appendChild(img);
+    label.appendChild(document.createTextNode(install.app.name));
     div.appendChild(img);
     div.appendChild(label);
     box.appendChild(div);
@@ -193,20 +215,21 @@ function  roundRect(ctx, x, y, width, height, radius, fill, stroke)
   }
 }
 
-function createAppCanvas(ticket)
+function createAppCanvas(manifest)
 {
   var cvs = elem("canvas");
-  cvs.ticket = ticket;
+  cvs.manifest = manifest;
   cvs.width = gIconSize + 12;
   cvs.height = gIconSize + 12;
   ctx = cvs.getContext("2d");
   ctx.fillStyle = "rgb(255,255,255)";
   
   var img = new Image();
-  img.src = ticket.icon96;
+  // TODO: be clever about which icon to use
+  img.src = manifest.icons["96"];//icon96;
   ctx.drawImage(img, 0, 0, 96, 96, 0, 6, gIconSize, gIconSize);
   
-  if (ticket.notificationCount) {
+  if (manifest.notificationCount) {
     ctx.fillStyle = "rgba(0,0,0,200)";
     ctx.beginPath();
     ctx.moveTo(gIconSize+7, 12);
@@ -320,46 +343,4 @@ function formatDate(dateStr)
       str = hr + ":" + (mins < 10 ? "0" : "") + Math.floor(mins) + " " + (hrs >= 12 ? "P.M." : "A.M.");
   }
   return str;
-}
-
-function reloadInstalled() {
-  try { 
-    var Cc = Components.classes;
-    var Ci = Components.interfaces;
-    
-    var d = document.getElementById("content");  
-    var wallet = document.getElementById("wallet");  
-
-    var storageManagerService = Cc["@mozilla.org/dom/storagemanager;1"].
-                                getService(Ci.nsIDOMStorageManager);
-    var principal = wallet.contentWindow.document.nodePrincipal;
-    storage = storageManagerService.getLocalStorageForPrincipal(principal, {});
-
-    installsByName = [];
-    servers = {};
-    serverAppLookup = {};
-    for (var i =0;i<storage.length;i++)
-    {
-      var key = storage.key(i);
-      var item = storage.getItem(key);
-      var array = JSON.parse(item);
-      
-      for (var j=0;j<array.length;j++)
-      {
-        var install = array[j];
-        installsByName.push(install);
-        if (!servers[install.ticket.server]) servers[install.ticket.server] = install.ticket.server;
-        serverAppLookup[install.ticket.server + install.ticket.app] = install.ticket;
-      }
-      installsByName.sort(function (a,b) { return a.ticket.name.localeCompare(b.ticket.name); } );
-    }
-    startMessageQueueCheck();
-    render();
-  } catch (e) {
-    alert(e);
-  }
-}
-function walletReady() {
-reloadInstalled();
-}
-/*$(window).ready(reloadInstalled);*/
+}/*$(window).ready(reloadInstalled);*/

@@ -169,9 +169,11 @@ var AppClient = (function() {
 		var requestObj = {
 			cmd: 'wallet::install',
 			manifest: args.manifest || {},
-			session: args.session || false,
+			identity: args.identity || null,
+			idserver: args.idserver || null,
 			callback: args.callback || null
 		}
+    
 		queueRequest(requestObj);
 	}
 	

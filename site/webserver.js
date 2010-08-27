@@ -6,7 +6,39 @@ var sys = require("sys"),
 
 function createServer(port) {
   return http.createServer(function(request, response) {
-    var uri = url.parse(request.url).pathname;
+
+    var parsedurl = url.parse(request.url, true);
+    var uri = parsedurl.pathname;
+    
+    if (uri == "/synthesize_notification")
+    {
+      function val(term, deflt) {
+        if (parsedurl.query && parsedurl.query[term]) return parsedurl.query[term];
+        return deflt;
+      }
+    
+      response.writeHead(200, {"Content-Type": "application/atom+xml"});
+      response.write('<feed xmlns="http://www.w3.org/2005/Atom">\n');
+      response.write('<title>' + val("title", "Untitled Notification") + '</title>\n');
+      response.write('<id>' + val("id", "generic-id") + '</id>\n');
+      if (parsedurl.query && parsedurl.query['updated']) {
+        response.write('<updated>' + val("updated", "") + '</updated>\n');
+      }
+      var count = 0;
+      if (parsedurl.query && parsedurl.query["entry" + count + "title"])
+      {
+        response.write("<entry>\n");
+        response.write('<title>' + val("title", "entry" + count + "title") + '</title>\n');
+        response.write('<summary>' + val("title", "entry" + count + "summary") + '</summary>\n');
+        // TODO: link, id, updated, summary
+        response.write('</entry>\n');
+        count += 1;
+      }
+      response.write('</feed>\n');
+      response.end();
+      sys.puts("200 notification");
+      return;
+    }
     var filename = path.join(process.cwd(), uri);
     path.exists(filename, function(exists) {
     	if(!exists) {
