@@ -91,7 +91,7 @@ function createServer(port) {
             if (true == (textual = (path.extname(filename) === exts[i]))) break;
           }
 
-          if (textual && data) { 
+          if (textual && data && data.split) { 
             for (s in sites) {
               data = data.split(s).join(sites[s].testhost);
             }
