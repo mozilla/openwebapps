@@ -1,0 +1,20 @@
+<html>
+<body>
+<h2>Look Mom, All My Apps</h2>
+<ul id="stuffList">
+</ul>
+</body>
+<script type="text/javascript">
+  var storage = window.localStorage;
+
+  var sl = document.getElementById("stuffList");
+
+  for (var i = storage.length-1; i>=0; i--) {
+    var key = storage.key(i);
+    var li = document.createElement("li");
+    li.textContent = key + ": " + storage.getItem(key);
+    sl.appendChild(li);
+  }
+  
+</script>
+</html>
