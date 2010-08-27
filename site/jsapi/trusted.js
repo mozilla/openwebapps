@@ -33,9 +33,9 @@
  * ***** END LICENSE BLOCK ***** */
 
 /**
-	2010-07-14
-	First version of server code
-	-Michael Hanson. Mozilla
+  2010-07-14
+  First version of server code
+  -Michael Hanson. Mozilla
 **/
 
 /*
@@ -61,26 +61,26 @@
     }
   }
 
-	// Reference shortcut so minifier can save on characters
-	var win = window;
+  // Reference shortcut so minifier can save on characters
+  var win = window;
 
   // when we recieve an install message we'll cache the origin
   // so we can instruct the client on how to handle visibility
   var installOrigin;
 
-	// We're the top window, don't do anything
-	if(win.top == win) {
-		return;
-	}
+  // We're the top window, don't do anything
+  if(win.top == win) {
+    return;
+  }
 
-	// unsupported browser
-	if(!win.postMessage || !win.localStorage || !win.JSON) {
-		return;
-	}
+  // unsupported browser
+  if(!win.postMessage || !win.localStorage || !win.JSON) {
+    return;
+  }
 
-	// Reference shortcut so minifier can save on characters
-	var storage = win.localStorage;
-	
+  // Reference shortcut so minifier can save on characters
+  var storage = win.localStorage;
+  
   function applicationMatchesURL(application, url)
   {
     // TODO look into optimizing this so we are not constructing
@@ -124,25 +124,25 @@
     }
     return result;
   }
-	
-	// Set up the API
-	var WalletAPI = {
-		/**
-		Request object will look like:
-		{
-			cmd:'wallet::install',
-			id:1,
-			manifest: MANIFEST_DATA,
-			expire: JS date timestamp number,
-		}
-		**/
-	
-		'wallet::install': function(originHostname, requestObj, origin) {
-			// Validate and clean the request
-			if(!requestObj.manifest) {
-				logError(requestObj, 'Invalid request: missing manifest', originHostname);
-				return null;
-			}
+  
+  // Set up the API
+  var WalletAPI = {
+    /**
+    Request object will look like:
+    {
+      cmd:'wallet::install',
+      id:1,
+      manifest: MANIFEST_DATA,
+      expire: JS date timestamp number,
+    }
+    **/
+  
+    'wallet::install': function(originHostname, requestObj, origin) {
+      // Validate and clean the request
+      if(!requestObj.manifest) {
+        logError(requestObj, 'Invalid request: missing manifest', originHostname);
+        return null;
+      }
       var manf = requestObj.manifest;
 
       if (manf.expiration) {
@@ -175,44 +175,46 @@
       installOrigin = origin;
 
       // Launch URL must be part of the set of app.urls
-      
-      // query the user
-      callUIHook({
+
+      var args = {
         event: "install",
         site: originHostname,
         manifest: manf
-      }, function (allowed) {
+      };
+
+      // cause the UI to display a prompt to the user
+      callUIHook(args, function (allowed) {
         if (allowed) {
           var key = manf.app.launch.web_url;
 
-			    // Create installation data structure
-			    var installation = {
-				    app: manf,
+          // Create installation data structure
+          var installation = {
+            app: manf,
             installTime: new Date().getTime(),
             installURL: origin
-			    }
-			    // Save - blow away any existing value
-			    storage.setItem(key, JSON.stringify(installation));
-		      
-			    // Send Response Object
-			    return {
-				    cmd: requestObj.cmd,
-				    id: requestObj.id
-			    };
+          }
+          // Save - blow away any existing value
+          storage.setItem(key, JSON.stringify(installation));
+          
+          // Send Response Object
+          sendResponse({
+            cmd: requestObj.cmd,
+            id: requestObj.id
+          }, origin);
         } else {
           logError(requestObj, 'User denied installation request', originHostname);
         }
       });
-		},
+    },
 
-		/**
-		Request object will look like:
-		{
-			cmd:'wallet::verify',
-			id:1
-		}
-		**/
-		'wallet::verify': function(originHostname, requestObj, origin) {
+    /**
+    Request object will look like:
+    {
+      cmd:'wallet::verify',
+      id:1
+    }
+    **/
+    'wallet::verify': function(originHostname, requestObj, origin) {
 
       // We will look for manifests whose app.url filter matches the origin.
       // If we find one, we will initiate verification of the userid
@@ -236,22 +238,22 @@
       var validationURL = app.identityprovider + "?openid.returnto=" + origin + "&openid.claimedid=" + app.userid;
       win.parent.location = validationURL;
 
-			return {
-				cmd: requestObj.cmd,
-				id: requestObj.id
-			};
-		},
+      return {
+        cmd: requestObj.cmd,
+        id: requestObj.id
+      };
+    },
 
-		/**
+    /**
     Determines which applications are installed for the origin domain.
     
-		Request object will look like:
-		{
-			cmd:'wallet::getInstalled',
-			id:1
-		}
-		**/
-		'wallet::getInstalled': function(originHostname, requestObj, origin) {
+    Request object will look like:
+    {
+      cmd:'wallet::getInstalled',
+      id:1
+    }
+    **/
+    'wallet::getInstalled': function(originHostname, requestObj, origin) {
       var result = getApplicationsForOrigin(origin); 
       return {
         cmd: requestObj.cmd,
@@ -259,77 +261,77 @@
         installed: result
       };
     }
-	}
+  }
 
-	/**
-		help with debugging issues
-		We can eventually toggle this using a debug.myapps.org store
-	**/
-	function logError(requestObj, message, originHostname) {
-		if(!requestObj || (typeof requestObj.id != 'number') ) {
-			return;
-		}
-		if(win.console && win.console.log) {
-			win.console.log(requestObj.cmd + ' Error: ' + message);
-		}
-	}
-	
-	// Make sure response message has an id and send it on to parent window
-	// origin is the URI of the window we're postMessaging to
-	function sendResponse(responseObj, origin) {
-		if(!responseObj || (typeof responseObj.id != 'number') ) {
-			return;
-		}
-		win.parent.postMessage(JSON.stringify(responseObj), origin);
-	}
-	
-	// Dynamically called since the user can open up xauth.org and disable
-	// the entire thing while another browser tab has an xauth.org iframe open
-	function checkDisabled() {
-		return (storage.getItem('disabled.myapps.org') == '1');
-	}
-	
-	// Listener for window message events, receives messages from parent window
-	function onMessage(event) {
-		// event.origin will always be of the format scheme://hostname:port
-		// http://www.whatwg.org/specs/web-apps/current-work/multipage/comms.html#dom-messageevent-origin
+  /**
+    help with debugging issues
+    We can eventually toggle this using a debug.myapps.org store
+  **/
+  function logError(requestObj, message, originHostname) {
+    if(!requestObj || (typeof requestObj.id != 'number') ) {
+      return;
+    }
+    if(win.console && win.console.log) {
+      win.console.log(requestObj.cmd + ' Error: ' + message);
+    }
+  }
+  
+  // Make sure response message has an id and send it on to parent window
+  // origin is the URI of the window we're postMessaging to
+  function sendResponse(responseObj, origin) {
+    if(!responseObj || (typeof responseObj.id != 'number') ) {
+      return;
+    }
+    win.parent.postMessage(JSON.stringify(responseObj), origin);
+  }
+  
+  // Dynamically called since the user can open up xauth.org and disable
+  // the entire thing while another browser tab has an xauth.org iframe open
+  function checkDisabled() {
+    return (storage.getItem('disabled.myapps.org') == '1');
+  }
+  
+  // Listener for window message events, receives messages from parent window
+  function onMessage(event) {
+    // event.origin will always be of the format scheme://hostname:port
+    // http://www.whatwg.org/specs/web-apps/current-work/multipage/comms.html#dom-messageevent-origin
 
     var requestObj = JSON.parse(event.data);
-		var originHostname = event.origin.split('://')[1].split(':')[0];
+    var originHostname = event.origin.split('://')[1].split(':')[0];
 
-		/**
-		message generally looks like
-		{
-			cmd: wallet::command_name,
-			id: request_id,
-			other parameters
-		}
-		**/
+    /**
+    message generally looks like
+    {
+      cmd: wallet::command_name,
+      id: request_id,
+      other parameters
+    }
+    **/
 
-		if(!requestObj || typeof requestObj != 'object' 
-			|| !requestObj.cmd || requestObj.id == undefined
-			|| checkDisabled()) {
-			// A post message we don't understand
-			return;
-		}
-		
-		if(WalletAPI[requestObj.cmd]) {
-			// A command we understand, send the response on back to the posting window
+    if(!requestObj || typeof requestObj != 'object' 
+      || !requestObj.cmd || requestObj.id == undefined
+      || checkDisabled()) {
+      // A post message we don't understand
+      return;
+    }
+    
+    if(WalletAPI[requestObj.cmd]) {
+      // A command we understand, send the response on back to the posting window
       var result = WalletAPI[requestObj.cmd](originHostname, requestObj, event.origin);
-			sendResponse(result, event.origin);
-		}
-	}
+      sendResponse(result, event.origin);
+    }
+  }
 
-	// Setup postMessage event listeners
-	if (win.addEventListener) {
-		win.addEventListener('message', onMessage, false);
-	} else if(win.attachEvent) {
-		win.attachEvent('onmessage', onMessage);
-	}
+  // Setup postMessage event listeners
+  if (win.addEventListener) {
+    win.addEventListener('message', onMessage, false);
+  } else if(win.attachEvent) {
+    win.attachEvent('onmessage', onMessage);
+  }
 
-	// Finally, tell the parent window we're ready.
+  // Finally, tell the parent window we're ready.
  // dump("Posting ready\n");
-	win.parent.postMessage(JSON.stringify({cmd: 'wallet::ready'}),"*");
+  win.parent.postMessage(JSON.stringify({cmd: 'wallet::ready'}),"*");
 
   return {
     showDialog: function() { sendResponse( { id: -1, cmd: "wallet::showme" }, installOrigin); },

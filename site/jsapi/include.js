@@ -33,94 +33,91 @@
  * ***** END LICENSE BLOCK ***** */
 
 /**
-	2010-07-14
-	First version of wallet client code
-	-Michael Hanson. Mozilla
+  2010-07-14
+  First version of wallet client code
+  -Michael Hanson. Mozilla
 **/
 
-
 var AppClient = (function() {
-  console.log("AppClient interpreted");
-		
-	// Reference shortcut so minifier can save on characters
-	var win = window;
+  // Reference shortcut so minifier can save on characters
+  var win = window;
 
-	// Check for browser capabilities
-	var unsupported = !(win.postMessage && win.localStorage && win.JSON);
-	
-	// TODO: https support. Needs CDN to have a proper cert
+  // Check for browser capabilities
+  var unsupported = !(win.postMessage && win.localStorage && win.JSON);
+  
+  // TODO: https support. Needs CDN to have a proper cert
   var WalletHostname = "myapps.org";
-	var WalletServerUrl = "http://"+WalletHostname+"/jsapi/include.html";
+  var WalletServerUrl = "http://"+WalletHostname+"/jsapi/include.html";
 
-	// Cached references
-	var iframe = null;
-	var postWindow = null;
+  // Cached references
+  var iframe = null;
+  var postWindow = null;
 
-	// Requests are done asynchronously so we add numeric ids to each
-	// postMessage request object. References to the request objects
-	// are stored in the openRequests object keyed by the request id.
-	var openRequests = {};
-	var requestId = 0;
+  // Requests are done asynchronously so we add numeric ids to each
+  // postMessage request object. References to the request objects
+  // are stored in the openRequests object keyed by the request id.
+  var openRequests = {};
+  var requestId = 0;
 
-	// All requests made before the iframe is ready are queued (referenced by
-	// request id) in the requestQueue array and then called in order after
-	// the iframe has messaged to us that it's ready for communication
-	var requestQueue = [];
+  // All requests made before the iframe is ready are queued (referenced by
+  // request id) in the requestQueue array and then called in order after
+  // the iframe has messaged to us that it's ready for communication
+  var requestQueue = [];
 
-	// Listener for window message events, receives messages from only
-	// the wallet host:port that we set up in the iframe
-	function onMessage(event) {
-    console.log("Wallet got message: " + event.data + "\n");
-		// event.origin will always be of the format scheme://hostname:port
-		// http://www.whatwg.org/specs/web-apps/current-work/multipage/comms.html#dom-messageevent-origin
+  // Listener for window message events, receives messages from only
+  // the wallet host:port that we set up in the iframe
+  function onMessage(event) {
+    // event.origin will always be of the format scheme://hostname:port
+    // http://www.whatwg.org/specs/web-apps/current-work/multipage/comms.html#dom-messageevent-origin
 
-		var originHostname = event.origin.split('://')[1]; //.split(':')[0];
-		if(originHostname != WalletHostname) {
-			// Doesn't match myapps.org, reject
-			return;
-		}
-		
-		// unfreeze request message into object
-		var msg = JSON.parse(event.data);
-		if(!msg) {
-			return;
-		}
+    var originHostname = event.origin.split('://')[1]; //.split(':')[0];
+    if(originHostname != WalletHostname) {
+      // Doesn't match myapps.org, reject
+      return;
+    }
+    
+    // unfreeze request message into object
+    var msg = JSON.parse(event.data);
+    if(!msg) {
+      return;
+    }
 
-		// Check for special iframe ready message and call any pending
-		// requests in our queue made before the iframe was created.
-		if(msg.cmd == 'wallet::ready') {
-			// Cache the reference to the iframe window object
-			postWindow = iframe.contentWindow;
-			setTimeout(makePendingRequests, 0);
-			return;
-		}
-		// Check for special iframe requests to become visible/hidden and
+    // Check for special iframe ready message and call any pending
+    // requests in our queue made before the iframe was created.
+    if(msg.cmd === 'wallet::ready') {
+      // Cache the reference to the iframe window object
+      postWindow = iframe.contentWindow;
+      setTimeout(makePendingRequests, 0);
+      return;
+    }
+    // Check for special iframe requests to become visible/hidden and
     // do the right thing.
-		else if(msg.cmd == 'wallet::showme') {
-			// Cache the reference to the iframe window object
+    else if(msg.cmd === 'wallet::showme') {
+      // Cache the reference to the iframe window object
       showInstallDialog();
-			return;
-		}
-		else if(msg.cmd == 'wallet::hideme') {
-			// Cache the reference to the iframe window object
+      return;
+    }
+    else if(msg.cmd === 'wallet::hideme') {
+      // Cache the reference to the iframe window object
       hideInstallDialog();
-			return;
-		}
+      return;
+    }
 
-		// Look up saved request object and send response message to callback
-		var request = openRequests[msg.id];
-		if(request) {
-			if(request.callback) {
-				request.callback(msg);
-			}
-			delete openRequests[msg.id];
-		}
-	}
+    // Look up saved request object and send response message to callback
+    var request = openRequests[msg.id];
+    if(request) {
+      if(request.callback) {
+        request.callback(msg);
+      }
+      delete openRequests[msg.id];
+    }
+  }
 
   var overlayId = "myappsOrgInstallOverlay";
-  var dialogId = "myappsDialogInstallOverlay";
+  var dialogId = "myappsTrustedIFrame";
 
-	function showInstallDialog() {
+  function showInstallDialog() {
+    try { hideInstallDialog() } catch(e) { };
     // create a opacity overlay to focus the users attention 
     var od = document.createElement("div");
     od.id = overlayId;
@@ -137,17 +134,17 @@ var AppClient = (function() {
     document.getElementById(dialogId).style.display = "inline";
   }
 
-	function hideInstallDialog() {
+  function hideInstallDialog() {
     document.getElementById(dialogId).style.display = "none";
     document.body.removeChild(document.getElementById(overlayId));
   }
 
-	// Called once on first command to create the iframe to myapps.org
-	function setupWindow() {
-		if(iframe || postWindow) { return; }
+  // Called once on first command to create the iframe to myapps.org
+  function setupWindow() {
+    if(iframe || postWindow) { return; }
 
-		// Create hidden iframe dom element
-		var doc = win.document;
+    // Create hidden iframe dom element
+    var doc = win.document;
     iframe = document.createElement("iframe");
     iframe.id = dialogId;
     iframe.style.position = "absolute";
@@ -166,85 +163,85 @@ var AppClient = (function() {
     // the "hidden" part
     iframe.style.display = "none";
 
-		// Setup postMessage event listeners
-		if (win.addEventListener) {
+    // Setup postMessage event listeners
+    if (win.addEventListener) {
       //dump("Setting event listener\n");
-			win.addEventListener('message', onMessage, false);
-		} else if(win.attachEvent) {
-			win.attachEvent('onmessage', onMessage);
-		}
-		// Append iframe to the dom and load up myapps.org inside
-		doc.body.appendChild(iframe);
-		iframe.src = WalletServerUrl;
-	}
-	
-	// Called immediately after iframe has told us it's ready for communication
-	function makePendingRequests() {
-		for(var i=0; i<requestQueue.length; i++) {
-			makeRequest(openRequests[requestQueue.shift()]);
-		}
-	}
+      win.addEventListener('message', onMessage, false);
+    } else if(win.attachEvent) {
+      win.attachEvent('onmessage', onMessage);
+    }
+    // Append iframe to the dom and load up myapps.org inside
+    doc.body.appendChild(iframe);
+    iframe.src = WalletServerUrl;
+  }
+  
+  // Called immediately after iframe has told us it's ready for communication
+  function makePendingRequests() {
+    for(var i=0; i<requestQueue.length; i++) {
+      makeRequest(openRequests[requestQueue.shift()]);
+    }
+  }
 
-	// Simple wrapper for the postMessage command that sends serialized requests
-	// to the myapps.org iframe window
-	function makeRequest(requestObj) {
+  // Simple wrapper for the postMessage command that sends serialized requests
+  // to the myapps.org iframe window
+  function makeRequest(requestObj) {
     //dump("postMessage: " + JSON.stringify(requestObj) + "\n");
-		postWindow.postMessage(JSON.stringify(requestObj), WalletServerUrl);
-	}
+    postWindow.postMessage(JSON.stringify(requestObj), WalletServerUrl);
+  }
 
-	// All requests funnel thru queueRequest which assigns it a unique
-	// request Id and either queues up the request before the iframe
-	// is created or makes the actual request
-	function queueRequest(requestObj) {
-		if(unsupported) { return; }
-		requestObj.id = requestId;
-		openRequests[requestId++] = requestObj;
+  // All requests funnel thru queueRequest which assigns it a unique
+  // request Id and either queues up the request before the iframe
+  // is created or makes the actual request
+  function queueRequest(requestObj) {
+    if(unsupported) { return; }
+    requestObj.id = requestId;
+    openRequests[requestId++] = requestObj;
 
-		// If window isn't ready, add it to a queue
-		if(!iframe || !postWindow) {
-			requestQueue.push(requestObj.id);
-			setupWindow(); // must happen after we've added to the queue
-		} else {
-			makeRequest(requestObj);
-		}
-	}
-	
-	// Following three functions are just API wrappers that clean up the
-	// the arguments passed in before they're sent and attach the
-	// appropriate command strings to the request objects
-	function callInstall(args) {
-		if(!args) { args = {}; }
-		var requestObj = {
-			cmd: 'wallet::install',
-			manifest: args.manifest || {},
-			session: args.session || false,
-			callback: args.callback || null
-		}
-		queueRequest(requestObj);
-	}
-	
-	function callVerify(args) {
-		if(!args) { args = {}; }
-		var requestObj = {
-			cmd: 'wallet::verify',
-			callback: args.callback || null
-		}
-		queueRequest(requestObj);
-	}
+    // If window isn't ready, add it to a queue
+    if(!iframe || !postWindow) {
+      requestQueue.push(requestObj.id);
+      setupWindow(); // must happen after we've added to the queue
+    } else {
+      makeRequest(requestObj);
+    }
+  }
+  
+  // Following three functions are just API wrappers that clean up the
+  // the arguments passed in before they're sent and attach the
+  // appropriate command strings to the request objects
+  function callInstall(args) {
+    if(!args) { args = {}; }
+    var requestObj = {
+      cmd: 'wallet::install',
+      manifest: args.manifest || {},
+      session: args.session || false,
+      callback: args.callback || null
+    }
+    queueRequest(requestObj);
+  }
+  
+  function callVerify(args) {
+    if(!args) { args = {}; }
+    var requestObj = {
+      cmd: 'wallet::verify',
+      callback: args.callback || null
+    }
+    queueRequest(requestObj);
+  }
 
-	function callGetInstalled(args) {
-		if(!args) { args = {}; }
-		var requestObj = {
-			cmd: 'wallet::getInstalled',
-			callback: args.callback || null
-		}
-		queueRequest(requestObj);
-	}
+  function callGetInstalled(args) {
+    if(!args) { args = {}; }
+    var requestObj = {
+      cmd: 'wallet::getInstalled',
+      callback: args.callback || null
+    }
+    queueRequest(requestObj);
+  }
 
-	// Return AppClient object with exposed API calls
-	return {
-		install: callInstall,
-		verify: callVerify,
+  // Return AppClient object with exposed API calls
+  return {
+    install: callInstall,
+    verify: callVerify,
     getInstalled: callGetInstalled
-	};
+  };
 })();

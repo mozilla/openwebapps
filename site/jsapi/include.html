@@ -36,7 +36,7 @@ body {
   padding: 5px;
   margin: 20px;
   font-size: 70%;
-  border: 1px solid green;
+  border: 2px solid red;
   scroll: auto;
   height: 55px;
 }
@@ -72,7 +72,7 @@ body {
 <div id="logo"><img  width="48" height="48" src="logo.png"></div> 
 <div id="title">Install a Web App?</div>
 <div id="description">
-  <span id="site">XXX.com</span> would like to install a WebApp.  You should approve this
+  <span id="site"></span> would like to install a WebApp.  You should approve this
   request only if you trust this site and use it often. The application is:
 </div>
 <div id="appinfo">
@@ -83,23 +83,33 @@ body {
 <div id="cancelButton"><input type="button" value="Cancel"></div>
 <div id="installButton"><input type="button" value="Install"></div>
 <script>
-function uihooks(evt, cb) {
+function uihooks(evt, clientCB) {
   if (evt.event === "install") {
+    // whenever client's callback is invoked, we should first cleanup (and hide the dialog)
+    cb = function(r) {
+      delete document.getElementById("installButton").onclick;
+      delete document.getElementById("cancelButton").onclick;
+      ClientBridge.hideDialog(); clientCB(r);
+    };
+
     document.getElementById("site").textContent = evt.site;
     // !!! think about this.  These values cannot be trusted!
     document.getElementById("appname").textContent = evt.manifest.name;
     if (evt.manifest.description) {
       document.getElementById("appdesc").textContent = evt.manifest.description;
     }
+
+    // now that the content is setup, message untrusted javascript to display us
     ClientBridge.showDialog();
-    document.getElementById("installButton").onclick = function() {
-      ClientBridge.hideDialog();
-      cb(true);
-    };
-    document.getElementById("cancelButton").onclick = function() {
-      ClientBridge.hideDialog();
-      cb(false);
-    };
+
+    document.getElementById("installButton").onclick = function() { cb(true); };
+    document.getElementById("cancelButton").onclick = function() { cb(false); };
+
+    // if autodismiss is set to true, this suggests that we're being
+    // driven by a trusted client such as a unit tests.
+    if (window.AUTODISMISS != undefined) {
+      setTimeout(function() { cb(window.AUTODISMISS); }, 0);
+    }
   };
 } 
 

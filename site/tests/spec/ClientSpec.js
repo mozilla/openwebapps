@@ -25,6 +25,7 @@ describe("Client", function() {
   it("should correctly install a simple application", function() {
     var callback = jasmine.createSpy();
 
+    // set a flag causing trusted.js to automatically dismiss prompt
     runs(function() {
       var manifest = {
         name:"Test App",
@@ -33,17 +34,26 @@ describe("Client", function() {
           launch: {web_url: "http://localhost:8123/launch"}
         }
       };
+      // set a global which causes installation to occur automatically
       AppClient.install({manifest:manifest, callback:callback});
+      // hokey hack.  given that we're on the same domain as trusted.js, we can
+      // reach in to flip a flag that will cause dialogs to autodismiss
+      document.getElementById("myappsTrustedIFrame").contentWindow.window.AUTODISMISS = true;
     });
+
     waits(firstTestDelay);
+
     runs(function() {
       expect(callback).toHaveBeenCalled();
       callback = jasmine.createSpy("'getInstalled callback'");
       AppClient.getInstalled({callback:callback});
     });
+
     waits(laterTestDelay);
+
     runs(function() {
       expect(callback).toHaveBeenCalled();
+
       var result = callback.mostRecentCall.args;
       expect(result[0].installed.length).toEqual(1);
       var app = result[0].installed[0];
@@ -52,7 +62,6 @@ describe("Client", function() {
   });
   
   it("should replace an existing install with a new one that has the same launch_url", function() {
-    return;
     var callback = jasmine.createSpy();
     runs(function() {
       var manifest = {
@@ -80,7 +89,6 @@ describe("Client", function() {
   });
 
   it("should add another install for the same urls with a different launch_url", function() {
-    return;
     var callback = jasmine.createSpy();
     runs(function() {
       var manifest = {
@@ -114,7 +122,6 @@ describe("Client", function() {
   // Test Install Validation
   //----------------------------------------------------------------------
   describe("should not install an app", function() {
-    return;
     it("with no name", function() {
       var manifest = {
         app:{
@@ -126,7 +133,6 @@ describe("Client", function() {
     });
 
     it("with no app", function() {
-      return;
       var manifest = {
         name: "Test App",
       };
@@ -134,7 +140,6 @@ describe("Client", function() {
     });
     
     it("with no app.urls", function() {
-      return;
       var manifest = {
         name: "Test App",
         app:{
@@ -144,7 +149,6 @@ describe("Client", function() {
       expectToFailInstallation(manifest);
     });
     it("with no app.launch", function() {
-      return;
       var manifest = {
         name: "Test App",
         app:{
