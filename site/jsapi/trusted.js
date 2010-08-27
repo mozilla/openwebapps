@@ -55,12 +55,6 @@
 */
 
 ;ClientBridge = (function() {
-  function callUIHook(args, cb) {
-    if (uihooks && typeof(uihooks) == 'function') {
-      uihooks(args, cb);
-    }
-  }
-
   // Reference shortcut so minifier can save on characters
   var win = window;
 
@@ -176,14 +170,8 @@
 
       // Launch URL must be part of the set of app.urls
 
-      var args = {
-        event: "install",
-        site: originHostname,
-        manifest: manf
-      };
-
-      // cause the UI to display a prompt to the user
-      callUIHook(args, function (allowed) {
+      // cause the UI to display a prompt to the user, this 
+      displayInstallPrompt(originHostname, manf, function (allowed) {
         if (allowed) {
           var key = manf.app.launch.web_url;
 

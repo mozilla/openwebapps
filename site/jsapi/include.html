@@ -83,7 +83,8 @@ body {
 <div id="cancelButton"><input type="button" value="Cancel"></div>
 <div id="installButton"><input type="button" value="Install"></div>
 <script>
-function uihooks(evt, clientCB) {
+
+function displayInstallPrompt(originHostname, manifest, clientCB) {
   if (evt.event === "install") {
     // whenever client's callback is invoked, we should first cleanup (and hide the dialog)
     cb = function(r) {
@@ -92,11 +93,11 @@ function uihooks(evt, clientCB) {
       ClientBridge.hideDialog(); clientCB(r);
     };
 
-    document.getElementById("site").textContent = evt.site;
+    document.getElementById("site").textContent = originHostname;
     // !!! think about this.  These values cannot be trusted!
-    document.getElementById("appname").textContent = evt.manifest.name;
-    if (evt.manifest.description) {
-      document.getElementById("appdesc").textContent = evt.manifest.description;
+    document.getElementById("appname").textContent = manifest.name;
+    if (manifest.description) {
+      document.getElementById("appdesc").textContent = manifest.description;
     }
 
     // now that the content is setup, message untrusted javascript to display us
