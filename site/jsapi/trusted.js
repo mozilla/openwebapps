@@ -88,25 +88,32 @@
     return false;
   }
   
-  function getApplicationsForOrigin(origin)
+  function getApplicationsForOrigin(originHostname, requestObj, origin)
   {
     var result = [];
     var toRemove = [];
-    
+
     for (var i =0;i<storage.length;i++)
     {
       var key = localStorage.key(i);
       var item = localStorage.getItem(key);
-      var install = JSON.parse(item);
+      try {
+        // validate the manifest
+        var install = JSON.parse(item);
+        install.app = Manifest.validate(install.app);
 
-      // Clean up out-of-date tickets as we go
-      if (install.app.expiration && new Date(install.app.expiration) < new Date())
-      {
+        // Clean up out-of-date tickets as we go
+        if (Manifest.expired(install.app)) {
+          throw "application has expired";
+        }
+
+        if (applicationMatchesURL(install.app, origin)) {      
+          result.push(install.app);
+        }
+
+      } catch(e) {
+        logError(requestObj, 'Purging application: ' + e, originHostname);        
         toRemove.push(key);
-      }
-      else if (applicationMatchesURL(install.app, origin))
-      {      
-        result.push(install.app);
       }
     }
 
@@ -116,6 +123,7 @@
         storage.removeItem(toRemove[i]);
       }
     }
+
     return result;
   }
   
@@ -133,50 +141,17 @@
   
     'wallet::install': function(originHostname, requestObj, origin) {
       // Validate and clean the request
-      if(!requestObj.manifest) {
-        logError(requestObj, 'Invalid request: missing manifest', originHostname);
+      var manf;
+      try {
+        manf = Manifest.validate(requestObj.manifest);
+      } catch(e) {
+        logError(requestObj, e, originHostname);
         return null;
-      }
-      var manf = requestObj.manifest;
-
-      if (manf.expiration) {
-        var numericValue = Number(manf.expiration); // Cast to numeric timestamp
-        var dateCheck = new Date(numericValue);
-        if(dateCheck < new Date()) { // If you pass garbage into the date, this will be false
-          logError(requestObj, 'Invalid request: malformed expiration (' + manf.expiration + '; ' + dateCheck + ')', originHostname);
-          return null;
-        }
-        manf.expiration = numericValue;
-      }
-      if (!manf.name) {
-        logError(requestObj, 'Invalid request: missing application name', originHostname);
-        return null;
-      }
-      if (!manf.app) {
-        logError(requestObj, 'Invalid request: missing "app" property', originHostname);
-        return null;
-      }
-      if (!manf.app.urls) {
-        logError(requestObj, 'Invalid request: missing "urls" property of "app"', originHostname);
-        return null;
-      }
-      if (!manf.app.launch) {
-        logError(requestObj, 'Invalid request: missing "launch" property of "app"', originHostname);
-        return null;
-      }
-      if (!manf.app.launch.web_url) {
-        logError(requestObj, 'Invalid request: missing "web_url" property of "app.launch"', originHostname);
-        return false;
       }
 
       // cache the installOrigin
       installOrigin = origin;
 
-      // Launch URL must be part of the set of app.urls
-      if (!applicationMatchesURL(manf, manf.app.launch.web_url)) {
-        logError(requestObj, 'Invalid request: "web_url" property of "app.launch" must be a subset of app.urls.', originHostname);
-        return false;
-      } 
       var key = manf.app.launch.web_url;
 
 			// Create installation data structure
@@ -233,7 +208,7 @@
 
       // If we find two... well, for now, we take the first one.
 
-      var result = getApplicationsForOrigin(origin);      
+      var result = getApplicationsForOrigin(originHostname, requestObj, origin);      
       if (result.length == 0) return null;
 
       var install = result[0];
@@ -265,7 +240,7 @@
     }
     **/
     'wallet::getInstalled': function(originHostname, requestObj, origin) {
-      var result = getApplicationsForOrigin(origin); 
+      var result = getApplicationsForOrigin(originHostname, requestObj, origin);
       return {
         cmd: requestObj.cmd,
         id: requestObj.id,

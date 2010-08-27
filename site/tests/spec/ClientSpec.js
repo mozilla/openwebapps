@@ -62,6 +62,7 @@ describe("Client", function() {
 
     runs(function() {
       expect(callback).toHaveBeenCalled();
+
       callback = jasmine.createSpy("'getInstalled callback'");
       AppClient.getInstalled({callback:callback});
     });
