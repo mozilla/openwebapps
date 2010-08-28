@@ -157,7 +157,7 @@ var AppClient = (function() {
     iframe.style.border = "0";
     iframe.style.MozBorderRadius = "8px";
     iframe.style.WebkitBorderRadius = "8px";
-    iframe.style.orderRadius = "8px";
+    iframe.style.borderRadius = "8px";
     iframe.style.border = "8px solid black";
 
     // the "hidden" part
