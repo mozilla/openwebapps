@@ -1,8 +1,18 @@
 <html>
 <head>
 <title>Apptast.ic</title>
+<script src="http://myapps.org/jsapi/include.js"></script>
 <script>
 var manifest = {{ manifestText }};
+
+function doInstall()
+{
+  AppClient.install({manifest:manifest, callback:installCallback});
+}
+function installCallback(result)
+{
+  document.getElementById("result").innerHTML = "Callback done!";
+}
 </script>
 <style>
 body {
@@ -78,7 +88,8 @@ body {
 </div>
 </div>
 
-<button class="button">install app into my browser</button>
+<button onclick="doInstall()" class="button">install app into my browser</button>
+<div id="result"></div>
 <br>
 <button onclick="document.location='/'" class="button">make another app</button>
 
