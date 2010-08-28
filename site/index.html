@@ -1,26 +1,136 @@
 <html>
-<head><title>All MyApps(.org) </title></head>
-<body>
-<h2>All My Apps</h2>
+<head>
+<title>All MyApps(.org) </title>
+<style type="text/css" media="screen">
 
-This site is an HTML based application dashboard that the user will
-see when they don't have a browser nor add-on that adds snazzy open
-web application management.
+body {
+  background-color: #000;
+  font-family: helvetica,arial,freesans,clean,sans-serif;
+}
+
+#title {
+  color: #FFF;
+  font-weight:bold;
+  position: absolute;  
+  font-size: 180%;
+  left:5%;
+  bottom:91%;
+}
+
+#editButton {
+  opacity: 1; 
+  font-weight:bold;
+  position: absolute;  
+  font-size: 110%;
+  right:5%;
+  bottom:91%;
+}
+
+#appbox {
+  top: 10%;
+  left: 5%;
+  position: absolute;
+  width: 90%;
+  height: 85%;
+}
+
+#appboxInner {
+  outer-width: 100%;
+  height: 100%;
+  background-color: #DDD;
+  border: 2px solid #666;
+  -moz-border-radius: 8px;
+  -webkit-border-radius: 8px;
+  border-radius: 8px;
+}
+
+.app {
+  position: relative;
+  float: left;
+  width: 60px;
+  height: 60px;
+  margin: 19px;
+}
+
+.app img {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+}
+
+.killbutton {
+  position: absolute;
+  right: 0px;
+  top: 0px;
+  border: 1px solid white;
+  width: 10px;
+  height: 10px;
+  text-align: center;
+  color: #FFF;
+  padding: 5px;
+  background-color: #F00;
+}
+
+</style>
+<script src="/js/jquery-1.4.2.min.js"></script>
+</head>
+<body>
+<div id="title">All My Apps</div>
+<div id="editButton"><input type="button" value="edit"></div>
+<div id="appbox">
+<div id="appboxInner">
+</div>
+</div>
 
 <ul id="stuffList">
 </ul>
 </body>
+<script src="/js/manifest.js"></script>
 <script type="text/javascript">
+$(document).ready(function() {
   var storage = window.localStorage;
-
-  var sl = document.getElementById("stuffList");
 
   for (var i = storage.length-1; i>=0; i--) {
     var key = storage.key(i);
-    var li = document.createElement("li");
-    li.textContent = key + ": " + storage.getItem(key);
-    sl.appendChild(li);
+    var manf = JSON.parse(storage.getItem(key));
+    var img = $("<img>")
+    if (manf.app.icons && manf.app.icons["48"]) {
+      img.attr({
+        src: manf.app.icons["48"],
+        width: "48",
+        height: "48"
+      });
+    }
+    
+    // clicking on an app spawns it in a new tab
+    var app = $("<a>").append(img).attr({ href: key, target: "_aplacefor_" + key });
+    $("<div/>").attr("key", key).addClass("app").append(app).appendTo("#appboxInner");
   }
+
+  // when you hover over an app it should grow
+  $(".app").hover(function() {
+    $("img", this).animate({ width: "60px", height: "60px" }, { duration: "medium", queue: false });
+  }, function() {
+    $("img", this).animate({ width: "48px", height: "48px" }, { duration: "fast", queue: false });
+  })
+
+  // finally, the edit button
+  var clicked = false;
+  $("#editButton > input").click(function() {
+    if (!clicked) {
+      $("<div/>").addClass("killbutton").text("X").appendTo(".app");
+      $("#editbutton").attr("opacity", ".5");
+      $(".killbutton").click(function() {
+        storage.removeItem($(this).parent().attr("key"));
+        $(this).parent().remove();
+      });
+    } else {
+      $(this).attr("opacity", "1");
+      $(".killbutton").remove();
+    }
+    clicked = !clicked;
+  });
   
+})  
 </script>
 </html>
