@@ -37,9 +37,6 @@
 let EXPORTED_SYMBOLS = ["Apps"];
 
 var self = require("self");
-exports.getDataURL = function(name) {
-  return self.data.url(name);
-}
 
 function Apps(storage) {
   this.installs = [];
@@ -168,7 +165,11 @@ Apps.prototype.refreshNotifications = function(callback)
   {
     if (this.installs[i].app.notification)
     {
-      this.initiateNotificationRefresh(this.installs[i].app, callback);
+      try {
+        this.initiateNotificationRefresh(this.installs[i].app, callback);
+      } catch (e) {
+        this.logError("Unable to fetch notifications for " + this.installs[i].app.name + ": " + e);
+      }
     }
   }
 }
@@ -195,3 +196,43 @@ Apps.prototype.initiateNotificationRefresh = function(app, callback)
   }
   xhr.send(null);
 }
+
+
+
+Apps.prototype.applicationMatchesURL = function(app, url)
+{
+  // TODO look into optimizing this so we are not constructing
+  // regexps over and over again, but make sure it works in IE
+  for (var i=0;i<app.app.urls.length;i++)
+  {
+    var testURL = app.app.urls[i];
+    var re = RegExp("^" + testURL.replace("*", ".*"));// no trailing $
+    if (re.exec(url) != null) return true;
+  }
+  return false;
+}
+
+
+Apps.prototype.applicationsForURL = function(url)
+{
+  var result = [];
+  for (var i =0;i<this.storage.length;i++)
+  {
+    var key = this.storage.key(i);
+    var item = this.storage.getItem(key);
+    var install = JSON.parse(item);
+
+    if (this.applicationMatchesURL(install.app, url)) {      
+      result.push(install.app);
+    }
+  }
+  return result;
+}
+
+
+
+exports.getDataURL = function(name) {
+  return self.data.url(name);
+}
+exports.Apps = Apps;
+

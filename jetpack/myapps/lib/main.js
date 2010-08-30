@@ -40,7 +40,13 @@ var self = require("self");
 var panels = require("panel");
 var tabs = require("tabs");
 var tabBrowser = require("tab-browser");
-//var simpleFeature = require("simple-feature");
+var windowUtils = require("window-utils");
+var apps = require("apps");
+var {Cc, Ci, Cu} = require("chrome");
+
+const APP_STORAGE_DOMAIN = "http://myapps.org"
+var gApps = null;
+
 
 // Create a new context menu item.
 var menuItem = contextMenu.Item({
@@ -55,7 +61,6 @@ var menuItem = contextMenu.Item({
   // search for the link text.
   onClick: function (contextObj, item) {
     var anchor = contextObj.node;
-    console.log("searching for " + anchor.textContent);
     var searchUrl = "http://www.google.com/search?q=" +
                     anchor.textContent;
     contextObj.window.location.href = searchUrl;
@@ -65,10 +70,136 @@ var menuItem = contextMenu.Item({
 // Add the new menu item to the application's context menu.
 contextMenu.add(menuItem);
 
+
+function openAppURL(app, url)
+{
+  var wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Components.interfaces.nsIWindowMediator);
+  var browserEnumerator = wm.getEnumerator("navigator:browser");
+
+  // Check each browser instance for our URL
+  var found = false;
+  while (!found && browserEnumerator.hasMoreElements()) {
+    var browserWin = browserEnumerator.getNext();
+    var tabbrowser = browserWin.gBrowser;
+
+    // Check each tab of this browser instance
+    var numTabs = tabbrowser.browsers.length;
+    for (var index = 0; index < numTabs; index++) {
+      var currentBrowser = tabbrowser.getBrowserAtIndex(index);
+      
+      let apps = gApps.applicationsForURL(currentBrowser.currentURI.spec);
+      if (apps) {
+      
+        for (var i = 0;i<apps.length;i++) {
+
+          if (apps[i].app.launch.web_url == app.app.launch.web_url) {
+            // The app is running in this tab; select it and retarget.
+            tabbrowser.selectedTab = tabbrowser.tabContainer.childNodes[index];
+
+            // Focus *this* browser-window
+            browserWin.focus();
+            tabbrowser.selectedBrowser.loadURI(url, null /* TODO don't break referrer! */, null);
+            
+            found = true;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  // TODO: need to appify new link
+  // Our URL isn't open. Open it now.
+  if (!found) {
+    var recentWindow = wm.getMostRecentWindow("navigator:browser");
+    if (recentWindow) {
+      // Use an existing browser window
+      recentWindow.delayedOpenTab(url, null, null, null, null);
+    }
+    else {
+      // No browser windows are open, so open a new one.
+      window.open(url);
+    }
+  }
+}
+
+
+function openNewAppTab(targetURL, inBackground)
+{
+  var mainWindow = window.QueryInterface(Ci.nsIInterfaceRequestor)
+                         .getInterface(Ci.nsIWebNavigation)
+                         .QueryInterface(Ci.nsIDocShellTreeItem)
+                         .rootTreeItem
+                         .QueryInterface(Ci.nsIInterfaceRequestor)
+                         .getInterface(Ci.nsIDOMWindow);
+  var tab = mainWindow.gBrowser.addTab(targetURL);
+  var idx = mainWindow.gBrowser._numPinnedTabs;
+  mainWindow.gBrowser.moveTabTo(tab, idx);
+  tab.setAttribute("pinned", "true");
+  mainWindow.gBrowser.tabContainer._positionPinnedTabs();
+  if (!inBackground) { // meta means open-in-background, same as usual
+    mainWindow.gBrowser.selectTabAtIndex(idx);
+  }
+}
+
+// Set up our tab tracker
+let clickLinkChecker = function(event) {
+  var target = event.target;
+  while(target) {
+    if (target.nodeName == 'A')
+      break;
+    target = target.parentNode;
+  }
+  if(!target)
+    return;
+
+  // only those referencing an external page
+  if(!target.href || target.href.indexOf("#") == 0)
+    return;
+
+  try {
+
+    let appList = gApps.applicationsForURL(target.href);
+    if (appList && appList.length) {
+      // got a match:
+      // if we already have a tab, switch to it.
+      // otherwise open a new one.
+      event.preventDefault();
+    
+      // TODO ignore apps other than the first for now
+      openAppURL(appList[0], target.href)
+    } 
+    // otherwise fall through
+  } catch (e) {
+    console.log("error: " + e);
+  }
+} 
+
+let tracker = {
+  onTrack: function(window) {
+    window.addEventListener("click", clickLinkChecker, true);
+    
+  },
+  onUntrack: function(window) {
+
+  }
+};
+
 exports.main = function(options, callbacks) {
-  console.log("Hello World!");
   // Don't need to quit right away: no callbacks.quit();
 
+  const SCRIPT_SECURITY_MGR = Cc["@mozilla.org/scriptsecuritymanager;1"].getService(Ci.nsIScriptSecurityManager);
+  const STORAGE_MANAGER = Cc["@mozilla.org/dom/storagemanager;1"].getService(Ci.nsIDOMStorageManager);
+  const IO_SERVICE = Cc["@mozilla.org/network/io-service;1"].getService(Ci.nsIIOService);
+  var appStorageURI = IO_SERVICE.newURI(APP_STORAGE_DOMAIN, null, null);
+  var principal = SCRIPT_SECURITY_MGR.getCodebasePrincipal(appStorageURI);
+  var storage = STORAGE_MANAGER.getLocalStorageForPrincipal(principal, {});
+  gApps = new apps.Apps(storage);
+
+  // Start watching windows: we'll add a click handler
+  // to all of them.
+  var windowTracker = new windowUtils.WindowTracker(tracker);
+  
   registerCustomAppsProtocol();
   tabs.open({
     url: self.data.url("apps://apps/dashboard.html")

@@ -21,7 +21,15 @@ class SiteInspection(object):
   def __init__(self, scheme, domain):
     self.scheme = scheme
     self.domain = domain
+    
     self.title = domain
+    if self.title.find("www.") == 0:
+      self.title = self.title[4:]
+    idx = self.title.find(".com")
+    if idx > 0:
+      self.title = self.title[:idx]
+    self.title = self.title[0].upper() + self.title[1:].lower()
+    
     self.iconData = None
     self.processedFavicon = False
     self.processedIndex = False
@@ -51,8 +59,10 @@ class SiteInspection(object):
     if pageData:
       try:
         soup = BeautifulSoup.BeautifulSoup(pageData)
-        if soup.title:
-          self.title = soup.title.string
+        # actually, I don't like this.
+        #if soup.title:
+        #  self.title = soup.title.string
+        
       except:
         pass
 

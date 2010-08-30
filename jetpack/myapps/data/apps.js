@@ -190,3 +190,31 @@ Apps.prototype.initiateNotificationRefresh = function(app, callback)
   }
   xhr.send(null);
 }
+
+Apps.prototype.applicationMatchesURL = function(app, url)
+{
+  // TODO look into optimizing this so we are not constructing
+  // regexps over and over again, but make sure it works in IE
+  for (var i=0;i<application.app.urls.length;i++)
+  {
+    var testURL = application.app.urls[i];
+    var re = RegExp("^" + testURL.replace("*", ".*"));// no trailing $
+    if (re.exec(url) != null) return true;
+  }
+  return false;
+}
+
+
+Apps.prototype.applicationsForURL = function(url)
+{
+  var result = [];
+  for (var i =0;i<storage.length;i++)
+  {
+    var key = localStorage.key(i);
+    var item = localStorage.getItem(key);
+    if (applicationMatchesURL(install.app, url)) {      
+      result.push(install.app);
+    }
+  }
+  return result;
+}

@@ -2,7 +2,11 @@ body {
 	padding: 0px;
 	margin: 0px;
 	font-family: "Helvetica Neue", Helvetica, Arial;
-  background-color:#f0f0f0;
+  background:#f0f0f0;
+
+/*  background:#f0f0f0 url("http://myapps.org/backgrounds/soft_as_silk_1024.png") no-repeat top left;
+  background-size:100%;
+  background-origin: content;*/
 }
 a {
   color:#3875D7;
@@ -20,14 +24,44 @@ a:hover {
   float:right
 }
 
-.ticket {
+
+#apps {
+  width:100%;
+
+/*  -moz-border-radius:8px;
+  border-top:1px solid #d0d0ff;
+  border-left:1px solid #d0d0ff;
+  border-right:1px solid #b0b0dd;
+  border-bottom:1px solid #b0b0dd;
+  margin-left:16px;
+  margin-right:16px;
+  margin-top:16px;
+  background-color:white;*/
+}
+
+.appbox {
   display:inline-block;
-  padding:12px;
-  width:120px;
-  height:120px;
+  width:80px;
+  height:80px;
   text-align:center;
   position:relative;
+  padding:8px;
 }
+
+.appbox canvas {
+  margin:auto;
+}
+
+.appbox > .app_name {
+  padding-top:2px;
+  font:bold 9pt Helvetica
+}
+
+.appbox > .app_icon {
+  margin-left:auto;
+  margin-right:auto;
+}
+
 .closebox {
   position:absolute;
   left:110px;
@@ -38,10 +72,7 @@ a:hover {
   height:16px;
   cursor:pointer;
 }
-.ticket > .ticket_name {
-  padding-top:2px;
-  font:bold 9pt Helvetica
-}
+
 #header {
   float:left;
   padding-left:16px;
@@ -88,18 +119,6 @@ a:hover {
   display:inline-block;
   margin-bottom:2px;
 }
-#apps {
-  -moz-border-radius:8px;
-  border-top:1px solid #d0d0ff;
-  border-left:1px solid #d0d0ff;
-  border-right:1px solid #b0b0dd;
-  border-bottom:1px solid #b0b0dd;
-  margin-left:16px;
-  margin-right:16px;
-  margin-top:16px;
-  background-color:white;
-}
-
 .menu {
   cursor:pointer;
   font:bold 8pt Arial;

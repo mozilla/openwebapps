@@ -94,7 +94,7 @@
       throw('Invalid request: "web_url" ('+ manf.app.launch.web_url +
             ') property of "app.launch" must be a subset of app.urls.');
     } 
-    console.log("returning manifest");
+    //if (console && console.log) console.log("returning manifest");
     return manf;
   }
 
