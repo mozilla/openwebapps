@@ -1,0 +1,55 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+  <title>Application Dashboard</title>
+  <link rel="stylesheet" type="text/css" href="dashboard.css" />
+</head>
+
+<body style="position:relative">
+<div id="header">Firefox Application Dashboard</div>
+<div id="controlBox">
+<div id="controls">
+
+<div onclick="showmenu('apps')" class="ctlmenu">apps <div class="droparrow" id="appsmenufob"></div>
+
+  <div id="appsmenu" style="position:absolute;display:none" class="menu">
+  <div class="menuitem"><a href="javascript:showDetail()">show details</a></div>
+  <div class="menuitem">icon size: 
+    <a href="javascript:setIconSize(32)">small</a> 
+    <a href="javascript:setIconSize(64)">medium</a>     
+    <a href="javascript:setIconSize(96)">large</a> 
+  </div>
+  </div>
+
+</div>
+
+<div class="ctlmenu">subscriptions <div onclick="showmenu('subs')" class="droparrow" id="subsmenufob"></div>
+
+  <div id="subsmenu" style="position:absolute;display:none" class="menu">
+  <div class="menuitem">You have no subscriptions</div>
+  </div>
+</div>
+
+<div class="ctlmenu">accounts <div class="droparrow"></div>
+  <div style="display:none" class="menu">
+  <div id="servers"></div>
+</div>
+
+</div>
+</div>
+</div>
+<br clear="all">
+
+<div id="feedback"></div>
+<div id="apps"></div>
+<div id="messages"></div>
+
+<iframe style="display:none;position:absolute;left:-999px;top:-999px" id="wallet" onload="init()" src="http://wamwallet.org"></iframe>
+
+<script type="text/javascript;version=1.8" src="apps.js"></script>
+<script type="text/javascript;version=1.8" src="dashboard.js"></script>
+</body>
+</html>
+

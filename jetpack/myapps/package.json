@@ -1,0 +1,8 @@
+{
+    "id": "jid0-QTBgy6b9G1q74UcxazgzLZrnNYA", 
+    "dependencies": [
+        "jetpack-core"
+    ], 
+    "description": "Adds Installed Application support to Firefox", 
+    "author": "Michael Hanson (mhanson@mozilla.com)"
+}
