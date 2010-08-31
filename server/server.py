@@ -29,7 +29,7 @@ class User(object):
     self.id = int(dbData[0])
     self.username = dbData[1]
     self.passwordHash = dbData[2]
-  
+
   def getDeveloperMemberships(self):
     return db.select_user_developer_memberships(self.id)
 
@@ -60,10 +60,10 @@ class Developer(object):
   def __init__(self, dbData):
     self.id = int(dbData[0])
     self.name = dbData[1]
-  
+
   def getUsers(self):
     return db.select_developer_users(self.id)
-  
+
   def getApps(self):
     return db.select_apps_for_developer(self.id)
 
@@ -72,7 +72,7 @@ class DeveloperUser(object):
     self.id = int(dbData[0])
     self.devid = int(dbData[1])
     self.userid = int(dbData[2])
-    
+
 class Message(object):
   def __init__(self, dbData):
     self.id = int(dbData[0])
@@ -80,9 +80,9 @@ class Message(object):
     self.userid = int(dbData[2])
     self.sendDate = dbData[3]
     self.text = dbData[4]
-  
-    
-    
+
+
+
 
 # Helper function to get the user object, if a session exists
 def getUserObject(req):
@@ -125,15 +125,15 @@ class AccountHandler(tornado.web.RequestHandler):
     userDevIDs = db.select_user_developer_memberships(user.id)
     devs = [Developer(db.select_developer(DeveloperUser(ud).devid)) for ud in userDevIDs]
     purchases = db.select_user_purchases(user.id)
-    apps = [Application(db.select_app(Purchase(purchaseData).app)) for purchaseData in purchases]    
+    apps = [Application(db.select_app(Purchase(purchaseData).app)) for purchaseData in purchases]
     self.render("user_account.html", user=user, devs=devs, apps=apps)
-    
+
   def post(self):
     user = getUserObject(self)
     if not user or not "action" in self.request.arguments:
       logging.debug("Strange AccountHandler post: user is %s; action-exists is %s" % (str(user), "action" in self.request.arguments))
       return self.redirect("/")
-      
+
     action = self.request.arguments["action"][0].strip()
 
     if action== "add_developer":
@@ -148,8 +148,8 @@ class AccountHandler(tornado.web.RequestHandler):
       db.insert_developer_user(dev.id, user.id)
 
       self.do_render(user)
-  
-  
+
+
   def get(self):
     user = getUserObject(self)
     if not user:
@@ -160,12 +160,12 @@ class AppDetailHandler(tornado.web.RequestHandler):
   def get(self):
     if not 'id' in self.request.arguments:
       return self.redirect("/")
-  
+
     id = self.request.arguments["id"][0].strip()
     appData = db.select_app(id)
     if not appData:
       return self.render("error.html", error="Illegal or missing application ID", user=getUserObject(self))
-      
+
     app = Application(appData)
     app.releaseDateObj = datetime.date.fromtimestamp(app.releaseDate)
     dev = Developer(db.select_developer(app.developer))
@@ -203,7 +203,7 @@ class AppRegisterHandler(tornado.web.RequestHandler):
     domain = self.request.arguments['domain'][0].strip()
     category = self.request.arguments['category'][0].strip()
     desc = self.request.arguments['desc'][0].strip()
-    icon = None 
+    icon = None
     iconlarge = None
     if 'icon' in self.request.arguments:
       icon = self.request.arguments['icon'][0].strip()
@@ -219,19 +219,19 @@ class AppRegisterHandler(tornado.web.RequestHandler):
       return self.do_render(error="Missing required application verifyURL", user=user)
     if len(domain) == 0:
       return self.do_render(error="Missing required application domain ", user=user)
-    
+
     appid = db.insert_app(name, domain, category, desc, icon, iconlarge, developer, homeURL, verifyURL, time.time())
     self.redirect("/browse?id=%s" % appid)
-    
+
   def get(self):
     user = getUserObject(self)
     if not user:
-      return self.render("app_register.html", 
-        error="You must be signed in (to a developer account) to register an app.", 
+      return self.render("app_register.html",
+        error="You must be signed in (to a developer account) to register an app.",
         user=None)
     else:
       self.do_render(user=user)
-    
+
 class AppInstallHandler(tornado.web.RequestHandler):
   def post(self):
     if not 'id' in self.request.arguments:
@@ -252,7 +252,7 @@ class AppInstallHandler(tornado.web.RequestHandler):
     app = Application(appData)
     user = User(userData)
 
-    # Verify commerce here... this probably 
+    # Verify commerce here... this probably
     # will mean creating a purchasePending table
     # or something like that.
 
@@ -315,14 +315,14 @@ class UserRegisterHandler(tornado.web.RequestHandler):
       return self.render("user_register.html", error="Password must be shorter than 32 characters.")
     if db.user_exists(un):
       return self.render("user_register.html", error="Username is already in use.")
-    
+
     hash = hashlib.sha1(pw).hexdigest()
     id = db.insert_person(un, hash)
     logging.debug("Created new user '%s'; id is %s" % (un, id))
 
     self.set_secure_cookie("uid", "%d" % id)
     self.redirect("/")
-  
+
   def get(self):
     uid = self.get_secure_cookie("uid")
     if uid:
@@ -383,7 +383,7 @@ class UserVerifyHandler(tornado.web.RequestHandler):
     if not appData:
       raise tornado.web.HTTPError(400, "Invalid application ID")
     app = Application(appData)
-            
+
     # We may be authenticating...
     if 'un' in self.request.arguments and 'pw' in self.request.arguments:
       un = self.request.arguments["un"][0].strip()
@@ -401,7 +401,7 @@ class UserVerifyHandler(tornado.web.RequestHandler):
       uid = self.get_secure_cookie("uid")
       if not uid:
         return self.render("user_authenticate_for_verify.html", app=app, domain=domain, user=verifyUser, error=None)
-        
+
       # make sure the user matches; if not, go reauthenticate
       userData = db.select_user(uid)
       if userData:
@@ -427,7 +427,7 @@ class UserVerifyHandler(tornado.web.RequestHandler):
     logging.debug("Successful verification by user " + verifyUser + " of app " + appList[0].name)
     appIDArray = ",".join(["%s" % a.id for a in appList])
 
-    # For now assume we're using the stateless approach - 
+    # For now assume we're using the stateless approach -
     # go create an association for this verification.  Using a key would
     # be better.
     nonce = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ") + ''.join(random.choice("ABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890") for x in range(64))
@@ -440,7 +440,7 @@ class UserVerifyHandler(tornado.web.RequestHandler):
 
   def post(self):
     self.handle()
-  
+
   def get(self):
     self.handle()
 
@@ -449,8 +449,8 @@ class DeveloperRegisterHandler(tornado.web.RequestHandler):
   def post(self):
     user = getUserObject(self)
     if not user:
-      return self.render("dev_register.html", 
-        error="You must be signed in register a developer ID.", 
+      return self.render("dev_register.html",
+        error="You must be signed in register a developer ID.",
         user=None)
     logging.debug(self.request.arguments)
     if not 'name' in self.request.arguments:
@@ -463,12 +463,12 @@ class DeveloperRegisterHandler(tornado.web.RequestHandler):
 
     devid = db.insert_developer(name)
     self.redirect("/developer/%s" % devid)
-    
+
   def get(self):
     user = getUserObject(self)
     if not user:
-      return self.render("dev_register.html", 
-        error="You must be signed in to register a developer ID.", 
+      return self.render("dev_register.html",
+        error="You must be signed in to register a developer ID.",
         user=None)
     else:
       self.render("dev_register.html", user=user, error=None)
@@ -534,7 +534,7 @@ class TestMessageHandler(tornado.web.RequestHandler):
       self.write("Message sent")
 
   def get(self):
-    all_apps = db.select_apps() 
+    all_apps = db.select_apps()
     apps = [Application(a) for a in all_apps]
     self.render("testmessage.html", apps=apps)
 
@@ -592,13 +592,13 @@ application = tornado.web.Application([
 		(r"/admin/purchase", AdminPurchaseDetailHandler),
 	], **settings)
 
-def run():
+def run(port):
     http_server = tornado.httpserver.HTTPServer(application)
-    http_server.listen(8080)
+    http_server.listen(port)
     tornado.ioloop.IOLoop.instance().start()
-		
+
 if __name__ == '__main__':
   logging.basicConfig(level = logging.DEBUG)
-  run()
-	
-	
+  port = 8080
+  print 'Running on http://127.0.0.1:%s' % port
+  run(port)

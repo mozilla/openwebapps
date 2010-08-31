@@ -109,9 +109,9 @@ $(document).ready(function() {
 
   // when you hover over an app it should grow
   $(".app").hover(function() {
-    $("img", this).animate({ width: "60px", height: "60px" }, { duration: "medium", queue: false });
+    $("img", this).stop(true,true).animate({ width: "60px", height: "60px" }, { duration: "fast", queue: false });
   }, function() {
-    $("img", this).animate({ width: "48px", height: "48px" }, { duration: "fast", queue: false });
+    $("img", this).stop(true,true).animate({ width: "48px", height: "48px" }, { duration: "fast", queue: false });
   })
 
   // finally, the edit button

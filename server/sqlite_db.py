@@ -40,7 +40,7 @@ def create_database():
   # and a "product" table, some of which are apps, and others of which are
   # bundles of other productIDs
   # plus support for in-app purchasing
-                  
+
   c.execute("""CREATE TABLE purchase (\
                   id INTEGER PRIMARY KEY AUTOINCREMENT, \
                   user INTEGER, \
@@ -64,7 +64,7 @@ def create_database():
                   app INTEGER, \
                   user INTEGER, \
                   sendDate DATETIME,\
-                  text TEXT""")
+                  text TEXT)""")
 
   g_database_conn.commit()
   c.close()
@@ -216,7 +216,7 @@ def select_apps_in_category(category):
 
 def insert_app(name, domain, category, desc, icon96, icon192, developer, homeURL, verifyURL, releaseDate):
   c = g_database_conn.cursor()
-  c.execute("INSERT INTO app (name, domain, category, description, icon96, icon192, developer, homeURL, verifyURL, releaseDate) VALUES(?,?,?,?,?,?,?,?,?,?)", 
+  c.execute("INSERT INTO app (name, domain, category, description, icon96, icon192, developer, homeURL, verifyURL, releaseDate) VALUES(?,?,?,?,?,?,?,?,?,?)",
     (name, domain, category, desc, icon96, icon192, developer, homeURL, verifyURL, releaseDate))
   c.execute("SELECT last_insert_rowid()")
   result = c.fetchone()
@@ -224,7 +224,7 @@ def insert_app(name, domain, category, desc, icon96, icon192, developer, homeURL
   c.close()
   g_database_conn.commit()
   return val
-  
+
 
 # Purchase
 def select_purchase(uid, appid):
@@ -303,4 +303,3 @@ if not os.path.exists(DATABASE_FILE):
   create_database()
 else:
   g_database_conn = sqlite3.connect(DATABASE_FILE)
-
