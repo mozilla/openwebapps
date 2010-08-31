@@ -50,6 +50,10 @@ exports.main = function(options, callbacks) {
     url: self.data.url("apps://apps/dashboard.html")
   });
 }
+exports.unload = function(reason)
+{
+  apps.unload();
+}
 
 const APPS_PROTOCOL = "apps";
 const APPS_HOST = "apps";

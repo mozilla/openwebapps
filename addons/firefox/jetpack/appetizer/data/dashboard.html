@@ -7,7 +7,7 @@
   <link rel="stylesheet" type="text/css" href="dashboard.css" />
 </head>
 
-<body style="position:relative">
+<body onload="init()" style="position:relative">
 <div id="header">Firefox Application Dashboard</div>
 
 <div id="i_box"><img src="i_circle.png"></div>
@@ -48,8 +48,6 @@
 <div id="feedback"></div>
 <div id="apps"></div>
 <div id="messages"></div>
-
-<iframe style="display:none;position:absolute;left:-999px;top:-999px" id="wallet" onload="init()" src="http://wamwallet.org"></iframe>
 
 <script type="text/javascript;version=1.8" src="apps.js"></script>
 <script type="text/javascript;version=1.8" src="dashboard.js"></script>

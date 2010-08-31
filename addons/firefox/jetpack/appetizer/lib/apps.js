@@ -42,6 +42,7 @@ var {Cc, Ci, Cu} = require("chrome");
 
 const APP_STORAGE_DOMAIN = "http://myapps.org"
 var gApps = null;
+var windowTracker;
 
 exports.init = function() {
 
@@ -55,13 +56,17 @@ exports.init = function() {
   
   // Start watching windows: we'll add a click handler
   // to all of them.
-  var windowTracker = new windowUtils.WindowTracker(tracker);
+  windowTracker = new windowUtils.WindowTracker(tracker);
   
+}
+
+exports.unload = function() {
+  // how to stop tracking?
 }
 
 function openAppURL(app, url, inBackground)
 {
-  var wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Components.interfaces.nsIWindowMediator);
+  var wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
   var browserEnumerator = wm.getEnumerator("navigator:browser");
 
   // Check each browser instance for our URL
@@ -117,7 +122,8 @@ function openAppURL(app, url, inBackground)
     else {
       // No browser windows are open, so open a new one.
       window.open(url);
-      // TODO: convert to app tab somehow.
+      // TODO: convert to app tab somehow
+      
     }
   }
 }
@@ -155,27 +161,66 @@ let clickLinkChecker = function(event) {
   // only those referencing an external page
   if(!target.href || target.href.indexOf("#") == 0)
     return;
-
-  console.log("Checking link " + target.href);
-  try {
-    let appList = gApps.applicationsForURL(target.href);
-
-    if (appList && appList.length) {
-      console.log("That link belongs to application " + appList[0].name);
-
-      // got a match:
-      // if we already have a tab, switch to it.
-      // otherwise open a new one.
-      event.preventDefault();
     
-      // TODO ignore apps other than the first for now
-      openAppURL(appList[0], target.href)
-    }  else {
-      console.log("That link does not belongs to any application");
+  try {
+    // If this page is /already/ on an apptab, and the
+    // click leaves the apptab, send it off-tab.
+    // (if it has a "target" attribute already, just trust it)
+    // TODO: handle browseURL overrides here
+    if (!target.target)
+    {
+      var wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);    
+      var recentWindow = wm.getMostRecentWindow("navigator:browser");
+      let currentAppList = gApps.applicationsForURL(recentWindow.gBrowser.currentURI.spec); 
+      if (currentAppList && currentAppList.length > 0)
+      { 
+        console.log("Current page belongs to app " + currentAppList[0].name);
+
+        // We're on an application's tab
+        if (gApps.applicationMatchesURL(currentAppList[0], target.href)) {
+          // it's a match; just return
+          console.log("the link we clicked belongs to that app too; stay here");
+          return;
+        }
+        // TODO: Should we only provide sticky behavior if it's an apptab?  Right now, the answer is yes.
+        if (recentWindow.gBrowser.selectedTab.getAttribute("pinned"))
+        {
+          event.preventDefault();
+          console.log("the link we clicked doesn't belong to that app, so make a new tab");
+          // okay, this is an off-app click on a pinned tab: off it goes.
+          var tab = recentWindow.gBrowser.addTab(target.href);
+          if (!event.metaKey) { // meta means open-in-background, same as usual
+            // this isn't right - recentWindow.gBrowser.selectTabAtIndex(tab.tabIndex);
+            // TODO what's the right way to focus the new tab?
+          }
+          return;
+        }
+      }
     }
-    // otherwise fall through
+
+    console.log("Checking link " + target.href);
+    try {
+      let appList = gApps.applicationsForURL(target.href);
+
+      if (appList && appList.length) {
+        console.log("That link belongs to application " + appList[0].name);
+
+        // got a match:
+        // if we already have a tab, switch to it.
+        // otherwise open a new one.
+        event.preventDefault();
+      
+        // TODO ignore apps other than the first for now
+        openAppURL(appList[0], target.href)
+      }  else {
+        console.log("That link does not belongs to any application");
+      }
+      // otherwise fall through
+    } catch (e) {
+      console.log("error: " + e);
+    }
   } catch (e) {
-    console.log("error: " + e);
+    console.log("error(2): " + e);
   }
 } 
 
