@@ -37,6 +37,158 @@
 let EXPORTED_SYMBOLS = ["Apps"];
 
 var self = require("self");
+var windowUtils = require("window-utils");
+var {Cc, Ci, Cu} = require("chrome");
+
+const APP_STORAGE_DOMAIN = "http://myapps.org"
+var gApps = null;
+
+exports.init = function() {
+
+  const SCRIPT_SECURITY_MGR = Cc["@mozilla.org/scriptsecuritymanager;1"].getService(Ci.nsIScriptSecurityManager);
+  const STORAGE_MANAGER = Cc["@mozilla.org/dom/storagemanager;1"].getService(Ci.nsIDOMStorageManager);
+  const IO_SERVICE = Cc["@mozilla.org/network/io-service;1"].getService(Ci.nsIIOService);
+  var appStorageURI = IO_SERVICE.newURI(APP_STORAGE_DOMAIN, null, null);
+  var principal = SCRIPT_SECURITY_MGR.getCodebasePrincipal(appStorageURI);
+  var storage = STORAGE_MANAGER.getLocalStorageForPrincipal(principal, {});
+  gApps = new Apps(storage);
+  
+  // Start watching windows: we'll add a click handler
+  // to all of them.
+  var windowTracker = new windowUtils.WindowTracker(tracker);
+  
+}
+
+function openAppURL(app, url, inBackground)
+{
+  var wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Components.interfaces.nsIWindowMediator);
+  var browserEnumerator = wm.getEnumerator("navigator:browser");
+
+  // Check each browser instance for our URL
+  var found = false;
+  while (!found && browserEnumerator.hasMoreElements()) {
+    var browserWin = browserEnumerator.getNext();
+    var tabbrowser = browserWin.gBrowser;
+
+    // Check each tab of this browser instance
+    var numTabs = tabbrowser.browsers.length;
+    for (var index = 0; index < numTabs; index++) {
+      var currentBrowser = tabbrowser.getBrowserAtIndex(index);
+      
+      let apps = gApps.applicationsForURL(currentBrowser.currentURI.spec);
+      if (apps) {
+      
+        for (var i = 0;i<apps.length;i++) {
+
+          if (apps[i].app.launch.web_url == app.app.launch.web_url) {
+            // The app is running in this tab; select it and retarget.
+            tabbrowser.selectedTab = tabbrowser.tabContainer.childNodes[index];
+
+            // Focus *this* browser-window
+            browserWin.focus();
+            tabbrowser.selectedBrowser.loadURI(url, null /* TODO don't break referrer! */, null);
+            
+            found = true;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  // TODO: need to appify new link
+  // Our URL isn't open. Open it now.
+  if (!found) {
+    var recentWindow = wm.getMostRecentWindow("navigator:browser");
+    if (recentWindow) {
+      // Use an existing browser window
+      // recentWindow.delayedOpenTab(url, null, null, null, null);
+      
+      var tab = recentWindow.gBrowser.addTab(url);
+      var idx = recentWindow.gBrowser._numPinnedTabs;
+      recentWindow.gBrowser.moveTabTo(tab, idx);
+      tab.setAttribute("pinned", "true");
+      recentWindow.gBrowser.tabContainer._positionPinnedTabs();
+      if (!inBackground) { // meta means open-in-background, same as usual
+        recentWindow.gBrowser.selectTabAtIndex(idx);
+      }
+
+    }
+    else {
+      // No browser windows are open, so open a new one.
+      window.open(url);
+      // TODO: convert to app tab somehow.
+    }
+  }
+}
+
+
+function openNewAppTab(targetURL, inBackground)
+{
+  var mainWindow = window.QueryInterface(Ci.nsIInterfaceRequestor)
+                         .getInterface(Ci.nsIWebNavigation)
+                         .QueryInterface(Ci.nsIDocShellTreeItem)
+                         .rootTreeItem
+                         .QueryInterface(Ci.nsIInterfaceRequestor)
+                         .getInterface(Ci.nsIDOMWindow);
+  var tab = mainWindow.gBrowser.addTab(targetURL);
+  var idx = mainWindow.gBrowser._numPinnedTabs;
+  mainWindow.gBrowser.moveTabTo(tab, idx);
+  tab.setAttribute("pinned", "true");
+  mainWindow.gBrowser.tabContainer._positionPinnedTabs();
+  if (!inBackground) { // meta means open-in-background, same as usual
+    mainWindow.gBrowser.selectTabAtIndex(idx);
+  }
+}
+
+// Set up our tab tracker
+let clickLinkChecker = function(event) {
+  var target = event.target;
+  while(target) {
+    if (target.nodeName == 'A')
+      break;
+    target = target.parentNode;
+  }
+  if(!target)
+    return;
+
+  // only those referencing an external page
+  if(!target.href || target.href.indexOf("#") == 0)
+    return;
+
+  console.log("Checking link " + target.href);
+  try {
+    let appList = gApps.applicationsForURL(target.href);
+
+    if (appList && appList.length) {
+      console.log("That link belongs to application " + appList[0].name);
+
+      // got a match:
+      // if we already have a tab, switch to it.
+      // otherwise open a new one.
+      event.preventDefault();
+    
+      // TODO ignore apps other than the first for now
+      openAppURL(appList[0], target.href)
+    }  else {
+      console.log("That link does not belongs to any application");
+    }
+    // otherwise fall through
+  } catch (e) {
+    console.log("error: " + e);
+  }
+} 
+
+let tracker = {
+  onTrack: function(window) {
+    window.addEventListener("click", clickLinkChecker, true);
+    
+  },
+  onUntrack: function(window) {
+
+  }
+};
+
 
 function Apps(storage) {
   this.installs = [];
@@ -172,6 +324,7 @@ Apps.prototype.refreshNotifications = function(callback)
       }
     }
   }
+  console.log("Done refreshing notifications");
 }
 
 Apps.prototype.initiateNotificationRefresh = function(app, callback) 
@@ -180,6 +333,7 @@ Apps.prototype.initiateNotificationRefresh = function(app, callback)
   
   // TODO perhaps send a "updatedSince" argument along with this?
   xhr.open("GET", app.notification, true);
+  console.log("Initiating notification refresh to " + app.notification);
   xhr.onreadystatechange = function(aEvt) {
     if (xhr.readyState == 4) {
       if (xhr.status == 200) {
@@ -207,6 +361,9 @@ Apps.prototype.applicationMatchesURL = function(app, url)
   {
     var testURL = app.app.urls[i];
     var re = RegExp("^" + testURL.replace("*", ".*"));// no trailing $
+
+    console.log("Checking url " + url + " against pattern " + testURL);
+
     if (re.exec(url) != null) return true;
   }
   return false;
@@ -222,17 +379,19 @@ Apps.prototype.applicationsForURL = function(url)
     var item = this.storage.getItem(key);
     var install = JSON.parse(item);
 
+    console.log("Checking whether URL " + url + " belongs to " + install.app.name);
     if (this.applicationMatchesURL(install.app, url)) {      
+      console.log("yes");
       result.push(install.app);
     }
+    console.log("no");
   }
   return result;
 }
-
-
 
 exports.getDataURL = function(name) {
   return self.data.url(name);
 }
 exports.Apps = Apps;
+exports.openAppURL = openAppURL; // (app, url)
 

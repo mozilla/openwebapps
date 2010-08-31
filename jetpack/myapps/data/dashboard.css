@@ -3,10 +3,6 @@ body {
 	margin: 0px;
 	font-family: "Helvetica Neue", Helvetica, Arial;
   background:#f0f0f0;
-
-/*  background:#f0f0f0 url("http://myapps.org/backgrounds/soft_as_silk_1024.png") no-repeat top left;
-  background-size:100%;
-  background-origin: content;*/
 }
 a {
   color:#3875D7;
@@ -54,7 +50,7 @@ a:hover {
 
 .appbox > .app_name {
   padding-top:2px;
-  font:bold 9pt Helvetica
+  font:small-caption
 }
 
 .appbox > .app_icon {
@@ -71,6 +67,10 @@ a:hover {
   width:16px;
   height:16px;
   cursor:pointer;
+}
+
+#i_box {
+  float:right
 }
 
 #header {

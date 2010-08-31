@@ -53,7 +53,7 @@ var gApps = null;
 
 // Glue to talk to Jetpack and get our module from it
 function loadJetpackModule(module) {
-  return Components.classes["@mozilla.org/harness-service;1?id=jid0-QTBgy6b9G1q74UcxazgzLZrnNYA"].
+  return Components.classes["@mozilla.org/harness-service;1?id=jid0-SauOgWZPJJ7lDBV2KQplMVvzJhY"].
     getService().wrappedJSObject.loader.require(module);
 }
 var apps_jetpack = null;
@@ -114,47 +114,16 @@ function notificationsWereRefreshed()
 {
 }
 
-function findAppTabForURL(url)
-{
-  // Scan all the applications
-  
-}
-
-
 // Creates an opener for an app tab.  The usual behavior
 // applies - if the app is already running, we switch to it.
 // If the app is not running, we create a new app tab and
 // launch the app into it.
-function makeOpenAppTabFn(targetURL)
+function makeOpenAppTabFn(app, targetURL)
 {
-  return function(evt) { 
-    try {
-      var mainWindow = window.QueryInterface(Components.interfaces.nsIInterfaceRequestor)
-                             .getInterface(Components.interfaces.nsIWebNavigation)
-                             .QueryInterface(Components.interfaces.nsIDocShellTreeItem)
-                             .rootTreeItem
-                             .QueryInterface(Components.interfaces.nsIInterfaceRequestor)
-                             .getInterface(Components.interfaces.nsIDOMWindow);
-
-      // TODO check whether the app is already running
-
-      // Create a new pinned tab
-      var tab = mainWindow.gBrowser.addTab(targetURL);
-      var idx = mainWindow.gBrowser._numPinnedTabs;
-      mainWindow.gBrowser.moveTabTo(tab, idx);
-      tab.setAttribute("pinned", "true");
-      mainWindow.gBrowser.tabContainer._positionPinnedTabs();
-
-      if (!evt.metaKey) { // meta means open-in-background, same as usual
-        mainWindow.gBrowser.selectTabAtIndex(idx);
-      }
-    } catch (e) {
-      alert(e);
-    }
-    return false;
+  return function(evt) {
+    apps_jetpack.openAppURL(app, targetURL, evt.metaKey);
   }
 }
-
 
 // Render the contents of the "apps" element by creating canvases
 // and labels for all apps.
@@ -165,7 +134,7 @@ function render() {
   function createAppIcon(install) {
     var div = elem("div", "appbox");
     div.style.cursor = "pointer";
-    div.onclick = makeOpenAppTabFn(install.app.app.launch.web_url);
+    div.onclick = makeOpenAppTabFn(install.app, install.app.app.launch.web_url);
 
     img = createAppCanvas(install.app);
     img.setAttribute("class", "app_icon");
@@ -275,15 +244,18 @@ function circle(ctx, x, y, radius, fill, stroke)
 function makeAppCanvasDrawFn(ctx, img, manifest)
 {
   return function() {
-  
+    for (var i=0;i<6;i++) {
+      ctx.fillStyle = "rgba(0,0,0," + (i / 20.0) + ")";
+      roundRect(ctx, 6-i, 6-i, gIconSize, gIconSize, badgeRadius, true, false);
+    }
+    ctx.save();
     ctx.beginPath();
     var badgeRadius = gIconSize / 4;
-    roundRect(ctx, 0, 6, gIconSize, gIconSize, badgeRadius, false, true);
+    roundRect(ctx, 0, 0, gIconSize, gIconSize, badgeRadius, false, true);
     ctx.clip();
+    ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, gIconSize, gIconSize);
+    ctx.restore();
 
-    ctx.drawImage(img, 0, 0, img.width, img.height, 0, 6, gIconSize, gIconSize);
-    
-    
     if (manifest.notificationCount) {
       drawNotificationBadge(ctx, manifest.notificationCount);
     }
@@ -325,43 +297,6 @@ function setIconSize(size)
   }
   render();
 } 
-
-function startMessageQueueCheck()
-{
-  for (let server in servers)
-  {
-    let xhr = new XMLHttpRequest();
-    xhr.open("GET", server + "/messages", true);
-    xhr.onreadystatechange = function(aEvt) {
-      if (xhr.readyState == 4) {
-        if (xhr.status == 200) {
-          // clear out notification counts for this server...
-          // TODO this doesn't work
-          for (let i=0;i<installsByName.length;i++) {
-            let install = installsByName[i];
-            if (install.server == server) {
-              alert("Setting ticket to 0");
-              install.ticket.notificationCount = 0;
-            }
-          }
-          var result = JSON.parse(xhr.responseText);
-          var msgs = document.getElementById("messages");
-
-          gMessageInboxMap[server] = result;
-          for each (var r in result)
-          {
-            let key = server + r.app;
-            let ticket = serverAppLookup[key];
-            if (!ticket.notificationCount) ticket.notificationCount = 0;
-            ticket.notificationCount += 1;
-          }
-          render();
-        }
-      }
-    }
-    xhr.send(null);
-  }
-}
 
 function formatDate(dateStr)
 {

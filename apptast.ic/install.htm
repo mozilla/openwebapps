@@ -13,6 +13,10 @@ function installCallback(result)
 {
   document.getElementById("result").innerHTML = "Callback done!";
 }
+function changeName(field)
+{
+  manifest.name = field.value;
+}
 </script>
 <style>
 body {
@@ -81,7 +85,7 @@ body {
 <div class="appbox">
 <div class="app">
 <div class="icon"><img width="48" height="48" src="{{ manifest["icons"]["48"] }}"></div>
-<div class="name"><input class="appname" type="text" name="name" value="{{ manifest["name"] }}"></div>
+<div class="name"><input class="appname" type="text" name="name" id="appname" onkeyup="changeName(this)" value="{{ manifest["name"] }}"></div>
 </div>
 <div class="pointer">
 &lt;-- you can change the name if you want
