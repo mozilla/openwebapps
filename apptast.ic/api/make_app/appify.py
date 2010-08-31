@@ -148,6 +148,13 @@ class AppifyAppHandler():
     tornado.ioloop.IOLoop.instance().stop()    
     raise SystemExit(1)
 	
+if len(sys.argv) != 2:
+    print json.dumps({
+      "status": "error",
+      "details": "missing required url parameter"
+    })
+    raise SystemExit(1)
+
 url = sys.argv[1] 
 
 appifier = AppifyAppHandler()
