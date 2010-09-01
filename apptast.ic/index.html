@@ -68,7 +68,7 @@ body {
 }
 </style>
 <script src="js/jquery-1.4.2.min.js"></script> 
-<script src="http://myapps.mozillalabs.com/jsapi/include.js"></script> 
+<script src="https://myapps.mozillalabs.com/jsapi/include.js"></script> 
 </head>
 <body>
 
@@ -94,9 +94,8 @@ $(document).ready(function() {
 
     function doInstall()
     {
-        alert("doInstall called");
         AppClient.install({manifest:manifest, callback:function(arg) {
-            alert("callback returned!");
+            alert("application installed!");
         }});
     }
 
