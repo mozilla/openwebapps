@@ -46,7 +46,7 @@ var AppClient = (function() {
   var unsupported = !(win.postMessage && win.localStorage && win.JSON);
   
   // TODO: https support. Needs CDN to have a proper cert
-  var WalletHostname = "myapps.org";
+  var WalletHostname = "myapps.mozillalabs.com";
   var WalletServerUrl = "http://"+WalletHostname+"/jsapi/include.html";
 
   // Cached references
@@ -72,7 +72,7 @@ var AppClient = (function() {
 
     var originHostname = event.origin.split('://')[1]; //.split(':')[0];
     if(originHostname != WalletHostname) {
-      // Doesn't match myapps.org, reject
+      // Doesn't match myapps.mozillalabs.com, reject
       return;
     }
     
@@ -139,7 +139,7 @@ var AppClient = (function() {
     document.body.removeChild(document.getElementById(overlayId));
   }
 
-  // Called once on first command to create the iframe to myapps.org
+  // Called once on first command to create the iframe to myapps.mozillalabs.com
   function setupWindow() {
     if(iframe || postWindow) { return; }
 
@@ -170,7 +170,7 @@ var AppClient = (function() {
     } else if(win.attachEvent) {
       win.attachEvent('onmessage', onMessage);
     }
-    // Append iframe to the dom and load up myapps.org inside
+    // Append iframe to the dom and load up myapps.mozillalabs.com inside
     doc.body.appendChild(iframe);
     iframe.src = WalletServerUrl;
   }
@@ -183,7 +183,7 @@ var AppClient = (function() {
   }
 
   // Simple wrapper for the postMessage command that sends serialized requests
-  // to the myapps.org iframe window
+  // to the myapps.mozillalabs.com iframe window
   function makeRequest(requestObj) {
     //dump("postMessage: " + JSON.stringify(requestObj) + "\n");
     postWindow.postMessage(JSON.stringify(requestObj), WalletServerUrl);
