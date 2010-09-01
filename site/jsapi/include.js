@@ -46,8 +46,8 @@ var AppClient = (function() {
   var unsupported = !(win.postMessage && win.localStorage && win.JSON);
   
   // TODO: https support. Needs CDN to have a proper cert
-  var WalletHostname = "myapps.mozillalabs.com";
-  var WalletServerUrl = "https://"+WalletHostname+"/jsapi/include.html";
+  var WalletOrigin = "https://myapps.mozillalabs.com";
+  var WalletServerUrl = WalletOrigin + "/jsapi/include.html";
 
   // Cached references
   var iframe = null;
@@ -70,9 +70,8 @@ var AppClient = (function() {
     // event.origin will always be of the format scheme://hostname:port
     // http://www.whatwg.org/specs/web-apps/current-work/multipage/comms.html#dom-messageevent-origin
 
-    var originHostname = event.origin.split('://')[1]; //.split(':')[0];
-    if(originHostname != WalletHostname) {
-      // Doesn't match myapps.mozillalabs.com, reject
+    if(event.origin != WalletOrigin) {
+      // Doesn't match https://myapps.mozillalabs.com, reject
       return;
     }
     
