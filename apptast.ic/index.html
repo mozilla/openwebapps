@@ -1,0 +1,65 @@
+<html>
+<head>
+<title>Apptast.ic</title>
+<style>
+body {
+  background:#f7f4f4 url("static/apptastic.jpg") no-repeat left top;
+}
+#form {
+  position:absolute;
+  left:250px;
+  top:200px;
+  font:16pt "Gill Sans",Arial,sans-serif;
+}
+#form div {
+  margin-bottom:16px;
+}
+#inputfield {
+  width:400px;
+}
+#button {
+  margin-top:16px;
+  width:200px;
+  font:14pt "Gill Sans",Arial,sans-serif;
+}
+</style>
+<script src="js/jquery-1.4.2.min.js"></script> 
+</head>
+<body>
+
+<div id="form">
+<div id="actionArea">
+<div>turn any website into an app.</div>
+
+<div>just enter a website address here:</div>
+
+  <form id="whereInput">
+  <input id="inputfield" type="text" name="url" placeholder="http://somewebsite.com"><br>
+  <input id="button" type="submit" value="make it apptastic!">
+  </form>
+</div>
+
+</div>
+</body>
+
+<script type="text/javascript"> 
+$(document).ready(function() {
+    $("#whereInput").submit(function(eo) {
+        // first we'll change the UI to indicate that we're
+        // working on it..
+        var url = $("#inputfield").val();
+        
+        // XXX: And if that URL don't parse, momma's gonna tell you!
+        $("#actionArea").empty().append(
+            $("<div/>").text("Making a custom application just for you (from "+url+")..."));
+        $.getJSON("/api/make_app?url=" + url,
+                  function(data, textStatus) {
+                      $("#actionArea").text(JSON.stringify(data));
+                  });
+        eo.preventDefault();
+    });
+})  
+</script> 
+</html>
+
+
