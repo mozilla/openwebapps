@@ -47,7 +47,7 @@ var AppClient = (function() {
   
   // TODO: https support. Needs CDN to have a proper cert
   var WalletHostname = "myapps.mozillalabs.com";
-  var WalletServerUrl = "http://"+WalletHostname+"/jsapi/include.html";
+  var WalletServerUrl = "https://"+WalletHostname+"/jsapi/include.html";
 
   // Cached references
   var iframe = null;
