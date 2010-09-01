@@ -18,16 +18,16 @@ body {
 }
 
 #title {
-  font-size: 160%;
+  font-size: 20pt;
   font-weight: bold;
-  position: block;
+  position: absolute;
   left:68;
   top:14;
 }
 
 #description {
-  font-size: 100%;
-  position: absolute;
+  font-size: 10pt;
+  position: block;
   margin: 10px;
   top:60;
 }
@@ -76,7 +76,7 @@ body {
   request only if you trust this site and use it often. The application is:
 </div>
 <div id="appinfo">
-  <img id="appicon" src="unknown" width="36" height="36">
+  <img id="appicon" src="" width="36" height="36">
   <span id="appname"></span><br>
   <span id="appdesc"></span>
 </div>
@@ -97,6 +97,10 @@ function displayInstallPrompt(originHostname, manifest, clientCB) {
   document.getElementById("appname").textContent = manifest.name;
   if (manifest.description) {
     document.getElementById("appdesc").textContent = manifest.description;
+  }
+
+  if (manifest.icons && manifest.icons["48"]) {
+    document.getElementById("appicon").src = manifest.icons["48"];
   }
 
   // now that the content is setup, message untrusted javascript to display us
