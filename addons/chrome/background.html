@@ -3,10 +3,73 @@
     <script src="jquery-1.4.2.min.js"></script>
     <script src="myapps_storage.js"></script>
     <script>
+    var state = '';
+    var storage ;
+
+    function mayAdd(url, cb) {
+        var scheme = url.split('://')[0];
+        if (scheme !== 'http' && scheme !== 'https') {
+            setTimeout(function() { cb(false); }, 0); 
+        } else {
+            // well shucks, the scheme looks allright.  Do we already have an
+            // application for this url?
+            // XXX: for now we'll assume that if this application matches
+            // the beginning of an existing application, then it's not something
+            // we want to appify
+            MyAppsStorage.keys(function(v) {
+                for (var i in v) {
+                    if (v[i] == url.substr(0, v[i].length)) {
+                        cb(false);
+                        return;
+                    }
+                }
+                cb(true);
+            });
+        }
+    }        
+
+    // our hook that is hit every time the user selects a different tab
+    chrome.tabs.onSelectionChanged.addListener(function(tabId, selectInfo) {
+    });
+
+    // our hook that intercepts every top level navigation.
+    chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+        console.log("(" + changeInfo.status + "): " + tab.url + " [" + changeInfo.url + "]");
+        if (changeInfo.status === 'loading') {
+            console.log(tab); 
+            mayAdd(tab.url, function(rv) {
+                if (rv) { 
+                    chrome.browserAction.setBadgeBackgroundColor({ color: [0,255,0,127], tabId: tabId });
+                    chrome.browserAction.setBadgeText({ text: "add", tabId: tabId });
+                } else {
+                    chrome.browserAction.setBadgeText({ text: "", tabId: tabId });
+                }
+            });
+        }
+    });
+
     chrome.browserAction.onClicked.addListener(function(tab) {
-        MyAppsStorage.keys(function(keys) {
-            console.log(keys);
+        // create an application if we may. 
+        mayAdd(tab.url, function(iMay) {
+            if (iMay) {
+                var url = "https://apptastic.mozillalabs.com/api/make_app/?url=" + tab.url;
+                $.getJSON(url, function (data, textStatus) {
+                    // XXX: to what extent should we validate the returned data here?
+                    // probably should include manifest.js and parse.  There could be a
+                    // tendency to diverge if we're not careful.
+                    if (textStatus === 'success' && !data.error) {
+                        // XXX: we're manually loading into localStorage here.  We might want to be a little
+                        // higher level here.  One issue are the various different keys
+                        MyAppsStorage.set(data.app.launch.web_url, JSON.stringify({app: data}), function() {
+                            console.log("added " + data.app.launch.web_url);
+                            // now let's unset the badge
+                            chrome.browserAction.setBadgeText({ text: "", tabId: tab.id });
+                        });
+                    }
+                });
+            }            
         });
     });
+
     </script>
 </html>

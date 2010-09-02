@@ -8,6 +8,8 @@
   "background_page": "background.html",
   "permissions": [
     "https://myapps.mozillalabs.com/",
-    "http://localhost:8123/"
+    "https://apptastic.mozillalabs.com/",
+    "http://localhost:8123/",
+    "tabs"
   ]
 }
