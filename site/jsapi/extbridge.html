@@ -17,8 +17,6 @@ if (win.addEventListener) {
 function onMessage(event) {
     var sendResponse = function(req, data, origin) {
         var resp = { id: req.id, val: data };
-        console.log("sending response");
-        console.log(resp);        
         win.parent.postMessage(JSON.stringify(resp), origin);
     };
     
