@@ -1,0 +1,13 @@
+{
+  "name": "Appetizer",
+  "version": "0.1",
+  "description": "Provides rich browser support for open web applications.",
+  "browser_action": {
+    "default_icon": "icon.png"
+  },
+  "background_page": "background.html",
+  "permissions": [
+    "https://myapps.mozillalabs.com/",
+    "http://localhost:8123/"
+  ]
+}
