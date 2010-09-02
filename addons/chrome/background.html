@@ -1,15 +1,12 @@
 <html>
-    <body><iframe id="wha" src="https://myapps.mozillalabs.com/jsapi/include.js"></iframe></body>
+    <body><iframe id="myappsIframe" src="https://myapps.mozillalabs.com/jsapi/extbridge.html"></iframe></body>
     <script src="jquery-1.4.2.min.js"></script>
+    <script src="myapps_storage.js"></script>
     <script>
     chrome.browserAction.onClicked.addListener(function(tab) {
-        var v = chrome.self.getViews();
-        for (var i in v) {
-            console.log(i + ": " + v[i].asshole);
-        }
-
-        // XXX: first, how do we go about getting a manifest?
-        console.log("wanna install an app for : " + tab.url);
+        MyAppsStorage.keys(function(keys) {
+            console.log(keys);
+        });
     });
     </script>
 </html>

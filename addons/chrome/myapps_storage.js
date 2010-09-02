@@ -58,16 +58,16 @@
         get: function(key, callback) {
             if (typeof(key) != 'string') throw "MyAppsStorage requires string 'key' argument";
             var rid = createTransaction(callback);
-            tgtWindow.postMessage(JSON.stringify({action: 'getItem', id: rid, key: key}), myappsCommShim);
+            tgtWindow.postMessage(JSON.stringify({action: 'getItem', id: rid, key: key}), myappsCommDomain);
         },
         set: function(key, value, callback) {
             if (typeof(key) != 'string') throw "MyAppsStorage requires string 'key' argument";
             var rid = createTransaction(callback);
-            tgtWindow.postMessage(JSON.stringify({action: 'setItem', id: rid, key: key, data: value}), myappsCommShim);
+            tgtWindow.postMessage(JSON.stringify({action: 'setItem', id: rid, key: key, data: value}), myappsCommDomain);
         },
         keys: function(callback) {
             var rid = createTransaction(callback);
-            tgtWindow.postMessage(JSON.stringify({action: 'getKeys', id: rid}), myappsCommShim);
+            tgtWindow.postMessage(JSON.stringify({action: 'getKeys', id: rid}), myappsCommDomain);
         }
     };
 })();
