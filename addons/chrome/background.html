@@ -48,6 +48,20 @@ function urlIsAssociatedWithApp(url) {
     return null;
 }
 
+// find a running application and return its tabId, if not running, return -1
+function findRunningApp(currentTabId, appKey, cb) {
+    // XXX: not remotely efficient
+    chrome.tabs.getAllInWindow(null, function(tabArray) {
+        for (var i in tabArray) {
+            if (currentTabId != tabArray[i].id && urlIsAssociatedWithApp(tabArray[i].url) === appKey) {
+                cb(tabArray[i].id);
+                return;
+            }
+        }
+        cb(-1);
+    });
+}
+
 function mayAdd(url) {
     var scheme = url.split('://')[0];
     if ((scheme !== 'http' && scheme !== 'https') || urlIsAssociatedWithApp(url)) {
@@ -65,7 +79,32 @@ chrome.tabs.onSelectionChanged.addListener(function(tabId, selectInfo) {
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
     console.log("(" + changeInfo.status + "): " + tab.url + " [" + changeInfo.url + "]");
     if (changeInfo.status === 'loading') {
-        if (mayAdd(tab.url)) {
+        // first we need to know if this URL is associated with an installed application
+        var appKey =  urlIsAssociatedWithApp(tab.url);
+
+        if (typeof appKey == 'string') {
+            // this url is associated with an existing application!
+            findRunningApp(tabId, appKey, function(runningTabId) {
+                console.log("this url corresponds to a running application!");
+                console.log(runningTabId);
+                if (runningTabId >= 0) {
+                    // focus target tab
+                    chrome.tabs.update(runningTabId, {selected: true, url: tab.url});
+                    // close current tab
+                    chrome.tabs.remove(tabId);
+                } else {
+                    // promote this tab to an application tab!
+                    // first blank out the title, them move it to position zero.
+                    // XXX: chrome doesn't expose tab pinning to extensions, afaict
+                    // XXX2: if there are pinned tabs, moving to index n where n < # pinned tabs
+                    //       is a noop.  we should handle this gracefully.
+                    // XXX3: this logic needs to become more sophisticated.  We n
+                    chrome.tabs.move(tabId, { index: 0 }, function(tab) {
+                        console.log("yeah, I moved it");
+                    });
+                }
+            });
+        } else if (mayAdd(tab.url)) {
             chrome.browserAction.setBadgeBackgroundColor({ color: [0,255,0,127], tabId: tabId });
             chrome.browserAction.setBadgeText({ text: "add", tabId: tabId });
         } else {
