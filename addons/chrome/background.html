@@ -1,75 +1,110 @@
 <html>
-    <body><iframe id="myappsIframe" src="https://myapps.mozillalabs.com/jsapi/extbridge.html"></iframe></body>
-    <script src="jquery-1.4.2.min.js"></script>
-    <script src="myapps_storage.js"></script>
-    <script>
-    var state = '';
-    var storage ;
+<body><iframe id="myappsIframe" src="https://myapps.mozillalabs.com/jsapi/extbridge.html"></iframe></body>
+<script src="jquery-1.4.2.min.js"></script>
+<script src="myapps_storage.js"></script>
+<script>
+var state = '';
+var storage ;
+// a locally cached subset of information stored in myapps localstorage, used for operations
+// that need to be fast and synchronous (url interception and redirection)
+// Data structure maps application urls (i.e. app.urls) to launch url (app.launch.web_url)
+// XXX: how we stay in sync as applications are added via other means?  should we get
+// posted messages when localStorage changes?  should we poll a checksum to detect changes? 
+var urls = { };
+function urlCount() {
+    var count = 0;
+    for (k in urls) if (urls.hasOwnProperty(k)) count++;
+    return count;
+}
 
-    function mayAdd(url, cb) {
-        var scheme = url.split('://')[0];
-        if (scheme !== 'http' && scheme !== 'https') {
-            setTimeout(function() { cb(false); }, 0); 
+function updateAppsCache(cb) {
+    MyAppsStorage.keys(function(v) {
+        var processed = 0;
+        for (var i in v) {
+            MyAppsStorage.get(v[i], function(val) {
+                var manf = JSON.parse(val).app;
+                for (var j in manf.app.urls) {
+                    urls[manf.app.urls[j]] = manf.app.launch.web_url;
+                }
+                if (++processed == v.length && cb && typeof cb == 'function') { cb(); }
+            });
+        }
+    });
+}
+
+// for a given URL, check to see if it's associated with an installed app.
+// if it is, return the launch url, else null
+function urlIsAssociatedWithApp(url) {
+    var wantScheme = url.split('://')[0];    
+
+    for (var i in urls) {
+        var haveScheme = i.split('://')[0];    
+        if (haveScheme === '*' || wantScheme === haveScheme) { 
+            if (i.length <= url.length && i == url.substr(0, i.length)) {
+                return urls[i];
+            }
+        }
+    }
+    return null;
+}
+
+function mayAdd(url) {
+    var scheme = url.split('://')[0];
+    if ((scheme !== 'http' && scheme !== 'https') || urlIsAssociatedWithApp(url)) {
+        return false;
+    }
+    return true;
+}        
+
+
+// our hook that is hit every time the user selects a different tab
+chrome.tabs.onSelectionChanged.addListener(function(tabId, selectInfo) {
+});
+
+// our hook that intercepts every top level navigation.
+chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+    console.log("(" + changeInfo.status + "): " + tab.url + " [" + changeInfo.url + "]");
+    if (changeInfo.status === 'loading') {
+        if (mayAdd(tab.url)) {
+            chrome.browserAction.setBadgeBackgroundColor({ color: [0,255,0,127], tabId: tabId });
+            chrome.browserAction.setBadgeText({ text: "add", tabId: tabId });
         } else {
-            // well shucks, the scheme looks allright.  Do we already have an
-            // application for this url?
-            // XXX: for now we'll assume that if this application matches
-            // the beginning of an existing application, then it's not something
-            // we want to appify
-            MyAppsStorage.keys(function(v) {
-                for (var i in v) {
-                    if (v[i] == url.substr(0, v[i].length)) {
-                        cb(false);
-                        return;
-                    }
-                }
-                cb(true);
-            });
+            chrome.browserAction.setBadgeText({ text: "", tabId: tabId });
         }
-    }        
+    }
+});
 
-    // our hook that is hit every time the user selects a different tab
-    chrome.tabs.onSelectionChanged.addListener(function(tabId, selectInfo) {
-    });
-
-    // our hook that intercepts every top level navigation.
-    chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
-        console.log("(" + changeInfo.status + "): " + tab.url + " [" + changeInfo.url + "]");
-        if (changeInfo.status === 'loading') {
-            console.log(tab); 
-            mayAdd(tab.url, function(rv) {
-                if (rv) { 
-                    chrome.browserAction.setBadgeBackgroundColor({ color: [0,255,0,127], tabId: tabId });
-                    chrome.browserAction.setBadgeText({ text: "add", tabId: tabId });
-                } else {
-                    chrome.browserAction.setBadgeText({ text: "", tabId: tabId });
-                }
-            });
-        }
-    });
-
-    chrome.browserAction.onClicked.addListener(function(tab) {
-        // create an application if we may. 
-        mayAdd(tab.url, function(iMay) {
-            if (iMay) {
-                var url = "https://apptastic.mozillalabs.com/api/make_app/?url=" + tab.url;
-                $.getJSON(url, function (data, textStatus) {
-                    // XXX: to what extent should we validate the returned data here?
-                    // probably should include manifest.js and parse.  There could be a
-                    // tendency to diverge if we're not careful.
-                    if (textStatus === 'success' && !data.error) {
-                        // XXX: we're manually loading into localStorage here.  We might want to be a little
-                        // higher level here.  One issue are the various different keys
-                        MyAppsStorage.set(data.app.launch.web_url, JSON.stringify({app: data}), function() {
-                            console.log("added " + data.app.launch.web_url);
-                            // now let's unset the badge
-                            chrome.browserAction.setBadgeText({ text: "", tabId: tab.id });
-                        });
-                    }
+chrome.browserAction.onClicked.addListener(function(tab) {
+    // create an application if we may. 
+    if (mayAdd(tab.url)) {
+        var url = "https://apptastic.mozillalabs.com/api/make_app/?url=" + tab.url;
+        $.getJSON(url, function (data, textStatus) {
+            // XXX: to what extent should we validate the returned data here?
+            // probably should include manifest.js and parse.  There could be a
+            // tendency to diverge if we're not careful.
+            if (textStatus === 'success' && !data.error) {
+                // XXX: we're manually loading into localStorage here.  We might want to be a little
+                // higher level here.  One issue are the various different keys
+                MyAppsStorage.set(data.app.launch.web_url, JSON.stringify({app: data}), function() {
+                    console.log("added " + data.app.launch.web_url);
+                    // now let's unset the badge
+                    chrome.browserAction.setBadgeText({ text: "", tabId: tab.id });
+                    // and refresh our cache of application urls for purposes
+                    // of redirection
+                    updateAppsCache(function() {
+                        console.log("updated cached app urls, there are " + urlCount());
+                    });
                 });
-            }            
+            }
         });
-    });
+    }            
+});
 
-    </script>
+$(document).ready(function() {
+    updateAppsCache(function() {
+        console.log("updated cached app urls, there are " + urlCount());
+    });
+});
+
+</script>
 </html>
