@@ -475,14 +475,14 @@ function setIconSize(size)
   // I'm not sure putting the icons into the DOM 
   // is really the right approach.  But this is
   // necessary for spacing them out, for now.
-  for each (var r in theRules)
+  /*for each (var r in theRules)
   {
     if (r.selectorText == ".ticket")
     {
       r.style.width = size + 24 + "px";
       r.style.height = size + 24 + "px";
     }
-  }
+  }*/
   render();
 } 
 
