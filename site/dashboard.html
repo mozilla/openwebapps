@@ -1,0 +1,47 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+  <title>Application Dashboard</title>
+  <link rel="stylesheet" type="text/css" href="dashboard.css" />
+</head>
+
+<body onload="init()" style="position:relative">
+
+<div id="container">
+  <div id="search">
+    <img src="websearch.png">
+    <form>
+      <input class="searchfield" placeholder="Search across all your apps" type="text" size="50" value=""><br>
+      <input class="searchbutton" type="submit" value="Search">
+    </form>
+  </div>
+
+  <div id="appheader">
+    <img src="webapps.png">
+  </div>
+  <div id="apps"></div>
+
+</div>
+
+<div id="header">
+  <div id="badge"><img src="firefox_badge.png"></div>
+  <div id="startbar"><img src="firefox_start.png"></div>
+</div>
+
+
+<ul id="appContextMenu" class="contextMenu">
+  <li class="menuGetInfo"><a href="#appDetails">Details...</a></li>
+  <li class="menuCheckUpdates separator"><a href="#appCheckUpdates">Check for Updates</a></li>
+  <li class="menuUninstall"><a href="#appUninstall">Uninstall App</a></li>
+</ul>
+
+<script type="text/javascript" src="js/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="js/jquery.contextMenu.js"></script>
+<script type="text/javascript" src="js/manifest.js"></script>
+<script type="text/javascript" src="js/apps.js"></script>
+<script type="text/javascript" src="js/dashboard.js"></script>
+</body>
+</html>
+

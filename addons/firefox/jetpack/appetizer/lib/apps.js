@@ -37,6 +37,7 @@
 let EXPORTED_SYMBOLS = ["Apps"];
 
 var self = require("self");
+var contextMenu = require("context-menu");
 var windowUtils = require("window-utils");
 var {Cc, Ci, Cu} = require("chrome");
 
@@ -58,6 +59,39 @@ exports.init = function() {
   // to all of them.
   windowTracker = new windowUtils.WindowTracker(tracker);
   
+  // Register a context-menu handler for the apps viewer
+  var menuItem = contextMenu.Item({
+
+    label: "Get Application Info...",
+
+    // A CSS selector. Matching on this selector triggers the
+    // display of our context menu.
+    context: ".appbox",// TODO: be much more careful with this: only do the check in an app-management domain
+
+    // When the context menu item is clicked, perform a Google
+    // search for the link text.
+    onClick: function (contextObj, item) {
+      /*var anchor = contextObj.node;*/
+      console.log("Got click on GetInfo");
+      console.log(" getInfo context node is " + contextObj.node);
+      console.log(" getInfo context node.id is " + contextObj.node.id);
+      console.log(" getInfo context window is " + contextObj.window);
+      try {
+        var appURL = contextObj.node.id.split(4);
+        var loc = contextObj.window.location;
+        var action = {
+          a: "info",
+          id: appURL
+        };
+        var newURL = loc.protocol + "//" +
+          loc.host + loc.pathname + "#" + JSON.stringify(action);
+        contextObj.window.location=newURL;
+      } catch (e) {
+        console.log(e);
+      }
+    }
+  });
+  contextMenu.add(menuItem);  
 }
 
 exports.unload = function() {
@@ -260,7 +294,6 @@ Apps.prototype.reload = function() {
     var install = JSON.parse(item);
     this.installs.push(install);
     
-    dump(item + "\n");
   }
   this.installs.sort(function (a,b) { 
       return a.app.name.localeCompare(b.app.name); 
@@ -369,7 +402,6 @@ Apps.prototype.refreshNotifications = function(callback)
       }
     }
   }
-  console.log("Done refreshing notifications");
 }
 
 Apps.prototype.initiateNotificationRefresh = function(app, callback) 
@@ -378,7 +410,6 @@ Apps.prototype.initiateNotificationRefresh = function(app, callback)
   
   // TODO perhaps send a "updatedSince" argument along with this?
   xhr.open("GET", app.notification, true);
-  console.log("Initiating notification refresh to " + app.notification);
   xhr.onreadystatechange = function(aEvt) {
     if (xhr.readyState == 4) {
       if (xhr.status == 200) {
@@ -407,8 +438,6 @@ Apps.prototype.applicationMatchesURL = function(app, url)
     var testURL = app.app.urls[i];
     var re = RegExp("^" + testURL.replace("*", ".*"));// no trailing $
 
-    console.log("Checking url " + url + " against pattern " + testURL);
-
     if (re.exec(url) != null) return true;
   }
   return false;
@@ -424,12 +453,9 @@ Apps.prototype.applicationsForURL = function(url)
     var item = this.storage.getItem(key);
     var install = JSON.parse(item);
 
-    console.log("Checking whether URL " + url + " belongs to " + install.app.name);
     if (this.applicationMatchesURL(install.app, url)) {      
-      console.log("yes");
       result.push(install.app);
     }
-    console.log("no");
   }
   return result;
 }

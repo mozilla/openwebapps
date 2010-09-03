@@ -1,0 +1,298 @@
+body {
+	padding: 0px;
+	margin: 0px;
+	font-family: "Helvetica Neue", Helvetica, Arial;
+  background:#ffffff;
+}
+a {
+  color:#3875D7;
+  text-decoration:none;
+}
+a:hover {
+  text-decoration:underline;
+}
+
+#header {
+  position:absolute;
+  left:16px;
+  top:16px;
+  width:90%;
+  background:transparent url("firefox_fill.png") repeat-x top left;
+}
+#startbar {
+  position:relative;
+  left:0px;
+  top:21px;
+}
+#fill {
+  float:right;
+  display:inline-block;
+  margin-top:21px;
+  width:100%;
+  height:44px;
+  background:#000033 url("firefox_fill.png") repeat-x top left;
+}
+#badge {
+  display:inline-block;
+  float:right;
+  top:0px;
+}
+
+#container {
+  position:absolute;
+  top:71px;
+  min-height:400px;
+  width:85%;
+  -moz-border-radius:8px;
+  border-top:1px solid #d0d0d0;
+  border-left:1px solid #d0d0d0;
+  border-right:1px solid #d0d0d0;
+  border-bottom:1px solid #d0d0d0;
+  margin-left:16px;
+  margin-right:16px;
+  margin-top:16px;
+  background-color:white;
+}
+#search {
+  margin-left:40px;
+  margin-top:55px;
+  font-family: arial,sans-serif;
+}
+.searchfield {
+  width:300px;
+}
+.searchbutton {
+  position:relative;
+  margin-top:4px;
+  width:90px;
+  left:220px;
+}
+#apps {
+  margin-right:40px;
+  min-height:60px;
+  margin-left:40px;
+  margin-top:8px;
+}
+#appheader {
+  margin-top:12px;
+  margin-left:40px;
+}
+
+.appbox {
+  display:inline-block;
+  width:80px;
+  height:80px;
+  text-align:center;
+  position:relative;
+  cursor:pointer;
+}
+
+.appbox canvas {
+  margin:auto;
+}
+
+/*.appbox:hover {
+ -moz-transition-property: -moz-box-shadow;
+ -moz-transition-duration: 0.1s;
+ -moz-box-shadow: 2px 2px 10px #a0a000;
+}*/
+
+.appbox > .app_name {
+  padding-top:2px;
+  font:small-caption;
+  overflow:hidden;
+  
+}
+
+.appbox > .app_icon {
+  margin-left:auto;
+  margin-right:auto;
+}
+
+.getInfo {
+  position:relative;
+  width:48px;
+  height:48px;
+  opacity:1.0;
+  background:white;
+  background-color:white;
+  border:solid 1px #CCC;
+  z-index: 999;
+  -moz-box-shadow: 2px 2px 10px #a0a0a0;
+  
+  -moz-transition-property: left,width,height;
+  -moz-transition-timing-function: ease-in-out;
+  -moz-transition-duration: 0.10s;
+  -webkit-transition-property: left,width,height;
+  -webkit-transition-timing-function: ease-in-out;
+  -webkit-transition-duration: 0.20s;
+  -o-transition-property: left,width,height;
+  -o-transition-timing-function: ease-in-out;
+  -o-transition-duration: 0.20s;
+}
+.getInfo > .appBadge {
+  position:absolute;
+  display:inline-block;
+  width:80px;
+  height:80px;
+  text-align:center;
+  position:relative;
+  left:-1px;
+  top:7px;
+  cursor:pointer;
+}
+.getInfo > .appBadge canvas {
+  margin:auto;
+}
+
+.getInfo > .appBadge >.appBadgeName {
+  padding-top:2px;
+  font:small-caption
+}
+.getInfo > .appData {
+  position:absolute;
+  top:10px;
+  left:90px;
+  width:208px;
+}
+.getInfo > .appData > .appDataBox {
+  font:9pt Arial;
+}
+.getInfo > .appData > .appDataBox> .appDataLabel {
+  display:inline-block;
+  width:80px;
+}
+.getInfo > .appData > .appDataBox> .appDataValue {
+  display:inline-block;
+  width:124px;
+}
+.getInfo > .desc {
+  position:absolute;
+  font:9pt Arial;
+  width:264px;
+  left:10px;
+  padding-top:8px;
+  height:80px;
+}
+
+.developerName {
+  font:bold 12pt Arial;
+  text-align:right;
+  padding-right:12px;
+}
+.developerName a {
+  color:black;
+}
+.developerName a:hover {
+  color:#3875D7;
+}
+.developerLink {
+  font:10pt Arial;
+  text-align:right;
+  margin-right:12px;
+  overflow-x:hidden;
+  white-space:nowrap;
+}
+.developerName a {
+  color:black;
+}
+.developerName a:hover {
+  color:#3875D7;
+}
+
+
+.getInfo > .appProperties {
+  position:absolute;
+  left:12px;
+  width:270px;
+  top:164px;
+  height:150px;
+  padding:4px;
+  margin-top:8px;
+  font:9pt Arial;
+  overflow-y:auto;
+  border-top:1px solid #d0d0d0;
+  -moz-corner-radius:2px;
+}
+.getInfo > .appProperties > .appDataBox {
+  margin-bottom:2px;
+}
+
+.getInfo > .appProperties > .appDataBox> .appDataLabel {
+  font:bold 8pt Arial;
+  display:inline-block;
+  width:90px;
+  overflow:hidden;
+}
+.getInfo > .appProperties > .appDataBox> .appDataValue {
+  display:inline-block;
+  width:156px;
+  overflow:hidden;
+}
+
+
+
+/* Generic context menu styles */
+.contextMenu {
+  font:small-caption;
+	position: absolute;
+	width: 150px;
+	z-index: 99999;
+	border: solid 1px #CCC;
+	background: #FBFBFB;
+	padding: 0px;
+	margin: 0px;
+	display: none;
+  -moz-box-shadow: 2px 2px 10px #a0a0a0;
+ }
+
+.contextMenu LI {
+	list-style: none;
+	padding: 0px;
+	margin: 0px;
+}
+
+.contextMenu A {
+	color: #333;
+	text-decoration: none;
+	display: block;
+	line-height: 20px;
+	height: 20px;
+	background-position: 6px center;
+	background-repeat: no-repeat;
+	outline: none;
+	padding: 1px 5px;
+	padding-left: 28px;
+}
+
+.contextMenu LI.hover A {
+	color: #FFF;
+  background: #3399FF;
+}
+
+.contextMenu LI.disabled A {
+	color: #AAA;
+	cursor: default;
+}
+
+.contextMenu LI.hover.disabled A {
+	background-color: transparent;
+}
+
+.contextMenu LI.separator {
+	border-top: solid 1px #CCC;
+}
+
+/*
+	Adding Icons
+	
+	You can add icons to the context menu by adding
+	classes to the respective LI element(s)
+*/
+
+.contextMenu LI.edit A { background-image: url(images/page_white_edit.png); }
+.contextMenu LI.cut A { background-image: url(images/cut.png); }
+.contextMenu LI.copy A { background-image: url(images/page_white_copy.png); }
+.contextMenu LI.paste A { background-image: url(images/page_white_paste.png); }
+.contextMenu LI.delete A { background-image: url(images/page_white_delete.png); }
+.contextMenu LI.quit A { background-image: url(images/door.png); }

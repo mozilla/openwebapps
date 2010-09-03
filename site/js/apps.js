@@ -33,8 +33,8 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
- 
-let EXPORTED_SYMBOLS = ["Apps"];
+
+// Depends on js/Manifest.js
 
 function Apps(storage) {
   this.installs = [];
@@ -60,55 +60,26 @@ Apps.prototype.reload = function() {
     var item = this.storage.getItem(key);
     var install = JSON.parse(item);
     this.installs.push(install);
-    
   }
+    
   this.installs.sort(function (a,b) { 
       return a.app.name.localeCompare(b.app.name); 
     } 
   );
 }
 
-Apps.prototype.install = function(manf) {
-  if (manf.expiration) {
-    var numericValue = Number(manf.expiration); // Cast to numeric timestamp
-    var dateCheck = new Date(numericValue);
-    if(dateCheck < new Date()) { // If you pass garbage into the date, this will be false
-      this.logError('Invalid manifest: malformed expiration');
-      return false;
-    }
-    manf.expiration = numericValue;
-  }
-  if (!manf.name) {
-    this.logError('Invalid manifest: missing application name');
-    return false;
-  }
-  if (!manf.app) {
-    this.logError('Invalid manifest: missing "app" property');
-    return false;
-  }
-  if (!manf.app.urls) {
-    this.logError('Invalid manifest: missing "urls" property of "app"');
-    return false;
-  }
-  if (!manf.app.launch) {
-    this.logError('Invalid request: missing "launch" property of "app"');
-    return false;
-  }
-  if (!manf.app.launch.web_url) {
-    this.logError('Invalid request: missing "web_url" property of "app.launch"');
-    return false;
-  }
-  // Launch URL must be part of the set of app.urls
-  // TODO perform check
-  
-  var key = manf.app.launch.web_url;
+Apps.prototype.install = function(manifest) 
+{
+  Manifest.validate(manifest);
+  var key = manifest.app.launch.web_url;
 
   // Create installation data structure
   var installation = {
-    app: manf,
+    app: manifest,
     installTime: new Date().getTime(),
     installURL: window.location
   }
+
   // Save - blow away any existing value
   this.storage.setItem(key, JSON.stringify(installation));
   this.reload();
@@ -124,22 +95,9 @@ Apps.prototype.removeAll = function() {
   }
 }
 
-Apps.prototype.remove = function(install) {
-
-  // Cautious technique here: don't want to have to worry about
-  // corruption of this.installs or anything like that.
-  var compareValue = JSON.stringify(install);
-  for (var i = this.storage.length-1 ; i >= 0; i--)
-  {
-    var key = this.storage.key(i);
-    if (key == "appclient_unit_test") continue;
-
-    var item = this.storage.getItem(key);
-    if (item == compareValue) {
-      this.storage.removeItem(key);
-      // keep looking; shouldn't ever happen, but weird things happen sometimes.
-    }
-  }
+Apps.prototype.remove = function(key) 
+{ 
+  this.storage.removeItem(key);
   this.reload();
 }
 
@@ -154,6 +112,17 @@ Apps.prototype.searchApps = function(term) {
     }
   }
   return result;
+}
+
+// Returns the install whose launch/web_url matches the given url.
+Apps.prototype.getInstall = function(url) 
+{
+  for (var i=0;i<this.installs.length;i++)
+  {
+    if (this.installs[i].app.app.launch.web_url == url)
+      return this.installs[i];
+  }
+  return null;
 }
 
 Apps.prototype.refreshNotifications = function(callback) 
@@ -190,20 +159,6 @@ Apps.prototype.initiateNotificationRefresh = function(app, callback)
   xhr.send(null);
 }
 
-Apps.prototype.applicationMatchesURL = function(app, url)
-{
-  // TODO look into optimizing this so we are not constructing
-  // regexps over and over again, but make sure it works in IE
-  for (var i=0;i<application.app.urls.length;i++)
-  {
-    var testURL = application.app.urls[i];
-    var re = RegExp("^" + testURL.replace("*", ".*"));// no trailing $
-    if (re.exec(url) != null) return true;
-  }
-  return false;
-}
-
-
 Apps.prototype.applicationsForURL = function(url)
 {
   var result = [];
@@ -211,7 +166,7 @@ Apps.prototype.applicationsForURL = function(url)
   {
     var key = localStorage.key(i);
     var item = localStorage.getItem(key);
-    if (applicationMatchesURL(install.app, url)) {      
+    if (Manifest.applicationMatchesURL(install.app, url)) {      
       result.push(install.app);
     }
   }

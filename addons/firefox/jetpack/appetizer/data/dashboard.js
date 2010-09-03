@@ -59,6 +59,10 @@ function loadJetpackModule(module) {
 var apps_jetpack = null;
 apps_jetpack = loadJetpackModule("apps");
 
+const ROOT = 1;
+const APP_INFO = 2;
+var gDisplayMode = ROOT;
+
 function init() {
   try { 
     // Get access to local storage for the application domain
@@ -68,6 +72,20 @@ function init() {
     gApps = new Apps(storage);
 
     // Draw it
+    var mode = ROOT;
+    try {
+      alert("window.location.hash is " + window.location.hash);
+      if (window.location.hash) {
+        var action = JSON.parse(window.location.hash.substring(1));
+        alert("MODE IS " + action.a);
+        if (action.a == "info")
+        {
+          gDisplayMode = APP_INFO;
+        }
+      }
+    } catch (e) {
+      alert(e);
+    }
     render();
     
     // Refresh notifications
@@ -135,6 +153,8 @@ function render() {
     var div = elem("div", "appbox");
     div.style.cursor = "pointer";
     div.onclick = makeOpenAppTabFn(install.app, install.app.app.launch.web_url);
+    div.setAttribute("install", install);
+    div.setAttribute("id", "app:" + install.app.app.launch.web_url);
 
     img = createAppCanvas(install.app);
     img.setAttribute("class", "app_icon");
@@ -325,6 +345,22 @@ function formatDate(dateStr)
   }
   return str;
 }
+
+function onMessage(event) 
+{
+  dump("yo\n");
+  dump("got event " + event.data + "\n");
+  alert("got event " + event.data);
+  
+  // unfreeze request message into object
+  var msg = JSON.parse(event.data);
+  if(!msg) {
+    return;
+  }
+}
+window.addEventListener('message', onMessage, false);
+
+
 
 
 // TODO: onfocus, reload

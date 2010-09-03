@@ -8,9 +8,27 @@
 </head>
 
 <body onload="init()" style="position:relative">
-<div id="header">Firefox Application Dashboard</div>
 
-<div id="i_box"><img src="i_circle.png"></div>
+<div id="container">
+<div id="search">
+<img src="websearch.png">
+<form>
+<input class="searchfield" placeholder="Search across all your apps" type="text" size="50" value=""><br>
+<input class="searchbutton" type="submit" value="Search">
+</form>
+</div>
+
+<div id="appheader">
+<img src="webapps.png">
+</div>
+<div id="apps"></div>
+</div>
+
+<div id="header">
+  <div id="badge"><img src="firefox_badge.png"></div>
+  <div id="startbar"><img src="firefox_start.png"></div>
+</div>
+
 
 <div style="display:none" id="controlBox">
 <div id="controls">
@@ -46,7 +64,7 @@
 <br clear="all">
 
 <div id="feedback"></div>
-<div id="apps"></div>
+<!--<div id="apps"></div>-->
 <div id="messages"></div>
 
 <script type="text/javascript;version=1.8" src="apps.js"></script>
