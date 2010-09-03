@@ -2,6 +2,7 @@
 <body><iframe id="myappsIframe" src="https://myapps.mozillalabs.com/jsapi/extbridge.html"></iframe></body>
 <script src="jquery-1.4.2.min.js"></script>
 <script src="myapps_storage.js"></script>
+<script src="appmanager.js"></script>
 <script>
 var state = '';
 var storage ;
@@ -35,11 +36,11 @@ function updateAppsCache(cb) {
 // for a given URL, check to see if it's associated with an installed app.
 // if it is, return the launch url, else null
 function urlIsAssociatedWithApp(url) {
-    var wantScheme = url.split('://')[0];    
+    var wantScheme = url.split('://')[0];
 
     for (var i in urls) {
-        var haveScheme = i.split('://')[0];    
-        if (haveScheme === '*' || wantScheme === haveScheme) { 
+        var haveScheme = i.split('://')[0];
+        if (haveScheme === '*' || wantScheme === haveScheme) {
             if (i.length <= url.length && i == url.substr(0, i.length)) {
                 return urls[i];
             }
@@ -68,50 +69,7 @@ function mayAdd(url) {
         return false;
     }
     return true;
-}        
-
-
-// our hook that is hit every time the user selects a different tab
-chrome.tabs.onSelectionChanged.addListener(function(tabId, selectInfo) {
-});
-
-// our hook that intercepts every top level navigation.
-chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
-    console.log("(" + changeInfo.status + "): " + tab.url + " [" + changeInfo.url + "]");
-    if (changeInfo.status === 'loading') {
-        // first we need to know if this URL is associated with an installed application
-        var appKey =  urlIsAssociatedWithApp(tab.url);
-
-        if (typeof appKey == 'string') {
-            // this url is associated with an existing application!
-            findRunningApp(tabId, appKey, function(runningTabId) {
-                console.log("this url corresponds to a running application!");
-                console.log(runningTabId);
-                if (runningTabId >= 0) {
-                    // focus target tab
-                    chrome.tabs.update(runningTabId, {selected: true, url: tab.url});
-                    // close current tab
-                    chrome.tabs.remove(tabId);
-                } else {
-                    // promote this tab to an application tab!
-                    // first blank out the title, them move it to position zero.
-                    // XXX: chrome doesn't expose tab pinning to extensions, afaict
-                    // XXX2: if there are pinned tabs, moving to index n where n < # pinned tabs
-                    //       is a noop.  we should handle this gracefully.
-                    // XXX3: this logic needs to become more sophisticated.  We n
-                    chrome.tabs.move(tabId, { index: 0 }, function(tab) {
-                        console.log("yeah, I moved it");
-                    });
-                }
-            });
-        } else if (mayAdd(tab.url)) {
-            chrome.browserAction.setBadgeBackgroundColor({ color: [0,255,0,127], tabId: tabId });
-            chrome.browserAction.setBadgeText({ text: "add", tabId: tabId });
-        } else {
-            chrome.browserAction.setBadgeText({ text: "", tabId: tabId });
-        }
-    }
-});
+}
 
 chrome.browserAction.onClicked.addListener(function(tab) {
     // create an application if we may. 
@@ -136,7 +94,7 @@ chrome.browserAction.onClicked.addListener(function(tab) {
                 });
             }
         });
-    }            
+    }
 });
 
 $(document).ready(function() {
