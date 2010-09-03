@@ -5,7 +5,7 @@
  *  myapps.org - Both the HTML5 site dashboard and the broker of application
  *               purchasing and provising
  *  apptast.ic - An application store, perhaps one that is capable of morphing
- *               plain ol' websites into applications  
+ *               plain ol' websites into applications
  *  spaceface.com - A web site that can be installed as a web application.
  *
  *  The server also does code parameterization for local testing.  The hostnames
@@ -40,7 +40,7 @@ function createServer(port) {
                 prod_url: 'http://spaceface.com',
                 dev_host: "localhost:8125"
             }
-        };      
+        };
 
         var siteroot = null;
         for (s in sites) {
@@ -65,6 +65,42 @@ function createServer(port) {
         var filename = path.join(process.cwd(), siteroot, uri);
 
         console.log("filename: " + siteroot);
+
+        var parsedURI = url.parse(request.url, true);
+        if (parsedURI.pathname == '/subreq') {
+            var makeRequest = function (getURI) {
+                getURI = url.parse(getURI);
+                getURI.pathname = getURI.pathname || '/';
+                getURI.search = getURI.search || '';
+                getURI.port = getURI.port || '80';
+                var client = http.createClient(parseInt(getURI.port), getURI.hostname);
+                var siteRequest = client.request('GET',
+                    getURI.pathname + getURI.search,
+                    {host: getURI.host});
+                siteRequest.end();
+                siteRequest.on('response', function (siteResponse) {
+                    if (parsedURI.query.follow
+                        && siteResponse.statusCode > 300
+                        && siteResponse.statusCode < 400) {
+                        getURI = siteResponse.headers['location'];
+                        sys.puts('Proxy redirect to: ' + getURI);
+                        makeRequest(getURI);
+                        return;
+                    }
+                    response.writeHead(
+                        siteResponse.statusCode, siteResponse.headers);
+                    siteResponse.on('data', function (chunk) {
+                        response.write(chunk, 'binary');
+                    });
+                    siteResponse.on('end', function () {
+                        response.end();
+                    });
+                });
+            };
+            makeRequest(parsedURI.query.uri);
+            sys.puts("Proxy URL " + parsedURI.query.uri);
+            return;
+        }
 
         var serveFile = function (filename) {
             console.log("serving " + filename);
@@ -94,7 +130,7 @@ function createServer(port) {
                         if (true == (textual = (path.extname(filename) === exts[i]))) break;
                     }
 
-                    if (textual && data && data.split) { 
+                    if (textual && data && data.split) {
                         for (s in sites) {
                             data = data.split(sites[s].prod_url).join("http://" + sites[s].dev_host);
                         }
