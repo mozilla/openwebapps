@@ -66,6 +66,10 @@ function createServer(port) {
 
         console.log("filename: " + siteroot);
 
+
+        // I'd like to use this to normalize HTML (optionally):
+        //   http://github.com/aredridel/html5
+        // Maybe turn it into XML/XHTML so it's easy to parse browser-side
         var parsedURI = url.parse(request.url, true);
         if (parsedURI.pathname == '/subreq') {
             var makeRequest = function (getURI) {
