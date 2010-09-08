@@ -151,6 +151,38 @@ window.localStorage.setItem("http://contacts.google.com",
   }
 ));
 
+window.localStorage.setItem("http://www.facebook.com", 
+  JSON.stringify({
+    installTime: new Date().getTime(),
+    installURL: "http://megaappsite.com",
+    app: {
+      name:"Facebook",
+      app:{
+        urls: [],
+        launch: {
+          web_url: "http://www.facebook.com"
+        }
+      },
+      icons: {
+        "96":"cows.png"
+      },
+      description: "Facebook!",
+      developerName: "Facebook",
+      developerURL: "http://www.facebook.com/about",
+
+      // Search notes:
+      // Ajax typeahead is:
+      // http://www.facebook.com/ajax/typeahead/search.php?__a=1&value={searchTerms}&viewer={usernumber}
+      //
+      // There's a Graph API search too.
+      // oauthVersion:"2.0",
+      // oauthAuthorizeURL:"https://graph.facebook.com/oauth/authorize",
+      // oauthGetAccessURL:"https://graph.facebook.com/oauth/access_token",
+      permissions: []
+    }
+  }
+));
+
 init();
 }
 
@@ -234,7 +266,7 @@ function makeOpenAppTabFn(app, targetURL)
   if (navigator.apps && navigator.apps.openAppTab)
   {
     return function(evt) {
-      browser.apps.openAppTab(targetURL, app, {background:evt.metaKey});
+      navigator.apps.openAppTab(app, targetURL, {background:evt.metaKey});
     }
   }
   else 

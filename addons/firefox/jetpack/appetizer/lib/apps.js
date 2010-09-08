@@ -172,12 +172,14 @@ function openAppURL(app, url, inBackground)
 
 function openNewAppTab(targetURL, inBackground)
 {
-  var mainWindow = window.QueryInterface(Ci.nsIInterfaceRequestor)
+  var wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);    
+  var mainWindow = wm.getMostRecentWindow("navigator:browser");
+/*  var mainWindow = recentWindow.QueryInterface(Ci.nsIInterfaceRequestor)
                          .getInterface(Ci.nsIWebNavigation)
                          .QueryInterface(Ci.nsIDocShellTreeItem)
                          .rootTreeItem
                          .QueryInterface(Ci.nsIInterfaceRequestor)
-                         .getInterface(Ci.nsIDOMWindow);
+                         .getInterface(Ci.nsIDOMWindow);*/
   var tab = mainWindow.gBrowser.addTab(targetURL);
   var idx = mainWindow.gBrowser._numPinnedTabs;
   mainWindow.gBrowser.moveTabTo(tab, idx);
@@ -283,8 +285,9 @@ function applyURITemplate(template, inputDict)
 }
 
 function getOpenAppTabFn() {
-  return function(window, app, url) {
+  return function(window, app, url, options) {
     console.log("I got an openAppTab call: " + app + ", " + url);
+    openNewAppTab(url, options && options.background);
   }
 }
 function getSearchAppFn() {
@@ -330,6 +333,7 @@ function getSearchAppFn() {
       if (req.readyState == 4) {  
          if(req.status == 200) {
           console.log("Finished application search for URL " + targetURL);
+          console.log(req.responseText);
           callback(req.responseText);
          } else {
           console.log("Error while performing search for '" + app.name +"': " + req.status + "; " + req.responseText);
@@ -445,8 +449,8 @@ tabs.onLoad = function(tab) {
       sandbox.window = tab.contentWindow.wrappedJSObject;
       Cu.evalInSandbox("if (window && window.navigator) {\
           window.navigator.apps = {\
-            openAppTab: function(app, url) {\
-              openAppTab(window, app, url);\
+            openAppTab: function(app, url, options) {\
+              openAppTab(window, app, url, options);\
             },\
             searchApp: function(install, input, callback) {\
               searchApp(window, install, input, callback);\
