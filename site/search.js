@@ -174,7 +174,7 @@ var spotlight = function() {
   {
     try {
       var install = gApps.installs[i];
-      if (install.app.search && install.app.oauthGetRequestURL)
+      if (install.app.search)
       {
         navigator.apps.searchApp(install, escape(input), searchComplete);
       }

@@ -241,12 +241,10 @@ let clickLinkChecker = function(event) {
       }
     }
 
-    console.log("Checking link " + target.href);
     try {
       let appList = gApps.applicationsForURL(target.href);
 
       if (appList && appList.length) {
-        console.log("That link belongs to application " + appList[0].name);
 
         // got a match:
         // if we already have a tab, switch to it.
@@ -255,8 +253,6 @@ let clickLinkChecker = function(event) {
       
         // TODO ignore apps other than the first for now
         openAppURL(appList[0], target.href)
-      }  else {
-        console.log("That link does not belongs to any application");
       }
       // otherwise fall through
     } catch (e) {
@@ -292,13 +288,12 @@ function getOpenAppTabFn() {
 }
 function getSearchAppFn() {
   return function(window, install, input, callback) {
+    console.log("Entering search function");
     let req = new xhr.XMLHttpRequest()
-    let targetURL;
     let app = install.app;
-
+    let targetURL = applyURITemplate(app.search, {searchTerms: input});
     if (app.oauthGetRequestURL /* searchIsOAuth */)
     {
-      targetURL = applyURITemplate(app.search, {searchTerms: input});
       let parsedURL = new url.URL(targetURL);
       
       console.log("Made template URL " + targetURL);
