@@ -6,6 +6,8 @@
   <script type="text/javascript" src="https://myapps.mozillalabs.com/jsapi/include.js"></script>
   <script type="text/javascript" src="https://myapps.mozillalabs.com/js/manifest.js"></script>
   <script type="text/javascript" src="templating.js"></script>
+  <script type="text/javascript" src="doctest.js"></script>
+  <link rel="stylesheet" type="text/css" href="doctest.css" />
 
 <script type="template" id="manifest_template">{
   name: "<%= doc.title %>",
@@ -236,8 +238,48 @@ Generate manifest from site/URL:
 
 <div id="results">Nothing installed yet.</div>
 
-<script>
-</script>
+<h2>Testing</h2>
+
+<p>This page includes self-tests...</p>
+
+<button onclick="doctest()">Run all tests</button>
+<pre id="doctestOutput">Test results...</pre>
+
+<hr />
+
+<p>First we will test the manifest validation code:</p>
+
+<pre class="doctest">
+$ Manifest.validate(null);
+Error: Invalid manifest: null
+$ goodManifest = {
+>   name: "test",
+>   app: {
+>     urls: ["url1", "url2"],
+>     launch: {web_url: "url1"}
+>   }
+> }
+$ Manifest.validate(goodManifest);
+$ function mani(overrides, deletes) {
+>   doctest.extendDefault(overrides, goodManifest);
+>   if (deletes) {
+>     for (i in deletes) {
+>       overrides[deletes[i]] = undefined;
+>     }
+>   }
+>   return overrides;
+> }
+$ edef = doctest.extendDefault;
+$ Manifest.validate(mani({name: ""}))
+Error: Invalid manifest: missing application name
+$ Manifest.validate(mani({}, ['app']))
+Error: Invalid manifest: missing "app" property
+$ Manifest.validate(mani({app: {urls: ['url1'], launch: {web_url: 'url2'}}}))
+Error: Invalid request: "web_url" (url2) property of "app.launch" must be a subset of app.urls.
+</pre>
+
+<p>Next we could test the actual manifest maker, but I can't now
+because I'm not online.</p>
 
 </body>
 </html>
