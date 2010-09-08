@@ -2,7 +2,7 @@ This is an experiment around an open "application store"
 
 What you'll find here:
 
-addons/ 
+addons/
        Addons for different browsers that provide better support
        for web applications: including new features (like search and
        notification support) and better integration into browser UI.
@@ -10,6 +10,9 @@ addons/
 apptast.ic/
        A meta-store that allows you to turn any webpage into an application.
        hosted at https://apptastic.mozillalabs.com
+
+       This has been moved to a new repository:
+         https://github.com/mozilla/appetizer-apptastic
 
 example/
        An example that shows how to integrate myapps javascript libraries
@@ -20,13 +23,35 @@ harness/
        a nodejs script that will allow you to run a webserver that serves
        up the various sites contained here.
 
-server/ 
+server/
        OBSOLETE - Mike, delete or jot down why this still exists?:
 
-site/ 
+site/
        The "myapps" website.  To the end user this site is a location
        where they can launch their application dashboard.  To the developer
        this is the domain under which several javascript libraries are
-       hosted that allow interaction with the user's applications. 
+       hosted that allow interaction with the user's applications.
        Site nightlies are hosted at https://myapps.mozillalabs.com
 
+
+
+Building the Add-On
+
+You have to install the Jetpack SDK locally.  Get it from tip.
+
+To use Jetpack with 4.0b5 or nightlies, you need to change:
+
+  python-lib/cuddlefish/app-extension/install.rdf
+
+and change <em:maxVersion> to 4.0b6pre (instead of 4.0b5pre).  If this
+is no longer necessary, please delete this node from the README.
+
+Run "source bin/activate" from your jetpack-sdk checkout.  And go to
+addons/firefox/jetpack/appetizer and run:
+
+  cfx xpi
+
+There will now be an appetizer.xpi which you can install.
+
+You may have to edit addons/firefox/jetpack/appetizer/package.json
+(and remove "id").  This is fine, but don't commit the result.
