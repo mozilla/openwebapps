@@ -43,8 +43,9 @@ const APP_STORAGE_DOMAIN = "http://myapps.mozillalabs.com";
 
 
   // HACK DEBUGGING
-for (var i=0;i<10;i++) {
-window.localStorage.setItem("http://www.debugapp.com"+i, JSON.stringify({
+function setUpDemoApps() {
+
+window.localStorage.setItem("http://www.debugapp.com", JSON.stringify({
   
     installTime: new Date().getTime(),
     installURL: "http://megaappsite.com",
@@ -53,7 +54,7 @@ window.localStorage.setItem("http://www.debugapp.com"+i, JSON.stringify({
       app:{
         urls: [],
         launch: {
-          web_url: "http://www.debugapp.com" + i
+          web_url: "http://www.debugapp.com"
         }
       },
       icons: {
@@ -66,7 +67,91 @@ window.localStorage.setItem("http://www.debugapp.com"+i, JSON.stringify({
       search: "http://www.debugapp.com.faketld/search?q={searchTerms}",
       permissions: []
     }})
-);}
+);
+
+window.localStorage.setItem("http://www.greplin.com", 
+  JSON.stringify({
+    installTime: new Date().getTime(),
+    installURL: "http://megaappsite.com",
+    app: {
+      name:"Greplin",
+      app:{
+        urls: [],
+        launch: {
+          web_url: "http://www.greplin.com"
+        }
+      },
+      icons: {
+        "96":"cows.png"
+      },
+      description: "The search bar for your life.",
+      developerName: "greplin",
+      developerURL: "http://blog.greplin.com/",
+      search: "https://www.greplin.com/ajax/spotlight?q={searchTerms}&fq=0",
+      permissions: []
+    }
+  }
+));
+
+window.localStorage.setItem("http://docs.google.com", 
+  JSON.stringify({
+    installTime: new Date().getTime(),
+    installURL: "http://megaappsite.com",
+    app: {
+      name:"Google Docs",
+      app:{
+        urls: [],
+        launch: {
+          web_url: "http://docs.google.com"
+        }
+      },
+      icons: {
+        "96":"cows.png"
+      },
+      description: "Create documents, spreadsheets and presentations online.",
+      developerName: "Google",
+      developerURL: "http://www.google.com/support",
+      search: "https://docs.google.com/feeds/default/private/full", // ?q={searchTerms}", // v=3?
+      searchScope: "https://docs.google.com/feeds",
+      oauthGetRequestURL:"https://www.google.com/accounts/OAuthGetRequestToken",
+      oauthAuthorizeURL:"https://www.google.com/accounts/OAuthAuthorizeToken",
+      oauthGetAccessURL:"https://www.google.com/accounts/OAuthGetAccessToken",
+      permissions: []
+    }
+  }
+));
+
+window.localStorage.setItem("http://contacts.google.com", 
+  JSON.stringify({
+    installTime: new Date().getTime(),
+    installURL: "http://megaappsite.com",
+    app: {
+      name:"Google Contacts",
+      app:{
+        urls: [],
+        launch: {
+          web_url: "http://contacts.google.com"
+        }
+      },
+      icons: {
+        "96":"cows.png"
+      },
+      description: "Google Contacts is a place to import, store and view all of the contact information that's important to you.",
+      developerName: "Google",
+      developerURL: "http://www.google.com/support",
+      search: "https://www.google.com/m8/feeds/contacts/default/full",//?q={searchTerms}",
+      searchScope: "https://www.google.com/m8/feeds",
+      oauthGetRequestURL:"https://www.google.com/accounts/OAuthGetRequestToken",
+      oauthAuthorizeURL:"https://www.google.com/accounts/OAuthAuthorizeToken",
+      oauthGetAccessURL:"https://www.google.com/accounts/OAuthGetAccessToken",
+      permissions: []
+    }
+  }
+));
+
+init();
+}
+
 
 
 // Singleton instance of the Apps object:
@@ -169,6 +254,12 @@ function render()
   box.empty();
   if (false) { /*(showInbox) {*/
     box.append(createAppIcon(messageInboxInstall));
+  }
+  if (true /*gApps.installs.length == 0*/) {
+    var b = elem("button");
+    b.appendChild(document.createTextNode("Get Me Some Demo Apps!"));
+    b.onclick = setUpDemoApps;
+    box.append(b);
   }
 
   var selectedBox = null;
@@ -306,9 +397,45 @@ function renderAppInfo(selectedBox)
     info.appendChild(desc);
 
     var props = elem("div", "appProperties");
+
+    if (gSelectedInstall.app.search) {
+      var searchDiv = elem("div", "cbox");
+      var cbox = elem("input");
+      cbox.setAttribute("type", "checkbox");
+      searchDiv.appendChild(cbox);
+      if (!(gSelectedInstall.prefs && gSelectedInstall.prefs.doNotSearch))
+      {
+        cbox.checked = true;
+      }
+      searchDiv.appendChild(document.createTextNode("Include in search results"));
+      props.appendChild(makeColumn("Search?", searchDiv));
+    } else {
+      props.appendChild(makeColumn("Search?", "Not searchable"));
+    }
+    
+
+    if (gSelectedInstall.app.notification) {
+      var notifyDiv = elem("div", "cbox");
+      var cbox = elem("input");
+      cbox.setAttribute("type", "checkbox");
+      notifyDiv.appendChild(cbox);
+      if (!(gSelectedInstall.prefs && gSelectedInstall.prefs.doNotNotify))
+      {
+        cbox.checked = true;
+      }
+      notifyDiv.appendChild(document.createTextNode("Display notifications"));
+      props.appendChild(makeColumn("Notifications?", notifyDiv));
+    } else {
+      props.appendChild(makeColumn("Notifications?", "None"));
+    }    
+
+    props.appendChild(elem("div", "hdiv"));
     props.appendChild(makeColumn("Install Date", formatDate(gSelectedInstall.installTime)));
     props.appendChild(makeColumn("Installed From", gSelectedInstall.installURL));
+    if (gSelectedInstall.authorization_token) props.appendChild(makeColumn("Authz Token", gSelectedInstall.authorization_token));
+
     info.appendChild(props);
+    $(info).click(function() {return false;});
   }, 200);
   
   document.body.appendChild(info);
@@ -322,6 +449,7 @@ function renderAppInfo(selectedBox)
       return false;
     });
   }, 0);
+
 
 
 }
@@ -355,9 +483,9 @@ function createAppIcon(install) {
         gDisplayMode = APP_INFO;
         render();
       }
-      else if (action == "appCheckUpdates") 
+      else if (action == "appActivate")
       {
-        // NI
+        window.location = "startOAuth.html?app=" + gSelectedInstall.app.app.launch.web_url;
       }
       else if (action == "appUninstall")
       {

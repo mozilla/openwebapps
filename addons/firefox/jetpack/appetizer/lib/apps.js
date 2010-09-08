@@ -39,11 +39,14 @@ let EXPORTED_SYMBOLS = ["Apps"];
 var self = require("self");
 var contextMenu = require("context-menu");
 var windowUtils = require("window-utils");
+var tabs = require("tabs");
+var xhr = require("xhr");
+var url = require("url");
+var oauth = require("oauth");
 var {Cc, Ci, Cu} = require("chrome");
 
 const APP_STORAGE_DOMAIN = "http://myapps.org"
 var gApps = null;
-var windowTracker;
 
 exports.init = function() {
 
@@ -55,10 +58,13 @@ exports.init = function() {
   var storage = STORAGE_MANAGER.getLocalStorageForPrincipal(principal, {});
   gApps = new Apps(storage);
   
+  
   // Start watching windows: we'll add a click handler
   // to all of them.
-  windowTracker = new windowUtils.WindowTracker(tracker);
+  windowTracker = new windowUtils.WindowTracker(windowTrackerDelegate);
   
+  /*
+
   // Register a context-menu handler for the apps viewer
   var menuItem = contextMenu.Item({
 
@@ -71,7 +77,7 @@ exports.init = function() {
     // When the context menu item is clicked, perform a Google
     // search for the link text.
     onClick: function (contextObj, item) {
-      /*var anchor = contextObj.node;*/
+      // var anchor = contextObj.node;
       console.log("Got click on GetInfo");
       console.log(" getInfo context node is " + contextObj.node);
       console.log(" getInfo context node.id is " + contextObj.node.id);
@@ -92,6 +98,7 @@ exports.init = function() {
     }
   });
   contextMenu.add(menuItem);  
+  */
 }
 
 exports.unload = function() {
@@ -258,7 +265,7 @@ let clickLinkChecker = function(event) {
   }
 } 
 
-let tracker = {
+let windowTrackerDelegate = {
   onTrack: function(window) {
     window.addEventListener("click", clickLinkChecker, true);
     
@@ -267,6 +274,199 @@ let tracker = {
 
   }
 };
+
+function applyURITemplate(template, inputDict)
+{
+  return template.replace(/{[^{}]+}/g, function(key){
+    return inputDict[key.replace(/[{}]+/g, "")] || "";
+  });
+}
+
+function getOpenAppTabFn() {
+  return function(window, app, url) {
+    console.log("I got an openAppTab call: " + app + ", " + url);
+  }
+}
+function getSearchAppFn() {
+  return function(window, install, input, callback) {
+    let req = new xhr.XMLHttpRequest()
+    let targetURL;
+    let app = install.app;
+
+    if (app.oauthGetRequestURL /* searchIsOAuth */)
+    {
+      targetURL = applyURITemplate(app.search, {searchTerms: input});
+      let parsedURL = new url.URL(targetURL);
+      
+      console.log("Made template URL " + targetURL);
+      var request = {
+        method:"GET",
+        action: parsedURL.scheme + "://" + parsedURL.host + parsedURL.path,
+        parameters: {
+          title: input
+        }
+      };
+      var accessor = {
+        consumerKey: "anonymous",
+        consumerSecret: "anonymous",
+        token: escape(install.authorization_token),
+        tokenSecret: escape(install.authorization_secret)
+      };
+      oauth.OAuth.completeRequest(request, accessor);
+      //var header = oauth.OAuth.getAuthorizationHeader(null, request.parameters);
+      //req.setRequestHeader("Authorization", header);
+      // req.setRequestHeader("GData-Version", "3.0");
+      targetURL = request.action + "?" + oauth.OAuth.formEncode(request.parameters);
+      console.log("Starting application search; URL is " + targetURL);// + "; header is Authorization: " + header);
+      req.open("GET", targetURL, true);
+    }
+    else
+    {
+      req.open("GET", targetURL, true);
+      targetURL = applyURITemplate(app.search, {searchTerms: input});
+      console.log("Starting application search; URL is " + targetURL);
+    }
+    req.onreadystatechange = function (aEvt) {  
+      if (req.readyState == 4) {  
+         if(req.status == 200) {
+          console.log("Finished application search for URL " + targetURL);
+          callback(req.responseText);
+         } else {
+          console.log("Error while performing search for '" + app.name +"': " + req.status + "; " + req.responseText);
+          callback(null);
+        }
+      }  
+    };  
+    req.send(null);       
+    console.log("Started application search for '" + app.name + "': " + input);
+  }
+}
+
+function getAppRequestTokenFn() {
+  return function(window, app, callback) {
+    // TODO verify arguments of app
+    var request = {
+      method:"GET",
+      action: app.oauthGetRequestURL,
+      parameters: {
+        oauth_consumer_key:"anonymous",
+        oauth_signature_method:"HMAC-SHA1",
+        oauth_callback:"http://localhost:8123/oauthAccessGranted.html?app=" + app.app.launch.web_url,
+        xoauth_displayname:app.name
+      }
+    };
+    if (app.searchScope) request.parameters.scope = app.searchScope;
+    
+    var accessor = {
+      consumerKey: "anonymous",
+      consumerSecret: "anonymous"
+    };
+    oauth.OAuth.completeRequest(request, accessor);
+    var url = oauth.OAuth.addToURL(app.oauthGetRequestURL, request.parameters);
+
+    // kick off XHR:
+    let req = new xhr.XMLHttpRequest()
+    req.open("GET", url, true);
+    console.log("Starting OAuth request token request for " + app.name + "; URL is " + url);
+    req.onreadystatechange = function (aEvt) {  
+      if (req.readyState == 4) {  
+         if(req.status == 200) {
+          console.log("Finished OAuth request token request for " + app.name + "; it is " + req.responseText);
+          var result = oauth.OAuth.decodeForm(req.responseText);
+          callback(oauth.OAuth.getParameterMap(result));
+         } else {
+          console.log("Error while getting OAuth request token for '" + app.name +"': " + req.status);
+          callback(null);
+        }
+      }  
+    };  
+    req.send(null);       
+  }
+}
+
+
+function getAppAccessTokenFn() {
+  return function(window, app, verifier, token, secret, callback) {
+    // TODO verify arguments of app
+    console.log("Starting OAuth access token request for " + app.name + "; verifier is " + verifier + "; token is " + token + "; secret is " + secret);
+    var request = {
+      method:"GET",
+      action: app.oauthGetAccessURL,
+      parameters: {
+        oauth_consumer_key:"anonymous",
+        oauth_token:token,
+        oauth_verifier:verifier,//"http://localhost:8123/oauthAccessGranted.html?app=" + app.app.launch.web_url,
+        oauth_signature_method:"HMAC-SHA1"
+      }
+    };
+    var accessor = {
+      consumerKey: "anonymous",
+      consumerSecret: "anonymous",
+      tokenSecret: secret
+    };
+    oauth.OAuth.completeRequest(request, accessor);
+    console.log("constructing oauth request; token is " + token + " and verifier is " + verifier);
+    var header = oauth.OAuth.getAuthorizationHeader("www.google.com", request.parameters);
+    // var url = oauth.OAuth.addToURL(app.oauthGetAccessURL, request.parameters);
+    var url = app.oauthGetAccessURL;
+
+    // kick off XHR:
+    let req = new xhr.XMLHttpRequest()
+    req.open("GET", url, true);
+    req.setRequestHeader("Authorization", header);
+    console.log("Starting OAuth access token request for " + app.name + "; URL is " + url + "; header is " + header);
+    req.onreadystatechange = function (aEvt) {  
+      if (req.readyState == 4) {  
+         if(req.status == 200) {
+          console.log("Finished OAuth access token request for " + app.name);
+          var result = oauth.OAuth.decodeForm(req.responseText);
+          callback(oauth.OAuth.getParameterMap(result));
+         } else {
+          console.log("Error while getting OAuth access token for '" + app.name +"': " + req.status + "; " + req.responseText);
+          callback(null);
+        }
+      }  
+    };  
+    req.send(null);       
+  }
+}
+
+
+
+tabs.onLoad = function(tab) {
+  if (true) // TODO only do this once...
+  {
+    try {
+      let sandbox = new Cu.Sandbox(tab.contentWindow);
+      sandbox.importFunction(getOpenAppTabFn(), "openAppTab");
+      sandbox.importFunction(getSearchAppFn(), "searchApp");
+      sandbox.importFunction(getAppRequestTokenFn(), "getAppOAuthRequestToken");
+      sandbox.importFunction(getAppAccessTokenFn(), "getAppOAuthAccessToken");
+      sandbox.window = tab.contentWindow.wrappedJSObject;
+      Cu.evalInSandbox("if (window && window.navigator) {\
+          window.navigator.apps = {\
+            openAppTab: function(app, url) {\
+              openAppTab(window, app, url);\
+            },\
+            searchApp: function(install, input, callback) {\
+              searchApp(window, install, input, callback);\
+            },\
+            getAppOAuthRequestToken: function(app, callback) {\
+              getAppOAuthRequestToken(window, app, callback);\
+            },\
+            getAppOAuthAccessToken: function(app, verifier, token, secret, callback) {\
+              getAppOAuthAccessToken(window, app, verifier, token, secret, callback);\
+            }\
+          };\
+        }", sandbox, "1.8", "resource://apptastic/content/apps.js", 1);
+    } catch (e) {
+      console.log("Error while injecting navigator.apps block: " + e);
+    }
+  }
+}
+
+
+
 
 
 function Apps(storage) {
@@ -376,6 +576,16 @@ Apps.prototype.remove = function(install) {
   this.reload();
 }
 
+// Returns the install whose launch/web_url matches the given url.
+Apps.prototype.getInstall = function(url) 
+{
+  for (var i=0;i<this.installs.length;i++)
+  {
+    if (this.installs[i].app.app.launch.web_url == url)
+      return this.installs[i];
+  }
+  return null;
+}
 
 Apps.prototype.searchApps = function(term) {
   var lcterm = term.toLowerCase();

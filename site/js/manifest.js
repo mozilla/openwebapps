@@ -42,7 +42,7 @@
   Manifest validation code broken out into a separate file.
 **/
 
-;Manifest = (function() {
+;var Manifest = (function() {
   function applicationMatchesURL(application, url)
   {
     // TODO look into optimizing this so we are not constructing

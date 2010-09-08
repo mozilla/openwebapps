@@ -1,0 +1,58 @@
+<html>
+<head>
+<script type="text/javascript" src="js/manifest.js"></script>
+<script type="text/javascript" src="js/apps.js"></script>
+<script type="text/javascript" src="js/sha1.js"></script>
+<script type="text/javascript" src="js/oauth.js"></script>
+
+<script>
+function arg( name )
+{
+  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+  var regexS = "[\\?&]"+name+"=([^&#]*)";
+  var regex = new RegExp( regexS );
+  var results = regex.exec( window.location.href );
+  if( results == null )
+    return "";
+  else
+    return results[1];
+}
+
+var gTheApp = null;
+var gApps = null;
+function start()
+{
+  gApps = new Apps();
+  var targetApp = arg("app");
+  if (targetApp) {
+    var install = gApps.getInstall(targetApp);
+    if (install) {
+      if (install.app && install.app.oauthGetRequestURL) // TODO check for the other two URLs too
+      {
+        gTheApp = install.app;
+        if (navigator.apps && navigator.apps.getAppOAuthRequestToken) {
+
+          navigator.apps.getAppOAuthRequestToken(install.app, gotRequestToken);
+        } else ("Sorry, your browser can't handle authorization requests.  Please get an addon to support that feature!");
+      } else error("Sorry, that application does not support authorization.");
+    } else error("Sorry, that application is not installed!");
+  } else error("Sorry, can't proceed because of incorrect input.");
+}
+
+function gotRequestToken(result)
+{ 
+  // {"oauth_token":"4/MJRPm6_masYmXUvKeQFIyumZtYu2","oauth_token_secret":"TfDkvLPJlCh+wvrfMUDyv/+j"}
+  var targetURL = gTheApp.oauthAuthorizeURL;
+  targetURL = targetURL + "?oauth_token=" + result.oauth_token;
+  gApps.saveAuthorizationSecret(gTheApp.app.launch.web_url, result.oauth_token_secret);
+  window.location = targetURL;
+}
+
+function error(msg) {
+  document.getElementById("msg").innerHTML = msg;
+}
+</script>
+
+<body onload="start()">
+<div id="msg"></div>
+</body>

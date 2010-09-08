@@ -101,6 +101,24 @@ Apps.prototype.remove = function(key)
   this.reload();
 }
 
+Apps.prototype.saveAuthorizationSecret = function(url, secret)
+{
+  var theInstall = this.getInstall(url);
+  if (theInstall) {
+    theInstall.authorization_secret = secret;
+    this.storage.setItem(url, JSON.stringify(theInstall));
+  }
+}
+
+Apps.prototype.saveAuthorizationToken = function(url, token)
+{
+  var theInstall = this.getInstall(url);
+  if (theInstall) {
+    theInstall.authorization_token = token;
+    this.storage.setItem(url, JSON.stringify(theInstall));
+  }
+}
+
 
 Apps.prototype.searchApps = function(term) {
   var lcterm = term.toLowerCase();

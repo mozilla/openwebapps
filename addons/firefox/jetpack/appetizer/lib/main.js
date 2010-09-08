@@ -45,10 +45,11 @@ var {Cc, Ci, Cu} = require("chrome");
 exports.main = function(options, callbacks) {
   // Don't need to quit right away: no callbacks.quit();
   apps.init();
-  registerCustomAppsProtocol();
+
+/*  registerCustomAppsProtocol();
   tabs.open({
     url: self.data.url("apps://apps/dashboard.html")
-  });
+  });*/
 }
 exports.unload = function(reason)
 {

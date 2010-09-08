@@ -1,0 +1,71 @@
+<html>
+<head>
+<script type="text/javascript" src="js/manifest.js"></script>
+<script type="text/javascript" src="js/apps.js"></script>
+<script type="text/javascript" src="js/sha1.js"></script>
+<script type="text/javascript" src="js/oauth.js"></script>
+
+<script>
+function arg( name )
+{
+  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+  var regexS = "[\\?&]"+name+"=([^&#]*)";
+  var regex = new RegExp( regexS );
+  var results = regex.exec( window.location.href );
+  if( results == null )
+    return "";
+  else
+    return results[1];
+}
+
+var gTheApp = null;
+var gApps;
+function start()
+{
+  try {
+    gApps = new Apps();
+    var targetApp = unescape(arg("app"));
+    if (targetApp) {
+      var install = gApps.getInstall(targetApp);
+      if (install) {
+        if (install.app && install.app.oauthGetAccessURL) // TODO check for the other two URLs too
+        {
+          if (install.authorization_secret) 
+          {
+            gTheApp = install.app;
+            if (navigator.apps && navigator.apps.getAppOAuthAccessToken) {
+              var verifier = unescape(arg("oauth_verifier"));
+              var token = unescape(arg("oauth_token"));
+              navigator.apps.getAppOAuthAccessToken(install.app, verifier, token, install.authorization_secret, gotAccessToken);
+            } else ("Sorry, your browser can't handle authorization requests.  Please get an addon to support that feature!");
+          } else error("Sorry, your app doesn't have a secret saved.  Please start over!");
+        } else error("Sorry, that application does not support authorization.");
+      } else error("Sorry, that application is not installed!");
+    } else error("Sorry, can't proceed because of incorrect input.");
+  } catch (e) {
+    error("Sorry, an error occured while authorizing your application: " + e);
+  }
+}
+
+function gotAccessToken(result)
+{ 
+  // could be an error
+  // {"oauth_token":"4/MJRPm6_masYmXUvKeQFIyumZtYu2","oauth_token_secret":"TfDkvLPJlCh+wvrfMUDyv/+j","oauth_callback_confirmed":"true"}
+  if (result) {
+    gApps.saveAuthorizationToken(gTheApp.app.launch.web_url, result.oauth_token);
+    gApps.saveAuthorizationSecret(gTheApp.app.launch.web_url, result.oauth_token_secret);
+  }
+  window.location="/dashboard.html"
+}
+
+
+function error(msg) {
+  document.getElementById("msg").innerHTML = msg;
+}
+</script>
+</head>
+
+<body onload="start()">
+<div id="msg"></div>
+</body>
+</html>
