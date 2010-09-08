@@ -39,7 +39,9 @@ inbox icons from http://kateengland.bigcartel.com/product/workflow-desktop-icons
  we do not yet have license - redo, or negotiate with her!
 */
 
-const APP_STORAGE_DOMAIN = "http://myapps.mozillalabs.com";
+
+
+APP_STORAGE_DOMAIN = "http://myapps.mozillalabs.com";
 
 
   // HACK DEBUGGING
@@ -58,7 +60,7 @@ window.localStorage.setItem("http://www.debugapp.com", JSON.stringify({
         }
       },
       icons: {
-        "96":"cows.png"
+        "96":"/cows.png"
       },
       description: "Manage your phlogiston remotely, using our fabulous fluxtronic impellers!",
       developerName: "Miskatonix",
@@ -161,8 +163,8 @@ var gApps = null;
 var gSelectedInstall = null;
 
 // Display mode:
-const ROOT = 1;
-const APP_INFO = 2;
+/* const */ ROOT = 1;
+/* const */ APP_INFO = 2;
 var gDisplayMode = ROOT;
 
 // Various display settings
@@ -170,7 +172,7 @@ var gIconSize = 48;// get from pref
 
 function init() {
   try { 
-    // Construct our Apps handle
+    // Construct our Apps handl
     gApps = new Apps();
 
     // Draw it
@@ -269,11 +271,13 @@ function render()
       var install = gApps.installs[i];
 
       var icon = createAppIcon(install);
+
       if (install === gSelectedInstall) {
         selectedBox = icon;
       }
       box.append(icon);
     } catch (e) {
+
       gApps.logError("Error while creating application icon for app " + i + ": " + e);
     }
   }
@@ -459,15 +463,14 @@ function createAppIcon(install) {
   var div = elem("div", "appbox");
   div.onclick = makeOpenAppTabFn(install.app, install.app.app.launch.web_url);
   div.setAttribute("id", "app:" + install.app.app.launch.web_url);
-
   var canvas = createAppCanvas(install.app);
+    
   canvas.setAttribute("class", "app_icon");
   div.appendChild(canvas);
 
   var label = elem("div", "app_name");
-  label.appendChild(document.createTextNode(install.app.name));
-  div.appendChild(label);
-  
+  $(label).text(install.app.name).appendTo($(div));
+
   // Set up the context menu:
   $(div).contextMenu(
     {
@@ -501,25 +504,37 @@ function createAppIcon(install) {
 
 function createAppCanvas(manifest)
 {
-  var cvs = elem("canvas");
-  cvs.width = gIconSize+6;
-  cvs.height = gIconSize+6;
-  ctx = cvs.getContext("2d");
-  
   var img = new Image();
-  // TODO: put a generic icon in first because it could load slowly.
-  // TODO: be clever about which icon to use
-  
-  var icons = manifest.icons;
+
   var size = null;
+
+  var icons = manifest.icons;
   if (icons["96"]) size = "96";
   else if (icons["48"]) size = "48";
   else{
     // take the first one?
   }
   img.src = manifest.icons[size];
-  img.onload = makeAppCanvasDrawFn(ctx, img, manifest);
-  return cvs;
+
+  try {
+    var cvs = elem("canvas");
+    cvs.width = gIconSize+6;
+    cvs.height = gIconSize+6;
+    ctx = cvs.getContext("2d");
+    
+    // TODO: put a generic icon in first because it could load slowly.
+    // TODO: be clever about which icon to use
+    
+    img.onload = makeAppCanvasDrawFn(ctx, img, manifest);
+    return cvs;
+  } catch(e) {
+    // no canvas!
+  }
+
+  img.width = gIconSize+6;
+  img.height = gIconSize+6;
+
+  return img;
 }
 
 function makeAppCanvasDrawFn(ctx, img, manifest)
@@ -650,10 +665,11 @@ function onMessage(event)
     return;
   }
 }
-window.addEventListener('message', onMessage, false);
 
-
-
+if (window.addEventListener) {
+    window.addEventListener('message', onMessage, false);
+} else if(window.attachEvent) {
+    window.attachEvent('onmessage', onMessage);
+}
 
 // TODO: onfocus, reload
-

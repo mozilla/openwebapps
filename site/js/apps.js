@@ -159,22 +159,26 @@ Apps.prototype.initiateNotificationRefresh = function(app, callback)
   var xhr = new XMLHttpRequest();
   
   // TODO perhaps send a "updatedSince" argument along with this?
-  xhr.open("GET", app.notification, true);
-  xhr.onreadystatechange = function(aEvt) {
-    if (xhr.readyState == 4) {
-      if (xhr.status == 200) {
-        try {
-          var result = JSON.parse(xhr.responseText);
-          // okay... now... are any of these new?
-          // if so... put it somewhere?
-          // and let somebody know?
-        } catch (e) {
-
+  try {
+    xhr.open("GET", app.notification, true);
+    xhr.onreadystatechange = function(aEvt) {
+      if (xhr.readyState == 4) {
+        if (xhr.status == 200) {
+          try {
+            var result = JSON.parse(xhr.responseText);
+            // okay... now... are any of these new?
+            // if so... put it somewhere?
+            // and let somebody know?
+          } catch (e) {
+  
+          }
         }
       }
     }
+    xhr.send(null);
+  } catch(e) {
+
   }
-  xhr.send(null);
 }
 
 Apps.prototype.applicationsForURL = function(url)

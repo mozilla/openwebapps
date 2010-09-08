@@ -28,24 +28,25 @@ function createServer(port) {
             "myapps.mozillalabs.com": {
                 dir: "../site",
                 prod_url: 'https://myapps.mozillalabs.com',
-                dev_host: "localhost:8123"
+                dev_port: "8123"
             },
             "apptastic.mozillalabs.com": {
                 dir: "../apptast.ic",
                 prod_url: 'https://apptastic.mozillalabs.com',
-                dev_host: "localhost:8124"
+                dev_port: "8124"
             },
             "spaceface.com": {
                 dir: "../examples/spaceface.com",
                 prod_url: 'http://spaceface.com',
-                dev_host: "localhost:8125"
+                dev_port: "8125"
             }
         };
 
         var siteroot = null;
         for (s in sites) {
-            if (hostname == sites[s].dev_host) {
-                console.log("req for host: " + s + " ("+ sites[s].dev_host  + ")");
+            var port = hostname.split(":")[1];
+            if (port == sites[s].dev_port) {
+                console.log("req for host: " + s + " (port "+ sites[s].dev_port  + ")");
                 siteroot = sites[s].dir;
                 break;
             }
@@ -135,8 +136,10 @@ function createServer(port) {
                     }
 
                     if (textual && data && data.split) {
+                        // which hostname shall we substituted in?
+                        var subHost = hostname.split(":")[0];
                         for (s in sites) {
-                            data = data.split(sites[s].prod_url).join("http://" + sites[s].dev_host);
+                            data = data.split(sites[s].prod_url).join("http://" + subHost + ":" + sites[s].dev_port);
                         }
                     }
 
@@ -160,4 +163,4 @@ function createServer(port) {
 };
 var ports = [8123, 8124, 8125];
 for (port in ports) createServer(ports[port]);
-console.log("Server running at http://localhost:{" + ports.join(",") + "}");
+console.log("Server running at http://*:{" + ports.join(",") + "}");
