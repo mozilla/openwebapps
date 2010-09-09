@@ -16,9 +16,6 @@ harness/
        a nodejs script that will allow you to run a webserver that serves
        up the various sites contained here.
 
-server/
-       OBSOLETE - Mike, delete or jot down why this still exists?:
-
 site/
        The "myapps" website.  To the end user this site is a location
        where they can launch their application dashboard.  To the developer
