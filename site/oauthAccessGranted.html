@@ -37,7 +37,7 @@ function start()
               var verifier = unescape(arg("oauth_verifier"));
               var token = unescape(arg("oauth_token"));
               navigator.apps.getAppOAuthAccessToken(install.app, verifier, token, install.authorization_secret, gotAccessToken);
-            } else ("Sorry, your browser can't handle authorization requests.  Please get an addon to support that feature!");
+            } else error("Sorry, your browser can't handle authorization requests.  Please get an addon to support that feature!");
           } else error("Sorry, your app doesn't have a secret saved.  Please start over!");
         } else error("Sorry, that application does not support authorization.");
       } else error("Sorry, that application is not installed!");

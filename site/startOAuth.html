@@ -26,14 +26,15 @@ function start()
   var targetApp = arg("app");
   if (targetApp) {
     var install = gApps.getInstall(targetApp);
-    if (install) {
+    if (install && install.app) {
+      install = install.app;
       if (install.app && install.app.oauthGetRequestURL) // TODO check for the other two URLs too
       {
         gTheApp = install.app;
         if (navigator.apps && navigator.apps.getAppOAuthRequestToken) {
 
           navigator.apps.getAppOAuthRequestToken(install.app, gotRequestToken);
-        } else ("Sorry, your browser can't handle authorization requests.  Please get an addon to support that feature!");
+        } else error("Sorry, your browser can't handle authorization requests.  Please get an addon to support that feature!");
       } else error("Sorry, that application does not support authorization.");
     } else error("Sorry, that application is not installed!");
   } else error("Sorry, can't proceed because of incorrect input.");
