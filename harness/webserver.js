@@ -30,11 +30,11 @@ function createServer(port) {
                 prod_url: 'https://myapps.mozillalabs.com',
                 dev_port: "8123"
             },
-            "apptastic.mozillalabs.com": {
-                dir: "../apptast.ic",
-                prod_url: 'https://apptastic.mozillalabs.com',
-                dev_port: "8124"
-            },
+//            "apptastic.mozillalabs.com": {
+//                dir: "../apptast.ic",
+//                prod_url: 'https://apptastic.mozillalabs.com',
+//                dev_port: "8124"
+//             },
             "spaceface.com": {
                 dir: "../examples/spaceface.com",
                 prod_url: 'http://spaceface.com',
