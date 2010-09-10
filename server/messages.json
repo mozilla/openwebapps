@@ -1,5 +1,0 @@
-[
-{% for msg in msgs %}
-{"id":{{msg.id}},"app":{{msg.appid}},"date":{{msg.sendDate}},"text":"{{msg.text.replace("\"", "\\\"")}}"},
-{% end %}
-]

@@ -7,13 +7,6 @@ addons/
        for web applications: including new features (like search and
        notification support) and better integration into browser UI.
 
-apptast.ic/
-       A meta-store that allows you to turn any webpage into an application.
-       hosted at https://apptastic.mozillalabs.com
-
-       This has been moved to a new repository:
-         https://github.com/mozilla/appetizer-apptastic
-
 example/
        An example that shows how to integrate myapps javascript libraries
        to allow a site author to trigger an installation of their application.
@@ -22,9 +15,6 @@ harness/
        Files related to setting up a local develoment environment.  Currently
        a nodejs script that will allow you to run a webserver that serves
        up the various sites contained here.
-
-server/
-       OBSOLETE - Mike, delete or jot down why this still exists?:
 
 site/
        The "myapps" website.  To the end user this site is a location
