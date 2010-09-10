@@ -1,5 +1,6 @@
 /* Taken from greplin.com; investigate licensing terms before release */
 
+var input;
 (function( $ ) {
 		$.widget( "ui.combobox", {
 			_create: function() {
@@ -151,6 +152,58 @@ var linput;
 var cycle=0;
 var ajax_request = {abort: function(){return null;}}
 
+function SearchResult()
+{
+  this.resultMap = {}
+}
+SearchResult.prototype = {
+  addResults: function(install, appResults) 
+  {
+    try {
+      var parsed = JSON.parse(appResults)
+      if (parsed.results)
+      {
+        var i;
+        for (i=0;i<parsed.results.length;i++)
+        {
+          var res = parsed.results[i];
+          var cat = res.category_term ? res.category_term : "Result";
+          if (!this.resultMap[cat]) this.resultMap[cat] = [];
+          this.resultMap[cat].push(res);
+        }
+      }
+    } catch (e) {
+      alert(e);
+    }
+    this.render();
+    // TODO sort categories that changed
+  },
+  render: function() {
+    var categories = ["<ul>"];
+    var key;
+    for (key in this.resultMap)
+    {
+      var categoryItems = ["<div>" + key + "</div>", "<ul>"];
+      for (var i=0;i<this.resultMap[key].length;i++)
+      {
+        var item = this.resultMap[key][i];
+        categoryItems.push("<li><a href=\"" +  item.link + "\">" + item.title + "</a><br>" + item.summary + "</li>");
+      }
+      categoryItems.push("</ul>");
+      categories.push(categoryItems.join(""));
+    }
+    categories.push("</ul>");
+    $("#results").html(categories.join("")).show();
+  }
+}
+
+
+function makeSearchComplete(install, fullResults) {
+  return function(appResults) {
+    fullResults.addResults(install, appResults);
+  }
+}
+
 var spotlight = function() {
   // searches could be handled natively if the target supports cross-origin XHR 
   // and we have an access token.  since we don't have a way to do that yet,
@@ -170,19 +223,24 @@ var spotlight = function() {
   
   $("#loading_results").show();
     
+  var fullResults = new SearchResult();
+  var any = false;
   for (var i=0;i<gApps.installs.length;i++)
   {
     try {
       var install = gApps.installs[i];
       if (install.app.search)
       {
-        navigator.apps.searchApp(install, escape(input), searchComplete);
+        any = true;
+        navigator.apps.searchApp(install, escape(input), makeSearchComplete(install, fullResults));
       }
     } catch (e) {
       alert(e.stack);
     }
   }
-
+  if (!any) {
+    $("#results").html("Sorry, none of your apps support search.").show();
+  }
 
 /*
   ajax_request = $.ajax({

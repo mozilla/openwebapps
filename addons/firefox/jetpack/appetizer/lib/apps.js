@@ -45,7 +45,7 @@ var url = require("url");
 var oauth = require("oauth");
 var {Cc, Ci, Cu} = require("chrome");
 
-const APP_STORAGE_DOMAIN = "http://myapps.org"
+const APP_STORAGE_DOMAIN = "http://myapps.mozillalabs.com"
 var gApps = null;
 
 exports.init = function() {
@@ -62,43 +62,7 @@ exports.init = function() {
   // Start watching windows: we'll add a click handler
   // to all of them.
   windowTracker = new windowUtils.WindowTracker(windowTrackerDelegate);
-  
-  /*
 
-  // Register a context-menu handler for the apps viewer
-  var menuItem = contextMenu.Item({
-
-    label: "Get Application Info...",
-
-    // A CSS selector. Matching on this selector triggers the
-    // display of our context menu.
-    context: ".appbox",// TODO: be much more careful with this: only do the check in an app-management domain
-
-    // When the context menu item is clicked, perform a Google
-    // search for the link text.
-    onClick: function (contextObj, item) {
-      // var anchor = contextObj.node;
-      console.log("Got click on GetInfo");
-      console.log(" getInfo context node is " + contextObj.node);
-      console.log(" getInfo context node.id is " + contextObj.node.id);
-      console.log(" getInfo context window is " + contextObj.window);
-      try {
-        var appURL = contextObj.node.id.split(4);
-        var loc = contextObj.window.location;
-        var action = {
-          a: "info",
-          id: appURL
-        };
-        var newURL = loc.protocol + "//" +
-          loc.host + loc.pathname + "#" + JSON.stringify(action);
-        contextObj.window.location=newURL;
-      } catch (e) {
-        console.log(e);
-      }
-    }
-  });
-  contextMenu.add(menuItem);  
-  */
 }
 
 exports.unload = function() {
@@ -436,6 +400,7 @@ tabs.onLoad = function(tab) {
   if (true) // TODO only do this once...
   {
     try {
+      // TODO: only do this for myapps.ml.com
       let sandbox = new Cu.Sandbox(tab.contentWindow);
       sandbox.importFunction(getOpenAppTabFn(), "openAppTab");
       sandbox.importFunction(getSearchAppFn(), "searchApp");

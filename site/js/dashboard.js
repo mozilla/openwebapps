@@ -47,6 +47,7 @@ APP_STORAGE_DOMAIN = "http://myapps.mozillalabs.com";
   // HACK DEBUGGING
 function setUpDemoApps() {
 
+/*
 window.localStorage.setItem("http://www.debugapp.com", JSON.stringify({
   
     installTime: new Date().getTime(),
@@ -182,6 +183,31 @@ window.localStorage.setItem("http://www.facebook.com",
     }
   }
 ));
+*/
+
+
+window.localStorage.setItem("http://bugzapp.mozillalabs.com", 
+  JSON.stringify({
+    installTime: new Date().getTime(),
+    installURL: "http://bugzapp.mozillalabs.com",
+    app: {
+      name:"Bugzapp",
+      app:{
+        urls: [],
+        launch: {
+          web_url: "http://bugzapp.mozillalabs.com"
+        }
+      },
+      icons: {
+        "96":"cows.png"
+      },
+      description: "Bugzilla search",
+      developerName: "Mozilla Labs",
+      search:"http://bugzapp.mozillalabs.com/search?q={searchTerms}",
+      permissions: []
+    }
+  }
+));
 
 init();
 }
@@ -282,8 +308,6 @@ function makeOpenAppTabFn(app, targetURL)
 // and labels for all apps.
 function render() 
 {
-  // if gDisplayMode == .......
-  
   var box = $("#apps");
   box.empty();
   if (false) { /*(showInbox) {*/

@@ -28,7 +28,10 @@ function start()
     if (targetApp) {
       var install = gApps.getInstall(targetApp);
       if (install) {
-        if (install.app && install.app.oauthGetAccessURL) // TODO check for the other two URLs too
+        if (install.app && install.app.oauthVersion == "2.0")
+        {
+          alert("We're back!");
+        } else if (install.app && install.app.oauthGetAccessURL) // TODO check for the other two URLs too
         {
           if (install.authorization_secret) 
           {
