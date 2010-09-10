@@ -204,6 +204,35 @@ window.localStorage.setItem("http://bugzapp.mozillalabs.com",
       description: "Bugzilla search",
       developerName: "Mozilla Labs",
       search:"http://bugzapp.mozillalabs.com/search?q={searchTerms}",
+      conduit:"http://bugzapp.mozillalabs.com/appconduit",
+      supportedAPIs:["search"],
+      permissions: []
+    }
+  }
+));
+
+
+
+
+window.localStorage.setItem("http://dictionary.mozillalabs.com", 
+  JSON.stringify({
+    installTime: new Date().getTime(),
+    installURL: "http://dictionary.mozillalabs.com",
+    app: {
+      name:"Dictionary",
+      app:{
+        urls: [],
+        launch: {
+          web_url: "http://en.wiktionary.org"
+        }
+      },
+      icons: {
+        "48":"data:image/png;base64,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"
+      },
+      description: "Dictionary",
+      developerName: "Mozilla Labs",
+      conduit:"http://dictionary.mozillalabs.com/appconduit",
+      supportedAPIs:["search"],
       permissions: []
     }
   }

@@ -238,10 +238,6 @@ a:hover {
   background-color:#d0d0d0
 }
 
-#results {display:none}
-#loading_results {display:none}
-#no_results {display:none}
-
 
 /* Generic context menu styles */
 .contextMenu {

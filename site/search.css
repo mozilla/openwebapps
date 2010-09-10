@@ -1,7 +1,7 @@
 #results {
-	padding: 20px 70px;
-	background-color:#f9f5fc;
-	display:none;
+	padding: 5px 5px;
+	background-color:#f8f8f8;
+/*	display:none;*/
 	width:600px;
 }
 
@@ -26,6 +26,35 @@
 #loading_results {
 	display:none;
 }
+
+#results > ul > li > .searchCat {
+  font:bold 12px Helvetica;
+  margin-bottom:-16px;
+  width:60px;
+}
+
+#results > ul > li > ul {
+  padding-left:0px;
+  margin-left:60px;
+}
+#results > ul > li > ul > li > .searchHead > img {
+  padding-right:4px;
+}
+#results > ul > li > ul > li > .searchHead {
+  font:14px Helvetica;
+}
+#results > ul > li > ul > li > .searchHead > a {
+  color:black;
+}
+#results > ul > li > ul > li > .searchSumm {
+  display:none;
+  margin-left:20px;
+  font:14px Helvetica;
+}
+#results > ul > li > ul > li {
+  margin-bottom:2px;
+}
+
 
 
 .ui-autocomplete { position: absolute; cursor: default; font-size:12px;}	

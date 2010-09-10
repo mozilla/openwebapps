@@ -160,6 +160,7 @@ SearchResult.prototype = {
   addResults: function(install, appResults) 
   {
     try {
+      dump("adding results for " + install.app.name + " to full result set\n");
       var parsed = JSON.parse(appResults)
       if (parsed.results)
       {
@@ -167,6 +168,7 @@ SearchResult.prototype = {
         for (i=0;i<parsed.results.length;i++)
         {
           var res = parsed.results[i];
+          res.app = install.app;
           var cat = res.category_term ? res.category_term : "Result";
           if (!this.resultMap[cat]) this.resultMap[cat] = [];
           this.resultMap[cat].push(res);
@@ -175,34 +177,47 @@ SearchResult.prototype = {
     } catch (e) {
       alert(e);
     }
-    this.render();
+    try {
+      this.render();
+    } catch (e) {
+      alert(e);
+    }
     // TODO sort categories that changed
   },
   render: function() {
+    dump("Rendering\n");
     var categories = ["<ul>"];
     var key;
     for (key in this.resultMap)
     {
-      var categoryItems = ["<div>" + key + "</div>", "<ul>"];
+      var categoryItems = ["<li><div class='searchCat'>" + key + "</div>", "<ul>"];
       for (var i=0;i<this.resultMap[key].length;i++)
       {
         var item = this.resultMap[key][i];
-        categoryItems.push("<li><a href=\"" +  item.link + "\">" + item.title + "</a><br>" + item.summary + "</li>");
+        var icon = item.app.icons["48"];
+        dump("Got icon for search result: " + icon + " - item.app.icons is " + JSON.stringify(item.app.icons));
+        categoryItems.push("<li><div class='searchHead'><img src='" + icon + "' width='16' height='16'><a href=\"" +  item.link + "\">" + item.title + "</a></div><div class='searchSumm'>" + item.summary + "</div></li>");
       }
-      categoryItems.push("</ul>");
+      categoryItems.push("</ul></li>");
       categories.push(categoryItems.join(""));
     }
     categories.push("</ul>");
+    dump("new HTML is " + categories.join("") + "\n");
     $("#results").html(categories.join("")).show();
   }
 }
 
 
 function makeSearchComplete(install, fullResults) {
+  dump("returning searchComplete for " + install.app.name + "\n");
   return function(appResults) {
-    fullResults.addResults(install, appResults);
+    var target = install;
+    dump("Got results for " + target.app.name + " - " + JSON.stringify(appResults) + "\n");
+    fullResults.addResults(target, appResults);
   }
 }
+
+var conduits = null;
 
 var spotlight = function() {
   // searches could be handled natively if the target supports cross-origin XHR 
@@ -222,20 +237,36 @@ var spotlight = function() {
   }
   
   $("#loading_results").show();
-    
+  
+  // If we haven't created conduits yet, go do that now
+  if (!conduits) {
+    conduits = {};
+    for (var i=0;i<gApps.installs.length;i++)
+    {
+      var install = gApps.installs[i];
+      if (install.app.conduit)
+      {
+        var key = install.app.app.launch.web_url;
+        var conduit = new AppConduit(key, install.app.conduit);
+        conduits[key] = conduit;
+      }
+    }
+  }
+  
   var fullResults = new SearchResult();
   var any = false;
   for (var i=0;i<gApps.installs.length;i++)
   {
     try {
       var install = gApps.installs[i];
-      if (install.app.search)
+      if (install.app.conduit && install.app.supportedAPIs.indexOf("search") >= 0)
       {
         any = true;
-        navigator.apps.searchApp(install, escape(input), makeSearchComplete(install, fullResults));
+        dump("starting search for " + install.app.name + "\n");
+        conduits[install.app.app.launch.web_url].search(escape(input), makeSearchComplete(install, fullResults));
       }
     } catch (e) {
-      alert(e.stack);
+      alert("ERROR: " + e + "\n" + e.stack);
     }
   }
   if (!any) {
