@@ -20,27 +20,44 @@ url = require("url"),
 path = require("path"),
 fs = require("fs");
 
+const sites = {
+    "myapps.mozillalabs.com": {
+        dir: "../site",
+        prod_url: 'https://myapps.mozillalabs.com',
+        dev_port: "8123"
+    },
+    "spaceface.com": {
+        dir: "../examples/spaceface.com",
+        prod_url: 'http://spaceface.com',
+        dev_port: "8124"
+    },
+    "tweetsup.mozillalabs.com": {
+        dir: "../examples/tweetsup",
+        prod_url: 'https://tweetsup.mozillalabs.com',
+        dev_port: "8125"
+    },
+    /* bugzap and dictionary require that we run a python server.
+     * we'll list them here so node.js can do substitution for
+     * local dev, but they should be run separately by their
+     * python webservers.  `nobind: true` causes the port not to
+     * be bound */
+    "bugzap.mozillalabs.com": {
+        dir: "../examples/bugzap",
+        prod_url: 'https://bugzap.mozillalabs.com',
+        dev_port: "8126",
+        nobind: true
+    },
+    "dictionary.mozillalabs.com": {
+        dir: "../examples/wiktionary",
+        prod_url: 'https://dictionary.mozillalabs.com',
+        dev_port: "8201",
+        nobind: true
+    }
+};
+
 function createServer(port) {
     return http.createServer(function(request, response) {
         var hostname = request.headers['host'].toString("utf8");
-
-        var sites = {
-            "myapps.mozillalabs.com": {
-                dir: "../site",
-                prod_url: 'https://myapps.mozillalabs.com',
-                dev_port: "8123"
-            },
-//            "apptastic.mozillalabs.com": {
-//                dir: "../apptast.ic",
-//                prod_url: 'https://apptastic.mozillalabs.com',
-//                dev_port: "8124"
-//             },
-            "spaceface.com": {
-                dir: "../examples/spaceface.com",
-                prod_url: 'http://spaceface.com',
-                dev_port: "8125"
-            }
-        };
 
         var siteroot = null;
         for (s in sites) {
@@ -161,6 +178,11 @@ function createServer(port) {
         });
     }).listen(port);
 };
-var ports = [8123, 8124, 8125];
-for (port in ports) createServer(ports[port]);
-console.log("Server running at http://*:{" + ports.join(",") + "}");
+var ports = [];
+for (s in sites) {
+    if (sites[s].nobind) continue;
+    var p = parseInt(sites[s].dev_port);
+    sys.puts("bound http://localhost:" + p + " - " + sites[s].prod_url);
+    createServer(p);
+    ports.push(p);
+}
