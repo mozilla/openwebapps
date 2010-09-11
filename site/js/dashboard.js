@@ -345,7 +345,7 @@ function render()
   if (true /*gApps.installs.length == 0*/) {
     var b = elem("button");
     b.appendChild(document.createTextNode("Get Me Some Demo Apps!"));
-    b.setAttribute("style", "position:absolute;left:600px;top:10px");
+    b.setAttribute("style", "z-index:50;position:absolute;left:600px;top:10px");
     b.onclick = setUpDemoApps;
     box.append(b);
   }
