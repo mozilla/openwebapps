@@ -35,15 +35,15 @@ class SearchHandler(tornado.web.RequestHandler):
   @tornado.web.asynchronous
   def get(self):
   
-#    if not "Authorization" in self.request.headers:
-#      self.set_header("WWW-Authenticate", "Basic realm=\"bugzapp.mozillalabs.com\"")
-#      self.set_status(401)
-#      self.write("Please provide a username and password.  These will be the same as your " +
-#        "bugzilla username and password.  Bugzapp will never keep your username and password, " +
-#        "but we do need your credentials to perform a search as you, since bugzilla does not support " +
-#        "a federated login right now.")
-#      self.finish()
-#      return
+    if not "Authorization" in self.request.headers:
+      self.set_header("WWW-Authenticate", "Basic realm=\"bugzapp.mozillalabs.com\"")
+      self.set_status(401)
+      self.write("Please provide a username and password.  These will be the same as your " +
+        "bugzilla username and password.  Bugzapp will never keep your username and password, " +
+        "but we do need your credentials to perform a search as you, since bugzilla does not support " +
+        "a federated login right now.")
+      self.finish()
+      return
 
     auth= self.request.headers["Authorization"]
     http = tornado.httpclient.AsyncHTTPClient()

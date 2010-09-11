@@ -57,6 +57,7 @@ a:hover {
   margin-left:40px;
   margin-top:55px;
   font-family: arial,sans-serif;
+  position:relative;
 }
 .searchfield {
   width:300px;

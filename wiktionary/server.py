@@ -38,7 +38,18 @@ class SearchResult(object):
     self.updated = None
     self.summary=""
 
-WORD_TYPES = {"Noun":1,"Verb":1,"Adjective":1,"Adverb":1}
+WORD_TYPES = {
+  "Noun":1,
+  "Pronoun":1,
+  "Adjective":1,
+  "Verb":1,
+  "Adverb":1,
+  "Preposition":1,
+  "Particle":1,
+  "Preposition":1,
+  "Interjection":1,
+  "Conjunction":1
+}
 
 class SearchHandler(tornado.web.RequestHandler):
   @tornado.web.asynchronous

@@ -16,11 +16,13 @@
     
      <form action="/search" method="get" id="light">
       <input class="searchfield" placeholder="Search across all your apps" type="text" size="50" value="" name="q" autocomplete="off" id="si"><br>
+
+      <div id="results">
+      </div>
+
       <input class="searchbutton" type="submit" value="Search">
      </form>
 
-    <div id="results">
-    </div>
     <div id="loading_results">Loading results....</div>
     <div id="no_results" class="container"><span>We couldn't find any results for that term. Would you are to add another index? </span></div>
   </div>
@@ -50,7 +52,6 @@
 <script type="text/javascript" src="js/apps.js"></script>
 <script type="text/javascript" src="js/dashboard.js"></script>
 
-<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.2/jquery-ui.js"></script>
 <script type="text/javascript" src="jsapi/conduit.js"></script>
 <script type="text/javascript" src="search.js"></script>
 </body>

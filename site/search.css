@@ -1,27 +1,20 @@
 #results {
 	padding: 5px 5px;
 	background-color:#f8f8f8;
-/*	display:none;*/
+	display:none;
 	width:600px;
+  position:absolute;
+  z-index:5;
+  border:1px solid #404040;
+  -moz-border-radius:4px;
 }
 
-#spotlight_body {
-	font-size:14px;
-	margin-top:40px;
-	width: 540px;
-	margin: 40px auto;
-}
 #no_results {
 	display:none;
 	margin-top:20px;
 }
 #no_results span {
 	font-size:12px;
-}
-.gallery_screen_container {
-	
-	display:none;
-
 }
 #loading_results {
 	display:none;
@@ -30,29 +23,56 @@
 #results > ul > li > .searchCat {
   font:bold 12px Helvetica;
   margin-bottom:-16px;
-  width:60px;
+  width:70px;
+}
+
+#results > ul {
+  margin:0px;
 }
 
 #results > ul > li > ul {
+  margin-top:0px;
+  padding-top:0px;
   padding-left:0px;
-  margin-left:60px;
+  margin-left:70px;
+}
+#results > ul > li > ul > li {
+  margin-bottom:4px;
+}
+
+#results > ul > li > ul > li > .searchHead {
+  font:12px Helvetica;
+  white-space:nowrap
+  vertical-align:top
 }
 #results > ul > li > ul > li > .searchHead > img {
   padding-right:4px;
+  vertical-align:top
 }
-#results > ul > li > ul > li > .searchHead {
-  font:14px Helvetica;
+#results > ul > li > ul > li > .searchHead > .searchTitle {
+  display:inline-block;
+  white-space:normal;
+  vertical-align:top;
+  width:460px;
 }
-#results > ul > li > ul > li > .searchHead > a {
+
+#results .searchHead .searchTitle > a {
   color:black;
 }
+
+
+#results .selected .searchHead .searchTitle > a {
+  color:#ffffff;
+}
+#results .selected .searchHead .searchTitle {
+  background: #0066DD;
+	cursor:pointer;
+}
+
 #results > ul > li > ul > li > .searchSumm {
   display:none;
   margin-left:20px;
-  font:14px Helvetica;
-}
-#results > ul > li > ul > li {
-  margin-bottom:2px;
+  font:12px Helvetica;
 }
 
 
@@ -175,11 +195,6 @@ margin-right:4px;
 
 #showall img {
 	margin: -3px 4px;
-}
-.hover {
-		color:#ffffff;
-	background-color:#878489;
-	cursor:pointer;
 }
 
 .item .highlight {
