@@ -28,13 +28,6 @@ $(document).ready(function() {
         $("#output").append($('<div/>').text(key + ": " + sto.getItem(key)));
     }
 
-    $.getJSON('query.php?token=' + sto.getItem('oauth_token') + "&secret=" + sto.getItem('oauth_secret')
-              + "&path=statuses/friends_timeline.json",
-              function(data) {
-                  console.log(data);
-              });
-
-
     var updateButton = function() {
         // make a button for application installation:
         $('#install_prompt').empty().append($('<button>You Gots The App.</button>').button({ disabled: true }));
@@ -56,5 +49,31 @@ $(document).ready(function() {
         });
     };
     updateButton();
+
+
+    // got auth?
+    if (typeof sto.getItem("oauth_token")  === 'string' &&
+        typeof sto.getItem("oauth_secret")  === 'string')
+    {
+/*
+    $.getJSON('query.php?token=' + sto.getItem('oauth_token') + "&secret=" + sto.getItem('oauth_secret')
+              + "&path=statuses/friends_timeline.json",
+              function(data) {
+                  console.log(data);
+              });
+*/
+    }
+    else
+    {
+        var foo;
+        $("<div>You must <a href='auth'>authenticate</a>, that is, tell twitter that it's ok for us to " +
+          " access your tweet stream on your behalf.</div>").dialog({
+            modal: true,
+            draggable: false,
+            title: "Login Required!",
+        });
+    }
+
+
 });
 
