@@ -5,16 +5,26 @@
   <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
   <title>Application Dashboard</title>
   <link rel="stylesheet" type="text/css" href="dashboard.css" />
+  <link rel="stylesheet" type="text/css" href="search.css" />
 </head>
 
-<body style="position:relative">
+<body onload="init()" style="position:relative">
+
 <div id="container">
   <div id="search">
     <img src="websearch.png">
-    <form>
-      <input class="searchfield" placeholder="Search across all your apps" type="text" size="50" value=""><br>
+    
+     <form action="/search" method="get" id="light">
+      <input class="searchfield" placeholder="Search across all your apps" type="text" size="50" value="" name="q" autocomplete="off" id="si"><br>
+
+      <div id="results">
+      </div>
+
       <input class="searchbutton" type="submit" value="Search">
-    </form>
+     </form>
+
+    <div id="loading_results">Loading results....</div>
+    <div id="no_results" class="container"><span>We couldn't find any results for that term. Would you are to add another index? </span></div>
   </div>
 
   <div id="appheader">
@@ -32,7 +42,7 @@
 
 <ul id="appContextMenu" class="contextMenu">
   <li class="menuGetInfo"><a href="#appDetails">Details...</a></li>
-  <li class="menuActivateService separator"><a href="#appActivate">Activate Services</a></li>
+  <li class="menuActivate separator"><a href="#appActivate">Activate Services</a></li>
   <li class="menuUninstall"><a href="#appUninstall">Uninstall App</a></li>
 </ul>
 
@@ -41,9 +51,9 @@
 <script type="text/javascript" src="js/manifest.js"></script>
 <script type="text/javascript" src="js/apps.js"></script>
 <script type="text/javascript" src="js/dashboard.js"></script>
-<script type="text/javascript">
-$(document).ready(function() { init(); });
-</script>
+
+<script type="text/javascript" src="jsapi/conduit.js"></script>
+<script type="text/javascript" src="search.js"></script>
 </body>
 </html>
 
