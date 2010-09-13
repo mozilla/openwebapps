@@ -62,9 +62,14 @@ function AppConduit(appKey, conduitTargetURL) {
 
 AppConduit.prototype = {
 
+  destroy: function destroy() {
+    if (this.iframe) {
+      this.iframe.parent.removeChild(this.iframe);
+    }
+  },
+
   // Called once on first command to create the iframe to conduitTargetURL
   setupWindow: function setupWindow() {
-    dump("setting up window\n");
     if(this.iframe || this.postWindow) { return; }
 
     // Create hidden iframe dom element
@@ -74,21 +79,17 @@ AppConduit.prototype = {
     this.iframe.style.left = "-999px";
     this.iframe.style.top = "-999px";
     this.iframe.style.display = "none";
-    dump("made the iframe\n");
     
     // Setup postMessage event listeners
     var that = this;
     if (win.addEventListener) {
-      win.addEventListener('message', function(event) {dump("event1\n");that.onMessage(event);}, false);
-      dump("add event listener 1\n");
+      win.addEventListener('message', function(event) {that.onMessage(event);}, false);
     } else if(win.attachEvent) {
-      win.attachEvent('onmessage', function(event) {dump("event2\n");that.onMessage(event);});
-      dump("add event listener 2\n");
+      win.attachEvent('onmessage', function(event) {that.onMessage(event);});
     }
     // Append iframe to the dom and load up target conduit inside
     doc.body.appendChild(this.iframe);
     this.iframe.src = this.conduitTargetURL;
-    dump("Created conduit to " + this.conduitTargetURL + "\n");
   },
 
   // We will listen for messages from our target domain
@@ -96,11 +97,8 @@ AppConduit.prototype = {
     // event.origin will always be of the format scheme://hostname:port
     // http://www.whatwg.org/specs/web-apps/current-work/multipage/comms.html#dom-messageevent-origin
   
-    dump("got message - origin is " + event.origin + "\n");
-  
     // We will only process messages from our target origin(s)
     if(this.conduitTargetURL.indexOf(event.origin) != 0) {
-      dump("Mismatched conduit URL: return\n");
       return;
     }
     
@@ -132,7 +130,6 @@ AppConduit.prototype = {
 
   // Called immediately after iframe has told us it's ready for communication
   makePendingRequests: function makePendingRequests() {
-    dump("making pending requests\n");
     for(var i=0; i<this.requestQueue.length; i++) {
       this.makeRequest(this.openRequests[this.requestQueue.shift()]);
     }
@@ -140,7 +137,6 @@ AppConduit.prototype = {
 
   // Post the message to the target conduit
   makeRequest: function makeRequest(requestObj) {
-    dump("posting message " + JSON.stringify(requestObj) + "\n");
     this.postWindow.postMessage(JSON.stringify(requestObj), this.conduitTargetURL);
   },
 
@@ -177,5 +173,21 @@ AppConduit.prototype = {
       callback: callbackShim
     }
     this.queueRequest(requestObj);
+  },
+  
+  notifications: function(callback) { // maybe "since"?
+    if (!callback) return;
+    
+    var callbackShim = function(result) {
+      callback(result.result, this.appKey);
+    }
+    
+    var requestObj = {
+      cmd: 'conduit::notifications',
+      callback: callbackShim
+    }
+    this.queueRequest(requestObj);
   }
+
+
 }

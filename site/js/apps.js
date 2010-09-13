@@ -38,6 +38,7 @@
 
 function Apps(storage) {
   this.installs = [];
+  this.conduits = [];
   if (!storage) this.storage = window.localStorage;
   else this.storage = storage;
   this.reload();
@@ -61,6 +62,7 @@ Apps.prototype.reload = function() {
     var install = JSON.parse(item);
     this.installs.push(install);
   }
+  this.makeConduits();
     
   this.installs.sort(function (a,b) { 
       return a.app.name.localeCompare(b.app.name); 
@@ -138,46 +140,46 @@ Apps.prototype.getInstall = function(url)
   for (var i=0;i<this.installs.length;i++)
   {
     if (this.installs[i].app.app.launch.web_url == url)
-      return this.installs[i];
+      return this.installs[i]; // TODO go ahead and make the in-memory lookup table?
   }
   return null;
 }
 
-Apps.prototype.refreshNotifications = function(callback) 
+Apps.prototype.makeConduits = function()
 {
+  if (this.conduits) {
+    for (var i=0;i<this.conduits.length;i++) {
+      this.conduits[i].destroy();
+      // also need to clear out the references in the installs; we'll do that next
+    }
+  }
+  this.conduits = [];
   for (var i=0;i<this.installs.length;i++)
   {
-    if (this.installs[i].app.notification)
+    var install = this.installs[i];
+    install.conduit = null;
+    if (install.app.conduit)
     {
-      this.initiateNotificationRefresh(this.installs[i].app, callback);
+      var key = install.app.app.launch.web_url;
+      var conduit = new AppConduit(key, install.app.conduit);
+      install.conduit = conduit;
+      this.conduits.push(conduit);
     }
   }
 }
 
-Apps.prototype.initiateNotificationRefresh = function(app, callback) 
+Apps.prototype.refreshNotifications = function(callback) 
 {
-  var xhr = new XMLHttpRequest();
-  
-  // TODO perhaps send a "updatedSince" argument along with this?
-  try {
-    xhr.open("GET", app.notification, true);
-    xhr.onreadystatechange = function(aEvt) {
-      if (xhr.readyState == 4) {
-        if (xhr.status == 200) {
-          try {
-            var result = JSON.parse(xhr.responseText);
-            // okay... now... are any of these new?
-            // if so... put it somewhere?
-            // and let somebody know?
-          } catch (e) {
-  
-          }
-        }
-      }
+  dump("Starting to refresh notifications\n");
+  for (var i=0;i<this.installs.length;i++)
+  {
+    var install = this.installs[i];
+    if (install.conduit && install.app.supportedAPIs.indexOf("notification") >= 0)
+    {
+      install.conduit.notifications(function(result) {
+        callback(install, result);
+      });
     }
-    xhr.send(null);
-  } catch(e) {
-
   }
 }
 

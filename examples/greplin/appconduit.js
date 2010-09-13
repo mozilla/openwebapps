@@ -57,59 +57,29 @@
       term: <TERM>
     }
     **/
-  
     'conduit::search': function(originHostname, requestObj, origin) {
       // TODO check origin to make sure it's one we feel good about
       // TODO authenticate user somehow?  we'll get the user's cookie if they have a session already.
       // Do the search
-      var req = XMLHttpRequest();
-      req.open("GET", "http://dictionary.mozillalabs.com/search?q=" + requestObj.term, true);
-      req.onreadystatechange = function (aEvt) {  
-        if (req.readyState == 4) {  
-           if(req.status == 200) {
+      if (search) {
+        search(requestObj.term,
+          function(result) { // success
             sendResponse({
-              result: req.responseText,// just send text for now
+              result: result,
               cmd: requestObj.cmd,
               id: requestObj.id
-            }, origin);
-           } else {
-            // TODO report error somehow....
-          }
-        }  
-      };  
-      req.send(null);
-    },
-    
-  /**
-    Request object will look like:
-    {
-      cmd:'conduit::notifications',
-      id:1,
-      term: <TERM>
+            }, origin);          
+          },
+          function(error) { // failure
+            sendResponse({
+              error: error,
+              cmd: requestObj.cmd,
+              id: requestObj.id
+            }, origin);                    
+          });
+      }
     }
-    **/
-    'conduit::notifications': function(originHostname, requestObj, origin) {
-      // TODO check origin to make sure it's one we feel good about
-      // TODO authenticate user somehow?  we'll get the user's cookie if they have a session already.
-      // Do the search
-      var req = XMLHttpRequest();
-      req.open("GET", "http://dictionary.mozillalabs.com/notifications", true);
-      req.onreadystatechange = function (aEvt) {  
-        if (req.readyState == 4) {  
-           if(req.status == 200) {
-            sendResponse({
-              result: req.responseText,// just send text for now
-              cmd: requestObj.cmd,
-              id: requestObj.id
-            }, origin);
-           } else {
-            // TODO report error somehow....
-          }
-        }  
-      };  
-      req.send(null);
-    }    
-
+    
     // other APIs go here...
   }
 
@@ -139,7 +109,6 @@
     // event.origin will always be of the format scheme://hostname:port
     // http://www.whatwg.org/specs/web-apps/current-work/multipage/comms.html#dom-messageevent-origin
 
-    try {
     var requestObj = JSON.parse(event.data);
     var originHostname = event.origin.split('://')[1].split(':')[0];
 
@@ -163,9 +132,6 @@
       // A command we understand, send the response on back to the posting window
       var result = ConduitAPI[requestObj.cmd](originHostname, requestObj, event.origin);
       sendResponse(result, event.origin);
-    }
-    } catch (e) {
-      dump(e + "\n");
     }
   }
 

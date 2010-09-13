@@ -232,7 +232,7 @@ window.localStorage.setItem("http://dictionary.mozillalabs.com",
       description: "Dictionary",
       developerName: "Mozilla Labs",
       conduit:"http://dictionary.mozillalabs.com/appconduit",
-      supportedAPIs:["search"],
+      supportedAPIs:["search", "notification"],
       permissions: []
     }
   }
@@ -308,8 +308,43 @@ function elem(type, clazz) {
 }
 
 // TODO: got some notifications. do something.
-function notificationsWereRefreshed()
+function NotificationDB() {
+  this.notifications = [];  
+}
+NotificationDB.prototype = {
+  add: function(install, notifications) {
+    for (var i=0;i<notifications.length;i++) {
+      var notif = notifications[i];
+      notif.install = install;
+      this.notifications.push(notif);
+      dump("Adding notification with install " + install + " now\n");
+    }
+  },
+  
+  getForApp: function(appKey) {
+    var result = [];
+    for (var i=0;i<this.notifications.length;i++) {
+      var notif = this.notifications[i];
+
+      if (notif.install.app.app.launch.web_url == appKey) {
+        result.push(notif);
+      }
+    }
+    return result;
+  }
+}
+var gNotificationDB = new NotificationDB();
+
+function notificationsWereRefreshed(install, notifications)
 {
+  try {
+    var result = JSON.parse(notifications);
+    dump("Got new notifications: " + notifications + "\n");
+    gNotificationDB.add(install, result.entries);
+    render();
+  } catch (e) {
+    dump("Error while parsing notification: " + e + "\n");
+  }
 }
 
 // Creates an opener for an app tab.  The usual behavior
@@ -626,6 +661,8 @@ function createAppCanvas(manifest)
 function makeAppCanvasDrawFn(ctx, img, manifest)
 {
   return function() {
+    dump("Hello?\n");
+
     for (var i=0;i<6;i++) {
       ctx.fillStyle = "rgba(0,0,0," + (i / 20.0) + ")";
       roundRect(ctx, 6-i, 6-i, gIconSize, gIconSize, badgeRadius, true, false)
@@ -637,9 +674,15 @@ function makeAppCanvasDrawFn(ctx, img, manifest)
     ctx.clip();
     ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, gIconSize, gIconSize);
     ctx.restore();
-
-    if (manifest.notificationCount) {
-      drawNotificationBadge(ctx, manifest.notificationCount);
+    
+    try {
+      var notificationList = gNotificationDB.getForApp(manifest.app.launch.web_url);
+      dump("App " + manifest.app.launch.web_url + " has " + notificationList.length + " notifications\n");
+      if (notificationList.length > 0) {
+        drawNotificationBadge(ctx, notificationList.length);
+      }
+    } catch (e) {
+      dump(e + "\n");
     }
   }
 }
@@ -687,8 +730,8 @@ function drawNotificationBadge(ctx, count)
   ctx.fillStyle = "rgb(255,255,255)";
   ctx.strokeStyle = "rgb(255,255,255)";
   ctx.font = "12px sans serif";
-  ctx.fillText("" + manifest.notificationCount, gIconSize - 8, 14);
-  ctx.strokeText("" + manifest.notificationCount, gIconSize - 8, 14);
+  ctx.fillText("" + count, gIconSize - 8, 14);
+  ctx.strokeText("" + count, gIconSize - 8, 14);
 }
 
 function setIconSize(size)

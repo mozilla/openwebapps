@@ -68,6 +68,57 @@ var linput;
 var cycle=0;
 var ajax_request = {abort: function(){return null;}}
 
+/*
+var GreplinPlugin = {
+  app: {
+    name: "Greplin"
+  },
+  search: function(term, callback) {
+    var categoryLookup = {
+      4: "Email",
+      5: "Updates",
+      11: "Contacts"
+    };
+    var req = XMLHttpRequest();
+    req.open("GET", "https://www.greplin.com/ajax/spotlight?format=json&q=" + term, true);
+    req.onreadystatechange = function (aEvt) {  
+      if (req.readyState == 4) {  
+         if(req.status == 200) {
+          try {
+            var result = JSON.parse(req.responseText);
+            // convert to dashboard search result
+            var toDash = [];
+            for (var i=0;i<result.results.length;i++) {
+              var key = result.results[i];
+              if (key == "top") continue; // ignore for the moment
+              var serviceResults = result.results[key];
+              for (var j=0;j<serviceResults.results.length;j++) {
+                var item = serviceResults.results[j];
+                var newItem = {
+                  "title": item.title,
+                  "category_term": categoryLookup[item.entity_type],
+                  "link": item.url,
+                  "summary": content.join(" - ")
+                }
+                toDash.push(newItem);
+              }
+            }
+            callback( {title:"Greplin Results", results: toDash} );
+          } catch (e) {
+            alert("Error in Greplin plugin: " + e);
+          }
+        } else {
+        // TODO report error somehow....
+          alert("Error in Greplin plugin: " + e);
+        }
+      }
+    }
+    req.send(null);
+  }
+}
+var gPlugins = [GreplinPlugin];
+*/
+
 function SearchResult()
 {
   this.resultMap = {}
@@ -84,7 +135,7 @@ SearchResult.prototype = {
         for (i=0;i<parsed.results.length;i++)
         {
           var res = parsed.results[i];
-          res.app = install.app;
+          if (!res.app) res.app = install.app;
           var cat = res.category_term ? res.category_term : "Result";
           if (!this.resultMap[cat]) this.resultMap[cat] = [];
           this.resultMap[cat].push(res);
@@ -149,37 +200,44 @@ var spotlight = function() {
   
   $("#loading_results").show();
   
-  // If we haven't created conduits yet, go do that now
-  if (!conduits) {
-    conduits = {};
-    for (var i=0;i<gApps.installs.length;i++)
-    {
-      var install = gApps.installs[i];
-      if (install.app.conduit)
-      {
-        var key = install.app.app.launch.web_url;
-        var conduit = new AppConduit(key, install.app.conduit);
-        conduits[key] = conduit;
-      }
-    }
-  }
-  
   var fullResults = new SearchResult();
   var any = false;
   for (var i=0;i<gApps.installs.length;i++)
   {
     try {
       var install = gApps.installs[i];
-      if (install.app.conduit && install.app.supportedAPIs.indexOf("search") >= 0)
+      if (install.conduit && install.app.supportedAPIs.indexOf("search") >= 0)
       {
         any = true;
         dump("starting search for " + install.app.name + "\n");
-        conduits[install.app.app.launch.web_url].search(escape(input), makeSearchComplete(install, fullResults));
+        install.conduit.search(escape(input), makeSearchComplete(install, fullResults));
       }
     } catch (e) {
       alert("ERROR: " + e + "\n" + e.stack);
     }
   }
+  
+/*  // And then do plugins
+  for (var i=0;i<gPlugins.length;i++)
+  {
+    try {
+      var plugin = gPlugins[i];
+      if (plugin.search)
+      {
+        function makePluginComplete(plugin, fullResults) {
+          return function(pluginResults) {
+            fullResults.addResults(plugin, pluginResults);
+          }
+        }
+        any = true;
+        plugin.search(escape(input), makePluginComplete (plugin, fullResults));
+      }
+    } catch(e) {
+      alert("ERROR in plugin " + plugin.name + ": " + e + "\n" + e.stack);
+    }
+  }
+  */
+  
   if (!any) {
     $("#results").html("Sorry, none of your apps support search.").show();
   }

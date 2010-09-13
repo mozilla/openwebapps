@@ -20,7 +20,7 @@ import json
 import cgi
 import random
 
-WIKTIONARY_SERVER = "http://en.wiktionary.org/wiki/" # set?action=raw
+WIKTIONARY_SERVER = "http://en.wiktionary.org"
 
 import re
 
@@ -60,7 +60,7 @@ class SearchHandler(tornado.web.RequestHandler):
       q = self.request.arguments["q"][0]
 
     request = tornado.httpclient.HTTPRequest(
-      WIKTIONARY_SERVER + "%s?action=raw" % q)
+      WIKTIONARY_SERVER + "/wiki/%s?action=raw" % q)
     request.query = q
 
     http.fetch(request,
@@ -122,8 +122,20 @@ class SearchHandler(tornado.web.RequestHandler):
 
 
 class NotificationHandler(tornado.web.RequestHandler):
+#  @tornado.web.asynchronous
   def get(self):
-    pass
+    logging.debug("Got notification result")
+    self.render("notifications.json")
+    
+#    http = tornado.httpclient.AsyncHTTPClient()
+#    request = tornado.httpclient.HTTPRequest(
+#      WIKTIONARY_SERVER + "/w/index.php?title=Special:RecentChanges&feed=atom" 
+#    )
+#    http.fetch(request,
+#           callback=self.async_callback(self.onResponse))
+
+  def onResponse(self, response):
+    self.render("notifications.json")
 
 class AppConduitHandler(tornado.web.RequestHandler):
   def get(self):
