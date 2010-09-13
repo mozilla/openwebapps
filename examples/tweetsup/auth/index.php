@@ -4,7 +4,7 @@ require_once("OAuth.php");
 // handling of server secret:
 // * webserver cannot serve up contents of .inc files (lest creds can be stolen)
 // * authcreds.inc cannot be checked in, it's only on the server
-include('authcreds.inc'); 
+include('../../authcreds.inc'); 
 $key = $twitter_oauth_consumer_key;
 $secret = $twitter_oauth_consumer_secret;
 $callback_url = "https://tweetsup.mozillalabs.com/~lhilaiel/appetizer/examples/tweetsup/auth/";

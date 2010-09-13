@@ -4,25 +4,30 @@
 <head>
   <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
   <title>TweetSup</title>
+  <link href="static/jquery-ui.css" rel="stylesheet" type="text/css"/>
+  <script type="text/javascript" src="static/jquery-1.4.2.min.js"></script>
+  <script src="static/jquery-ui.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="static/style.css" />
 </head>
 <body>
-<div id="output">
+<div id="header">
+  <div id="install_prompt">
+  </div>
+  <div id="titlebox">
+    <div id="title">TweetSup?</div>
+    <div id="subtitle">An application to integrate twitter search and notifications into your browser.</div>
+  </div>
+</div>
+<div id="contentArea">
+  <div id="timeline">
+  </div>
+  <div id="search">
+    <div id="search_header"> 
+    <input id="searchbox" type="text">
+    </div>
+  </div>
 </div>
 </body>
-<script type="text/javascript" src="js/jquery-1.4.2.min.js"></script>
-<script type="text/javascript">
-$(document).ready(function() {
-  var sto = window.localStorage;
-  for (var i = 0; i < sto.length; i++) {
-    var key = sto.key(i);
-    $("#output").append($('<div/>').text(key + ": " + sto.getItem(key)));
-  }
-
-  $.getJSON('query.php?token=' + sto.getItem('oauth_token') + "&secret=" + sto.getItem('oauth_secret')
-            + "&path=statuses/friends_timeline.json",
-            function(data) {
-              console.log(data);
-            });
-});
-</script>
+<script type="text/javascript" src="https://myapps.mozillalabs.com/jsapi/include.js"></script>
+<script type="text/javascript" src="static/main.js"></script>
 </html>
