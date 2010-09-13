@@ -488,7 +488,17 @@ function renderAppInfo(selectedBox)
 
     var props = elem("div", "appProperties");
 
-    if (gSelectedInstall.app.search) {
+    var searchable = false;
+    if (gSelectedInstall.app.supportedAPIs) {
+        for (var i=0; i < gSelectedInstall.app.supportedAPIs.length; i++) {
+            if (gSelectedInstall.app.supportedAPIs[i] === 'search') {
+                searchable=true;
+                break;
+            }
+        }
+    }
+
+    if (searchable) {
       var searchDiv = elem("div", "cbox");
       var cbox = elem("input");
       cbox.setAttribute("type", "checkbox");
