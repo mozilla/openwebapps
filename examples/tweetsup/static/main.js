@@ -35,7 +35,7 @@ $(document).ready(function() {
         AppClient.getInstalled({
             callback: function(v) {
                 if (v.installed.length == 0) {
-                    $('#install_prompt').empty().append($('<button>Install The App!</button>').addClass('green').button());
+                    $('#install_prompt').empty().append($('<button>Install The App!</button>').button());
                     $('#install_prompt button').click(function() {
                         AppClient.install({
                             manifest: manifest,
