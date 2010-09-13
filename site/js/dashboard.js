@@ -671,8 +671,6 @@ function createAppCanvas(manifest)
 function makeAppCanvasDrawFn(ctx, img, manifest)
 {
   return function() {
-    dump("Hello?\n");
-
     for (var i=0;i<6;i++) {
       ctx.fillStyle = "rgba(0,0,0," + (i / 20.0) + ")";
       roundRect(ctx, 6-i, 6-i, gIconSize, gIconSize, badgeRadius, true, false)
