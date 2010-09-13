@@ -144,15 +144,16 @@ function createServer(port) {
                         return;
                     }
 
-                    // if filename extension is .js, .css, or .html, let's search and replace
-                    // all occurances of any of the hostnames with test hostnames
-                    var textual = false;
-                    var exts = [ ".js", ".css", ".html" ];
-                    for (i in exts) {
-                        if (true == (textual = (path.extname(filename) === exts[i]))) break;
-                    }
+                    // determine content type.  all text/ types will get hostnames replaced
+                    var exts = {
+                        ".js":   "text/javascript",
+                        ".css":  "text/css",
+                        ".html": "text/html"
+                    };
+                    var ext = path.extname(filename);
+                    var mimeType = (exts[ext]) ? exts[ext] : "application/unknown";
 
-                    if (textual && data && data.split) {
+                    if ('text' === mimeType.substr(0,4) && data && data.split) {
                         // which hostname shall we substituted in?
                         var subHost = hostname.split(":")[0];
                         for (s in sites) {
@@ -160,7 +161,7 @@ function createServer(port) {
                         }
                     }
 
-                    response.writeHead(200);
+                    response.writeHead(200, {"Content-Type": mimeType});
                     response.write(data, "binary");
                     response.end();
                     sys.puts("200 " + filename);
