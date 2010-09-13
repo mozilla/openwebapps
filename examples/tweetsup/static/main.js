@@ -55,21 +55,20 @@ $(document).ready(function() {
     if (typeof sto.getItem("oauth_token")  === 'string' &&
         typeof sto.getItem("oauth_secret")  === 'string')
     {
-	$.getJSON('query.php?token=' + sto.getItem('oauth_token') + "&secret=" + sto.getItem('oauth_secret')
+      $.getJSON('query.php?token=' + sto.getItem('oauth_token') + "&secret=" + sto.getItem('oauth_secret')
 		  + "&path=statuses/friends_timeline.json",
 		  function(data) {
-		      for (var i in data) {
-			  var t = data[i]; 
-			  console.log(t);
-			  var tweet = $("<div/>").addClass("tweet");
-			  $(tweet).append($("<div class=\"who\"><img src=\""+ t.user.profile_image_url +"\"/><div>" + t.user.screen_name + "</div></div>"));
-			  $(tweet).append($("<div/>").addClass("what").append($("<div/>").addClass("tweeter").text())
-					  .append($("<div/>").addClass("utterance").text(t.text)));
-			  $('#timeline').append(tweet);
-		      }
-		  });
-	
-    }
+		    for (var i in data) {
+		        var t = data[i];
+			var tweet = $("<div/>").addClass("tweet");
+			$(tweet).append($("<div class=\"who\"><img src=\""+ t.user.profile_image_url +"\"/><div>" + t.user.screen_name + "</div></div>"));
+			$(tweet).append($("<div/>").addClass("what").append($("<div/>").addClass("tweeter").text())
+					.append($("<div/>").addClass("utterance").text(t.text)));
+			$('#timeline').append(tweet);
+		    }
+		});
+
+  }
     else
     {
         var foo;
