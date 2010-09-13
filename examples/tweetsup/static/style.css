@@ -19,3 +19,39 @@ body {
 #contentArea {
     margin: 30px 100px 30px 100px;
 }
+
+#timeline {
+  border-right: 3px dashed grey;
+  float:left;
+  width: 48%;
+}
+
+#search {
+  width: 48%;
+  float:left;
+}
+
+.tweet {
+  margin: 10px;
+  height: 70px;
+}
+
+.tweet .who {
+  float: left;
+  font-size: 60%;
+  font-weight:bold;
+  margin-right: 15px;
+}
+
+#search_header {
+    text-align: center;
+}
+
+#search_header input {
+    border: 1px solid #999;
+    padding-left:10px;
+    padding-right:10px;
+    padding-top:5px;
+    padding-bottom:5px;
+    width
+}
