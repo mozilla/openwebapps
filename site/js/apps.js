@@ -170,15 +170,18 @@ Apps.prototype.makeConduits = function()
 
 Apps.prototype.refreshNotifications = function(callback) 
 {
+  function makeCallback(install, callback) {
+    return function(result) {
+      callback(install, result);
+    }
+  }
   dump("Starting to refresh notifications\n");
   for (var i=0;i<this.installs.length;i++)
   {
     var install = this.installs[i];
     if (install.conduit && install.app.supportedAPIs.indexOf("notification") >= 0)
     {
-      install.conduit.notifications(function(result) {
-        callback(install, result);
-      });
+      install.conduit.notifications(makeCallback(install, callback));
     }
   }
 }

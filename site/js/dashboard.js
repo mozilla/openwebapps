@@ -317,7 +317,7 @@ NotificationDB.prototype = {
       var notif = notifications[i];
       notif.install = install;
       this.notifications.push(notif);
-      dump("Adding notification with install " + install + " now\n");
+      dump("Adding notification with install " + install.app.name + " now\n");
     }
   },
   
