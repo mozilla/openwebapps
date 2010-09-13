@@ -1,0 +1,21 @@
+{
+  "name": "TweetSup?",
+  "app": {
+    "urls": [
+      "http://tweetsup.mozillalabs.com"
+    ],
+    "launch": {
+      "web_url": "http://tweetsup.mozillalabs.com"
+    }
+  },
+  "icons": {
+    "96": "icon.png"
+  },
+  "description": "Perform searches across your twitter friends timelines and receive notifications from inside your application dashboard",
+  "developerName": "Mozilla Labs",
+  "auth": "http://tweetsup.mozillalabs.com/auth",
+  "conduit": "http://bugzapp.mozillalabs.com/appconduit",
+  "supportedAPIs": [
+    "search"
+  ]
+}
