@@ -57,7 +57,8 @@ $(document).ready(function() {
       }
 
       var tweet = $("<div/>").addClass("tweet");
-      $(tweet).append($("<div class=\"who\"><img src=\""+ t.user.profile_image_url +"\"/><div>" + t.user.screen_name + "</div></div>"));
+      var user = (t.user ? t.user : t.sender);
+      $(tweet).append($("<div class=\"who\"><img src=\""+ user.profile_image_url +"\"/><div>" + user.screen_name + "</div></div>"));
       var whatTheySpake = t.text;
       if (highlight) {
 	whatTheySpake = t.text.replace(new RegExp("(" + re_escape(highlight) + ")", "gi"), "<span class=\"highlight\">$1</span>" );

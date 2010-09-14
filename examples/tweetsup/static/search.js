@@ -37,7 +37,8 @@
 	}
       }
       function searchTweet(t, term) {
-	var srchContent = (t.user.name + t.user.screen_name + t.text).toLowerCase();
+	var user = (t.user ? t.user : t.sender);
+	var srchContent = (user.name + user.screen_name + t.text).toLowerCase();
 	return (srchContent.indexOf(term) >= 0);
       }
 
@@ -60,6 +61,16 @@
 	queryComplete(obj.id, mentions);
       });
       obj.queries.push(mentions);
+
+      var url = 'query.php?token=' + sto.getItem('oauth_token') + "&secret=" + sto.getItem('oauth_secret')
+	+ "&path=direct_messages.json&count=100";
+      var directs = $.getJSON(url, function(data) {
+	for (var i in data) {
+	  if (searchTweet(data[i], term)) returnTweet(data[i]);
+	}
+	queryComplete(obj.id, directs);
+      });
+      obj.queries.push(directs);
 
       searches[obj.id] = obj;
       return obj.id;
