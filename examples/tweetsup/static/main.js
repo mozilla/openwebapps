@@ -86,11 +86,13 @@ $(document).ready(function() {
       // set up our search button
       $('#searchbox').keyup(function(e) {
 	$('#searchOutput').empty();
-	var term = $('#searchbox').val();
+	var term = $.trim($('#searchbox').val());
 	if (search) Search.cancel(search);
-	search = Search.run(term, function(r) {
-	  $('#searchOutput').append(buildTweetNode(r, term));
-	})
+	if (term) {
+	  search = Search.run(term, function(r) {
+	    $('#searchOutput').append(buildTweetNode(r, term));
+	  })
+	}
       });
     }
     else
