@@ -31,6 +31,10 @@ body {
   float:left;
 }
 
+#searchOutput .highlight { 
+  background-color: yellow;
+}
+
 .tweet {
   margin: 10px;
   height: 70px;
