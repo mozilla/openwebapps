@@ -22,26 +22,47 @@
 
   return {
     run: function(term, cb) {
+      term = term.toLowerCase();
       var obj = {
 	id: searchId++,
 	queries: [ ],
-	term: term
+	term: term,
+	// items returned so we don't return duplicates
+	returned: { }
       };
+      function returnTweet(t) {
+	if (!obj.returned[t.id]) {
+	  obj.returned[t.id] = true;
+	  cb(t);
+	}
+      }
 
-      var q;
       var url = 'query.php?token=' + sto.getItem('oauth_token') + "&secret=" + sto.getItem('oauth_secret')
 	+ "&path=statuses/friends_timeline.json&count=200&include_rts=true";
-      q = $.getJSON(url, function(data) {
+      var friends = $.getJSON(url, function(data) {
 	for (var i in data) {
 	  var srchContent = (data[i].user.screen_name + data[i].text).toLowerCase();
-	  if (srchContent.indexOf(term.toLowerCase()) >= 0) {
-	    cb(data[i]);
+	  if (srchContent.indexOf(term) >= 0) {
+	    returnTweet(data[i]);
 	  }
 	}
-	queryComplete(obj.id, q);
+	queryComplete(obj.id, friends);
       });
+      obj.queries.push(friends);
 
-      obj.queries.push(q);
+      var url = 'query.php?token=' + sto.getItem('oauth_token') + "&secret=" + sto.getItem('oauth_secret')
+	+ "&path=statuses/mentions.json&count=50";
+      var mentions = $.getJSON(url, function(data) {
+	for (var i in data) {
+	  var srchContent = (data[i].user.screen_name + data[i].text).toLowerCase();
+	  if (srchContent.indexOf(term) >= 0) {
+	    returnTweet(data[i]);
+	  }
+	}
+	queryComplete(obj.id, mentions);
+      });
+      obj.queries.push(mentions);
+
       searches[obj.id] = obj;
       return obj.id;
     },

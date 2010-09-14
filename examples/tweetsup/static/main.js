@@ -59,11 +59,9 @@ $(document).ready(function() {
       var tweet = $("<div/>").addClass("tweet");
       $(tweet).append($("<div class=\"who\"><img src=\""+ t.user.profile_image_url +"\"/><div>" + t.user.screen_name + "</div></div>"));
       var whatTheySpake = t.text;
-      console.log(whatTheySpake);
       if (highlight) {
 	whatTheySpake = t.text.replace(new RegExp("(" + re_escape(highlight) + ")", "gi"), "<span class=\"highlight\">$1</span>" );
       }
-      console.log(whatTheySpake);
       $(tweet).append($("<div/>").addClass("what").append($("<div/>").addClass("tweeter").text())
 		      .append($("<div/>").addClass("utterance").html(whatTheySpake)));
       return tweet;
@@ -75,7 +73,6 @@ $(document).ready(function() {
     {
       var url = 'query.php?token=' + sto.getItem('oauth_token') + "&secret=" + sto.getItem('oauth_secret')
 	+ "&path=statuses/friends_timeline.json&include_rts=true&count=20";
-      console.log(url);
       $.getJSON(url, function(data) {
 	for (var i in data) {
 	  $('#timeline').append(buildTweetNode(data[i]));
