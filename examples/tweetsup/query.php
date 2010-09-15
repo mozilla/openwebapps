@@ -18,12 +18,18 @@ $oauth_token = $_GET['token'];
 $token_secret = $_GET['secret'];
 $api_path = $_GET['path'];
 
-/* XXX: validate? */
-
 $cons_obj = new OAuthConsumer($cons_key, $cons_secret, $callback_url);
 $token = new OAuthToken($oauth_token, $token_secret);
 $url = $twitter_api . $api_path;
 $params = array();
+
+// now filter params and forward those that we do not understand
+$knownParams = array('token', 'secret', 'path');
+foreach ($_GET as $key => $val) {
+  if (!in_array($key, $knownParams)) {
+     $params[$key] = $val;
+  }
+} 
 
 $res_req = OAuthRequest::from_consumer_and_token($cons_obj, $token, "GET", $url, $params);
 $res_req->sign_request(new OAuthSignatureMethod_HMAC_SHA1(), $cons_obj, $token);

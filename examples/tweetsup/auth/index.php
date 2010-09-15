@@ -7,7 +7,7 @@ require_once("OAuth.php");
 include('../../authcreds.inc'); 
 $key = $twitter_oauth_consumer_key;
 $secret = $twitter_oauth_consumer_secret;
-$callback_url = "https://tweetsup.mozillalabs.com/~lhilaiel/appetizer/examples/tweetsup/auth/";
+$callback_url = "https://tweetsup.mozillalabs.com/auth/";
 $test_consumer = new OAuthConsumer($key, $secret, $callback_url);
 
 $request_endpoint = "https://api.twitter.com/oauth/request_token";
