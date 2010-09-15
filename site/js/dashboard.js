@@ -199,7 +199,8 @@ window.localStorage.setItem("http://bugzapp.mozillalabs.com",
         }
       },
       icons: {
-        "96":"cows.png"
+        "48":"http://bugzilla.mozilla.org/skins/custom/images/bugzilla.png",
+        "96":"http://bugzilla.mozilla.org/skins/custom/images/bugzilla.png"
       },
       description: "Bugzilla search",
       developerName: "Mozilla Labs",
