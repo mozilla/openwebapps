@@ -36,6 +36,12 @@
   padding-left:0px;
   margin-left:70px;
 }
+
+.searchMore {
+  font:10px Helvetica;
+  float:right
+}
+
 #results > ul > li > ul > li {
   margin-bottom:4px;
 }

@@ -157,12 +157,19 @@ SearchResult.prototype = {
     var key;
     for (key in this.resultMap)
     {
-      var categoryItems = ["<li><div class='searchCat'>" + key + "</div>", "<ul>"];
+      var categoryItems = ["<li><div class='searchCat " + attrescape(key) + "Results'>" + key + "</div>", "<ul>"];
+      var overflowCount = 3;
       for (var i=0;i<this.resultMap[key].length;i++)
       {
         var item = this.resultMap[key][i];
         var icon = item.app.icons["48"];
-        categoryItems.push("<li><div class='searchHead'><img src='" + icon + 
+        
+        if (i == overflowCount) {
+          categoryItems.push("<li class='searchMore'><a href='javascript:showMore(\"" + attrescape(key) + "\")'>more...</a></li>");
+        }
+        
+        categoryItems.push("<li" + (i >= overflowCount ? " style='display:none'" : "") +
+          "><div class='searchHead'><img src='" + icon + 
           "' width='16' height='16'><div class='searchTitle'><a target=\"_blank\" href=\"" +  item.link + 
           "\">" + item.title + "</a></div></div><div class='searchSumm'>" + item.summary +
            "</div></li>");
@@ -175,6 +182,11 @@ SearchResult.prototype = {
   }
 }
 
+function showMore(key)
+{
+  $("div." + attrescape(key) + "Results + ul > :hidden").show();
+  $("div." + attrescape(key) + "Results + ul > .searchMore").hide();
+}
 
 function makeSearchComplete(install, fullResults) {
   dump("returning searchComplete for " + install.app.name + "\n");
@@ -265,3 +277,11 @@ var spotlight = function() {
   });*/
   
 };
+
+function attrescape(val)
+{
+  return val.
+    replace(/'/gmi, '&apos;').
+    replace(/"/gmi, '&quot;');
+}
+
