@@ -33,135 +33,133 @@
  * ***** END LICENSE BLOCK ***** */
 
 ;ConduitBridge = (function() {
-  // Reference shortcut so minifier can save on characters
-  var win = window;
+    // Reference shortcut so minifier can save on characters
+    var win = window;
 
-  // We're the top window, don't do anything
-  if(win.top == win) {
-    return;
-  }
+    // We're the top window, don't do anything
+    if(win.top == win) {
+        return;
+    }
 
-  // unsupported browser
-  if(!win.postMessage || !win.localStorage || !win.JSON) {
-    return;
-  }
+    // unsupported browser
+    if(!win.postMessage || !win.localStorage || !win.JSON) {
+        return;
+    }
 
-  // Set up the API
-  var ConduitAPI = {
+    // Set up the API
+    var ConduitAPI = {
+
+        /**
+           Request object will look like:
+           {
+           cmd:'conduit::search',
+           id:1,
+           term: <TERM>
+           }
+        **/
+        'conduit::search': function(originHostname, requestObj, origin) {
+            var r = {
+	            title: 'search results',
+	            results: [ ]
+            };
+
+            Search.run(requestObj.term, function(t) {
+	            var user = t.user ? t.user : t.sender;
+	            var link = "http://twitter.com/" + user.screen_name + "/status/" + t.id;
+	            r.results.push({
+	                link: link,
+	                title: user.screen_name + ": " + t.text.substr(0,40) + "...",
+	                summary: t.text,
+	                updated: t.created_at
+	            });
+            }, function (res) {
+	            sendResponse({
+	                result: r,
+	                cmd: requestObj.cmd,
+	                id: requestObj.id
+	            }, origin);
+            });
+        },
+
+        /**
+           Request object will look like:
+           {
+           cmd:'conduit::notifications',
+           id:1,
+           term: <TERM>
+           }
+        **/
+        'conduit::notifications': function(originHostname, requestObj, origin) {
+            // TODO check origin to make sure it's one we feel good about
+            // TODO authenticate user somehow?  we'll get the user's cookie if they have a session already.
+            // TODO: implement
+        }
+
+        // other APIs go here...
+    }
 
     /**
-    Request object will look like:
-    {
-      cmd:'conduit::search',
-      id:1,
-      term: <TERM>
-    }
+       help with debugging issues
     **/
-    'conduit::search': function(originHostname, requestObj, origin) {
-      console.log("searching for: " + requestObj.term);
-      var r = {
-	title: 'search results',
-	results: [ ]
-      };
-
-      Search.run(requestObj.term, function(t) {
-	var user = t.user ? t.user : t.sender;
-	var link = "http://twitter.com/" + user.screen_name + "/status/" + t.id;
-	r.results.push({
-	  link: link,
-	  title: user.screen_name + ": " + t.text.substr(0,40) + "...",
-	  summary: t.text,
-	  updated: t.created_at
-	});
-      }, function (res) {
-	console.log(res);
-	sendResponse({
-	  result: r,
-	  cmd: requestObj.cmd,
-	  id: requestObj.id
-	}, origin);
-      });
-    },
-
-  /**
-    Request object will look like:
-    {
-      cmd:'conduit::notifications',
-      id:1,
-      term: <TERM>
-    }
-    **/
-    'conduit::notifications': function(originHostname, requestObj, origin) {
-      // TODO check origin to make sure it's one we feel good about
-      // TODO authenticate user somehow?  we'll get the user's cookie if they have a session already.
-      // TODO: implement
+    function logError(requestObj, message, originHostname) {
+        if(!requestObj || (typeof requestObj.id != 'number') ) {
+            return;
+        }
+        if(win.console && win.console.log) {
+            win.console.log(requestObj.cmd + ' Error: ' + message);
+        }
     }
 
-    // other APIs go here...
-  }
-
-  /**
-    help with debugging issues
-  **/
-  function logError(requestObj, message, originHostname) {
-    if(!requestObj || (typeof requestObj.id != 'number') ) {
-      return;
-    }
-    if(win.console && win.console.log) {
-      win.console.log(requestObj.cmd + ' Error: ' + message);
-    }
-  }
-
-  // Make sure response message has an id and send it on to parent window
-  // origin is the URI of the window we're postMessaging to
-  function sendResponse(responseObj, origin) {
-    if(!responseObj || (typeof responseObj.id != 'number') ) {
-      return;
-    }
-    win.parent.postMessage(JSON.stringify(responseObj), origin);
-  }
-
-  // Listener for window message events, receives messages from parent window
-  function onMessage(event) {
-    // event.origin will always be of the format scheme://hostname:port
-    // http://www.whatwg.org/specs/web-apps/current-work/multipage/comms.html#dom-messageevent-origin
-
-    try {
-    var requestObj = JSON.parse(event.data);
-    var originHostname = event.origin.split('://')[1].split(':')[0];
-
-    /**
-    message generally looks like
-    {
-      cmd: conduit::command_name,
-      id: request_id,
-      other parameters
-    }
-    **/
-
-    if(!requestObj || typeof requestObj != 'object'
-      || !requestObj.cmd || requestObj.id == undefined)
-    {
-      // A post message we don't understand
-      return;
+    // Make sure response message has an id and send it on to parent window
+    // origin is the URI of the window we're postMessaging to
+    function sendResponse(responseObj, origin) {
+        if(!responseObj || (typeof responseObj.id != 'number') ) {
+            return;
+        }
+        win.parent.postMessage(JSON.stringify(responseObj), origin);
     }
 
-    if(ConduitAPI[requestObj.cmd]) {
-      // A command we understand, send the response on back to the posting window
-      var result = ConduitAPI[requestObj.cmd](originHostname, requestObj, event.origin);
-      sendResponse(result, event.origin);
-    }
-    } catch (e) {
-    }
-  }
+    // Listener for window message events, receives messages from parent window
+    function onMessage(event) {
+        // event.origin will always be of the format scheme://hostname:port
+        // http://www.whatwg.org/specs/web-apps/current-work/multipage/comms.html#dom-messageevent-origin
 
-  // Setup postMessage event listeners
-  if (win.addEventListener) {
-    win.addEventListener('message', onMessage, false);
-  } else if(win.attachEvent) {
-    win.attachEvent('onmessage', onMessage);
-  }
+        try {
+            var requestObj = JSON.parse(event.data);
+            var originHostname = event.origin.split('://')[1].split(':')[0];
 
-  // Finally, tell the parent window we're ready.
-  win.parent.postMessage(JSON.stringify({cmd: 'conduit::ready'}),"*");
+            /**
+               message generally looks like
+               {
+               cmd: conduit::command_name,
+               id: request_id,
+               other parameters
+               }
+            **/
+
+            if(!requestObj || typeof requestObj != 'object'
+               || !requestObj.cmd || requestObj.id == undefined)
+            {
+                // A post message we don't understand
+                return;
+            }
+
+            if(ConduitAPI[requestObj.cmd]) {
+                // A command we understand, send the response on back to the posting window
+                var result = ConduitAPI[requestObj.cmd](originHostname, requestObj, event.origin);
+                sendResponse(result, event.origin);
+            }
+        } catch (e) {
+        }
+    }
+
+    // Setup postMessage event listeners
+    if (win.addEventListener) {
+        win.addEventListener('message', onMessage, false);
+    } else if(win.attachEvent) {
+        win.attachEvent('onmessage', onMessage);
+    }
+
+    // Finally, tell the parent window we're ready.
+    win.parent.postMessage(JSON.stringify({cmd: 'conduit::ready'}),"*");
 })();
