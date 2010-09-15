@@ -34,7 +34,7 @@ class SearchResult(object):
   def __init__(self, term, definition):
     self.title = definition
     self.category = "Definition"
-    self.link = WIKTIONARY_SERVER + term
+    self.link = WIKTIONARY_SERVER + "/wiki/" + term
     self.updated = None
     self.summary=""
 
@@ -107,7 +107,7 @@ class SearchHandler(tornado.web.RequestHandler):
                 if l[0] == "#" and len(l)>1 and (l[1] != ":" and l[1] != '*'):
                   defn = dewikify(l[1:].strip())
                   if len(defn):
-                    resultObjects.append(SearchResult(response.request.query, wordType + ": " + defn))
+                    resultObjects.append(SearchResult(response.request.query, wordType + ": " + defn.strip()))
             except Exception, e:
               logging.debug(e)
                
