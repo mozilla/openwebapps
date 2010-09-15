@@ -1,6 +1,6 @@
 ;Search = (function() {
   var pathToQueryPHP = "";
-  if (QUERY_PHP_PREFIX) pathToQueryPHP += QUERY_PHP_PREFIX;
+  try {pathToQueryPHP += QUERY_PHP_PREFIX; } catch(e) { }
   pathToQueryPHP += "query.php";
   var searches = { };
   var searchId = 1000;
