@@ -78,6 +78,7 @@ directly from any informal webpage.  All web applications are
 installed applications.  The dashboard can be implemented entirely as
 a web site, or can be enriched with UA "add-ons" or native UA support.
 </dd>
+</dl>
 
 ## Further Reading
 
