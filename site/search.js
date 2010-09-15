@@ -131,8 +131,8 @@ SearchResult.prototype = {
           var results = appResults;
           try {
               var parsed = JSON.parse(appResults)
-              results = parsed.results; 
-          } catch (e) { }
+              results = parsed;
+          } catch (e) {}
           var i;
           results = results.results;
           for (i=0;i<results.length;i++)
@@ -144,7 +144,7 @@ SearchResult.prototype = {
               this.resultMap[cat].push(res);
           }
       } catch (e) {
-          alert(e);
+          alert("SearchResult.addResults: " + e);
       }
       try {
           $("#loading_results").hide(); // TODO track whether we have more work inflight
