@@ -14,7 +14,7 @@ var manifest = {
     "description": "Perform searches across your twitter friends timelines and receive notifications from inside your application dashboard",
     "developerName": "Mozilla Labs",
     "auth": "https://tweetsup.mozillalabs.com/auth",
-    "conduit": "https://tweetsup.mozillalabs.com/conduit",
+    "conduit": "https://tweetsup.mozillalabs.com/conduit/",
     "supportedAPIs": [
         "search",
         "search"
