@@ -18,6 +18,13 @@ $(function(){
         $('#results > ul > li > ul > li:last').addClass('selected');
       $('.selected').removeClass('selected').prev().addClass('selected');
       break;
+    
+    case 13:
+      if($('.selected').length)
+      {
+        $('.selected a').trigger('click');
+      }
+      
     }
   });
 
@@ -155,11 +162,17 @@ SearchResult.prototype = {
       // TODO sort categories that changed
   },
   render: function() {
-    var categories = ["<ul>"];
+    var categories = $("<ul>"); // ["<ul>"];
     var key;
     for (key in this.resultMap)
     {
-      var categoryItems = ["<li><div class='searchCat " + attrescape(key) + "Results'>" + key + "</div>", "<ul>"];
+      var categoryLI = $("<li>");
+      var catDiv = $("<div>").addClass("searchCat").addClass(attrescape(key) + "Results").text(key);
+      var catList = $("<ul>");
+      categoryLI.append(catDiv);
+      categoryLI.append(catList);
+      
+      // var categoryItems = ["<li><div class='searchCat " + attrescape(key) + "Results'>" + key + "</div>", "<ul>"];
       var overflowCount = 3;
       for (var i=0;i<this.resultMap[key].length;i++)
       {
@@ -167,20 +180,57 @@ SearchResult.prototype = {
         var icon = item.app.icons["48"];
         
         if (i == overflowCount) {
-          categoryItems.push("<li class='searchMore'><a href='javascript:showMore(\"" + attrescape(key) + "\")'>more...</a></li>");
+          var overflowLI = $("<li>").addClass("searchMore");
+          var overflowLink = $("<a>").attr({href:"javascript:showMore(\"" + attrescape(key) + "\")"}).text("more...");
+          overflowLI.append(overflowLink);
+          catList.append(overflowLI);
+          //categoryItems.push("<li class='searchMore'><a href='javascript:showMore(\"" + attrescape(key) + "\")'>more...</a></li>");
         }
         
-        categoryItems.push("<li" + (i >= overflowCount ? " style='display:none'" : "") +
+        var listItem = $("<li>");
+        if (i >= overflowCount) listItem.hide();
+
+        var head = $("<div>").addClass("searchHead");
+        var img = $("<img>").attr({src:icon, width:16, height:16});
+        var title = $("<div>").addClass("searchTitle");
+        var link = $("<a>").attr({target:"_blank", style:"cursor:pointer"}).text(item.title);
+        link.click(function(evt) {
+          if (navigator.apps && navigator.apps.openAppTab)
+          {
+            navigator.apps.openAppTab(item.app, item.link, {background:evt.metaKey});
+          }
+          else 
+          {
+            window.open(item.link, "_blank");
+          }
+          evt.stopPropagation();
+        });
+        
+        var summary = $("<div>").addClass("searchSumm").text(item.summary);
+        
+        head.append(img);
+        head.append(title);
+        title.append(link);
+        listItem.append(head);
+        listItem.append(summary);
+        
+        
+        /*categoryItems.push("<li" + (i >= overflowCount ? " style='display:none'" : "") +
           "><div class='searchHead'><img src='" + icon + 
           "' width='16' height='16'><div class='searchTitle'><a target=\"_blank\" href=\"" +  item.link + 
           "\">" + item.title + "</a></div></div><div class='searchSumm'>" + item.summary +
            "</div></li>");
+          */
+        catList.append(listItem);
       }
-      categoryItems.push("</ul></li>");
-      categories.push(categoryItems.join(""));
+      //categoryItems.push("</ul></li>");
+      // categories.push(categoryItems.join(""));
+      categories.append(categoryLI);
     }
-    categories.push("</ul>");
-    $("#results").html(categories.join("")).show();
+    // categories.push("</ul>");
+    $("#results").empty();
+    $("#results").append(categories).show();
+    // html(categories.join("")).show();
   }
 }
 

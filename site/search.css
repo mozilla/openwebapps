@@ -21,7 +21,7 @@
 }
 
 #results > ul > li > .searchCat {
-  font:bold 12px Helvetica;
+  font:bold 12px "Lucida Sans",Helvetica;
   margin-bottom:-16px;
   width:70px;
 }
@@ -43,11 +43,11 @@
 }
 
 #results > ul > li > ul > li {
-  margin-bottom:4px;
+  margin-bottom:6px;
 }
 
 #results > ul > li > ul > li > .searchHead {
-  font:12px Helvetica;
+  font:12px "Lucida Sans",Helvetica;
   white-space:nowrap
   vertical-align:top
 }
@@ -78,7 +78,7 @@
 #results > ul > li > ul > li > .searchSumm {
   display:none;
   margin-left:20px;
-  font:12px Helvetica;
+  font:12px "Lucida Sans",Helvetica;
 }
 
 
