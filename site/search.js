@@ -126,31 +126,33 @@ function SearchResult()
 SearchResult.prototype = {
   addResults: function(install, appResults) 
   {
-    try {
-      dump("adding results for " + install.app.name + " to full result set\n");
-      var parsed = JSON.parse(appResults)
-      if (parsed.results)
-      {
-        var i;
-        for (i=0;i<parsed.results.length;i++)
-        {
-          var res = parsed.results[i];
-          if (!res.app) res.app = install.app;
-          var cat = res.category_term ? res.category_term : "Result";
-          if (!this.resultMap[cat]) this.resultMap[cat] = [];
-          this.resultMap[cat].push(res);
-        }
+      try {
+          dump("adding results for " + install.app.name + " to full result set\n");
+          var results = appResults;
+          try {
+              var parsed = JSON.parse(appResults)
+              results = parsed.results; 
+          } catch (e) { }
+          var i;
+          results = results.results;
+          for (i=0;i<results.length;i++)
+          {
+              var res = results[i];
+              if (!res.app) res.app = install.app;
+              var cat = res.category_term ? res.category_term : "Result";
+              if (!this.resultMap[cat]) this.resultMap[cat] = [];
+              this.resultMap[cat].push(res);
+          }
+      } catch (e) {
+          alert(e);
       }
-    } catch (e) {
-      alert(e);
-    }
-    try {
-      $("#loading_results").hide(); // TODO track whether we have more work inflight
-      this.render();
-    } catch (e) {
-      alert(e);
-    }
-    // TODO sort categories that changed
+      try {
+          $("#loading_results").hide(); // TODO track whether we have more work inflight
+          this.render();
+      } catch (e) {
+          alert(e);
+      }
+      // TODO sort categories that changed
   },
   render: function() {
     var categories = ["<ul>"];
@@ -172,16 +174,6 @@ SearchResult.prototype = {
     }
     categories.push("</ul>");
     $("#results").html(categories.join("")).show();
-  }
-}
-
-
-function makeSearchComplete(install, fullResults) {
-  dump("returning searchComplete for " + install.app.name + "\n");
-  return function(appResults) {
-    var target = install;
-    dump("Got results for " + target.app.name + " - " + JSON.stringify(appResults) + "\n");
-    fullResults.addResults(target, appResults);
   }
 }
 
@@ -208,9 +200,14 @@ var spotlight = function() {
       var install = gApps.installs[i];
       if (install.conduit && install.app.supportedAPIs.indexOf("search") >= 0)
       {
-        any = true;
-        dump("starting search for " + install.app.name + "\n");
-        install.conduit.search(escape(input), makeSearchComplete(install, fullResults));
+          any = true;
+          dump("starting search for " + install.app.name + "\n");
+          install.conduit.search(escape(input), (function() {
+              var _install = install;
+              return function(appResults) {
+                  fullResults.addResults(_install, appResults);
+              }
+          })());
       }
     } catch (e) {
       alert("ERROR: " + e + "\n" + e.stack);
