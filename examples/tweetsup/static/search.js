@@ -1,4 +1,7 @@
 ;Search = (function() {
+  var pathToQueryPHP = "";
+  if (QUERY_PHP_PREFIX) pathToQueryPHP += QUERY_PHP_PREFIX;
+  pathToQueryPHP += "query.php";
   var searches = { };
   var searchId = 1000;
   var queryId = 100000;
@@ -43,7 +46,7 @@
       delete queryCache[type];
       if (!sto.getItem('oauth_token') || !sto.getItem('oauth_secret')) throw 'E_NEEDS_AUTH';
 
-      var url = 'query.php?token=' + sto.getItem('oauth_token') + "&secret=" + sto.getItem('oauth_secret')
+      var url =  pathToQueryPHP + '?token=' + sto.getItem('oauth_token') + "&secret=" + sto.getItem('oauth_secret')
 	+ "&path=" + typeToUrlPart[type].urlpart + '.json';
       if (typeToUrlPart[type].extra) url += "&" + typeToUrlPart[type].extra
 
