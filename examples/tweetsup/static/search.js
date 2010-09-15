@@ -1,6 +1,7 @@
 ;Search = (function() {
   var searches = { };
   var searchId = 1000;
+  var queryId = 100000;
   var sto = window.localStorage;
 
   var queryCache = {
@@ -17,11 +18,11 @@
     var typeToUrlPart = {
       directs: {
 	urlpart: 'direct_messages',
-	extra: 'count=100'
+	extra: 'count=200'
       },
       mentions: {
 	urlpart: 'statuses/mentions',
-	extra: 'count=50'
+	extra: 'count=800'
       },
       friends: {
 	urlpart: 'statuses/friends_timeline',
@@ -34,9 +35,10 @@
 
     // can haz cache?
     if (queryCache[type] && (new Date() - queryCache[type].maxAge) <= queryCache[type].stamp) {
+      q = queryId++;
 //      console.log("returning data for '" + type + "' query from cache, it's only " + ((new Date() - queryCache[type].stamp)/1000.0).toFixed(2) + "s old" +
 //		 "(we'll let it live until its " + (queryCache[type].maxAge / 1000).toFixed(0) + "s)");
-      setTimeout(function() { cb(queryCache[type].data); }, 0);
+      setTimeout(function() { cb(q, queryCache[type].data); }, 0);
     } else {
       delete queryCache[type];
       if (!sto.getItem('oauth_token') || !sto.getItem('oauth_secret')) throw 'E_NEEDS_AUTH';
@@ -46,25 +48,30 @@
       if (typeToUrlPart[type].extra) url += "&" + typeToUrlPart[type].extra
 
       q = $.getJSON(url, function(data) {
-	// fuzzy cache.  let items live between 1 and two mins.  the fuzz decreases the likelyhood we'll run new queries
-        // all at once.
-	queryCache[type] = {
-	  maxAge: ((60 + Math.floor(Math.random()*61)) * 1000),
-	  data: data,
-	  stamp: new Date()
-	};
-	cb(data);
+	// query broke !? don't cache
+	if (!data) cb(q, [ ]);
+	else {
+	  // fuzzy cache.  let items live between 1 and two mins.  the fuzz decreases the likelyhood we'll run new queries
+          // all at once.
+	  queryCache[type] = {
+	    maxAge: ((60 + Math.floor(Math.random()*61)) * 1000),
+	    data: data,
+	    stamp: new Date()
+	  };
+	  cb(q, data);
+	}
       });
     }
     return q;
   }
 
   function cancelSearch(id) {
-    if (searches[id]) {
+    if (searches[id] && searches[id].queries) {
       // cancel outstanding queries
       while (searches[id].queries.length) {
 	var q = searches[id].queries.pop();
-	q.abort();
+	// queries can be jQuery ajax requests, or simple numerical ids (in the case of queries that need no network activity)
+	if (q && q.abort) q.abort();
       }
       delete searches[id];
       return true;
@@ -73,23 +80,45 @@
   }
 
   function queryComplete(searchId, query) {
+    // query is all done!  remove it from the search, and if it is the last
+    // query, then we'll call the c(ompletion)c(all)b(ack)
+    if (searches[searchId]) {
+      var obj = searches[searchId];
 
+      // delete query
+      for (var i = 0; i < obj.queries.length; i++) {
+	if (obj.queries[i] == query) {
+	  obj.queries.splice(i,1);
+	  break;
+	}
+      }
+
+      if (0 === obj.queries.length && obj.ccb) {
+	obj.ccb({ total: obj.total, matches: obj.matches, term: obj.term, id: obj.id });
+	delete searches[searchId];
+      }
+    }
   }
 
   return {
-    run: function(term, cb) {
+    // run a search returning results via the pcb, invoking the ccb once we're done
+    run: function(term, pcb, ccb) {
       term = term.toLowerCase();
       var obj = {
 	id: searchId++,
 	queries: [ ],
 	term: term,
 	// items returned so we don't return duplicates
-	returned: { }
+	returned: { },
+	// completion callback
+	ccb: ccb,
+	total: 0,
+	matches: 0
       };
       function returnTweet(t) {
 	if (!obj.returned[t.id]) {
 	  obj.returned[t.id] = true;
-	  cb(t);
+	  pcb(t);
 	}
       }
       function searchTweet(t, term) {
@@ -101,8 +130,15 @@
       var toSearch = [ 'directs', 'mentions', 'friends' ];
       for (var i in toSearch) {
 	var searchTag = toSearch[i];
-	var q = searchTwitter(searchTag, function(data) {
-	  for (var j in data) if (searchTweet(data[j], term)) returnTweet(data[j]);
+	var q = searchTwitter(searchTag, function(qid, data) {
+	    obj.total += data.length;
+	    for (var j in data) {
+	      if (searchTweet(data[j], term)) {
+		obj.matches++;
+		returnTweet(data[j]);
+	      }
+	    }
+	    queryComplete(obj.id, qid);
 	});
 	if (q) obj.queries.push(q);
       }

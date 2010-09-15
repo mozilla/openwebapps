@@ -84,12 +84,17 @@ $(document).ready(function() {
       // set up our search button
       $('#searchbox').keyup(function(e) {
 	$('#searchOutput').empty();
+	$('#searchStats').empty();
+	var start = new Date();
 	var term = $.trim($('#searchbox').val());
 	if (search) Search.cancel(search);
 	if (term) {
 	  search = Search.run(term, function(r) {
 	    $('#searchOutput').append(buildTweetNode(r, term));
-	  })
+	  }, function (r) {
+	    var secs = ((new Date() - start) / 1000.0).toFixed(2);
+	    $('#searchStats').text(r.matches + " matches found.  " + r.total + " searched in " + secs + "s");
+	  });
 	}
       });
     }
