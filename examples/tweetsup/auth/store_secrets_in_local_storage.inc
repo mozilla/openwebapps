@@ -14,7 +14,7 @@
 var storage = window.localStorage;
 storage.setItem("oauth_token", "<?= $token; ?>");
 storage.setItem("oauth_secret", "<?= $token_secret; ?>");
-document.location = "https://myapps.mozillalabs.com";
+document.location = "https://tweetsup.mozillalabs.com";
 
 </script>
 </html>
