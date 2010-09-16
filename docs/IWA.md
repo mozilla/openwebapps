@@ -104,8 +104,9 @@ perform HTTP requests with credentials back to that server.
 Additionally, the wire format and authentication mechanisms are
 completely controlled by the application author, and they can use
 whatever is apropriate.  The key requirement for these conduits is
-that they handle a set of protocol messages defined in this document
-and respond with correctly formatted responses.
+that they listen for cross-document messages and respond properly to
+those messages defined in this document associated with the services
+that they provide.
 
 ### Messaging basics
 
