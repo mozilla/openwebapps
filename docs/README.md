@@ -56,17 +56,18 @@ In the world we envision, there are several distinct entities:
 
 <dl>
 <dt>Stores</dt>
-<dd> These are web front stores that users may have a direct relationship with.
-These stores host directories of free and/or paid applications that users may
-install.  There can be any number of application stores run by entities ranging
-from hobbyists to corporations.  Each store will establish its own policies
-around application publishing and interaction with developers.  Finally, where 
-required stores will 
-
+<dd> These are web front stores that users may have a direct
+relationship with.  These stores host directories of free and/or paid
+applications that users may install.  There can be any number of
+application stores run by entities ranging from hobbyists to
+corporations.  Each store will establish its own policies around
+application publishing and interaction with developers.  Finally,
+stores may include payment systems and may place requirements on
+application authors to support payments.
 </dd>
 
 <dt>IWAs</dt>
-<dd> 
+<dd>
 Installable Web Applications are hosted web applications.  They can be
 installed via any number of application stores, or can be installed
 directly from any informal webpage.  All web applications are
@@ -83,6 +84,11 @@ a web site, or can be enriched with UA "add-ons" or native UA support.
 ## Further Reading
 
 IWA.md - an introduction to the components of Installable Web Applications.
+
+SERVICES.md - This document will describe the different services that
+web applications can support.  While IWA.md describes the ideas behind
+and architecture of "web conduits" where we describe the specific
+protocols that application authors may implement on top of them
 
 DASHBOARD.md - an introduction to the application dashboard, including the various
 ways to interact with it.
