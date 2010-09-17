@@ -49,7 +49,7 @@ function setUpDemoApps() {
 
 /*
 window.localStorage.setItem("http://www.debugapp.com", JSON.stringify({
-  
+
     installTime: new Date().getTime(),
     installURL: "http://megaappsite.com",
     app: {
@@ -72,7 +72,7 @@ window.localStorage.setItem("http://www.debugapp.com", JSON.stringify({
     }})
 );
 
-window.localStorage.setItem("http://www.greplin.com", 
+window.localStorage.setItem("http://www.greplin.com",
   JSON.stringify({
     installTime: new Date().getTime(),
     installURL: "http://megaappsite.com",
@@ -96,7 +96,7 @@ window.localStorage.setItem("http://www.greplin.com",
   }
 ));
 
-window.localStorage.setItem("http://docs.google.com", 
+window.localStorage.setItem("http://docs.google.com",
   JSON.stringify({
     installTime: new Date().getTime(),
     installURL: "http://megaappsite.com",
@@ -124,7 +124,7 @@ window.localStorage.setItem("http://docs.google.com",
   }
 ));
 
-window.localStorage.setItem("http://contacts.google.com", 
+window.localStorage.setItem("http://contacts.google.com",
   JSON.stringify({
     installTime: new Date().getTime(),
     installURL: "http://megaappsite.com",
@@ -152,7 +152,7 @@ window.localStorage.setItem("http://contacts.google.com",
   }
 ));
 
-window.localStorage.setItem("http://www.facebook.com", 
+window.localStorage.setItem("http://www.facebook.com",
   JSON.stringify({
     installTime: new Date().getTime(),
     installURL: "http://megaappsite.com",
@@ -186,7 +186,7 @@ window.localStorage.setItem("http://www.facebook.com",
 */
 
 
-window.localStorage.setItem("http://bugzapp.mozillalabs.com", 
+window.localStorage.setItem("http://bugzapp.mozillalabs.com",
   JSON.stringify({
     installTime: new Date().getTime(),
     installURL: "http://bugzapp.mozillalabs.com",
@@ -215,7 +215,7 @@ window.localStorage.setItem("http://bugzapp.mozillalabs.com",
 
 
 
-window.localStorage.setItem("http://dictionary.mozillalabs.com", 
+window.localStorage.setItem("http://dictionary.mozillalabs.com",
   JSON.stringify({
     installTime: new Date().getTime(),
     installURL: "http://dictionary.mozillalabs.com",
@@ -260,7 +260,7 @@ var gDisplayMode = ROOT;
 var gIconSize = 48;// get from pref
 
 function init() {
-  try { 
+  try {
     // Construct our Apps handl
     gApps = new Apps();
 
@@ -278,7 +278,7 @@ function init() {
       gApps.logError("Error while initializing apps: " + e);
     }
     render();
-    
+
     // Refresh notifications
     gApps.refreshNotifications(notificationsWereRefreshed);
   } catch (e) {
@@ -313,7 +313,7 @@ function elem(type, clazz) {
 
 
 function NotificationDB() {
-  this.notifications = [];  
+  this.notifications = [];
 }
 NotificationDB.prototype = {
   add: function(install, notifications) {
@@ -324,7 +324,7 @@ NotificationDB.prototype = {
       dump("Adding notification with install " + install.app.name + " now\n");
     }
   },
-  
+
   getForApp: function(appKey) {
     var result = [];
     for (var i=0;i<this.notifications.length;i++) {
@@ -336,7 +336,7 @@ NotificationDB.prototype = {
     }
     return result;
   },
-  
+
   getSortedByDate: function() {
     this.notifications.sort(function(a,b) {
       if (a.updated && b.updated) {
@@ -351,11 +351,11 @@ NotificationDB.prototype = {
     });
     return this.notifications;
   },
-  
+
   anyNotifications: function() {
     return (this.notifications.length > 0);
   },
-  
+
   count: function() {
     return this.notifications.length;
   }
@@ -392,7 +392,7 @@ function makeOpenAppTabFn(app, targetURL)
       navigator.apps.openAppTab(app, targetURL, {background:evt.metaKey});
     }
   }
-  else 
+  else
   {
     return function(evt) {
       window.open(targetURL, "_blank");
@@ -403,7 +403,7 @@ function makeOpenAppTabFn(app, targetURL)
 
 // Render the contents of the "apps" element by creating canvases
 // and labels for all apps.
-function render() 
+function render()
 {
   var box = $("#apps");
   box.empty();
@@ -418,7 +418,7 @@ function render()
     renderNotifications();
     return;
   }
-  
+
 
   if (false) { /*(showInbox) {*/
     box.append(createAppIcon(messageInboxInstall));
@@ -448,7 +448,7 @@ function render()
       gApps.logError("Error while creating application icon for app " + i + ": " + e);
     }
   }
-  
+
   if (gDisplayMode == APP_INFO) {
     renderAppInfo(selectedBox);
   }
@@ -467,8 +467,8 @@ function renderNotifications()
   } else if (gNotificationSort == SORT_APP) {
     nots = gNotificationDB.getSortedByApp();
   }
-  
-  for (var i=0;i<nots.length;i++) 
+
+  for (var i=0;i<nots.length;i++)
   {
     var nBox = $("<div>").addClass("notification");
     var nTitle = $("<div>").addClass("notTitle");
@@ -480,15 +480,15 @@ function renderNotifications()
       // attr({href:nots[i].link}).
       nTitle.append(nLink);
     } else {
-      nTitle.text(nots[i].title);    
+      nTitle.text(nots[i].title);
     }
     var nDate = $("<div>").addClass("notDate").text(formatDate(nots[i].updated));
     nBox.append(nDate);
     var nSummary = $("<div>").addClass("notSummary").text(nots[i].summary);
     nBox.append(nSummary);
-    
+
     // TODO support ActivityStreams for image preview, etc.
-    
+
     box.append(nBox);
   }
 }
@@ -498,7 +498,7 @@ var getInfoId = "getInfo";
 
 function showDarkOverlay() {
   try { hideDarkOverlay() } catch(e) { };
-  // create a opacity overlay to focus the users attention 
+  // create a opacity overlay to focus the users attention
   var od = document.createElement("div");
   od.id = overlayId;
   od.style.background = "#000";
@@ -540,7 +540,7 @@ function renderAppInfo(selectedBox)
   var targetLeft = rect.left;
   var targetTop = rect.top - 8;
   if (rect.left + width > docRect.right-20) targetLeft = docRect.right-20 - width;
-  window.setTimeout(function() { 
+  window.setTimeout(function() {
     if (targetLeft != rect.left) info.style.left = targetLeft +"px";
     info.style.width=width+"px";
     info.style.height=height+"px";
@@ -595,7 +595,7 @@ function renderAppInfo(selectedBox)
         dev.appendChild(document.createTextNode(gSelectedInstall.app.developerName));
         data.appendChild(dev);
       } else {
-        dev.appendChild(document.createTextNode("No developer info"));      
+        dev.appendChild(document.createTextNode("No developer info"));
         $(dev).addClass("devUnknown");
         data.appendChild(dev);
       }
@@ -609,13 +609,15 @@ function renderAppInfo(selectedBox)
     var props = elem("div", "appProperties");
 
     var searchable = false;
+    var notifications = false;
     if (gSelectedInstall.app.supportedAPIs) {
         for (var i=0; i < gSelectedInstall.app.supportedAPIs.length; i++) {
             if (gSelectedInstall.app.supportedAPIs[i] === 'search') {
                 searchable=true;
-                break;
+            } else if (gSelectedInstall.app.supportedAPIs[i] === 'notification') {
+	        notifications=true;
             }
-        }
+	}
     }
 
     if (searchable) {
@@ -632,9 +634,8 @@ function renderAppInfo(selectedBox)
     } else {
       props.appendChild(makeColumn("Search?", "Not searchable"));
     }
-    
 
-    if (gSelectedInstall.app.notification) {
+    if (notifications) {
       var notifyDiv = elem("div", "cbox");
       var cbox = elem("input");
       cbox.setAttribute("type", "checkbox");
@@ -647,7 +648,7 @@ function renderAppInfo(selectedBox)
       props.appendChild(makeColumn("Notifications?", notifyDiv));
     } else {
       props.appendChild(makeColumn("Notifications?", "None"));
-    }    
+    }
 
     props.appendChild(elem("div", "hdiv"));
     props.appendChild(makeColumn("Install Date", formatDate(gSelectedInstall.installTime)));
@@ -657,7 +658,7 @@ function renderAppInfo(selectedBox)
     info.appendChild(props);
     $(info).click(function() {return false;});
   }, 200);
-  
+
   document.body.appendChild(info);
 
   // Dismiss box when user clicks anywhere else
@@ -680,7 +681,7 @@ function createAppIcon(install) {
   div.onclick = makeOpenAppTabFn(install.app, install.app.app.launch.web_url);
   div.setAttribute("id", "app:" + install.app.app.launch.web_url);
   var canvas = createAppCanvas(install.app);
-    
+
   canvas.setAttribute("class", "app_icon");
   div.appendChild(canvas);
 
@@ -737,10 +738,10 @@ function createAppCanvas(manifest)
     cvs.width = gIconSize+6;
     cvs.height = gIconSize+6;
     ctx = cvs.getContext("2d");
-    
+
     // TODO: put a generic icon in first because it could load slowly.
     // TODO: be clever about which icon to use
-    
+
     img.onload = makeAppCanvasDrawFn(ctx, img, manifest);
     return cvs;
   } catch(e) {
@@ -767,7 +768,7 @@ function makeAppCanvasDrawFn(ctx, img, manifest)
     ctx.clip();
     ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, gIconSize, gIconSize);
     ctx.restore();
-    
+
     try {
       var notificationList = gNotificationDB.getForApp(manifest.app.launch.web_url);
       dump("App " + manifest.app.launch.web_url + " has " + notificationList.length + " notifications\n");
@@ -780,7 +781,7 @@ function makeAppCanvasDrawFn(ctx, img, manifest)
   }
 }
 
-function  roundRect(ctx, x, y, width, height, radius, fill, stroke) 
+function  roundRect(ctx, x, y, width, height, radius, fill, stroke)
 {
   stroke = stroke === undefined ? true : false;
   radius = radius === undefined ? 5 : radius;
@@ -797,7 +798,7 @@ function  roundRect(ctx, x, y, width, height, radius, fill, stroke)
   ctx.closePath();
   if (fill) {
     ctx.fill();
-  }       
+  }
   if (stroke) {
     ctx.stroke();
   }
@@ -837,7 +838,7 @@ function setIconSize(size)
 		theRules = document.styleSheets[0].rules;
 	}
 
-  // I'm not sure putting the icons into the DOM 
+  // I'm not sure putting the icons into the DOM
   // is really the right approach.  But this is
   // necessary for spacing them out, for now.
   /*for each (var r in theRules)
@@ -849,12 +850,12 @@ function setIconSize(size)
     }
   }*/
   render();
-} 
+}
 
 function formatDate(dateStr)
 {
   if (!dateStr) return "null";
-  
+
   var now = new Date();
   var then = new Date(dateStr);
 
@@ -873,7 +874,7 @@ function formatDate(dateStr)
       var str;
       var hrs = then.getHours();
       var mins = then.getMinutes();
-      
+
       var hr = Math.floor(Math.floor(hrs) % 12);
       if (hr == 0) hr =12;
       var mins = Math.floor(mins);
@@ -882,7 +883,7 @@ function formatDate(dateStr)
   return str;
 }
 
-function onMessage(event) 
+function onMessage(event)
 {
   // unfreeze request message into object
   var msg = JSON.parse(event.data);
