@@ -1,12 +1,13 @@
 {
   "title": "Dictionary Notifications",
   "entries": [
+{% set first = True; %}
+{% for result in results %}{% if not first %},{% end %}{% set first = False %}
     {
-      "title":"A new definition for snarf has been added.",
-      "link":"http://wiktionary.org/wiki/snarf",
-      "id":"uuid:abcd-1234",
-      "updated":"2010-09-13T01:45:23Z",
-      "summary":"Definition 4 of <b>snarf</b> has been added: \"To slurp (computing slang sense); to load in entirety; to copy as a whole.\""
-    }
+      "title":{{ encode(result["title"]) }},
+      "link":{{ encode(result["link"]) }},
+      "id":{{ encode(result["id"]) }},
+      "updated":"{{ result["updated"] }}",
+      "summary":{{ encode(result["summary"]) }}}{% end %}
   ]
 }

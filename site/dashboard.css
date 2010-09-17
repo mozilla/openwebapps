@@ -78,6 +78,19 @@ a:hover {
   margin-top:12px;
   margin-left:40px;
 }
+#appcontrols {
+  font:8pt "Lucida Sans",Helvetica, Arial;
+  float:right;
+  display:inline-block;
+  margin-right:16px;
+}
+#appcontrols  {
+  cursor:pointer
+}
+#appcontrols a:hover {
+  border-bottom:1px dotted #3875d7;
+  text-decoration:none;
+}
 
 .appbox {
   display:inline-block;
@@ -108,6 +121,23 @@ a:hover {
 .appbox > .app_icon {
   margin-left:auto;
   margin-right:auto;
+}
+
+#apps > .notification {
+  font:8pt "Lucida Sans",Arial;
+}
+#apps > .notification > .notTitle {
+  display:inline-block;
+  width:400px;
+  overflow:hidden;
+}
+#apps > .notification > .notDate {
+  display:inline-block;
+  width:200px;
+  overflow:hidden;
+}
+#apps > .notification > .notSummary {
+  display:none
 }
 
 .getInfo {

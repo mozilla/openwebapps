@@ -34,73 +34,13 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-var self = require("self");
-var panels = require("panel");
-var tabs = require("tabs");
-var tabBrowser = require("tab-browser");
-var windowUtils = require("window-utils");
 var apps = require("apps");
-var {Cc, Ci, Cu} = require("chrome");
 
 exports.main = function(options, callbacks) {
-  // Don't need to quit right away: no callbacks.quit();
   apps.init();
-
-/*  registerCustomAppsProtocol();
-  tabs.open({
-    url: self.data.url("apps://apps/dashboard.html")
-  });*/
 }
 exports.unload = function(reason)
 {
   apps.unload();
 }
-
-const APPS_PROTOCOL = "apps";
-const APPS_HOST = "apps";
-const APPS_URL = APPS_PROTOCOL + "://" + APPS_HOST + "/dashboard.html";
-// TODO: We want to localize this string.
-const APPS_TITLE = "Cuddlefish Lab";
-
-
-function injectLabVars(window) {
-  window.wrappedJSObject.packaging = packaging;
-}
-
-function registerCustomAppsProtocol()
-{
-  var protocol = require("custom-protocol").register(APPS_PROTOCOL);
-
-  // TODO: Eventually we want to have this protocol not run
-  // as the system principal.
-  protocol.setHost(APPS_HOST, packaging.getURLForData("/"), "system");
-
-  var openLab;
-
-/*  if (tabBrowser.isAppSupported()) {
-    tabBrowser.whenContentLoaded(function(window) {
-      if (window.location == APPS_URL) {
-      injectLabVars(window);
-      require("window-utils").closeOnUnload(window);
-      }
-    });
-    openLab = function openLabInTab() {
-      tabBrowser.addTab(APPS_URL);
-    };
-  } else*/
-    openLab = function openLabInWindow() {
-      var contentWindow = require("content-window");
-      var window = new contentWindow.Window({url: APPS_URL,
-                                             width: 800,
-                                             height: 600,
-                                             onStartLoad: injectLabVars});
-    };
-
-/*  if (simpleFeature.isAppSupported())
-    simpleFeature.register(APPS_TITLE, openLab);
-  else
-    // No other way to allow the user to expose the functionality
-    // voluntarily, so just open the lab now.
-    openLab();*/
-};
 

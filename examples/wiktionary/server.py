@@ -125,7 +125,17 @@ class NotificationHandler(tornado.web.RequestHandler):
 #  @tornado.web.asynchronous
   def get(self):
     logging.debug("Got notification result")
-    self.render("notifications.json")
+    results = []
+    for i in range(20):
+      results.append(
+        {"title":"This is a notification.",
+          "link":"http://en.wiktionary.org/wiki/snarf",
+          "id":"uuid-1234-1234-%d" % i,
+          "updated":"2010-%02d-%02dT%02d:%02d:%02dZ" % (random.randint(1,12), random.randint(1,28), random.randint(0,23), random.randint(0,59), random.randint(0,59)),
+          "summary":"Definition 4 of <b>snarf</b> has been added: \"To slurp (computing slang sense); to load in entirety; to copy as a whole.\""
+        }
+      )
+    self.render("notifications.json", results=results, encode=tornado.escape.json_encode)
     
 #    http = tornado.httpclient.AsyncHTTPClient()
 #    request = tornado.httpclient.HTTPRequest(

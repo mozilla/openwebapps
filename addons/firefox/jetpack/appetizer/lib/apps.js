@@ -45,7 +45,7 @@ var url = require("url");
 var oauth = require("oauth");
 var {Cc, Ci, Cu} = require("chrome");
 
-const APP_STORAGE_DOMAIN = "http://myapps.mozillalabs.com"
+const APP_STORAGE_DOMAIN = "http://localhost:8123/" // "http://myapps.mozillalabs.com"
 var gApps = null;
 
 exports.init = function() {
@@ -74,6 +74,8 @@ function openAppURL(app, url, inBackground)
   var wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
   var browserEnumerator = wm.getEnumerator("navigator:browser");
 
+  console.log("Trying to open a URL for app " + app.name);
+
   // Check each browser instance for our URL
   var found = false;
   while (!found && browserEnumerator.hasMoreElements()) {
@@ -83,14 +85,19 @@ function openAppURL(app, url, inBackground)
     // Check each tab of this browser instance
     var numTabs = tabbrowser.browsers.length;
     for (var index = 0; index < numTabs; index++) {
+    
       var currentBrowser = tabbrowser.getBrowserAtIndex(index);
       
       let apps = gApps.applicationsForURL(currentBrowser.currentURI.spec);
+      console.log("Checking " + currentBrowser.currentURI.spec + " for app match - got a list of " + apps.length + " apps");
       if (apps) {
-      
         for (var i = 0;i<apps.length;i++) {
+          console.log("That tab is running app " + apps[i].name);
+          console.log("The key of that app is " + apps[i].app.launch.web_url + "; the key of what I'm looking for is " + app.app.launch.web_url);
 
           if (apps[i].app.launch.web_url == app.app.launch.web_url) {
+            console.log("That's the same as the requested app; switching to it");
+
             // The app is running in this tab; select it and retarget.
             tabbrowser.selectedTab = tabbrowser.tabContainer.childNodes[index];
 
@@ -247,179 +254,24 @@ function applyURITemplate(template, inputDict)
 function getOpenAppTabFn() {
   return function(window, app, url, options) {
     console.log("I got an openAppTab call: " + app + ", " + url);
-    openNewAppTab(url, options && options.background);
+    //openNewAppTab(url, options && options.background);
+    openAppURL(app, url, options && options.background);    
   }
 }
-function getSearchAppFn() {
-  return function(window, install, input, callback) {
-    console.log("Entering search function");
-    let req = new xhr.XMLHttpRequest()
-    let app = install.app;
-    let targetURL = applyURITemplate(app.search, {searchTerms: input});
-    if (app.oauthGetRequestURL /* searchIsOAuth */)
-    {
-      let parsedURL = new url.URL(targetURL);
-      
-      console.log("Made template URL " + targetURL);
-      var request = {
-        method:"GET",
-        action: parsedURL.scheme + "://" + parsedURL.host + parsedURL.path,
-        parameters: {
-          title: input
-        }
-      };
-      var accessor = {
-        consumerKey: "anonymous",
-        consumerSecret: "anonymous",
-        token: escape(install.authorization_token),
-        tokenSecret: escape(install.authorization_secret)
-      };
-      oauth.OAuth.completeRequest(request, accessor);
-      //var header = oauth.OAuth.getAuthorizationHeader(null, request.parameters);
-      //req.setRequestHeader("Authorization", header);
-      // req.setRequestHeader("GData-Version", "3.0");
-      targetURL = request.action + "?" + oauth.OAuth.formEncode(request.parameters);
-      console.log("Starting application search; URL is " + targetURL);// + "; header is Authorization: " + header);
-      req.open("GET", targetURL, true);
-    }
-    else
-    {
-      req.open("GET", targetURL, true);
-      targetURL = applyURITemplate(app.search, {searchTerms: input});
-      console.log("Starting application search; URL is " + targetURL);
-    }
-    req.onreadystatechange = function (aEvt) {  
-      if (req.readyState == 4) {  
-         if(req.status == 200) {
-          console.log("Finished application search for URL " + targetURL);
-          console.log(req.responseText);
-          callback(req.responseText);
-         } else {
-          console.log("Error while performing search for '" + app.name +"': " + req.status + "; " + req.responseText);
-          callback(null);
-        }
-      }  
-    };  
-    req.send(null);       
-    console.log("Started application search for '" + app.name + "': " + input);
-  }
-}
-
-function getAppRequestTokenFn() {
-  return function(window, app, callback) {
-    // TODO verify arguments of app
-    var request = {
-      method:"GET",
-      action: app.oauthGetRequestURL,
-      parameters: {
-        oauth_consumer_key:"anonymous",
-        oauth_signature_method:"HMAC-SHA1",
-        oauth_callback:"http://localhost:8123/oauthAccessGranted.html?app=" + app.app.launch.web_url,
-        xoauth_displayname:app.name
-      }
-    };
-    if (app.searchScope) request.parameters.scope = app.searchScope;
-    
-    var accessor = {
-      consumerKey: "anonymous",
-      consumerSecret: "anonymous"
-    };
-    oauth.OAuth.completeRequest(request, accessor);
-    var url = oauth.OAuth.addToURL(app.oauthGetRequestURL, request.parameters);
-
-    // kick off XHR:
-    let req = new xhr.XMLHttpRequest()
-    req.open("GET", url, true);
-    console.log("Starting OAuth request token request for " + app.name + "; URL is " + url);
-    req.onreadystatechange = function (aEvt) {  
-      if (req.readyState == 4) {  
-         if(req.status == 200) {
-          console.log("Finished OAuth request token request for " + app.name + "; it is " + req.responseText);
-          var result = oauth.OAuth.decodeForm(req.responseText);
-          callback(oauth.OAuth.getParameterMap(result));
-         } else {
-          console.log("Error while getting OAuth request token for '" + app.name +"': " + req.status);
-          callback(null);
-        }
-      }  
-    };  
-    req.send(null);       
-  }
-}
-
-
-function getAppAccessTokenFn() {
-  return function(window, app, verifier, token, secret, callback) {
-    // TODO verify arguments of app
-    console.log("Starting OAuth access token request for " + app.name + "; verifier is " + verifier + "; token is " + token + "; secret is " + secret);
-    var request = {
-      method:"GET",
-      action: app.oauthGetAccessURL,
-      parameters: {
-        oauth_consumer_key:"anonymous",
-        oauth_token:token,
-        oauth_verifier:verifier,//"http://localhost:8123/oauthAccessGranted.html?app=" + app.app.launch.web_url,
-        oauth_signature_method:"HMAC-SHA1"
-      }
-    };
-    var accessor = {
-      consumerKey: "anonymous",
-      consumerSecret: "anonymous",
-      tokenSecret: secret
-    };
-    oauth.OAuth.completeRequest(request, accessor);
-    console.log("constructing oauth request; token is " + token + " and verifier is " + verifier);
-    var header = oauth.OAuth.getAuthorizationHeader("www.google.com", request.parameters);
-    // var url = oauth.OAuth.addToURL(app.oauthGetAccessURL, request.parameters);
-    var url = app.oauthGetAccessURL;
-
-    // kick off XHR:
-    let req = new xhr.XMLHttpRequest()
-    req.open("GET", url, true);
-    req.setRequestHeader("Authorization", header);
-    console.log("Starting OAuth access token request for " + app.name + "; URL is " + url + "; header is " + header);
-    req.onreadystatechange = function (aEvt) {  
-      if (req.readyState == 4) {  
-         if(req.status == 200) {
-          console.log("Finished OAuth access token request for " + app.name);
-          var result = oauth.OAuth.decodeForm(req.responseText);
-          callback(oauth.OAuth.getParameterMap(result));
-         } else {
-          console.log("Error while getting OAuth access token for '" + app.name +"': " + req.status + "; " + req.responseText);
-          callback(null);
-        }
-      }  
-    };  
-    req.send(null);       
-  }
-}
-
-
 
 tabs.onLoad = function(tab) {
   if (true) // TODO only do this once...
   {
+    //console.log("tabs.onLoad has fired: inserting sandbox");
     try {
       // TODO: only do this for myapps.ml.com
       let sandbox = new Cu.Sandbox(tab.contentWindow);
       sandbox.importFunction(getOpenAppTabFn(), "openAppTab");
-      sandbox.importFunction(getSearchAppFn(), "searchApp");
-      sandbox.importFunction(getAppRequestTokenFn(), "getAppOAuthRequestToken");
-      sandbox.importFunction(getAppAccessTokenFn(), "getAppOAuthAccessToken");
       sandbox.window = tab.contentWindow.wrappedJSObject;
       Cu.evalInSandbox("if (window && window.navigator) {\
           window.navigator.apps = {\
             openAppTab: function(app, url, options) {\
               openAppTab(window, app, url, options);\
-            },\
-            searchApp: function(install, input, callback) {\
-              searchApp(window, install, input, callback);\
-            },\
-            getAppOAuthRequestToken: function(app, callback) {\
-              getAppOAuthRequestToken(window, app, callback);\
-            },\
-            getAppOAuthAccessToken: function(app, verifier, token, secret, callback) {\
-              getAppOAuthAccessToken(window, app, verifier, token, secret, callback);\
             }\
           };\
         }", sandbox, "1.8", "resource://apptastic/content/apps.js", 1);
@@ -563,54 +415,15 @@ Apps.prototype.searchApps = function(term) {
   return result;
 }
 
-Apps.prototype.refreshNotifications = function(callback) 
-{
-  for (var i=0;i<this.installs.length;i++)
-  {
-    if (this.installs[i].app.notification)
-    {
-      try {
-        this.initiateNotificationRefresh(this.installs[i].app, callback);
-      } catch (e) {
-        this.logError("Unable to fetch notifications for " + this.installs[i].app.name + ": " + e);
-      }
-    }
-  }
-}
-
-Apps.prototype.initiateNotificationRefresh = function(app, callback) 
-{
-  var xhr = new XMLHttpRequest();
-  
-  // TODO perhaps send a "updatedSince" argument along with this?
-  xhr.open("GET", app.notification, true);
-  xhr.onreadystatechange = function(aEvt) {
-    if (xhr.readyState == 4) {
-      if (xhr.status == 200) {
-        try {
-          var result = JSON.parse(xhr.responseText);
-          // okay... now... are any of these new?
-          // if so... put it somewhere?
-          // and let somebody know?
-        } catch (e) {
-
-        }
-      }
-    }
-  }
-  xhr.send(null);
-}
-
-
-
-Apps.prototype.applicationMatchesURL = function(app, url)
+Apps.prototype.applicationMatchesURL = function(manifest, url)
 {
   // TODO look into optimizing this so we are not constructing
   // regexps over and over again, but make sure it works in IE
-  for (var i=0;i<app.app.urls.length;i++)
+  for (var i=0;i<manifest.app.urls.length;i++)
   {
-    var testURL = app.app.urls[i];
+    var testURL = manifest.app.urls[i];
     var re = RegExp("^" + testURL.replace("*", ".*"));// no trailing $
+    console.log("Does " + url + " match " + testURL + "? " + (re.exec(url) != null ? "yes" : "no"));
 
     if (re.exec(url) != null) return true;
   }
@@ -621,6 +434,7 @@ Apps.prototype.applicationMatchesURL = function(app, url)
 Apps.prototype.applicationsForURL = function(url)
 {
   var result = [];
+  console.log("Checking applications for " + url + " - there are " + this.storage.length + " apps installed");
   for (var i =0;i<this.storage.length;i++)
   {
     var key = this.storage.key(i);

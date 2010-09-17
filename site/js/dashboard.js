@@ -222,7 +222,7 @@ window.localStorage.setItem("http://dictionary.mozillalabs.com",
     app: {
       name:"Dictionary",
       app:{
-        urls: [],
+        urls: ["http://en.wiktionary.org"],
         launch: {
           web_url: "http://en.wiktionary.org"
         }
@@ -253,6 +253,7 @@ var gSelectedInstall = null;
 // Display mode:
 /* const */ ROOT = 1;
 /* const */ APP_INFO = 2;
+/* const */ NOTIFICATIONS = 3;
 var gDisplayMode = ROOT;
 
 // Various display settings
@@ -309,6 +310,8 @@ function elem(type, clazz) {
 }
 
 // TODO: got some notifications. do something.
+
+
 function NotificationDB() {
   this.notifications = [];  
 }
@@ -332,6 +335,29 @@ NotificationDB.prototype = {
       }
     }
     return result;
+  },
+  
+  getSortedByDate: function() {
+    this.notifications.sort(function(a,b) {
+      if (a.updated && b.updated) {
+        return new Date(b.updated) - new Date(a.updated);
+      } else if (a.updated) {
+        return 1;
+      } else if (b.updated) {
+        return -1;
+      } else {
+        return 0;
+      }
+    });
+    return this.notifications;
+  },
+  
+  anyNotifications: function() {
+    return (this.notifications.length > 0);
+  },
+  
+  count: function() {
+    return this.notifications.length;
   }
 }
 var gNotificationDB = new NotificationDB();
@@ -340,12 +366,18 @@ function notificationsWereRefreshed(install, notifications)
 {
   try {
     var result = JSON.parse(notifications);
-    dump("Got new notifications: " + notifications + "\n");
     gNotificationDB.add(install, result.entries);
     render();
   } catch (e) {
     dump("Error while parsing notification: " + e + "\n");
   }
+}
+
+
+function showNotifications()
+{
+  gDisplayMode = NOTIFICATIONS;
+  render();
 }
 
 // Creates an opener for an app tab.  The usual behavior
@@ -375,6 +407,19 @@ function render()
 {
   var box = $("#apps");
   box.empty();
+
+  var controls = $("#appcontrols");
+  controls.empty();
+  if (gNotificationDB.anyNotifications()) {
+    controls.append($("<a>").text("Notifications (" + gNotificationDB.count() + ")").
+      click(showNotifications));
+  }
+  if (gDisplayMode == NOTIFICATIONS) {
+    renderNotifications();
+    return;
+  }
+  
+
   if (false) { /*(showInbox) {*/
     box.append(createAppIcon(messageInboxInstall));
   }
@@ -406,6 +451,45 @@ function render()
   
   if (gDisplayMode == APP_INFO) {
     renderAppInfo(selectedBox);
+  }
+}
+
+const SORT_DATE = 1;
+const SORT_APP = 2;
+var gNotificationSort = SORT_DATE;
+function renderNotifications()
+{
+  var box = $("#apps");
+
+  var nots;
+  if (gNotificationSort == SORT_DATE) {
+    nots = gNotificationDB.getSortedByDate();
+  } else if (gNotificationSort == SORT_APP) {
+    nots = gNotificationDB.getSortedByApp();
+  }
+  
+  for (var i=0;i<nots.length;i++) 
+  {
+    var nBox = $("<div>").addClass("notification");
+    var nTitle = $("<div>").addClass("notTitle");
+    nBox.append(nTitle);
+
+    if (nots[i].link) {
+      var nLink = $("<a>").text(nots[i].title).attr({href:"#"});
+      nLink.click(makeOpenAppTabFn(nots[i].install.app, nots[i].link));
+      // attr({href:nots[i].link}).
+      nTitle.append(nLink);
+    } else {
+      nTitle.text(nots[i].title);    
+    }
+    var nDate = $("<div>").addClass("notDate").text(formatDate(nots[i].updated));
+    nBox.append(nDate);
+    var nSummary = $("<div>").addClass("notSummary").text(nots[i].summary);
+    nBox.append(nSummary);
+    
+    // TODO support ActivityStreams for image preview, etc.
+    
+    box.append(nBox);
   }
 }
 
@@ -774,7 +858,10 @@ function formatDate(dateStr)
   var now = new Date();
   var then = new Date(dateStr);
 
-  if (then.getDate() != now.getDate())
+  if (then.getTime() > now.getTime()) {
+    return "the future";
+  }
+  else if (then.getMonth() != now.getMonth() ||  then.getDate() != now.getDate())
   {
      var dayDelta = (new Date().getTime() - then.getTime() ) / 1000 / 60 / 60 / 24 // hours
      if (dayDelta < 2) str = "yesterday";
