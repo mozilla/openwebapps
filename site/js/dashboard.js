@@ -261,7 +261,7 @@ var gIconSize = 48;// get from pref
 
 function init() {
   try {
-    // Construct our Apps handl
+    // Construct our Apps handle
     gApps = new Apps();
 
     // Draw it
@@ -891,11 +891,27 @@ function onMessage(event)
     return;
   }
 }
+function onFocus(event)
+{
+  if (gApps) {
+    gApps.reload();
+    render();
+    gApps.refreshNotifications(notificationsWereRefreshed);
+  }
+}
+
 
 if (window.addEventListener) {
     window.addEventListener('message', onMessage, false);
 } else if(window.attachEvent) {
     window.attachEvent('onmessage', onMessage);
 }
+
+if (window.addEventListener) {
+    window.addEventListener('focus', onFocus, false);
+} else if(window.attachEvent) {
+    window.attachEvent('onfocus', onFocus);
+}
+
 
 // TODO: onfocus, reload

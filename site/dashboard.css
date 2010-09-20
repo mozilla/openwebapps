@@ -91,6 +91,54 @@ a:hover {
   border-bottom:1px dotted #3875d7;
   text-decoration:none;
 }
+#debuggerbox {
+  margin:8px;
+  padding:3px;
+  font:bold 8pt "Lucida Sans";
+  background:#d0d0d0;
+  width:850px;
+}
+#debugger {
+  background:#fff;
+  padding:4px;
+  width:850px;
+  cursor:pointer;
+}
+#debugger .time {
+  display:inline-block;
+  overflow:hidden;
+  width:60px;
+  font:9pt Helvetica;
+}
+#debugger .msg {
+  display:inline-block;
+  overflow:hidden;
+  width:680px;
+  font:9pt Helvetica;
+}
+#debugger .app {
+  display:inline-block;
+  width:100px;
+  overflow:hidden;
+  font:9pt Helvetica;
+}
+.dbgrow:hover {
+  background-color:#f0f0ff;
+}
+.dbgrow .detail {
+  position:absolute;
+  display:none;
+  left:160px;
+  background:white;
+  padding:4px;
+  border:1px dotted black;
+  width:500px;
+  font:9pt Helvetica;
+}
+.dbgrow:hover .detail {
+  display:inline-block;
+}
+
 
 .appbox {
   display:inline-block;

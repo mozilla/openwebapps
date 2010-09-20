@@ -64,7 +64,7 @@ AppConduit.prototype = {
 
   destroy: function destroy() {
     if (this.iframe) {
-      this.iframe.parent.removeChild(this.iframe);
+      win.document.body.removeChild(this.iframe);
     }
   },
 
@@ -122,6 +122,7 @@ AppConduit.prototype = {
     var request = this.openRequests[msg.id];
     if(request) {
       if(request.callback) {
+        if (gDebugger) gDebugger.record(this, msg, true);
         request.callback(msg);
       }
       delete this.openRequests[msg.id];
@@ -137,6 +138,7 @@ AppConduit.prototype = {
 
   // Post the message to the target conduit
   makeRequest: function makeRequest(requestObj) {
+    if (gDebugger) gDebugger.record(this, requestObj);
     this.postWindow.postMessage(JSON.stringify(requestObj), this.conduitTargetURL);
   },
 
@@ -188,6 +190,55 @@ AppConduit.prototype = {
     }
     this.queueRequest(requestObj);
   }
+}
 
 
+function ConduitDebugger(outputDiv) {
+  this.messages = [];
+  this.outputDiv = outputDiv;
+}
+
+ConduitDebugger.prototype = {
+  record: function(conduit, message, isResponse) {
+    this.messages.push({time:new Date(), message: message, conduit:conduit, response:isResponse});
+
+    if (this.timer) window.clearTimeout(this.timer);
+    var that = this;
+    this.timer = window.setTimeout(function() {that.render()}, 500);
+  },
+  
+  render: function() {
+    function zf(v) {
+      if (v < 10) return "0" + v;
+      return v;
+    }
+
+    function col(t, v) {
+      var column = document.createElement("div");
+      column.setAttribute("class", t);
+      column.appendChild(document.createTextNode(v));
+      return column;
+    }
+  
+    this.outputDiv.innerHTML = "";
+    for (var i=0;i<this.messages.length;i++) {
+      var msg = this.messages[i];
+      var aDiv = document.createElement("div");
+      aDiv.setAttribute("class", "dbgrow");
+      aDiv.appendChild(col("time", msg.time.getHours() + ":" + zf(msg.time.getMinutes()) + ":" + zf(msg.time.getSeconds())));
+      aDiv.appendChild(col("app", gApps.getInstall(msg.conduit.appKey).app.name));
+      
+      var aHover = document.createElement("div");
+      aHover.setAttribute("class", "detail");
+      aHover.appendChild(document.createTextNode(JSON.stringify(msg.message)));
+      aDiv.appendChild(aHover);
+
+      aDiv.appendChild(col("msg", msg.message.cmd + (msg.response ? " response" : "")));
+      this.outputDiv.appendChild(aDiv);
+    }
+  }
+}
+var gDebugger;
+if (document.getElementById("debugger")) {
+  gDebugger = new ConduitDebugger(document.getElementById("debugger"));
 }
