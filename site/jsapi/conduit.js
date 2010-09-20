@@ -202,9 +202,10 @@ ConduitDebugger.prototype = {
   record: function(conduit, message, isResponse) {
     this.messages.push({time:new Date(), message: message, conduit:conduit, response:isResponse});
 
-    if (this.timer) window.clearTimeout(this.timer);
+    /*if (this.timer) window.clearTimeout(this.timer);
+    this.timer = */
     var that = this;
-    this.timer = window.setTimeout(function() {that.render()}, 500);
+    window.setTimeout(function() {that.render()}, 0);
   },
   
   render: function() {
