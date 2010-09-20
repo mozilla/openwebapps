@@ -79,7 +79,7 @@ AppConduit.prototype = {
     this.iframe.style.left = "-999px";
     this.iframe.style.top = "-999px";
     this.iframe.style.display = "none";
-    
+
     // Setup postMessage event listeners
     var that = this;
     if (win.addEventListener) {
@@ -96,12 +96,12 @@ AppConduit.prototype = {
   onMessage: function onMessage(event) {
     // event.origin will always be of the format scheme://hostname:port
     // http://www.whatwg.org/specs/web-apps/current-work/multipage/comms.html#dom-messageevent-origin
-  
+
     // We will only process messages from our target origin(s)
     if(this.conduitTargetURL.indexOf(event.origin) != 0) {
       return;
     }
-    
+
     // unfreeze request message into object
     var msg = JSON.parse(event.data);
     if(!msg) {
@@ -158,17 +158,17 @@ AppConduit.prototype = {
       this.makeRequest(requestObj);
     }
   },
-  
+
   //--------------------------------------------
   // BEGIN SERVICE APIS:
   //--------------------------------------------
   search: function(term, callback) {
     if (!term || !callback) return;
-    
+
     var callbackShim = function(result) {
       callback(result.result, this.appKey);
     }
-    
+
     var requestObj = {
       cmd: 'conduit::search',
       term: term,
@@ -176,14 +176,14 @@ AppConduit.prototype = {
     }
     this.queueRequest(requestObj);
   },
-  
+
   notifications: function(callback) { // maybe "since"?
     if (!callback) return;
-    
+
     var callbackShim = function(result) {
       callback(result.result, this.appKey);
     }
-    
+
     var requestObj = {
       cmd: 'conduit::notifications',
       callback: callbackShim

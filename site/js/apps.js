@@ -63,14 +63,14 @@ Apps.prototype.reload = function() {
     this.installs.push(install);
   }
   this.makeConduits();
-    
-  this.installs.sort(function (a,b) { 
-      return a.app.name.localeCompare(b.app.name); 
-    } 
+
+  this.installs.sort(function (a,b) {
+      return a.app.name.localeCompare(b.app.name);
+    }
   );
 }
 
-Apps.prototype.install = function(manifest) 
+Apps.prototype.install = function(manifest)
 {
   Manifest.validate(manifest);
   var key = manifest.app.launch.web_url;
@@ -97,8 +97,8 @@ Apps.prototype.removeAll = function() {
   }
 }
 
-Apps.prototype.remove = function(key) 
-{ 
+Apps.prototype.remove = function(key)
+{
   this.storage.removeItem(key);
   this.reload();
 }
@@ -135,7 +135,7 @@ Apps.prototype.searchApps = function(term) {
 }
 
 // Returns the install whose launch/web_url matches the given url.
-Apps.prototype.getInstall = function(url) 
+Apps.prototype.getInstall = function(url)
 {
   for (var i=0;i<this.installs.length;i++)
   {
@@ -168,7 +168,7 @@ Apps.prototype.makeConduits = function()
   }
 }
 
-Apps.prototype.refreshNotifications = function(callback) 
+Apps.prototype.refreshNotifications = function(callback)
 {
   function makeCallback(install, callback) {
     return function(result) {
@@ -193,7 +193,7 @@ Apps.prototype.applicationsForURL = function(url)
   {
     var key = localStorage.key(i);
     var item = localStorage.getItem(key);
-    if (Manifest.applicationMatchesURL(install.app, url)) {      
+    if (Manifest.applicationMatchesURL(install.app, url)) {
       result.push(install.app);
     }
   }
