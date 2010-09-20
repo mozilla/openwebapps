@@ -239,7 +239,7 @@
     }
     **/
     'wallet::getInstalled': function(originHostname, requestObj, origin) {
-      dump("TRACE wallet::getInstalled\n");
+      //dump("TRACE wallet::getInstalled\n");
       var result = getApplicationsForOrigin(originHostname, requestObj, origin);
       return {
         cmd: requestObj.cmd,
@@ -282,7 +282,7 @@
     // event.origin will always be of the format scheme://hostname:port
     // http://www.whatwg.org/specs/web-apps/current-work/multipage/comms.html#dom-messageevent-origin
 
-    dump("TRACE onMessage\n");
+    //dump("TRACE onMessage\n");
     var requestObj = JSON.parse(event.data);
     var originHostname = event.origin.split('://')[1].split(':')[0];
 
