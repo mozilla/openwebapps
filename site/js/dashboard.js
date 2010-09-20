@@ -408,17 +408,14 @@ function render()
   var box = $("#apps");
   box.empty();
 
-  var controls = $("#appcontrols");
-  controls.empty();
+  var notifTab = $("#notifTab");
+  notifTab.empty();
   if (gNotificationDB.anyNotifications()) {
-    controls.append($("<a>").text("Notifications (" + gNotificationDB.count() + ")").
-      click(showNotifications));
-  }
-  if (gDisplayMode == NOTIFICATIONS) {
+    notifTab.text("Notifications (" + gNotificationDB.count() + ")");
     renderNotifications();
-    return;
+  } else {
+    notifTab.text("No notifications");
   }
-
 
   if (false) { /*(showInbox) {*/
     box.append(createAppIcon(messageInboxInstall));
@@ -459,8 +456,9 @@ const SORT_APP = 2;
 var gNotificationSort = SORT_DATE;
 function renderNotifications()
 {
-  var box = $("#apps");
-
+  var box = $("#notifications");
+  box.empty();
+  
   var nots;
   if (gNotificationSort == SORT_DATE) {
     nots = gNotificationDB.getSortedByDate();
@@ -471,6 +469,12 @@ function renderNotifications()
   for (var i=0;i<nots.length;i++)
   {
     var nBox = $("<div>").addClass("notification");
+    var nIconBox = $("<div>").addClass("notIcon");
+    var nIcon = $("<img>").attr({
+      width:16, height:16, src:gApps.getIcon(nots[i].install.app, 16)});
+    nIconBox.append(nIcon);
+    nBox.append(nIconBox);
+
     var nTitle = $("<div>").addClass("notTitle");
     nBox.append(nTitle);
 
@@ -735,8 +739,8 @@ function createAppCanvas(manifest)
 
   try {
     var cvs = elem("canvas");
-    cvs.width = gIconSize+6;
-    cvs.height = gIconSize+6;
+    cvs.width = gIconSize+10;
+    cvs.height = gIconSize+10;
     ctx = cvs.getContext("2d");
 
     // TODO: put a generic icon in first because it could load slowly.
@@ -823,7 +827,7 @@ function drawNotificationBadge(ctx, count)
   ctx.beginPath();
   ctx.fillStyle = "rgb(255,255,255)";
   ctx.strokeStyle = "rgb(255,255,255)";
-  ctx.font = "12px sans serif";
+  ctx.font = "11px Helvetica, sans-serif";
   ctx.fillText("" + count, gIconSize - 8, 14);
   ctx.strokeText("" + count, gIconSize - 8, 14);
 }
@@ -914,5 +918,8 @@ if (window.addEventListener) {
     window.attachEvent('onfocus', onFocus);
 }
 
-
-// TODO: onfocus, reload
+$(function(){
+  $('#content').tabs();
+  $('#debuggerbox').draggable().resizable();
+  
+});
