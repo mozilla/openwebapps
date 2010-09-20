@@ -45,7 +45,7 @@ var url = require("url");
 var oauth = require("oauth");
 var {Cc, Ci, Cu} = require("chrome");
 
-const APP_STORAGE_DOMAIN = "http://localhost:8123/" // "http://myapps.mozillalabs.com"
+const APP_STORAGE_DOMAIN = "http://myapps.mozillalabs.com"
 var gApps = null;
 
 exports.init = function() {
@@ -74,8 +74,6 @@ function openAppURL(app, url, inBackground)
   var wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
   var browserEnumerator = wm.getEnumerator("navigator:browser");
 
-  console.log("Trying to open a URL for app " + app.name);
-
   // Check each browser instance for our URL
   var found = false;
   while (!found && browserEnumerator.hasMoreElements()) {
@@ -89,15 +87,9 @@ function openAppURL(app, url, inBackground)
       var currentBrowser = tabbrowser.getBrowserAtIndex(index);
       
       let apps = gApps.applicationsForURL(currentBrowser.currentURI.spec);
-      console.log("Checking " + currentBrowser.currentURI.spec + " for app match - got a list of " + apps.length + " apps");
       if (apps) {
         for (var i = 0;i<apps.length;i++) {
-          console.log("That tab is running app " + apps[i].name);
-          console.log("The key of that app is " + apps[i].app.launch.web_url + "; the key of what I'm looking for is " + app.app.launch.web_url);
-
           if (apps[i].app.launch.web_url == app.app.launch.web_url) {
-            console.log("That's the same as the requested app; switching to it");
-
             // The app is running in this tab; select it and retarget.
             tabbrowser.selectedTab = tabbrowser.tabContainer.childNodes[index];
 
@@ -253,7 +245,6 @@ function applyURITemplate(template, inputDict)
 
 function getOpenAppTabFn() {
   return function(window, app, url, options) {
-    console.log("I got an openAppTab call: " + app + ", " + url);
     //openNewAppTab(url, options && options.background);
     openAppURL(app, url, options && options.background);    
   }
@@ -423,8 +414,6 @@ Apps.prototype.applicationMatchesURL = function(manifest, url)
   {
     var testURL = manifest.app.urls[i];
     var re = RegExp("^" + testURL.replace("*", ".*"));// no trailing $
-    console.log("Does " + url + " match " + testURL + "? " + (re.exec(url) != null ? "yes" : "no"));
-
     if (re.exec(url) != null) return true;
   }
   return false;
@@ -434,7 +423,6 @@ Apps.prototype.applicationMatchesURL = function(manifest, url)
 Apps.prototype.applicationsForURL = function(url)
 {
   var result = [];
-  console.log("Checking applications for " + url + " - there are " + this.storage.length + " apps installed");
   for (var i =0;i<this.storage.length;i++)
   {
     var key = this.storage.key(i);
