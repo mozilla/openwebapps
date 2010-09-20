@@ -29,8 +29,14 @@
 
   <div id="appheader">
     <img src="webapps.png">
+    <div id="appcontrols"></div>
   </div>
   <div id="apps"></div>
+
+  <div id="debuggerbox">
+    Message Debugger:
+    <div id="debugger"></div>
+  </div>
 
 </div>
 
@@ -40,13 +46,13 @@
 </div>
 
 
+
 <ul id="appContextMenu" class="contextMenu">
   <li class="menuGetInfo"><a href="#appDetails">Details...</a></li>
   <li class="menuActivate separator"><a href="#appActivate">Activate Services</a></li>
   <li class="menuUninstall"><a href="#appUninstall">Uninstall App</a></li>
 </ul>
 
-<script type="text/javascript" src="js/debug.js"></script>
 <script type="text/javascript" src="js/jquery-1.4.2.min.js"></script>
 <script type="text/javascript" src="js/jquery.contextMenu.js"></script>
 <script type="text/javascript" src="js/manifest.js"></script>
@@ -55,6 +61,7 @@
 
 <script type="text/javascript" src="jsapi/conduit.js"></script>
 <script type="text/javascript" src="search.js"></script>
+
 </body>
 </html>
 
