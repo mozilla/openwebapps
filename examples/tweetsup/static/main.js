@@ -17,7 +17,7 @@ var manifest = {
     "conduit": "https://tweetsup.mozillalabs.com/conduit/",
     "supportedAPIs": [
         "search",
-        "search"
+        "notification"
     ]
 };
 
