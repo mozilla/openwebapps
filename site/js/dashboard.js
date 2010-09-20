@@ -365,7 +365,7 @@ var gNotificationDB = new NotificationDB();
 function notificationsWereRefreshed(install, notifications)
 {
   try {
-    var result = JSON.parse(notifications);
+    var result = (typeof notifications === 'string' ? JSON.parse(notifications) : notifications);
     gNotificationDB.add(install, result.entries);
     render();
   } catch (e) {

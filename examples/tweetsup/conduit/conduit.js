@@ -90,12 +90,29 @@
            }
         **/
         'conduit::notifications': function(originHostname, requestObj, origin) {
-            // TODO check origin to make sure it's one we feel good about
-            // TODO authenticate user somehow?  we'll get the user's cookie if they have a session already.
-            // TODO: implement
-        }
+            var r = {
+	            title: 'search results',
+	            entries: [ ]
+            };
 
-        // other APIs go here...
+            Search.run("", function(t) {
+                    var user = t.user ? t.user : t.sender;
+	            var link = "http://twitter.com/" + user.screen_name + "/status/" + t.id;
+	            r.entries.push({
+	                link: link,
+	                title: user.screen_name + ": " + t.text.substr(0,40) + "...",
+	                summary: t.text,
+			updated: t.created_at,
+			id: t.id
+	            });
+            }, function (res) {
+                    sendResponse({
+	                result: r,
+	                cmd: requestObj.cmd,
+	                id: requestObj.id
+	            }, origin);
+            });
+        }
     }
 
     /**
