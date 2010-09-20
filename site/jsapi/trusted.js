@@ -214,15 +214,14 @@
       var install = result[0];
       var app = install.app;
       
-      // Must have userid and identity
-      if (app.userid == null || app.identityprovider == null)
+      // Must have authorizationURL
+      if (!app.authorizationURL)
       {
         return null;
       }
       
       // TODO Could optionally have a returnto
-      var validationURL = app.identityprovider + "?openid.returnto=" + origin + "&openid.claimedid=" + app.userid;
-      win.parent.location = validationURL;
+      win.parent.location = app.authorizationURL;
 
       return {
         cmd: requestObj.cmd,
@@ -240,6 +239,7 @@
     }
     **/
     'wallet::getInstalled': function(originHostname, requestObj, origin) {
+      dump("TRACE wallet::getInstalled\n");
       var result = getApplicationsForOrigin(originHostname, requestObj, origin);
       return {
         cmd: requestObj.cmd,
@@ -282,6 +282,7 @@
     // event.origin will always be of the format scheme://hostname:port
     // http://www.whatwg.org/specs/web-apps/current-work/multipage/comms.html#dom-messageevent-origin
 
+    dump("TRACE onMessage\n");
     var requestObj = JSON.parse(event.data);
     var originHostname = event.origin.split('://')[1].split(':')[0];
 
