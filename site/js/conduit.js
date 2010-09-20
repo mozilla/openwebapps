@@ -43,6 +43,7 @@ function AppConduit(appKey, conduitTargetURL) {
     console.log("AppConduit called (" + appKey + " | " + conduitTargetURL + ")");
 
     this.appKey = appKey;
+    this.conduitTargetURL = conduitTargetURL;
 
     // First, we'll create an iframe
     var doc = win.document;
@@ -79,19 +80,21 @@ AppConduit.prototype = {
     search: function(term, callback) {
         if (!term || !callback) return;
 
+        var results = [];
+
         this.chan.query({
             method: "search",
             params: {
                 term: term,
                 results: function(r) {
-                    dump("incremental search results: " + JSON.stringify(r));
+                    results.push(r);
                 }
             },
             error: function(e) {
                 dump("GOT ERROR from search query: " + JSON.stringify(e));
             },
             success: function(result) {
-                callback(result.result, this.appKey);
+                callback(results, this.appKey);
             }
         });
     },

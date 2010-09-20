@@ -141,7 +141,6 @@ SearchResult.prototype = {
               results = parsed;
           } catch (e) {}
           var i;
-          results = results.results;
           for (i=0;i<results.length;i++)
           {
               var res = results[i];
