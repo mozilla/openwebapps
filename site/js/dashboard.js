@@ -896,6 +896,7 @@ function onFocus(event)
   if (gApps) {
     gApps.reload();
     render();
+    gNotificationDB = new NotificationDB();
     gApps.refreshNotifications(notificationsWereRefreshed);
   }
 }
