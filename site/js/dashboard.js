@@ -408,17 +408,14 @@ function render()
   var box = $("#apps");
   box.empty();
 
-  var controls = $("#appcontrols");
-  controls.empty();
+  var notifTab = $("#notifTab");
+  notifTab.empty();
   if (gNotificationDB.anyNotifications()) {
-    controls.append($("<a>").text("Notifications (" + gNotificationDB.count() + ")").
-      click(showNotifications));
-  }
-  if (gDisplayMode == NOTIFICATIONS) {
+    notifTab.text("Notifications (" + gNotificationDB.count() + ")");
     renderNotifications();
-    return;
+  } else {
+    notifTab.text("No notifications");
   }
-
 
   if (false) { /*(showInbox) {*/
     box.append(createAppIcon(messageInboxInstall));
@@ -459,8 +456,9 @@ const SORT_APP = 2;
 var gNotificationSort = SORT_DATE;
 function renderNotifications()
 {
-  var box = $("#apps");
-
+  var box = $("#notifications");
+  box.empty();
+  
   var nots;
   if (gNotificationSort == SORT_DATE) {
     nots = gNotificationDB.getSortedByDate();
@@ -914,5 +912,8 @@ if (window.addEventListener) {
     window.attachEvent('onfocus', onFocus);
 }
 
-
-// TODO: onfocus, reload
+$(function(){
+  $('#content').tabs();
+  $('#debuggerbox').draggable().resizable();
+  
+});

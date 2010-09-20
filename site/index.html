@@ -6,6 +6,7 @@
   <title>Application Dashboard</title>
   <link rel="stylesheet" type="text/css" href="dashboard.css" />
   <link rel="stylesheet" type="text/css" href="search.css" />
+  <link type="text/css" href="css/custom-theme/jquery-ui-1.8.5.custom.css" rel="stylesheet" />	
 </head>
 
 <body onload="init()" style="position:relative">
@@ -31,7 +32,16 @@
     <img src="webapps.png">
     <div id="appcontrols"></div>
   </div>
-  <div id="apps"></div>
+
+  <div id="content">
+    <ul>
+      <li><a href="#apps">Applications</a></li>
+      <li><a id="notifTab" href="#notifications">Notifications</a></li>
+    </ul>
+    <div id="apps"></div>
+    <div id="notifications"></div>
+  </div>
+  
 
   <div id="debuggerbox">
     Message Debugger:
@@ -54,6 +64,7 @@
 </ul>
 
 <script type="text/javascript" src="js/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="js/jquery-ui-1.8.5.custom.min.js"></script>
 <script type="text/javascript" src="js/jquery.contextMenu.js"></script>
 <script type="text/javascript" src="js/manifest.js"></script>
 <script type="text/javascript" src="js/apps.js"></script>

@@ -68,6 +68,11 @@ a:hover {
   width:90px;
   left:220px;
 }
+#content {
+  font-size:0.8em;
+  margin:10px 20px 20px 40px;
+}
+
 #apps {
   margin-right:40px;
   min-height:60px;
@@ -92,6 +97,9 @@ a:hover {
   text-decoration:none;
 }
 #debuggerbox {
+  position:absolute;
+  left:20px;
+  top:600px;
   margin:8px;
   padding:3px;
   font:bold 8pt "Lucida Sans";
@@ -171,21 +179,29 @@ a:hover {
   margin-right:auto;
 }
 
-#apps > .notification {
+#notifications {
   font:8pt "Lucida Sans",Arial;
 }
-#apps > .notification > .notTitle {
+#notifications .notTitle {
   display:inline-block;
   width:400px;
   overflow:hidden;
 }
-#apps > .notification > .notDate {
+#notifications .notDate {
   display:inline-block;
   width:200px;
   overflow:hidden;
 }
-#apps > .notification > .notSummary {
-  display:none
+.notification .notSummary { 
+  position:absolute;
+  left:10px;
+  background:white;
+  display:none;
+  padding:4px;
+  border:1px solid #303000;
+}
+.notification:hover .notSummary {
+  display:inline-block;
 }
 
 .getInfo {

@@ -175,7 +175,6 @@ Apps.prototype.refreshNotifications = function(callback)
       callback(install, result);
     }
   }
-  dump("Starting to refresh notifications\n");
   for (var i=0;i<this.installs.length;i++)
   {
     var install = this.installs[i];
@@ -198,4 +197,23 @@ Apps.prototype.applicationsForURL = function(url)
     }
   }
   return result;
+}
+
+Apps.prototype.getIcon = function(app, size)
+{
+  if (app.icons) {
+    if (app.icons[size]) return app.icons[size];
+    
+    var last;
+    for (var i=0;i<app.icons.length;i++)
+    {
+      try {
+        var num = Math.floor(app.icons[i]);
+        last = num;
+        if (num >= size) return app.icons[i];
+      } catch (e) {}
+    }
+    return app.icons[last];
+  }
+  return null;
 }
