@@ -469,6 +469,12 @@ function renderNotifications()
   for (var i=0;i<nots.length;i++)
   {
     var nBox = $("<div>").addClass("notification");
+    var nIconBox = $("<div>").addClass("notIcon");
+    var nIcon = $("<img>").attr({
+      width:16, height:16, src:gApps.getIcon(nots[i].install.app, 16)});
+    nIconBox.append(nIcon);
+    nBox.append(nIconBox);
+
     var nTitle = $("<div>").addClass("notTitle");
     nBox.append(nTitle);
 
@@ -733,8 +739,8 @@ function createAppCanvas(manifest)
 
   try {
     var cvs = elem("canvas");
-    cvs.width = gIconSize+6;
-    cvs.height = gIconSize+6;
+    cvs.width = gIconSize+10;
+    cvs.height = gIconSize+10;
     ctx = cvs.getContext("2d");
 
     // TODO: put a generic icon in first because it could load slowly.
@@ -821,7 +827,7 @@ function drawNotificationBadge(ctx, count)
   ctx.beginPath();
   ctx.fillStyle = "rgb(255,255,255)";
   ctx.strokeStyle = "rgb(255,255,255)";
-  ctx.font = "12px sans serif";
+  ctx.font = "11px Helvetica, sans-serif";
   ctx.fillText("" + count, gIconSize - 8, 14);
   ctx.strokeText("" + count, gIconSize - 8, 14);
 }

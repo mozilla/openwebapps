@@ -205,12 +205,12 @@ Apps.prototype.getIcon = function(app, size)
     if (app.icons[size]) return app.icons[size];
     
     var last;
-    for (var i=0;i<app.icons.length;i++)
+    for (var size in app.icons) 
     {
       try {
-        var num = Math.floor(app.icons[i]);
+        var num = Math.floor(size);
         last = num;
-        if (num >= size) return app.icons[i];
+        if (num >= size) return app.icons[size];
       } catch (e) {}
     }
     return app.icons[last];

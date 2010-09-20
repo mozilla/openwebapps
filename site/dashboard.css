@@ -182,6 +182,12 @@ a:hover {
 #notifications {
   font:8pt "Lucida Sans",Arial;
 }
+#notifications .notIcon {
+  display:inline-block;
+  margin-right:3px;
+  width:16pxpx;
+}
+
 #notifications .notTitle {
   display:inline-block;
   width:400px;
