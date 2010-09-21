@@ -57,8 +57,19 @@ function AppConduit(appKey, conduitTargetURL) {
     doc.body.appendChild(this.iframe);
     this.iframe.src = this.conduitTargetURL;
 
+    var conduit = this;
     // now create a Channel
-    this.chan = Channel.build({window: this.iframe.contentWindow, origin: conduitTargetURL, scope: "conduit"});
+    this.chan = Channel.build({
+        window: this.iframe.contentWindow,
+        origin: conduitTargetURL,
+        scope: "conduit",
+        postMessageObserver: function(origin, msg) {
+            gDebugger.record(conduit, msg, false);
+        },
+        gotMessageObserver: function(origin, msg) {
+            gDebugger.record(conduit, msg, true);
+        }
+    });
 }
 
 AppConduit.prototype = {
@@ -107,24 +118,19 @@ AppConduit.prototype = {
 
 
 function ConduitDebugger(outputDiv) {
-  this.outputDiv = outputDiv;
+    this.outputDiv = outputDiv;
+    this.messages = [];
 }
 
 ConduitDebugger.prototype = {
   record: function(conduit, message, isResponse) {
-      dump("XXX: [record] write me");  
-
     this.messages.push({time:new Date(), message: message, conduit:conduit, response:isResponse});
 
-/*  if (this.timer) window.clearTimeout(this.timer);
-    this.timer = */
     var that = this;
-    window.setTimeout(function() {that.render()}, 0); 
+    window.setTimeout(function() {that.render()}, 0);
   },
-  
+
   render: function() {
-      dump("XXX: [render] write me");  
-      return;
     function zf(v) {
       if (v < 10) return "0" + v;
       return v;
@@ -136,7 +142,7 @@ ConduitDebugger.prototype = {
       column.appendChild(document.createTextNode(v));
       return column;
     }
-  
+
     this.outputDiv.innerHTML = "";
     for (var i=0;i<this.messages.length;i++) {
       var msg = this.messages[i];
@@ -144,7 +150,7 @@ ConduitDebugger.prototype = {
       aDiv.setAttribute("class", "dbgrow");
       aDiv.appendChild(col("time", msg.time.getHours() + ":" + zf(msg.time.getMinutes()) + ":" + zf(msg.time.getSeconds())));
       aDiv.appendChild(col("app", gApps.getInstall(msg.conduit.appKey).app.name));
-      
+
       var aHover = document.createElement("div");
       aHover.setAttribute("class", "detail");
       aHover.appendChild(document.createTextNode(JSON.stringify(msg.message)));
