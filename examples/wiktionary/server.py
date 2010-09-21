@@ -7,7 +7,7 @@ import tornado.httpclient
 import tornado.ioloop
 import tornado.escape
 import tornado.web
-import subprocess
+import xml.dom.minidom
 import hashlib
 import datetime
 import os
@@ -120,32 +120,55 @@ class SearchHandler(tornado.web.RequestHandler):
       self.write("Sorry, an error occured: %s" % e)
       self.finish()
 
+def getText(nodelist):
+    rc = []
+    for node in nodelist:
+      for child in node.childNodes:
+        if child.nodeType == node.TEXT_NODE:
+            rc.append(child.data)
+    return ''.join(rc)
+
 
 class NotificationHandler(tornado.web.RequestHandler):
-#  @tornado.web.asynchronous
+  @tornado.web.asynchronous
   def get(self):
-    logging.debug("Got notification result")
-    results = []
-    for i in range(20):
-      results.append(
-        {"title":"This is a notification.",
-          "link":"http://en.wiktionary.org/wiki/snarf",
-          "id":"uuid-1234-1234-%d" % i,
-          "updated":"2010-%02d-%02dT%02d:%02d:%02dZ" % (random.randint(1,12), random.randint(1,28), random.randint(0,23), random.randint(0,59), random.randint(0,59)),
-          "summary":"Definition 4 of <b>snarf</b> has been added: \"To slurp (computing slang sense); to load in entirety; to copy as a whole.\""
-        }
-      )
-    self.render("notifications.json", results=results, encode=tornado.escape.json_encode)
+    #logging.debug("Got notification result")
+    #results = []
+    #for i in range(20):
+    #  results.append(
+    #    {"title":"This is a notification.",
+    #      "link":"http://en.wiktionary.org/wiki/snarf",
+    #      "id":"uuid-1234-1234-%d" % i,
+    #      "updated":"2010-%02d-%02dT%02d:%02d:%02dZ" % (random.randint(1,12), random.randint(1,28), random.randint(0,23), random.randint(0,59), random.randint(0,59)),
+    #      "summary":"Definition 4 of <b>snarf</b> has been added: \"To slurp (computing slang sense); to load in entirety; to copy as a whole.\""
+    #    }
+    #  )
+    #self.render("notifications.json", results=results, encode=tornado.escape.json_encode)
     
-#    http = tornado.httpclient.AsyncHTTPClient()
-#    request = tornado.httpclient.HTTPRequest(
-#      WIKTIONARY_SERVER + "/w/index.php?title=Special:RecentChanges&feed=atom" 
-#    )
-#    http.fetch(request,
-#           callback=self.async_callback(self.onResponse))
+    http = tornado.httpclient.AsyncHTTPClient()
+    request = tornado.httpclient.HTTPRequest(
+      WIKTIONARY_SERVER + "/w/index.php?title=Special:RecentChanges&feed=atom" 
+    )
+    http.fetch(request,
+           callback=self.async_callback(self.onResponse))
 
   def onResponse(self, response):
-    self.render("notifications.json")
+    dom = xml.dom.minidom.parseString(response.body)
+    entryList = dom.getElementsByTagName("entry")
+    results = []
+    for e in entryList:
+      try:
+        res = {}
+        res["title"] = getText(e.getElementsByTagName("title"))
+        res["link"] = e.getElementsByTagName("link")[0].getAttribute("href")
+        res["id"] = getText(e.getElementsByTagName("id"))
+        res["updated"] = getText(e.getElementsByTagName("updated"))
+        res["summary"] = getText(e.getElementsByTagName("summary"))
+        results.append(res)
+      except Exception, err:
+        logging.error(err)
+        pass
+    self.render("notifications.json", results=results, encode=tornado.escape.json_encode)
 
 class AppConduitHandler(tornado.web.RequestHandler):
   def get(self):
