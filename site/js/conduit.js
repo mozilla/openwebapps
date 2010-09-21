@@ -153,7 +153,7 @@ ConduitDebugger.prototype = {
         if (m.id) {
             summary = "(" + m.id + ") ";
             if (m.callback) { t = "callback"; body = m.params; }
-            else if (m.params) { t = "request"; body = m.params; }
+            else if (m.method) { t = "request"; body = m.params; }
             else if (m.error) { t = "error"; body = { error: m.error, message: m.message }; }
             else { t = "response"; body = m.result; }
         } else {
