@@ -91,7 +91,7 @@ AppConduit.prototype = {
 
         var results = [];
 
-        this.chan.query({
+        this.chan.call({
             method: "search",
             params: {
                 term: term,
@@ -109,7 +109,7 @@ AppConduit.prototype = {
     },
 
     notifications: function(callback) { // maybe "since"?
-        this.chan.query({
+        this.chan.call({
             method: "notifications",
             error: function(e) {
                 dump("GOT ERROR from search query: " + JSON.stringify(e));
