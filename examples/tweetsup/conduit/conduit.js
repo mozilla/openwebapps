@@ -34,50 +34,47 @@
  * ***** END LICENSE BLOCK ***** */
 
 var chan = Channel.build({window: window.parent, origin: "*", scope: "conduit"});
+
+/* a utility routine to map a tweet returned from the twitter API into a format
+ * that appetizer likes */
+function convertObject(t) {
+	var user = t.user ? t.user : t.sender;
+    return {
+	    link: "http://twitter.com/" + user.screen_name + "/status/" + t.id,
+	    title: user.screen_name + ": " + t.text.substr(0,40) + "...",
+	    summary: t.text,
+	    updated: t.created_at,
+        id: t.id
+	};
+}
+
+/* search messges carry a results callback that should be invoked to deliver incremental
+ * results.
+ *
+ * upon completion the total number of results should be returned.
+ */
 chan.bind("search", function(trans, args) {
     var num = 0;
-    Search.run(args.term, function(t) {
-        num++;
-	    var user = t.user ? t.user : t.sender;
-	    var link = "http://twitter.com/" + user.screen_name + "/status/" + t.id;
-	    args.results({
-	        link: link,
-	        title: user.screen_name + ": " + t.text.substr(0,40) + "...",
-	        summary: t.text,
-	        updated: t.created_at
-	    });
+    Twitter.search(args.term, function(ar) {
+        var res = [];
+        for (var i = 0; i < ar.length; i++) {
+            num++;
+	        res.push(convertObject(ar[i]));
+        }
+        if (res.length > 0) args.results(res);
     }, function (res) {
 	    trans.complete(num);
     });
     trans.delayReturn(true);
 });
 
-/*
-XXX: what should the notifications api be now that we can do anything?
-
-        'conduit::notifications': function(originHostname, requestObj, origin) {
-            var r = {
-	            title: 'search results',
-	            entries: [ ]
-            };
-
-            Search.run("", function(t) {
-                    var user = t.user ? t.user : t.sender;
-	            var link = "http://twitter.com/" + user.screen_name + "/status/" + t.id;
-	            r.entries.push({
-	                link: link,
-	                title: user.screen_name + ": " + t.text.substr(0,40) + "...",
-	                summary: t.text,
-			updated: t.created_at,
-			id: t.id
-	            });
-            }, function (res) {
-                    sendResponse({
-	                result: r,
-	                cmd: requestObj.cmd,
-	                id: requestObj.id
-	            }, origin);
-            });
+chan.bind("notifications", function(trans, args) {
+    Twitter.notifications(function(r) {
+        var res = [];
+        for (var i = 0; i < r.matches.length; i++) {
+	        res.push(convertObject(r.matches[i]));
         }
-    }
-*/
+	    trans.complete(res);
+    });
+    trans.delayReturn(true);
+});
