@@ -364,13 +364,12 @@ var gNotificationDB = new NotificationDB();
 
 function notificationsWereRefreshed(install, notifications)
 {
-  try {
-    var result = (typeof notifications === 'string' ? JSON.parse(notifications) : notifications);
-    gNotificationDB.add(install, result.entries);
-    render();
-  } catch (e) {
-    dump("Error while parsing notification: " + e + "\n");
-  }
+    try {
+        gNotificationDB.add(install, notifications);
+        render();
+    } catch (e) {
+        dump("Error while parsing notification: " + e + "\n");
+    }
 }
 
 

@@ -96,7 +96,7 @@ AppConduit.prototype = {
             params: {
                 term: term,
                 results: function(r) {
-                    results.push(r);
+                    results = results.concat(r);
                 }
             },
             error: function(e) {
@@ -108,9 +108,16 @@ AppConduit.prototype = {
         });
     },
 
-
     notifications: function(callback) { // maybe "since"?
-        dump("XXX: write me");  
+        this.chan.query({
+            method: "notifications",
+            error: function(e) {
+                dump("GOT ERROR from search query: " + JSON.stringify(e));
+            },
+            success: function(result) {
+                callback(result);
+            }
+        });
     }
 }
 
