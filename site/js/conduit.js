@@ -58,7 +58,7 @@ function AppConduit(appKey, conduitTargetURL) {
     this.iframe.src = this.conduitTargetURL;
 
     // now create a Channel
-    this.chan = Channel.build(this.iframe.contentWindow, conduitTargetURL, "conduit");
+    this.chan = Channel.build({window: this.iframe.contentWindow, origin: conduitTargetURL, scope: "conduit"});
 }
 
 AppConduit.prototype = {

@@ -33,7 +33,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-var chan = Channel.build(window.parent, "*", "conduit");
+var chan = Channel.build({window: window.parent, origin: "*", scope: "conduit"});
 chan.bind("search", function(trans, args) {
     var num = 0;
     Search.run(args.term, function(t) {
