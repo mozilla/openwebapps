@@ -40,8 +40,6 @@ var win = window;
 var unsupported = !(win.postMessage && win.localStorage && win.JSON);
 
 function AppConduit(appKey, conduitTargetURL) {
-    console.log("AppConduit called (" + appKey + " | " + conduitTargetURL + ")");
-
     this.appKey = appKey;
     this.conduitTargetURL = conduitTargetURL;
 
@@ -144,7 +142,7 @@ ConduitDebugger.prototype = {
     }
 
     this.outputDiv.innerHTML = "";
-    for (var i=0;i<this.messages.length;i++) {
+    for (var i=this.messages.length-1;i>=0;i--) {
       var msg = this.messages[i];
       var aDiv = document.createElement("div");
       aDiv.setAttribute("class", "dbgrow");
@@ -156,7 +154,7 @@ ConduitDebugger.prototype = {
       aHover.appendChild(document.createTextNode(JSON.stringify(msg.message)));
       aDiv.appendChild(aHover);
 
-      aDiv.appendChild(col("msg", msg.message.cmd + (msg.response ? " response" : "")));
+      aDiv.appendChild(col("msg", msg.message.method + (msg.response ? " response" : "")));
       this.outputDiv.appendChild(aDiv);
     }
   }

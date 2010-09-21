@@ -105,6 +105,8 @@ a:hover {
   font:bold 8pt "Lucida Sans";
   background:#d0d0d0;
   width:850px;
+  height: 300px;
+  overflow-y: scroll;
 }
 #debugger {
   background:#fff;
