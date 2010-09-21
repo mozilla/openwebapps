@@ -831,6 +831,22 @@ function drawNotificationBadge(ctx, count)
   ctx.strokeText("" + count, gIconSize - 8, 14);
 }
 
+function drawAlertBadge(ctx)
+{
+  ctx.beginPath();
+  ctx.moveTo(gIconSize - 10, 17);
+  ctx.lineTo(gIconSize , 0);
+  ctx.lineTo(gIconSize + 10, 17);
+  ctx.lineTo(gIconSize - 10, 17);
+  ctx.fillStyle = "rgb(239,221,112)";
+  ctx.strokeStyle = "rgb(0,0,0)";
+  ctx.fill();
+  ctx.stroke();
+  ctx.font = "11px serif";
+  ctx.strokeText("!", gIconSize-2, 14);
+  ctx.endPath();
+}
+
 function setIconSize(size)
 {
   gIconSize = size;
