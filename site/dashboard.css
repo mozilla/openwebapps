@@ -105,14 +105,14 @@ a:hover {
   font:bold 8pt "Lucida Sans";
   background:#d0d0d0;
   width:850px;
-  height: 300px;
-  overflow-y: scroll;
 }
 #debugger {
   background:#fff;
   padding:4px;
   width:850px;
   cursor:pointer;
+  overflow-y: scroll;
+  height: 300px;
 }
 #debugger .time {
   display:inline-block;
@@ -123,9 +123,21 @@ a:hover {
 #debugger .msg {
   display:inline-block;
   overflow:hidden;
-  width:680px;
+  width:620px;
   font:9pt Helvetica;
 }
+#debugger .direction {
+  display:inline-block;
+  overflow:hidden;
+  width:30px;
+  font-family: 'lucida console', monaco, 'andale mono', 'bitstream vera sans mono', consolas, monospace;
+  font-size: 9pt;
+}
+#debugger .request { color: #900; }
+#debugger .response { color: #090; }
+#debugger .error { color: #F00; }
+#debugger .callback { color: #E6C200; }
+#debugger .notification { color: #0F0; }
 #debugger .app {
   display:inline-block;
   width:100px;

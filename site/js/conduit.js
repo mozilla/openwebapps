@@ -134,28 +134,36 @@ ConduitDebugger.prototype = {
       return v;
     }
 
-    function col(t, v) {
-      var column = document.createElement("div");
-      column.setAttribute("class", t);
-      column.appendChild(document.createTextNode(v));
-      return column;
-    }
-
     this.outputDiv.innerHTML = "";
     for (var i=this.messages.length-1;i>=0;i--) {
-      var msg = this.messages[i];
-      var aDiv = document.createElement("div");
-      aDiv.setAttribute("class", "dbgrow");
-      aDiv.appendChild(col("time", msg.time.getHours() + ":" + zf(msg.time.getMinutes()) + ":" + zf(msg.time.getSeconds())));
-      aDiv.appendChild(col("app", gApps.getInstall(msg.conduit.appKey).app.name));
+        var msg = this.messages[i];
 
-      var aHover = document.createElement("div");
-      aHover.setAttribute("class", "detail");
-      aHover.appendChild(document.createTextNode(JSON.stringify(msg.message)));
-      aDiv.appendChild(aHover);
+        // determine the type and body of message
+        var t = "";
+        var body = "";
+        var summary = "";
+        var m = msg.message;
+        if (m.id) {
+            summary = "(" + m.id + ") ";
+            if (m.callback) { t = "callback"; body = m.params; }
+            else if (m.params) { t = "request"; body = m.params; }
+            else if (m.error) { t = "error"; body = { error: m.error, message: m.message }; }
+            else { t = "response"; body = m.result; }
+        } else {
+            t = "notification";
+        }
+        summary += "|" + t + "| ";
+        if (m.method) summary += m.method;
 
-      aDiv.appendChild(col("msg", msg.message.method + (msg.response ? " response" : "")));
-      this.outputDiv.appendChild(aDiv);
+        var aDiv = $("<div/>").addClass("dbgrow")
+            .append($("<div/>").addClass("time").text(msg.time.getHours() + ":" + zf(msg.time.getMinutes()) + ":" + zf(msg.time.getSeconds())))
+            .append($("<div/>").addClass("app").text(gApps.getInstall(msg.conduit.appKey).app.name));
+
+        aDiv.append($("<div/>").addClass("detail").text(JSON.stringify(body)));
+        aDiv.append($("<div/>").addClass("direction").addClass(t).text(msg.response ? "<--" : "-->"));
+        aDiv.append($("<div/>").addClass("msg").text(summary));
+
+        $(this.outputDiv).append(aDiv);
     }
   }
 }
