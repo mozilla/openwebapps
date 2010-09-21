@@ -1,0 +1,56 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+  <title>The Silly BugZap install page</title>
+</head>
+<body>
+    <div id="install_prompt"></div>
+</body>
+<script type="text/javascript" src="https://myapps.mozillalabs.com/jsapi/include.js"></script>
+<script type="text/javascript" src="jquery-min.js"></script>
+<script type="text/javascript">
+var manifest = {
+    name: "BugZapp",
+    app: {
+        urls: [ "https://bugzapp.mozillalabs.com" ],
+        launch: { web_url: "https://bugzapp.mozillalabs.com" }
+    },
+    icons: {
+        "48":"http://bugzilla.mozilla.org/skins/custom/images/bugzilla.png",
+        "96":"http://bugzilla.mozilla.org/skins/custom/images/bugzilla.png"
+    },
+    description: "Bugzilla search",
+    developerName: "Mozilla Labs",
+    supportedAPIs:["search"],
+    conduit: "https://bugzapp.mozillalabs.com/appconduit",
+    supportedAPIs: [ "search" ]
+};
+
+$(document).ready(function() {
+    // make a button for application installation:
+    function updateButton() {
+        AppClient.getInstalled({
+            callback: function(v) {
+                if (v.installed.length == 0) {
+                    $('#install_prompt').empty().append($('<button>Install The App!</button>'));
+                    $('#install_prompt button').click(function() {
+                        AppClient.install({
+                            manifest: manifest,
+                            callback: function(v) {
+                                updateButton();
+                            }
+                        });
+                    });
+                } else {
+                    $('#install_prompt').empty().append($('<span>You Gots The App.</span>'));
+                }
+            }
+        });
+    }
+    updateButton();
+});
+
+</script>
+</html>

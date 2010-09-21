@@ -117,6 +117,10 @@ class AppConduitJQueryHandler(tornado.web.RequestHandler):
   def get(self):
     self.render("jquery-min.js")
 
+class IndexHandler(tornado.web.RequestHandler):
+  def get(self):
+    self.render("index.html")
+
 ##################################################################
 # Main Application Setup
 ##################################################################
@@ -130,12 +134,13 @@ settings = {
 }
 
 application = tornado.web.Application([
+		(r"/", IndexHandler),
 		(r"/appconduit", AppConduitHandler),
 		(r"/appconduit.js", AppConduitJSHandler),
 		(r"/jschannel.js", AppConduitJSChannelHandler),
 		(r"/jquery-min.js", AppConduitJQueryHandler),
 		(r"/search", SearchHandler),
-		(r"/notifications", NotificationHandler),
+		(r"/notifications", NotificationHandler)
 	], **settings)
 
 def run():
