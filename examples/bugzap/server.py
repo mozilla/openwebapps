@@ -68,13 +68,29 @@ class SearchHandler(tornado.web.RequestHandler):
   def onBugResponse(self, response):
 #    logging.debug(response.body)
     try:
-      result = json.loads(response.body)
+      result = {
+        "title": "Bugzapp Search Results",
+        "results": [ ]
+      }
+      # now iterate over response body and populate result
+      respJSON = json.loads(response.body)
       resultObjects = None
-      if "bugs" in result:
-        resultObjects = [SearchResult(b) for b in result["bugs"]]
+      if "bugs" in respJSON:
+        resultObjects = [SearchResult(b) for b in respJSON["bugs"]]
+
+      for b in resultObjects:
+        thisBug = {}
+        thisBug["title"] = b.title
+        thisBug["category_term"] = b.category
+        thisBug["link"] =  b.link
+        thisBug["updated"] = b.updated
+        thisBug["summary"] = b.summary
+        result["results"].append(thisBug)
+
       self.set_status(200)
-      self.set_header("Content-Type", "text/plain")
-      self.render("search_result.json", title="Bugzapp Search Results", results=resultObjects, encode=tornado.escape.json_encode)
+      self.set_header("Content-Type", "application/json")
+      self.write(json.dumps(result))
+      self.finish()
     except Exception, e:
       self.set_status(500)
       self.write("Sorry, an error occured: %s" % e)
@@ -93,6 +109,13 @@ class AppConduitJSHandler(tornado.web.RequestHandler):
   def get(self):
     self.render("appconduit.js")
 
+class AppConduitJSChannelHandler(tornado.web.RequestHandler):
+  def get(self):
+    self.render("jschannel.js")
+
+class AppConduitJQueryHandler(tornado.web.RequestHandler):
+  def get(self):
+    self.render("jquery-min.js")
 
 ##################################################################
 # Main Application Setup
@@ -109,6 +132,8 @@ settings = {
 application = tornado.web.Application([
 		(r"/appconduit", AppConduitHandler),
 		(r"/appconduit.js", AppConduitJSHandler),
+		(r"/jschannel.js", AppConduitJSChannelHandler),
+		(r"/jquery-min.js", AppConduitJQueryHandler),
 		(r"/search", SearchHandler),
 		(r"/notifications", NotificationHandler),
 	], **settings)
