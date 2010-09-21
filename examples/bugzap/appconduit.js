@@ -35,7 +35,7 @@
 var chan = Channel.build({window: window.parent, origin: "*", scope: "conduit"});
 
 chan.bind("search", function(trans, args) {
-    var url = "http://localhost:8200/search?q=" + args.term;
+    var url = "/search?q=" + args.term;
     $.getJSON(url, function(data) {
         console.log(JSON.stringify(data));
         args.results(data.results);
