@@ -99,8 +99,8 @@ AppConduit.prototype = {
                     results = results.concat(r);
                 }
             },
-            error: function(e) {
-                dump("GOT ERROR from search query: " + JSON.stringify(e));
+            error: function(e, msg) {
+                dump("GOT ERROR from search call ( " + e + ": " + msg);
             },
             success: function(result) {
                 callback(results, this.appKey);
@@ -111,8 +111,8 @@ AppConduit.prototype = {
     notifications: function(callback) { // maybe "since"?
         this.chan.call({
             method: "notifications",
-            error: function(e) {
-                dump("GOT ERROR from search query: " + JSON.stringify(e));
+            error: function(e, msg) {
+                dump("GOT ERROR from notifications call ( " + e + ": " + msg);
             },
             success: function(result) {
                 callback(result);
