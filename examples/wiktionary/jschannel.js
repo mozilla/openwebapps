@@ -40,6 +40,11 @@
  *                an origin and a message.  It will be passed these arguments
  *                immediately after they pass scope and origin checks, but before
  *                they are processed.
+ *   cfg.onReady - A function that will be invoked when a channel becomes "ready",
+ *                this occurs once both sides of the channel have been
+ *                instantiated and an application level handshake is exchanged.
+ *                the onReady function will be passed a single argument which is
+ *                the channel object that was returned from build().
  */
 Channel.build = function(cfg) {
     var debug = function(m) {
@@ -188,7 +193,11 @@ Channel.build = function(cfg) {
             // manipulations are not visible (i.e. method unscoping).
             // This is not particularly efficient, but then we expect
             // that message observers are primarily for debugging anyway.
-            cfg.gotMessageObserver(e.origin, JSON.parse(JSON.stringify(m)));
+            try {
+                cfg.gotMessageObserver(e.origin, JSON.parse(JSON.stringify(m)));
+            } catch (e) {
+                debug("gotMessageObserver() raised an exception: " + e.toString());
+            }
         }
 
         m.method = unscopedMethod;
@@ -315,7 +324,11 @@ Channel.build = function(cfg) {
         if (!ready) pendingQueue.push(msg);
         else {
             if (typeof cfg.postMessageObserver === 'function') {
-                cfg.postMessageObserver(cfg.origin, msg);
+                try {
+                    cfg.postMessageObserver(cfg.origin, msg);
+                } catch (e) {
+                    debug("postMessageObserver() raised an exception: " + e.toString());
+                }
             }
             cfg.window.postMessage(JSON.stringify(msg), cfg.origin);
         }
@@ -340,6 +353,9 @@ Channel.build = function(cfg) {
 
         // flush queue
         while (pendingQueue.length) postMessage(pendingQueue.pop(), cfg.origin);
+
+        // invoke onReady observer if provided
+        if (typeof cfg.onReady === 'function') cfg.onReady(obj);
     };
 
     // Setup postMessage event listeners
