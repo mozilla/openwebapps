@@ -186,17 +186,45 @@ window.localStorage.setItem("http://www.facebook.com",
 */
 
 
-window.localStorage.setItem("http://bugzapp.mozillalabs.com",
+window.localStorage.setItem(
+    "https://tweetsup.mozillalabs.com",
+    JSON.stringify({
+        installTime: new Date().getTime(),
+        installURL: "https://tweetsup.mozillalabs.com",
+        app: {
+            "name": "TweetSup?",
+            "app": {
+                "urls": [
+                    "https://tweetsup.mozillalabs.com"
+                ],
+                "launch": {
+                    "web_url": "https://tweetsup.mozillalabs.com"
+                }
+            },
+            "icons": {
+                "48": "https://tweetsup.mozillalabs.com/icon.png"
+            },
+            "description": "Perform searches across your twitter friends timelines and receive notifications from inside your application dashboard",
+            "developerName": "Mozilla Labs",
+            "auth": "https://tweetsup.mozillalabs.com/auth",
+            "conduit": "https://tweetsup.mozillalabs.com/conduit/",
+            "supportedAPIs": [
+                "search",
+                "notification"
+            ]
+        }
+    })
+);
+
+window.localStorage.setItem("https://bugzapp.mozillalabs.com",
   JSON.stringify({
     installTime: new Date().getTime(),
-    installURL: "http://bugzapp.mozillalabs.com",
+    installURL: "https://bugzapp.mozillalabs.com",
     app: {
       name:"Bugzapp",
       app:{
-        urls: [],
-        launch: {
-          web_url: "http://bugzapp.mozillalabs.com"
-        }
+        urls: [ "https://bugzapp.mozillalabs.com" ],
+        launch: {  web_url: "https://bugzapp.mozillalabs.com" }
       },
       icons: {
         "48":"http://bugzilla.mozilla.org/skins/custom/images/bugzilla.png",
@@ -204,8 +232,7 @@ window.localStorage.setItem("http://bugzapp.mozillalabs.com",
       },
       description: "Bugzilla search",
       developerName: "Mozilla Labs",
-      search:"http://bugzapp.mozillalabs.com/search?q={searchTerms}",
-      conduit:"http://bugzapp.mozillalabs.com/appconduit",
+      conduit:"https://bugzapp.mozillalabs.com/appconduit",
       supportedAPIs:["search"],
       permissions: []
     }
@@ -213,18 +240,16 @@ window.localStorage.setItem("http://bugzapp.mozillalabs.com",
 ));
 
 
-
-
-window.localStorage.setItem("http://dictionary.mozillalabs.com",
+window.localStorage.setItem("https://dictionary.mozillalabs.com",
   JSON.stringify({
     installTime: new Date().getTime(),
-    installURL: "http://dictionary.mozillalabs.com",
+    installURL: "https://dictionary.mozillalabs.com",
     app: {
       name:"Dictionary",
       app:{
-        urls: ["http://en.wiktionary.org"],
+        urls: ["https://en.wiktionary.org"],
         launch: {
-          web_url: "http://en.wiktionary.org"
+          web_url: "https://en.wiktionary.org"
         }
       },
       icons: {
@@ -232,7 +257,7 @@ window.localStorage.setItem("http://dictionary.mozillalabs.com",
       },
       description: "Dictionary",
       developerName: "Mozilla Labs",
-      conduit:"http://dictionary.mozillalabs.com/appconduit",
+      conduit:"https://dictionary.mozillalabs.com/appconduit",
       supportedAPIs:["search", "notification"],
       permissions: []
     }
