@@ -94,30 +94,51 @@ body {
     -webkit-border-radius: 8px;
     -moz-border-radius: 8px;
 }
-
 .dbgrow {
     height: 13px;
     margin-top: 4px;
 }
-
 .dbgrow > div {
     float: left;
-    margin-right: 2px;
     background: #fff;
     padding:2px;
     text-size: 80%;
 }
 .dbgrow > div.direction {
+    margin-right: 2px;
     width:6px;
 }
 .dbgrow > div.msgid {
+    margin-right: 2px;
     width:30px;
 }
 .dbgrow > div.type {
+    margin-right: 2px;
     width:30px;
 }
 .dbgrow > div.msg {
-    width: 95px
+    width: 96px;
+}
+
+.dbgrow > div.note {
+    width: 180px;
+    overflow: hidden;
+}
+
+.dbgrow > div.note > pre {
+    margin: 0px;
+    font-family: 'lucida console', monaco, 'andale mono', 'bitstream vera sans mono', consolas, monospace;
+}
+.dbgrow > .error {
+    color: #F00;
+}
+
+.dbgrow > .info {
+    color: #090;
+}
+
+.dbgrow > .warning {
+    color: #E6C200;
 }
 
 #tabs-1 {
@@ -149,3 +170,12 @@ body {
     font-size: 90%;
 }
 
+#debugClear {
+    margin-right:5px;
+    margin-top:3px;
+    float: right;
+}
+
+#debugClear > button {
+    font-size: 80%;
+}

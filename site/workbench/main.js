@@ -2,6 +2,16 @@ $(document).ready(function() {
     var conduitUrl = "";
     var chan = null;
 
+    function clearMessages() {
+        $("#debugOutput").empty();
+    }
+
+    function addLog(severity, content) {
+        $("<div/>").addClass("dbgrow")
+            .append($("<div/>").addClass("note").addClass(severity).append($("<pre/>").text(content)))
+            .appendTo("#debugOutput");
+    }
+
     // add a conduit message to the debug output
     function addMessage(m, inbound) {
         // determine the type and body of message
@@ -31,6 +41,12 @@ $(document).ready(function() {
 
     // load up a conduit
     function loadConduit(url) {
+        // clear out debugging messages
+        clearMessages();
+
+        // indicate our intent
+        addLog("info", "loading " + url);
+
         // kill chan
         if (chan) {
             chan.destroy();
@@ -57,6 +73,9 @@ $(document).ready(function() {
             },
             gotMessageObserver: function(origin, msg) {
                 addMessage(msg, true);
+            },
+            onReady: function(chan) {
+                addLog("info", "conduit ready!");
             }
         });
     }
@@ -71,13 +90,15 @@ $(document).ready(function() {
     // add a listener to form input
     $("#urlBox").keyup(function(e) {
         var txt = $.trim($("#urlBox").val());
-        console.log(txt);
         if (txt.length > 0) {
             $("#urlBoxButton button").button({disabled: false});
         } else {
             $("#urlBoxButton button").button({disabled: true});
         }
     });
+
+    // the clear button, should
+    $("#debugClear > button").button().click(function() { clearMessages(); });
 
     // and a listener for submission
     $("#urlForm").submit(function(e) {
