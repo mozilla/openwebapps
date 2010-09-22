@@ -247,9 +247,9 @@ window.localStorage.setItem("https://dictionary.mozillalabs.com",
     app: {
       name:"Dictionary",
       app:{
-        urls: ["https://en.wiktionary.org"],
+        urls: ["http://en.wiktionary.org"],
         launch: {
-          web_url: "https://en.wiktionary.org"
+          web_url: "http://en.wiktionary.org"
         }
       },
       icons: {
