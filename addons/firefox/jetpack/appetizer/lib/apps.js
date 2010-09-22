@@ -34,15 +34,12 @@
  *
  * ***** END LICENSE BLOCK ***** */
  
-let EXPORTED_SYMBOLS = ["Apps"];
-
 var self = require("self");
 var contextMenu = require("context-menu");
 var windowUtils = require("window-utils");
 var tabs = require("tabs");
 var xhr = require("xhr");
 var url = require("url");
-var oauth = require("oauth");
 var {Cc, Ci, Cu} = require("chrome");
 
 const APP_STORAGE_DOMAIN = "http://myapps.mozillalabs.com"
@@ -58,7 +55,6 @@ exports.init = function() {
   var storage = STORAGE_MANAGER.getLocalStorageForPrincipal(principal, {});
   gApps = new Apps(storage);
   
-  
   // Start watching windows: we'll add a click handler
   // to all of them.
   windowTracker = new windowUtils.WindowTracker(windowTrackerDelegate);
@@ -69,6 +65,14 @@ exports.unload = function() {
   // how to stop tracking?
 }
 
+/**
+* openAppURL
+*
+* Called to open a URL as the given app.
+*
+* If we already have a tab open to the current app, loads the URL there.
+* Otherwise, creates a new pinned tab for the given URL.
+*/
 function openAppURL(app, url, inBackground)
 {
   var wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
@@ -85,8 +89,10 @@ function openAppURL(app, url, inBackground)
     for (var index = 0; index < numTabs; index++) {
     
       var currentBrowser = tabbrowser.getBrowserAtIndex(index);
-      
       let apps = gApps.applicationsForURL(currentBrowser.currentURI.spec);
+
+      // This tab belongs to one (or more) apps.  Is one of those apps the 
+      // same as the app we're looking for?
       if (apps) {
         for (var i = 0;i<apps.length;i++) {
           if (apps[i].app.launch.web_url == app.app.launch.web_url) {
@@ -105,8 +111,8 @@ function openAppURL(app, url, inBackground)
     }
   }
 
-  // TODO: need to appify new link
-  // Our URL isn't open. Open it now.
+  // Our URL does not belong to a currently running app.  Create a new
+  // tab for that app and load our URL into it.
   if (!found) {
     var recentWindow = wm.getMostRecentWindow("navigator:browser");
     if (recentWindow) {
@@ -132,17 +138,16 @@ function openAppURL(app, url, inBackground)
   }
 }
 
-
+/** 
+ * openNewAppTab
+ *
+ * Open a given URL as an app tab, regardless of whether
+ * we already have an app tab for that URL.
+*/
 function openNewAppTab(targetURL, inBackground)
 {
   var wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);    
   var mainWindow = wm.getMostRecentWindow("navigator:browser");
-/*  var mainWindow = recentWindow.QueryInterface(Ci.nsIInterfaceRequestor)
-                         .getInterface(Ci.nsIWebNavigation)
-                         .QueryInterface(Ci.nsIDocShellTreeItem)
-                         .rootTreeItem
-                         .QueryInterface(Ci.nsIInterfaceRequestor)
-                         .getInterface(Ci.nsIDOMWindow);*/
   var tab = mainWindow.gBrowser.addTab(targetURL);
   var idx = mainWindow.gBrowser._numPinnedTabs;
   mainWindow.gBrowser.moveTabTo(tab, idx);
@@ -204,9 +209,10 @@ let clickLinkChecker = function(event) {
       }
     }
 
+    // Does the link's href belong to one of our apps?
+    // If so, open the link as that app.
     try {
       let appList = gApps.applicationsForURL(target.href);
-
       if (appList && appList.length) {
 
         // got a match:
@@ -226,6 +232,7 @@ let clickLinkChecker = function(event) {
   }
 } 
 
+/* Track every window and inject a click handler */
 let windowTrackerDelegate = {
   onTrack: function(window) {
     window.addEventListener("click", clickLinkChecker, true);
@@ -236,45 +243,54 @@ let windowTrackerDelegate = {
   }
 };
 
-function applyURITemplate(template, inputDict)
-{
-  return template.replace(/{[^{}]+}/g, function(key){
-    return inputDict[key.replace(/[{}]+/g, "")] || "";
-  });
-}
 
+/* Helper to wrap up openAppURL for injection */
 function getOpenAppTabFn() {
   return function(window, app, url, options) {
-    //openNewAppTab(url, options && options.background);
+    // TODO: Hey, we've got a reference to window here.  Let's use it instead
+    // of doing all that WindowMediator stuff.
     openAppURL(app, url, options && options.background);    
   }
 }
 
+
+/**
+ * When a tab is loaded, inject our new methods into
+ * navigator.apps.
+ */
 tabs.onLoad = function(tab) {
-  if (true) // TODO only do this once...
-  {
-    //console.log("tabs.onLoad has fired: inserting sandbox");
-    try {
-      // TODO: only do this for myapps.ml.com
-      let sandbox = new Cu.Sandbox(tab.contentWindow);
-      sandbox.importFunction(getOpenAppTabFn(), "openAppTab");
-      sandbox.window = tab.contentWindow.wrappedJSObject;
-      Cu.evalInSandbox("if (window && window.navigator) {\
-          window.navigator.apps = {\
-            openAppTab: function(app, url, options) {\
-              openAppTab(window, app, url, options);\
-            }\
-          };\
-        }", sandbox, "1.8", "resource://apptastic/content/apps.js", 1);
-    } catch (e) {
-      console.log("Error while injecting navigator.apps block: " + e);
-    }
+  try {
+    // TODO: only do this for myapps.ml.com
+    
+    // Create a sandbox to inject into the window's JS context
+    let sandbox = new Cu.Sandbox(tab.contentWindow);
+    
+    // Bind our function
+    sandbox.importFunction(getOpenAppTabFn(), "openAppTab");
+
+    // Inject our function into the expected place
+    sandbox.window = tab.contentWindow.wrappedJSObject;
+    Cu.evalInSandbox("if (window && window.navigator) {\
+        window.navigator.apps = {\
+          openAppTab: function(app, url, options) {\
+            openAppTab(window, app, url, options);\
+          }\
+        };\
+      }", 
+      sandbox, 
+      "1.8",  // JS version
+      "resource://apptastic/content/apps.js",  /* effective source URI of our code */
+      1 /* effective line number of our code */ );
+  } catch (e) {
+    console.log("Error while injecting navigator.apps block: " + e);
   }
 }
 
 
 
-
+/***********************************************************************
+// Begin duplicated code from myapps.mozillalabs.com/js/apps.js
+************************************************************************/
 
 function Apps(storage) {
   this.installs = [];
@@ -435,10 +451,3 @@ Apps.prototype.applicationsForURL = function(url)
   }
   return result;
 }
-
-exports.getDataURL = function(name) {
-  return self.data.url(name);
-}
-exports.Apps = Apps;
-exports.openAppURL = openAppURL; // (app, url)
-
