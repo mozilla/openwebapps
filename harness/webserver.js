@@ -44,7 +44,7 @@ const sites = {
     "bugzap.mozillalabs.com": {
         dir: "../examples/bugzap",
         prod_url: 'https://bugzap.mozillalabs.com',
-        dev_port: "8126",
+        dev_port: "8200",
         nobind: true
     },
     "dictionary.mozillalabs.com": {
