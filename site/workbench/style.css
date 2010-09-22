@@ -1,0 +1,90 @@
+body {
+    font-family: georgia, times, serif;
+}
+
+#pageContent {
+    width: 900px;
+    margin: 0 auto;
+}
+
+#title {
+    font-family: georgia, 'bitstream vera serif', serif;
+    font-size: 300%;
+    font-weight: bold;
+    letter-spacing: -4px;
+}
+
+#subtitle {
+    position: relative;
+    top: -4px;
+    font-size: 100%;
+    font-style: italic;
+}
+
+#urlInput {
+    margin-top: 20px;
+}
+
+#urlBox {
+    padding: 10px;
+    border: 1px solid black;
+    color: #666;
+    font-size: 110%;
+}
+
+
+#urlInputContainer {
+    height: 50px;
+    width: 800px;
+    margin: 0 auto;
+}
+
+#urlInputContainer div {
+    float: left;
+}
+
+#urlBoxButton button { 
+    font-size: 120%;
+    color: #333;
+}
+
+#content {
+    margin-top: 20px;
+}
+
+#content > div {
+    float: left;
+}
+
+#main {
+    width: 620px;
+    height: 500px;
+    margin-left: 20px;
+    margin-right: 20px;
+    background-color: #ccc;
+}
+
+#debug {
+    width: 220px;
+    height: 500px;
+    margin-right: 20px;
+    background-color: #ccc;
+    font-size: 70%;
+    font-family: 'lucida console', monaco, 'andale mono', 'bitstream vera sans mono', consolas, monospace;
+}
+
+#debugHeader {
+    margin-left: 5px;
+    margin-right: 5px;
+    font-weight: bold;
+    padding: 6px;
+    text-align: center;
+    font-size: 120%;
+    border-bottom: 1px dashed black;
+}
+
+.rounded {
+    border-radius: 8px;
+    -webkit-border-radius: 8px;
+    -moz-border-radius: 8px;
+}
