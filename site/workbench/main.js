@@ -138,7 +138,7 @@ $(document).ready(function() {
             params: {
                 term: term,
                 results: function(r) {
-                    console.log(r);
+                    // XXX: do something with results!
                 }
             },
             success: function (num) {
