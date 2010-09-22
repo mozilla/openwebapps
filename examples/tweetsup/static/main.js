@@ -50,7 +50,6 @@ $(document).ready(function() {
     };
     updateButton();
 
-
     function buildTweetNode(t, highlight) {
       function re_escape(t) {
 	return t.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");

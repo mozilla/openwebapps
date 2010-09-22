@@ -1,5 +1,6 @@
 body {
     font-family: georgia, times, serif;
+    font-size: 14px;
 }
 
 #pageContent {
@@ -80,11 +81,71 @@ body {
     padding: 6px;
     text-align: center;
     font-size: 120%;
-    border-bottom: 1px dashed black;
+    border-bottom: 1px dashed #666;
 }
 
+#debugOutput {
+    height: 450px;
+    padding:10px;
+    overflow-y: scroll;
+}
 .rounded {
     border-radius: 8px;
     -webkit-border-radius: 8px;
     -moz-border-radius: 8px;
 }
+
+.dbgrow {
+    height: 13px;
+    margin-top: 4px;
+}
+
+.dbgrow > div {
+    float: left;
+    margin-right: 2px;
+    background: #fff;
+    padding:2px;
+    text-size: 80%;
+}
+.dbgrow > div.direction {
+    width:6px;
+}
+.dbgrow > div.msgid {
+    width:30px;
+}
+.dbgrow > div.type {
+    width:30px;
+}
+.dbgrow > div.msg {
+    width: 95px
+}
+
+#tabs-1 {
+    height: 418px;
+}
+
+#tabs-2 {
+    height: 418px;
+}
+
+#searchInput {
+    width:400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#searchInput div {
+    float: left;
+}
+
+#searchBoxButton {
+    font-size:80%;
+}
+
+#searchBox {
+    padding: 5px;
+    border: 1px solid black;
+    color: #666;
+    font-size: 90%;
+}
+
