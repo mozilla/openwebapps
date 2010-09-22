@@ -11,45 +11,54 @@
   <link rel="stylesheet" type="text/css" href="style.css" />
 </head>
 <body>
-<div id="pageContent">
-<div id="header">
-  <div id="title">The Conduit WorkBench</div>
-  <div id="subtitle">Your place for the rapid de-kinkin' of JavaScript Conduits for Appetizer</div>
-</div>
-<div id="urlInput">
-  <div id="urlInputContainer">
-    <form id="urlForm">
-    <div id="urlContainer"><input type="text" id="urlBox" placeholder="Enter the full url to your conduit here..." size="60"></div>
-    <div id="urlBoxButton"><button type="submit">load conduit</button></div>
-    </form>
-  </div>
-</div>
-<div id="content">
-  <div id="main" class="rounded">
-<div id="tabs">
-	<ul>
-	  <li><a href="#tabs-1">Search</a></li>
-	  <li><a href="#tabs-2">Notifications</a></li>
-	</ul>
-	<div id="tabs-1">
-      <div id="searchInput">
-        <form>
-          <div id="searchBoxContainer"><input type="text" id="searchBox" placeholder="Enter a search term here..." size="30"/></div>
-          <div id="searchBoxButton"><button type="submit">go!</button></div>
-        </form>
+  <div id="pageContent">
+    <div id="header">
+      <div id="title">The Conduit WorkBench</div>
+      <div id="subtitle">Your place for the rapid de-kinkin' of JavaScript Conduits for Appetizer</div>
+    </div>
+    <div id="urlInput">
+      <div id="urlInputContainer">
+        <form id="urlForm">
+          <div id="urlContainer"><input type="text" id="urlBox" placeholder="Enter the full url to your conduit here..." size="60"></div>
+            <div id="urlBoxButton"><button type="submit">load conduit</button></div>
+          </form>
+        </div>
       </div>
-	</div>
-	<div id="tabs-2">
-		<p>Morbi tincidunt, dui sit amet facilisis feugiat, odio metus gravida ante, ut pharetra massa metus id nunc. Duis scelerisque molestie turpis. Sed fringilla, massa eget luctus malesuada, metus eros molestie lectus, ut tempus eros massa ut dolor. Aenean aliquet fringilla sem. Suspendisse sed ligula in ligula suscipit aliquam. Praesent in eros vestibulum mi adipiscing adipiscing. Morbi facilisis. Curabitur ornare consequat nunc. Aenean vel metus. Ut posuere viverra nulla. Aliquam erat volutpat. Pellentesque convallis. Maecenas feugiat, tellus pellentesque pretium posuere, felis lorem euismod felis, eu ornare leo nisi vel felis. Mauris consectetur tortor et purus.</p>
-	</div>
-</div>
+      <div id="content">
+        <div id="main" class="rounded">
+          <div id="tabs">
+	        <ul>
+	          <li><a href="#tabs-1">Search</a></li>
+	          <li><a href="#tabs-2">Notifications</a></li>
+	        </ul>
+	        <div id="tabs-1">
+              <div id="searchInput">
+                <form>
+                  <div id="searchBoxContainer"><input type="text" id="searchBox" placeholder="Enter a search term here..." size="30"/></div>
+                  <div id="searchBoxButton"><button type="submit">go!</button></div>
+                </form>
+              </div>
+              <div id="searchOutput">
+                
+              </div>
+	        </div>
+	        <div id="tabs-2">
+              <div id="notificationInput">
+                <div id="notificationBoxButton"><button>poll notifications!</button></div>
+              </div>
+              <div id="notificationOutput">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="debug" class="rounded">
+          <div id="debugClear"><button>clear</button></div>
+          <div id="debugHeader">Message&nbsp;Viewer</div>
+          <div id="debugOutput"></div>
+        </div>
+      </div>
+    </div>
   </div>
-  <div id="debug" class="rounded">
-    <div id="debugClear"><button>clear</button></div>
-    <div id="debugHeader">Message&nbsp;Viewer</div>
-    <div id="debugOutput"></div>
-</div>
-</div>
 </body>
 <script type="text/javascript" src="main.js"></script>
 </html>

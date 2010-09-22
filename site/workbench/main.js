@@ -8,7 +8,7 @@ $(document).ready(function() {
 
     function addLog(severity, content) {
         $("<div/>").addClass("dbgrow")
-            .append($("<div/>").addClass("note").addClass(severity).append($("<pre/>").text(content)))
+            .append($("<div/>").addClass("note").addClass(severity).text(content))
             .appendTo("#debugOutput");
     }
 
@@ -37,6 +37,16 @@ $(document).ready(function() {
 
         $("#debugOutput").append(aDiv);
 
+    }
+
+    function chanNotReady() {
+        $("#searchBoxButton button").button({disabled: true});
+        $("#notificationBoxButton button").button({disabled: true});
+    }
+
+    function chanReady() {
+        $("#searchBoxButton button").button({disabled: false});
+        $("#notificationBoxButton button").button({disabled: false});
     }
 
     // load up a conduit
@@ -76,18 +86,22 @@ $(document).ready(function() {
             },
             onReady: function(chan) {
                 addLog("info", "conduit ready!");
+                // and enable the search and notification buttons
+                chanReady();
             }
         });
     }
 
+    chanNotReady();
+
     // buttonify
     $("#urlBoxButton button").button({disabled: true});
-    $("#searchBoxButton button").button({disabled: true});
+
 
     // make our tabs, tabs
     $("#tabs").tabs();
 
-    // add a listener to form input
+    // add a listener to form input 
     $("#urlBox").keyup(function(e) {
         var txt = $.trim($("#urlBox").val());
         if (txt.length > 0) {
@@ -108,6 +122,46 @@ $(document).ready(function() {
         } catch(e) {
             console.log(e);
         }
+    });
+
+    // search handling
+    $("#searchInput form").submit(function(e) {
+        e.preventDefault();
+        var term = $.trim($("#searchBox").val());
+        if (!term.length) {
+            addLog("error", "Need non-blank search term!");
+            return;
+        }
+        addLog("info", "searching for: " + term);
+        chan.call({
+            method: "search",
+            params: {
+                term: term,
+                results: function(r) {
+                    console.log(r);
+                }
+            },
+            success: function (num) {
+                addLog("info", "search complete. " + num + " result(s).");
+            },
+            error: function (code, msg) {
+                addLog("error", "Error (" + code + "): " + msg);
+            }
+        });
+    });
+
+    // notification handlin'
+    $("#notificationBoxButton button").click(function() {
+        addLog("info", "polling notifications.");
+        chan.call({
+            method: "notifications",
+            success: function (r) {
+                addLog("info", "poll complete, " + r.length + " result(s).");
+            },
+            error: function (code, msg) {
+                addLog("error", "Error (" + code + "): " + msg);
+            }
+        });
     });
 });
 

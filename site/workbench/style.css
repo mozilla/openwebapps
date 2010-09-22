@@ -125,10 +125,10 @@ body {
     overflow: hidden;
 }
 
-.dbgrow > div.note > pre {
-    margin: 0px;
-    font-family: 'lucida console', monaco, 'andale mono', 'bitstream vera sans mono', consolas, monospace;
+.dbgrow div {
+    white-space: pre;
 }
+
 .dbgrow > .error {
     color: #F00;
 }
@@ -168,6 +168,11 @@ body {
     border: 1px solid black;
     color: #666;
     font-size: 90%;
+}
+
+#notificationBoxButton {
+    width: 160px;
+    margin: 0 auto;
 }
 
 #debugClear {
