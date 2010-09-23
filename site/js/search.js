@@ -50,7 +50,7 @@ $(function(){
   });
   */
   $("#si").keyup(function(){
-    input = $(this).val().trim();
+    input = $.trim($(this).val());
     if(input === linput)
       return;
     if(input == '') {
