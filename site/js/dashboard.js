@@ -475,8 +475,8 @@ function render()
   }
 }
 
-const SORT_DATE = 1;
-const SORT_APP = 2;
+/*const*/ SORT_DATE = 1;
+/*const*/ SORT_APP = 2;
 var gNotificationSort = SORT_DATE;
 function renderNotifications()
 {
