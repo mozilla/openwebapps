@@ -38,7 +38,6 @@ var chan = Channel.build({window: window.parent, origin: "*", scope: "conduit"})
 chan.bind("search", function(trans, args) {
     var url = "/search?q=" + args.term;
     $.getJSON(url, function(data) {
-        console.log(JSON.stringify(data));
         args.results(data.results);
         trans.complete(data.results.length);
     });
@@ -48,7 +47,6 @@ chan.bind("search", function(trans, args) {
 chan.bind("notifications", function(trans, args) {
     var url = "/notifications";
     $.getJSON(url, function(data) {
-        console.log(data);
         trans.complete(data.entries);
     });
     trans.delayReturn(true);
