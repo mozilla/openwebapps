@@ -15,8 +15,8 @@ browser, and also indicates to the browser that this site is important
 to you.  This makes it easier to search your content within the site,
 lets the site push you notifications, and more.
 
-This document is to serve as a technical overview of what an
-installable web application consist of and is capable of, so that you
+This document serves as a technical overview of what an
+installable web application consists of and is capable of, so that you
 might build one yourself.
 
 ## Goals
