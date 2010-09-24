@@ -29,11 +29,72 @@ $(document).ready(function() {
         }
         if (m.method) summary += m.method.split("::")[1];
 
+        var fullMsg = $("<div/>").addClass("full").text(JSON.stringify(m, null, 4)).hide();
+
+        var floater = $("<div/>").width("21px").height("15px")
+            .css("border-top", "1px solid black").css("border-bottom", "1px solid black")
+            .css("position", "absolute").css("background-color", "#ccc").appendTo("body").hide();
+
         var aDiv = $("<div/>").addClass("dbgrow")
             .append($("<div/>").addClass("direction").text(inbound ? "<" : ">"))
             .append($("<div/>").addClass("msgid").html(m.id ? m.id : "&nbsp;"))
             .append($("<div/>").addClass("type").text(t))
-            .append($("<div/>").addClass("msg").text(summary));
+            .append($("<div/>").addClass("msg").text(summary))
+            .append(fullMsg)
+            .hover(function(ev) {
+                // cache content height and width in the DOM, to handle window resizes
+                if (!fullMsg.attr("contentHeight")) {
+                    fullMsg.attr("contentHeight", fullMsg.outerHeight());
+                    fullMsg.attr("contentWidth", fullMsg.outerWidth());
+                }
+                var contentHeight = fullMsg.attr("contentHeight");
+                var contentWidth = fullMsg.attr("contentWidth");
+
+                var p = fullMsg.parent();
+                var poff = p.offset();
+                console.log("top: " + poff.top);
+                console.log("left: " + poff.left);
+                console.log("stop: " + $(window).scrollTop());
+                console.log("sleft: " + $(window).scrollLeft());
+                // postion the cutesy floating peice
+                floater.css("top", poff.top).css("left", poff.left - 21).show();
+                // this is *very* cute I think.  give the mouse a path to cruise into the message
+                // without causing a hover out.
+                floater.appendTo(p);
+
+                // determine width and left offset
+                if (contentWidth > (poff.left - 40)) {
+                    fullMsg.width(poff.left - 40 - (fullMsg.outerWidth(true) - fullMsg.width()));
+                }
+                poff.left -= fullMsg.outerWidth() + 20;
+
+                // determine height and top offset
+                if ($(window).height() - 40 < contentHeight) {
+                    fullMsg.height($(window).height() - 40 - (fullMsg.outerHeight(true) - fullMsg.height()));
+                }
+
+                // Start by centering the message
+                poff.top -= (fullMsg.outerHeight() - p.outerHeight()) / 2;
+
+                // are we leaking off the top?
+                console.log("top: " + poff.top);
+                if (poff.top < 20 + $(window).scrollTop()) poff.top = 20 + $(window).scrollTop();
+                // are we leaking off the bottom?
+                else if (poff.top + fullMsg.outerHeight() > $(window).scrollTop() + $(window).height() - 20) {
+                    poff.top = $(window).scrollTop() + $(window).height() - 20 - fullMsg.outerHeight();
+                }
+                console.log("top: " + poff.top);
+
+                fullMsg.css("position", "absolute").css("top", poff.top).css("left", poff.left);
+                fullMsg.show();
+                // draw lines to the box
+                p.css("border-top", "1px solid black").css("border-bottom", "1px solid black");
+            }, function(ev) {
+                var p = fullMsg.parent();
+                p.css("border-top", "1px solid white").css("border-bottom", "1px solid white");
+                fullMsg.hide();
+                floater.hide();
+            });
 
         $("#debugOutput").append(aDiv);
 
