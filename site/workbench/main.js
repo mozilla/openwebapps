@@ -52,10 +52,6 @@ $(document).ready(function() {
 
                 var p = fullMsg.parent();
                 var poff = p.offset();
-                console.log("top: " + poff.top);
-                console.log("left: " + poff.left);
-                console.log("stop: " + $(window).scrollTop());
-                console.log("sleft: " + $(window).scrollLeft());
                 // postion the cutesy floating peice
                 floater.css("top", poff.top).css("left", poff.left - 21).show();
                 // this is *very* cute I think.  give the mouse a path to cruise into the message
@@ -77,13 +73,11 @@ $(document).ready(function() {
                 poff.top -= (fullMsg.outerHeight() - p.outerHeight()) / 2;
 
                 // are we leaking off the top?
-                console.log("top: " + poff.top);
                 if (poff.top < 20 + $(window).scrollTop()) poff.top = 20 + $(window).scrollTop();
                 // are we leaking off the bottom?
                 else if (poff.top + fullMsg.outerHeight() > $(window).scrollTop() + $(window).height() - 20) {
                     poff.top = $(window).scrollTop() + $(window).height() - 20 - fullMsg.outerHeight();
                 }
-                console.log("top: " + poff.top);
 
                 fullMsg.css("position", "absolute").css("top", poff.top).css("left", poff.left);
                 fullMsg.show();
