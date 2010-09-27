@@ -27,7 +27,7 @@ $(document).ready(function() {
         // now wrap a chan around that bad boy.
         var c = Channel.build({
             window: document.getElementById("childIFrame_" + id).contentWindow,
-            origin: "http://localhost:8888",
+            origin: "http://10.0.1.106:8888",
             scope: id,
             onReady: function () {
                 channels[id].ready = true;
