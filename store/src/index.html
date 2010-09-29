@@ -1,0 +1,130 @@
+<html>
+<head>
+ <title>Mozilla Developer Preview: Web Application Store</title>
+ <style>
+
+BODY {margin:0;padding:0}
+
+#dev_preview_splash  {
+  margin:16px 16px 64px 16px;
+  padding:12px;
+  border:1px solid #888;
+  box-shadow:8px 8px 8px #999;
+}
+
+#dev_preview_splash .banner {
+  font:32pt Helvetica, arial;
+}
+#dev_preview_splash .footer {
+  font-family: Helvetica, arial;
+  font-size:10pt;
+}
+
+#banner {
+  width:100%;
+  background-color:#707090;
+  height:30px;
+}
+
+#branding {
+  padding-top:4px;
+  color:white;
+  float:left;
+  padding-left:16px;  
+  font:12pt Helvetica, arial;
+}
+#status {
+  padding-top:4px;
+  float:right;
+  color:white;
+  padding-right:16px;
+  font:bold 10pt Helvetica,arial
+}
+#status a {
+  color:white;
+  text-decoration:none
+}
+#status a:hover {
+  text-decoration:underline
+}
+
+.button 
+{
+}
+
+.app_display {
+  -moz-border-radius:8px;
+  -webkit-border-radius:8px;
+  border-radius:8px;
+  border:1px solid #707090;
+  margin:16px;
+  padding:8px;
+}
+
+.app_display .display_area_head
+{
+  font:bold 14pt Helvetica, arial
+}
+
+
+.app {
+  display:inline-block;
+  margin:16px;
+}
+
+.app .name {
+  font:bold 10pt Helvetica, arial;
+}
+.app .name a {
+  color:black;
+  text-decoration:none;
+}
+.app .category {
+  font:9pt Helvetica, arial;
+}
+
+</style>
+</head>
+<body>
+
+<div id="banner">
+
+<div id="branding">AppZilla: Demonstration Web Application Store</div>
+<div id="status">
+{% if account %}
+Signed in as {{ account.displayName }}
+{% else %}
+<a href="/login">Sign in</a>
+{% end if %}
+</div>
+</div>
+
+
+
+<div id="dev_preview_splash">
+  <div class="banner">Web App Store Developer Preview</div>
+  <div class="footer">This is not a working system: it is intended for technical audience to demonstrate how a web application store could work.<br><br>
+    If you'd like to learn more about open web application stores, <a href="#">read more on our blog.</a></div>
+</div>
+
+<div class="app_display">
+<div class="display_area_head">Demonstration Apps</div>
+
+<div class="app">
+
+<div class="icon"><a href="/app/1"><img border="0" width="64" height="64" src="/static/task.png"><!-- icon GPL, by Oliver Scholtz http://linux.softpedia.com/developer/Oliver-Scholtz-93.html --></a></div>
+<div class="name"><a href="/app/1">Task Tracker</a></div></a>
+<div class="category">Productivity</div>
+</div>
+
+<div class="app">
+<div class="icon"><a href="/app/2"><img border="0" width="64" height="64" src="/static/mozilla.png"><!-- icon GPL, Alessandro Rei, http://kde-look.org/usermanager/search.php?username=mentalrey --></a></div>
+<div class="name"><a href="/app/2">MozillaBall</a></div></a>
+<div class="category">Games</div>
+</div>
+
+
+
+
+</body>
+</html>

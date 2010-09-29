@@ -1,0 +1,2 @@
+openssl genrsa 1024 > privkey.pem
+openssl rsa -in privkey.pem -pubout -out pubkey.pem 
