@@ -36,6 +36,7 @@ class WebHandler(tornado.web.RequestHandler):
                
 class MainHandler(WebHandler):
   def get(self):
+    self.set_header("X-XRDS-Location", "https://appstore.mozillalabs.com/xrds")
     uid = self.get_current_user()
     if uid:
       account = model.user(uid)
@@ -137,20 +138,10 @@ class VerifyHandler(WebHandler):
       self.redirect("%s?%s" % (app.landingURL, urllib.urlencode( { 
         "status":"fail" }) ))
 
-class GoogleIdentityHandler(tornado.web.RequestHandler, tornado.auth.GoogleMixin):
-  @tornado.web.asynchronous
-  def get(self):
-    if self.get_argument("openid.mode", None):
-      self.get_authenticated_user(self.async_callback(self._on_auth))
-      return
-
-    return_to = self.get_argument("return_to", None)
-    if return_to:
-      callback_uri = self.request.path + "?" + urllib.urlencode({"to":return_to})
-    self.authenticate_redirect(callback_uri=callback_uri)
-
+class FederatedLoginHandler(WebHandler):
   def _on_auth(self, user):
     if not user:
+      # hm, in the twitter case should we throw?
       self.authenticate_redirect()
       return
 
@@ -164,10 +155,13 @@ class GoogleIdentityHandler(tornado.web.RequestHandler, tornado.auth.GoogleMixin
     #   This user has this ID: welcome back, just keep going
     #   Somebody ELSE has this ID: we're on a stale session.  we can either switch sessions or report a problem.
 
-
+    identifier = self.getIdentifier(user)
+    name = user["name"] if "name" in user else identifier
+    email = user["email"] if "email" in user else None
+    
     uid = self.get_secure_cookie("uid")
     if not uid:
-      ident = model.identity_by_identifier(user["email"])
+      ident = model.identity_by_identifier(identifier)
       if ident:
         # welcome back
         self.set_secure_cookie("uid", str(ident.user_id))
@@ -175,9 +169,9 @@ class GoogleIdentityHandler(tornado.web.RequestHandler, tornado.auth.GoogleMixin
         u = model.createUser()
         uid = u.id
         self.set_secure_cookie("uid", str(uid))
-        i = model.addIdentity(uid, user["email"], user["name"], user["email"])
+        i = model.addIdentity(uid, identifier, name, email)
     else:
-      ident = model.identity_by_identifier(user["email"])
+      ident = model.identity_by_identifier(identifier)
       if ident:
         if int(ident.user_id) != int(uid):
           # hm, somebody else has this ID.  the user just switched accounts.
@@ -188,7 +182,7 @@ class GoogleIdentityHandler(tornado.web.RequestHandler, tornado.auth.GoogleMixin
           pass
         
       else: # add this ident to the user
-        i = model.addIdentity(uid, user["email"], user["name"], user["email"])
+        i = model.addIdentity(uid, identifier, name, email)
     
     return_to = self.get_argument("to")
     if return_to:
@@ -196,6 +190,61 @@ class GoogleIdentityHandler(tornado.web.RequestHandler, tornado.auth.GoogleMixin
     else:
       self.redirect("/account") # where to?
 
+
+class OpenIDLoginHandler(FederatedLoginHandler):
+  @tornado.web.asynchronous
+  def handle_get(self):
+    if self.get_argument("openid.mode", None):
+      self.get_authenticated_user(self.async_callback(self._on_auth))
+      return
+
+    return_to = self.get_argument("return_to", None)
+    if return_to:
+      callback_uri = self.request.path + "?" + urllib.urlencode({"to":return_to})
+    self.authenticate_redirect(callback_uri=callback_uri)
+
+class GoogleIdentityHandler(OpenIDLoginHandler, tornado.auth.GoogleMixin):
+  @tornado.web.asynchronous
+  def get(self):
+    self.handle_get()
+
+  def getIdentifier(self, user):
+    return user["email"]
+
+class YahooIdentityHandler(OpenIDLoginHandler, tornado.auth.OpenIdMixin):
+  _OPENID_ENDPOINT = "https://open.login.yahooapis.com/openid/op/auth"
+
+  @tornado.web.asynchronous
+  def get(self):
+    self.handle_get()
+
+  def getIdentifier(self, user):
+    return user["email"]
+
+class TwitterIdentityHandler(FederatedLoginHandler, tornado.auth.TwitterMixin):
+  @tornado.web.asynchronous
+  def get(self):
+    if self.get_argument("oauth_token", None):
+      self.get_authenticated_user(self.async_callback(self._on_auth))
+      return
+    self.authorize_redirect()
+
+  def getIdentifier(self, user):
+    return "%s@twitter.com" % user["username"] 
+
+
+class XRDSHandler(WebHandler):
+  def get(self):
+    self.set_header("Content-Type", "application/xrds+xml")
+    self.write("""<?xml version="1.0" encoding="UTF-8"?>"""\
+      """<xrds:XRDS xmlns:xrds="xri://$xrds" xmlns:openid="http://openid.net/xmlns/1.0" xmlns="xri://$xrd*($v*2.0)">"""\
+      """<XRD>"""\
+      """<Service priority="1">"""\
+      """<Type>https://specs.openid.net/auth/2.0/return_to</Type>"""\
+      """<URI>https://appstore.mozillalabs.com/app/</URI>"""\
+      """</Service>"""\
+      """</XRD>"""\
+      """</xrds:XRDS>""")
 
 ##################################################################
 # Main Application Setup
@@ -206,18 +255,25 @@ settings = {
     "cookie_secret": config.cookie_secret,
     "login_url": "/login",
     "debug":True,
+
+    "twitter_consumer_key":"HvhrjQU3EKYZttdBglHT4Q",
+    "twitter_consumer_secret":"ajyQvZn3hDLcVI9VYZfwZi3kxsF8g8arayxzoyPBIo",
 #    "xsrf_cookies": True,
 }
 
 application = tornado.web.Application([
     (r"/app/(.*)", AppHandler),
+    (r"/xrds", XRDSHandler),
     (r"/login", LoginHandler),
     (r"/logout", LogoutHandler),
     (r"/account", AccountHandler),
     (r"/account/addid/google", GoogleIdentityHandler),    
+    (r"/account/addid/yahoo", YahooIdentityHandler),    
+    (r"/account/addid/twitter", TwitterIdentityHandler),    
     (r"/", MainHandler),
  
 	], **settings)
+
 
 def run():
     http_server = tornado.httpserver.HTTPServer(application)
