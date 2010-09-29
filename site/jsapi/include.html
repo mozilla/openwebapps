@@ -98,8 +98,28 @@ function displayInstallPrompt(originHostname, manifest, clientCB) {
     document.getElementById("appdesc").textContent = manifest.description;
   }
 
-  if (manifest.icons && manifest.icons["48"]) {
-    document.getElementById("appicon").src = manifest.icons["48"];
+  if (manifest.icons) {
+
+    // prefer to use 48-pixel icon
+    var icon;
+    if (manifest.icons["48"]) icon = manifest.icons["48"];
+    else 
+    {
+      var last;
+      for (var size in manifest.icons) 
+      {
+        try {
+          var num = Math.floor(size);
+          last = num;
+          if (num >= 48) icon = manifest.icons[size];
+        } catch (e) {}
+        if (icon) break;
+      }
+      if (!icon) 
+        icon = manifest.icons[last];
+    }
+    document.getElementById("appicon").src = icon;
+    
   }
 
   // now that the content is setup, message untrusted javascript to display us
