@@ -43,9 +43,9 @@ function:
 
 1. [local storage](http://dev.w3.org/html5/webstorage/)
 2. [cross document messaging](http://dev.w3.org/html5/postmsg/#web-messaging)
-3. [native JSON parsing](http://wiki.ecmascript.org/doku.php?id=es3.1:json_support)
+3. [JSON parsing](http://wiki.ecmascript.org/doku.php?id=es3.1:json_support) ([libraries are available](http://www.json.org/js.html) where native support isn't)
 4. (OPTIONAL) [canvas](http://www.w3.org/TR/html5/the-canvas-element.html)
-5. (OPTIONAL) Application tabs
+5. (OPTIONAL) "Application tabs" or "Tab Pinning"
 
 Given these requirements, we'll initially support the following browsers:
 IE8+, Chrome 5+, Firefox 3.6+, latest Opera, and latest Safari.
@@ -81,16 +81,30 @@ a web site, or can be enriched with UA "add-ons" or native UA support.
 </dd>
 </dl>
 
+## IWA Composition
+
+The difference between an Installable Web Application and a webpage
+is, by design, minimal.  To dress a plain ol' webpage up as an IWA,
+all you need is:
+
+1. A JSON manifest file that describes the application
+   (`manifest.json`) and includes metadata regarding its capabilities.
+2. (optional) Pretty icons in a couple different sizes.
+3. (optional) A 'conduit' (a special webpage hosted under the
+   application's url) to enable things like notifications and
+   dashboard originated search of users data within the application.
+
 ## Further Reading
 
-IWA.md - an introduction to the components of Installable Web Applications.
+MANIFEST.md - An description of application manifests, including what
+they should contain, and their required syntax and semantics.
 
-SERVICES.md - This document will describe the different services that
-web applications can support.  While IWA.md describes the ideas behind
-and architecture of "web conduits" where we describe the specific
-protocols that application authors may implement on top of them
+CONDUITS.md - An introduction to web conduits.  How they work, the technolgoies
+upon which they are built, and a formal description of the basic protocol
+over which they communicate with the dashboard (or UA).
 
-DASHBOARD.md - an introduction to the application dashboard, including the various
-ways to interact with it.
+SERVICES.md - A description of the various services that applications may expose
+in their conduits, including the precise api each service exposes.
 
-STORES.md - topics important to the authors of IWA stores
+APIS.md - JavaScript APIs available to applications for interating with stores, 
+the dashboard, and other applications.
