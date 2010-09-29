@@ -92,7 +92,7 @@ BODY {margin:0;padding:0}
 <div id="branding">AppZilla: Demonstration Web Application Store</div>
 <div id="status">
 {% if account %}
-Signed in as {{ account.displayName }}
+Signed in as {{ account.displayName }} - [ <a href="/logout">Sign Out</a> ]
 {% else %}
 <a href="/login">Sign in</a>
 {% end if %}

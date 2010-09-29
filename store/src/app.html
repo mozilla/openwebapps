@@ -8,15 +8,47 @@
 <!-- <script src="https://myapps.mozillalabs.com/jsapi/include.js"></script> -->
 <script>
 var gAppManifest = {{ app["manifest"] }};
+
 $(function () {
+
+{% if app["price"] > 0 %}
+
+$("#purchase_button").live('click', function() {
+  // submit Ajax to serve confirming purchase authorization...
+  // and on success, install manifest:
+  AppClient.install({manifest: gAppManifest, callback: function (arg) {
+    $("#install_button").text('Installed!');
+    $.jGrowl(gAppManifest.name + ' installed.<br><br><a href="http://myapps.mozillalabs.com" target="_myapps">View App Dashboard</a>', {sticky:true});
+  }});    
+  $("#dimmer").fadeOut(300);
+  $("#login_purchase").fadeOut(300);
+});
+
+$("#install_button").live('click', function() {
+  $("#dimmer").fadeIn(300);
+  $("#login_purchase").fadeIn(300);
+});
+
+$("#cancel_button").live('click', function() {
+  $("#dimmer").fadeOut(300);
+  $("#login_purchase").fadeOut(300);
+});
+
+{% if mode == "b" %}
+$("#dimmer").show();
+$("#login_purchase").show();
+{% end %}
+
+{% else %}
   $("#install_button").live('click', function() {
     AppClient.install({manifest: gAppManifest, callback: function (arg) {
       $("#install_button").text('Installed!');
       $.jGrowl(gAppManifest.name + ' installed.<br><br><a href="http://myapps.mozillalabs.com" target="_myapps">View App Dashboard</a>', {sticky:true});
     }});    
   });
-});
+{% end %}
 
+});
 
 </script>
  <style>
@@ -154,10 +186,18 @@ BODY {margin:0;padding:0}
 
 .greenbutton {
   -moz-border-radius:0.5em 0.5em 0.5em 0.5em;
+  -webkit-border-radius:0.5em 0.5em 0.5em 0.5em;
   -moz-box-shadow:0 -3px 0 rgba(0, 0, 0, 0.1) inset, 0 -3px 12px rgba(240, 240, 240, 0.3) inset, 0 20px 40px rgba(240, 240, 240, 0.3) inset, 0 2px 0 rgba(200, 200, 200, 0.3);
   box-shadow:0 -3px 0 rgba(0, 0, 0, 0.1) inset, 0 -3px 12px rgba(240, 240, 240, 0.3) inset, 0 20px 40px rgba(240, 240, 240, 0.3) inset, 0 2px 0 rgba(200, 200, 200, 0.3);
+  -webkit-box-shadow:0 -3px 0 rgba(0, 0, 0, 0.1) inset, 0 -3px 12px rgba(240, 240, 240, 0.3) inset, 0 20px 40px rgba(240, 240, 240, 0.3) inset, 0 2px 0 rgba(200, 200, 200, 0.3);
   background-color:#6bc246;
   background-image:-moz-linear-gradient(center top , #6BC246 0%, #5CA33E 100%);
+  background-image:-webkit-gradient(
+    linear,
+    left top,
+    left bottom,
+    color-stop(0, rgb(5,202,51)),
+    color-stop(1, rgb(6,188,36)));
   height:24px;
   width:120px;
   margin-bottom:25px;
@@ -174,8 +214,86 @@ BODY {margin:0;padding:0}
   text-decoration:none
 }
 
+#dimmer {
+  background:#000;
+  opacity:0.66;
+  filter:alpha(opacity=66);
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  z-index:998;
+  display:none 
+}
 
+#login_purchase
+{
+  display:none ;
+  position:absolute;
+  left:150px;
+  top:150px;
+  border:3px solid black;
+  -moz-border-radius:0.5em;
+  border-radius:0.5em;
+  webkit-border-radius:0.5em;
+  width:500px;
+  background-color:white;
+  height:400px;
+  z-index:999;
+}
+#login
+{
+  padding:8px 8px 0px 8px;
+  font:10pt Helvetica, Arial;
+}
+#login .head
+{
+  font:14pt Helvetica, Arial;
+  color:#8080D0;
+  margin-bottom:8px;
+}
 
+#login .small
+{
+  font:10pt Helvetica, Arial;
+}
+
+#login .verysmall
+{
+  display:inline-block;
+  font:italic 8pt Helvetica, Arial;
+}
+
+#login .verysmall a
+{
+  text-decoration:none;
+  color:#8080d0;
+}
+
+#purchase
+{
+  padding:48px 8px 0px 8px;
+  font:10pt Helvetica, Arial;
+}
+#purchase .head
+{
+  font:14pt Helvetica, Arial;
+  color:#8080D0;
+  margin-bottom:8px;
+}
+#login_purchase .controls
+{
+  position:absolute;
+  left:270px;
+  top:350px;
+}
+
+#login_purchase .controls button
+{
+  font-size:12pt;
+  width:100px;
+}
 
 </style>
 </head>
@@ -186,7 +304,7 @@ BODY {margin:0;padding:0}
 <div id="branding"><a href="/">AppZilla: Demonstration Web Application Store</a></div>
 <div id="status">
 {% if account %}
-Signed in as {{ account.displayName }}
+Signed in as {{ account.displayName }} - [ <a href="/logout?return_to=/app/{{appID}}">Sign Out</a> ]
 {% else %}
 <a href="/login">Sign in</a>
 {% end if %}
@@ -233,12 +351,44 @@ Mobile Safari&nbsp;3.0, Android&nbsp;2.0
 <div class="right_column">
 
 <div class="install_floater">
-<div id="install_button" class="greenbutton">INSTALL</div>
+<div id="install_button" class="greenbutton">{% if app["price"] == 0 %}INSTALL{%else%}BUY{%end%}</div>
 </div>
 
 <div class="name">{{ app["name"] }}</div></a>
 
 <div class="desc">{{ app["description"] }}</div></a>
+</div>
+
+</div>
+
+<div id="dimmer"></div>
+<div id="login_purchase">
+<div id="login">
+
+{% if account %}
+<div class="head">Confirm Account</div>
+You are signed in as {{ account.displayName }}.
+<div class="verysmall">(<a href="/logout?return_to=/app/{{appID}}%3fm=b">Not you?</a>)</div>
+{% else %}
+<div class="head">Sign In Required</div>
+Before you can purchase an application, we need you to <b>sign in</b>:<br><br>
+<a href="/account/addid/google?return_to=/app/{{appID}}%3fm=b"><img border="0" src="/static/googleOpenID.png"></a>
+<img src="/static/yahooOpenID.png">
+<img src="/static/twitterOpenID.png"><br>
+<div class="small">(for demo purposes, we're supporting a few OpenID/OAuth providers;<br>
+a real store would use more robust authentication)</div>
+{% end if %}
+
+</div>
+<div id="purchase">
+<div class="head">Confirm Purchase</div>
+Here, we verify the users intent to purchase, and confirm the payment mechanism.<br><br>
+If necessary, we send the user off to PayPal or a similar provider to set up a payment authorization.
+</div>
+
+<div class="controls">
+<button id="cancel_button">Cancel</button>
+<button id="purchase_button" {% if not account %}disabled="true"{%end%}>Buy</button>
 </div>
 
 </div>

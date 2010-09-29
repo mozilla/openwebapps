@@ -61,12 +61,19 @@ class Identity(Base):
     __tablename__ = "identities"
 
     id = Column(Integer, primary_key=True)
-    identifier = Column(Text)
+    identifier = Column(Text, unique=True)
     displayName = Column(Text)
     email = Column(Text)
     photoURL = Column(Text)
     verifiedDate = Column(DateTime)
     user_id = Column(Integer, ForeignKey("users.id"))
+
+    def __init__(self, uid, identifier, displayName, email, date):
+      self.user_id = uid
+      self.identifier = identifier
+      self.displayName = displayName
+      self.email = email
+      self.verifiedDate = date
 
     def __repr__(self):
       return "<Identity(%d, %s)>" % (self.id, self.identifier)
@@ -140,6 +147,36 @@ class ApprovalReview(Base):
 metadata.create_all(engine) 
     
     
+def createUser():
+  try:
+    u = User()
+    session.add(u)
+    session.commit()
+    return u
+
+  except sqlalchemy.exc.IntegrityError, e:
+    logging.exception(e)  
+    session.rollback()
+    raise ValueError("Unable to create user")
+
+def user(id):
+  return session.query(User).filter(User.id == id).first()
+    
+
+def addIdentity(uid, identifier, displayName, email):
+  try:
+    id = Identity(uid, identifier, displayName, email, datetime.now())
+    session.add(id)
+    session.commit()
+    return id
+
+  except sqlalchemy.exc.IntegrityError, e:
+    logging.exception(e)
+    session.rollback()
+    raise ValueError("Unable to create identity")
+
+def identity_by_identifier(identifier):
+  return session.query(Identity).filter(Identity.identifier == identifier).first()
     
 def applications():
   return session.query(Application).all()

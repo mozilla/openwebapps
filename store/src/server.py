@@ -19,8 +19,8 @@ import config
 import datetime
 import crypto
 import model
-
-from urlparse import urlparse
+import urlparse
+import urllib
 
 class WebHandler(tornado.web.RequestHandler):
   def get_current_user(self):
@@ -38,7 +38,12 @@ class MainHandler(WebHandler):
   def get(self):
     uid = self.get_current_user()
     if uid:
-      account = model.account(uid)
+      account = model.user(uid)
+      try:
+        account.displayName = account.identities[0].displayName
+      except:
+        account.displayName = "anonymous"
+
     else:
       account = None
     
@@ -50,6 +55,12 @@ class AppHandler(WebHandler):
     account = None
     if uid:
       account = model.user(uid)
+      try:
+        account.displayName = account.identities[0].displayName
+      except:
+        account.displayName = "anonymous"
+        
+      
     # theApp = model.application(appID) 
     # fake it!
     if appID == "1":
@@ -76,7 +87,9 @@ class AppHandler(WebHandler):
     else:
       return self.redirect("/")
     
-    self.render("app.html", app=theApp, account=account)
+    mode = self.get_argument("m", None)
+    
+    self.render("app.html", appID=appID, app=theApp, account=account, mode=mode)
 
 class AccountHandler(WebHandler):
   @tornado.web.authenticated
@@ -91,6 +104,16 @@ class LoginHandler(WebHandler):
     account = model.account(uid)
     self.render("login.html", account=account, error=None)
 
+class LogoutHandler(WebHandler):
+  def get(self):
+    self.set_cookie("uid", "", expires=datetime.datetime(1970,1,1,0,0,0,0))
+
+    return_to = self.get_argument("return_to", None)
+    if return_to:
+      self.redirect(return_to)
+    else:
+      self.redirect("/")
+
 class VerifyHandler(WebHandler):
   @tornado.web.authenticated
   def get(self, appID):
@@ -104,14 +127,14 @@ class VerifyHandler(WebHandler):
       verificationToken = "%s|%s|%sT%s" % (uid, appID, timestamp.date(), timestamp.time())
       signature = crypto.sign_verification_token(verificationToken)      
 
-      self.redirect("%s?%s" % (app.landingURL, urlparse.urlencode( { 
+      self.redirect("%s?%s" % (app.landingURL, urllib.urlencode( { 
         "status":"ok",
         "verification":verificationToken,
         "signature":signature } )))
     else:
       # Could potentially provide multiple status codes, e.g. expired
       
-      self.redirect("%s?%s" % (app.landingURL, urlparse.urlencode( { 
+      self.redirect("%s?%s" % (app.landingURL, urllib.urlencode( { 
         "status":"fail" }) ))
 
 class GoogleIdentityHandler(tornado.web.RequestHandler, tornado.auth.GoogleMixin):
@@ -120,19 +143,58 @@ class GoogleIdentityHandler(tornado.web.RequestHandler, tornado.auth.GoogleMixin
     if self.get_argument("openid.mode", None):
       self.get_authenticated_user(self.async_callback(self._on_auth))
       return
-    self.authenticate_redirect()
+
+    return_to = self.get_argument("return_to", None)
+    if return_to:
+      callback_uri = self.request.path + "?" + urllib.urlencode({"to":return_to})
+    self.authenticate_redirect(callback_uri=callback_uri)
 
   def _on_auth(self, user):
     if not user:
       self.authenticate_redirect()
       return
 
+    # Couple cases here:
+    # 
+    # The user has no cookie
+    #   Nobody has signed up for this ID yet: create a user, associate this ID with it, cookie the useragent
+    #   Somebody has this ID: the user of this ID is the user; cookie the useragent
+    # The user has a cookie
+    #   Nobody has signed up for this ID yet: associate this ID with the user
+    #   This user has this ID: welcome back, just keep going
+    #   Somebody ELSE has this ID: we're on a stale session.  we can either switch sessions or report a problem.
+
+
     uid = self.get_secure_cookie("uid")
     if not uid:
-      u = model.createUser()
-      uid = u.id
-    i = model.addIdentity(uid, user.name, user.email)
-    self.redirect("/account") # where to?
+      ident = model.identity_by_identifier(user["email"])
+      if ident:
+        # welcome back
+        self.set_secure_cookie("uid", str(ident.user_id))
+      else:
+        u = model.createUser()
+        uid = u.id
+        self.set_secure_cookie("uid", str(uid))
+        i = model.addIdentity(uid, user["email"], user["name"], user["email"])
+    else:
+      ident = model.identity_by_identifier(user["email"])
+      if ident:
+        if int(ident.user_id) != int(uid):
+          # hm, somebody else has this ID.  the user just switched accounts.
+          # this has potential to be confusing, but for now we will switch accounts.
+          self.set_secure_cookie("uid", str(ident.user_id))
+        else:
+          # hm, you've already claimed this identity.  but welcome back anyway.
+          pass
+        
+      else: # add this ident to the user
+        i = model.addIdentity(uid, user["email"], user["name"], user["email"])
+    
+    return_to = self.get_argument("to")
+    if return_to:
+      self.redirect(return_to)
+    else:
+      self.redirect("/account") # where to?
 
 
 ##################################################################
@@ -150,6 +212,7 @@ settings = {
 application = tornado.web.Application([
     (r"/app/(.*)", AppHandler),
     (r"/login", LoginHandler),
+    (r"/logout", LogoutHandler),
     (r"/account", AccountHandler),
     (r"/account/addid/google", GoogleIdentityHandler),    
     (r"/", MainHandler),
