@@ -157,7 +157,7 @@ function createServer(port) {
                         // which hostname shall we substituted in?
                         var subHost = hostname.split(":")[0];
                         for (s in sites) {
-                            data = data.split(sites[s].prod_url).join("http://" + subHost + ":" + sites[s].dev_port);
+                            // data = data.split(sites[s].prod_url).join("http://" + subHost + ":" + sites[s].dev_port);
                         }
                     }
 
