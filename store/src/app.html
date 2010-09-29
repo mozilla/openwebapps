@@ -373,8 +373,8 @@ You are signed in as {{ account.displayName }}.
 <div class="head">Sign In Required</div>
 Before you can purchase an application, we need you to <b>sign in</b>:<br><br>
 <a href="/account/addid/google?return_to=/app/{{appID}}%3fm=b"><img border="0" src="/static/googleOpenID.png"></a>
-<img src="/static/yahooOpenID.png">
-<img src="/static/twitterOpenID.png"><br>
+<a href="/account/addid/yahoo?return_to=/app/{{appID}}%3fm=b"><img border="0" src="/static/yahooOpenID.png"></a>
+<a href="/account/addid/twitter?return_to=/app/{{appID}}%3fm=b"><img border="0" src="/static/twitterOpenID.png"></a><br>
 <div class="small">(for demo purposes, we're supporting a few OpenID/OAuth providers;<br>
 a real store would use more robust authentication)</div>
 {% end if %}
