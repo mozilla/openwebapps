@@ -1,27 +1,33 @@
 <html>
 <head>
-<title>App Detail: {{ app["name"] }}</title>
+<title>App Detail: {{ app.name }}</title>
 <link rel="stylesheet" type="text/css" href="/static/jquery.jgrowl.css" />
 <script src="/static/jquery-1.4.2.min.js"></script>
 <script src="/static/jquery.jgrowl_minimized.js"></script>
 <script src="http://localhost:8123/jsapi/include.js"></script>
 <!-- <script src="https://myapps.mozillalabs.com/jsapi/include.js"></script> -->
 <script>
-var gAppManifest = {{ app["manifest"] }};
+var gAppManifest = {{ app.manifest }};
 
 $(function () {
 
-{% if app["price"] > 0 %}
+{% if app.price > 0 %}
 
 $("#purchase_button").live('click', function() {
   // submit Ajax to serve confirming purchase authorization...
-  // and on success, install manifest:
-  AppClient.install({manifest: gAppManifest, callback: function (arg) {
-    $("#install_button").text('Installed!');
-    $.jGrowl(gAppManifest.name + ' installed.<br><br><a href="http://myapps.mozillalabs.com" target="_myapps">View App Dashboard</a>', {sticky:true});
-  }});    
-  $("#dimmer").fadeOut(300);
-  $("#login_purchase").fadeOut(300);
+  jQuery.post("/api/buy", {appid:{{appID}}}, function(data, textStatus) {
+
+    // TODO also provide an error handler; failures will fail silently right now
+
+    // and on success, install manifest:
+    AppClient.install({manifest: gAppManifest, callback: function (arg) {
+      $("#install_button").text('Installed!');
+      $.jGrowl(gAppManifest.name + ' installed.<br><br><a href="http://myapps.mozillalabs.com" target="_myapps">View App Dashboard</a>', {sticky:true});
+    }});    
+    $("#dimmer").fadeOut(300);
+    $("#login_purchase").fadeOut(300);
+
+  })
 });
 
 $("#install_button").live('click', function() {
@@ -315,7 +321,7 @@ Signed in as {{ account.displayName }} - [ <a href="/logout?return_to=/app/{{app
 
 <div id="dev_preview_splash">
   <div class="banner">Web App Store Developer Preview</div>
-  <div class="footer">This is not a working system: it is intended for technical audience to demonstrate how a web application store could work.<br><br>
+  <div class="footer">This is not a production system: it is an interaction prototype, intended for technical audience.<br><br>
     If you'd like to learn more about open web application stores, <a href="#">read more on our blog.</a></div>
 </div>
 
@@ -323,18 +329,18 @@ Signed in as {{ account.displayName }} - [ <a href="/logout?return_to=/app/{{app
 
 <div class="left_column">
 <div class="icon">
-  <img width="128" height="128" src="{{ app["icon"] }}">
+  <img width="128" height="128" src="{{ app.icon96URL }}">
 </div>
 <div class="price">
-{% if app["price"] == 0 %}
+{% if app.price == 0 %}
 Free
 {% else %}
-${{app["price"]}}
+${{int(app.price/100)}}.{{ "%02d" % (app.price % 100)  }}
 {% end %}
 </div>
 <div class="fineprint">
 Published: Sep. 22, 2010<br/>
-Developer: <a href="#">{{ app["developer"] }}</a><br/>
+Developer: <a href="#">DeveloperName</a><br/>
 <br/>
 Browser Compatibility: <br/>
 Firefox&nbsp;4.0, IE&nbsp;9, 
@@ -351,12 +357,12 @@ Mobile Safari&nbsp;3.0, Android&nbsp;2.0
 <div class="right_column">
 
 <div class="install_floater">
-<div id="install_button" class="greenbutton">{% if app["price"] == 0 %}INSTALL{%else%}BUY{%end%}</div>
+<div id="install_button" class="greenbutton">{% if app.price == 0 %}INSTALL{%else%}BUY{%end%}</div>
 </div>
 
-<div class="name">{{ app["name"] }}</div></a>
+<div class="name">{{ app.name }}</div></a>
 
-<div class="desc">{{ app["description"] }}</div></a>
+<div class="desc">{{ app.description.replace("\n", "<br>") }}</div></a>
 </div>
 
 </div>
