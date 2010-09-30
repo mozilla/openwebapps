@@ -52,6 +52,7 @@ class User(Base):
     developer_id = Column(Integer, ForeignKey("developers.id"))
     identities = relationship("Identity", backref="user")
     approvalreviews = relationship("ApprovalReview", backref="user")  
+    purchases = relationship("Purchase", backref="user")  
     
     def __repr__(self):
       return "<User(%d, %s)>" % (self.id, self.name)
@@ -102,25 +103,30 @@ class Application(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(Text)
+    price = Column(Integer, default=0)
     manifest = Column(Text, nullable=False)
     manifestText = Column(Text, nullable=False) # source of manifest, can include whitespace and comments
     launchURL = Column(Text, nullable=False, unique=True)
     updated = Column(DateTime, nullable=False)
     approved = Column(Boolean)
     icon96URL = Column(Text)
+    description = Column(Text)
 
     developer_id = Column(Integer, ForeignKey("developers.id"))
     category_id = Column(Integer, ForeignKey("categories.id"))
     approvalreviews = relationship("ApprovalReview", backref="app")
+    purchases = relationship("Purchase", backref="app")  
      # TODO it may make sense to keep a version history here.
 
-    def __init__(self, manifest, manifestText, launchURL, updated, icon96):
+    def __init__(self, name, manifest, manifestText, launchURL, updated, icon96, description):
+      self.name = name
       self.manifest = manifest
       self.manifestText = manifestText
       self.launchURL = launchURL
       self.updated = updated
       self.icon96URL = icon96
       self.approved = False
+      self.description = description
 
     
     def __repr__(self):
@@ -142,6 +148,24 @@ class ApprovalReview(Base):
 
   def __repr__(self):
     return "<ApprovalReview(%d, %s)>" % (self.id, self.reviewer)
+
+# Object Purchase
+class Purchase(Base):
+  __tablename__ = "purchase"
+
+  id = Column(Integer, primary_key=True)
+  app_id = Column(Integer, ForeignKey("applications.id"))
+  user_id = Column(Integer, ForeignKey("users.id"))
+  date = Column(DateTime)
+
+  def __init__(self, uid, appid, time):
+    self.app_id = appid
+    self.user_id = uid
+    self.date = time
+
+  def __repr__(self):
+    return "<Purchase(%d, %s, %s)>" % (self.id, self.app_id, self.user_id)
+
 
 # If this is our first run, go take care of housekeeping
 metadata.create_all(engine) 
@@ -182,19 +206,26 @@ def applications():
   return session.query(Application).all()
 
 def application(id):
-  return session.query(Application).filter(Application.id == id).one()
+  return session.query(Application).filter(Application.id == int(id)).one()
 
 def createApplication(manifestText, manifestSrc, manifestObj = None):
   try:
     if not manifestObj:
       manifestObj = json.loads(manifestSrc)
       
+    name = manifestObj['name']
     launchURL = manifestObj['app']['launch']['web_url']
     icon96 = None
-    if 'icons' in manifestObj and '96' in manifestObj['icons']:
-      icon96 = manifestObj['icons']['96']
+    if 'icons' in manifestObj:
+      if '96' in manifestObj['icons']:
+        icon96 = manifestObj['icons']['96']
+      else:
+        key = manifestObj['icons'].keys()[0]
+        icon96 = manifestObj['icons'][key]
 
-    a = Application(manifestSrc, manifestText, launchURL, datetime.now(), icon96)
+    description = manifestObj['description']
+
+    a = Application(name, manifestSrc, manifestText, launchURL, datetime.now(), icon96, description)
     session.add(a)
     session.commit()
     return a
@@ -202,6 +233,10 @@ def createApplication(manifestText, manifestSrc, manifestObj = None):
   except sqlalchemy.exc.IntegrityError:
     session.rollback()
     raise ValueError("An application is already registered for that launch URL.")
+
+def save(obj):
+  session.add(obj)
+  session.commit()
 
 
 def categories(parent=None):
@@ -220,5 +255,25 @@ def createCategory(name, parent=None):
   except Exception, e:
     session.rollback()
     raise ValueError("Error while creating category: %s" % e)
+
+
+
+def purchase(id):
+  return session.query(Purchase).filter(Purchase.id == id).one()
+
+def purchase_for_user_app(userid, appid):
+  return session.query(Purchase).filter(Purchase.user_id == userid).filter(Purchase.app_id == appid).first()
+
+def createPurchaseForUserApp(uid, appid):
+  try:
+    p = Purchase(uid, appid, datetime.now())
+    session.add(p)
+    session.commit()
+    return p
+
+  except sqlalchemy.exc.IntegrityError, e:
+    logging.exception(e)
+    session.rollback()
+    raise ValueError("Unable to create purchase")
 
 
