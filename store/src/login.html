@@ -1,0 +1,77 @@
+<html>
+<head>
+<title>Mozilla Store Login</title>
+<style>
+BODY {margin:0;padding:0}
+#login
+{
+  padding:8px 8px 0px 8px;
+  font:10pt Helvetica, Arial;
+
+  position:absolute;
+  left:150px;
+  top:150px;
+  border:3px solid black;
+  -moz-border-radius:0.5em;
+  border-radius:0.5em;
+  webkit-border-radius:0.5em;
+  width:500px;
+  background-color:white;
+  height:400px;
+
+}
+#login .head
+{
+  font:14pt Helvetica, Arial;
+  color:#8080D0;
+  margin-bottom:8px;
+}
+
+#login .small
+{
+  font:10pt Helvetica, Arial;
+}
+
+#login .verysmall
+{
+  display:inline-block;
+  font:italic 8pt Helvetica, Arial;
+}
+
+#login .verysmall a
+{
+  text-decoration:none;
+  color:#8080d0;
+}
+
+</style>
+</head>
+<body>
+
+<div id="login">
+
+
+{% if app %}
+<div class="head">Sign In Required</div>
+To start using {{ app.name }}, please sign into your account using
+the login method you used when you purchased the application.<br><br>
+{% else %}
+<div class="head">Sign In</div>
+
+To use the Application Store, sign in using one of these providers.  
+If you previously signed into the store, use the same provider to get
+back to your account.<br><br>
+{% end %}
+
+
+<a href="/account/addid/google?return_to={{return_to}}"><img border="0" src="/static/googleOpenID.png"></a>
+<a href="/account/addid/yahoo?return_to={{return_to}}"><img border="0" src="/static/yahooOpenID.png"></a>
+<a href="/account/addid/twitter?return_to={{return_to}}"><img border="0" src="/static/twitterOpenID.png"></a><br>
+<div class="small">(for demo purposes, we're supporting a few OpenID/OAuth providers;<br>
+a real store would use more robust authentication)</div>
+
+</div>
+</div>
+
+</body>
+</html>

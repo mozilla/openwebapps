@@ -14,7 +14,7 @@ from datetime import datetime
 import sqlalchemy
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
-from sqlalchemy import ForeignKey, Unicode, DateTime, Column, MetaData, Integer, Text, Boolean
+from sqlalchemy import ForeignKey, Unicode, DateTime, Column, MetaData, Integer, Text, Boolean, String
 from sqlalchemy.orm import relationship, backref
 import sqlalchemy.exc
 
@@ -62,7 +62,7 @@ class Identity(Base):
     __tablename__ = "identities"
 
     id = Column(Integer, primary_key=True)
-    identifier = Column(Text, unique=True)
+    identifier = Column(String(256), unique=True)
     displayName = Column(Text)
     email = Column(Text)
     photoURL = Column(Text)
@@ -106,7 +106,7 @@ class Application(Base):
     price = Column(Integer, default=0)
     manifest = Column(Text, nullable=False)
     manifestText = Column(Text, nullable=False) # source of manifest, can include whitespace and comments
-    launchURL = Column(Text, nullable=False, unique=True)
+    launchURL = Column(String(1000), nullable=False, unique=True)
     updated = Column(DateTime, nullable=False)
     approved = Column(Boolean)
     icon96URL = Column(Text)

@@ -1,0 +1,150 @@
+<html>
+<head>
+<title>TaskTracker</title>
+<style>
+body {
+  margin:0;
+  padding:0;
+  background-color:#babdc6;
+  min-height:300px;
+}
+
+#container {
+  position:absolute;
+  left:0;
+  top:0;
+  height:100%;
+  width:100%;
+}
+#left {
+  height:100%;
+  position:absolute;
+  top:0px;
+  left:0px;
+  width:150px;
+  border-right:1px solid #808080;
+}
+#right {
+  position:absolute;
+  top:0px;
+  left:150px;
+  height:100%;
+  margin-left:1px;
+  min-width:500px;
+}
+.focused #left {
+  background-color:#e0e3ea;
+}
+.blurred #left {
+  background-color:#e0e0e0;
+}
+
+.organizer {
+  list-style:none;
+  font:10pt "Lucida Sans",Helvetica, Arial;
+  line-height:200%;
+  min-height:200px
+}
+.organizer .separator {
+  margin-top:32px;
+}
+.bottom_org {
+  list-style:none;
+  font:10pt "Lucida Sans",Helvetica, Arial;
+  line-height:200%;
+  position:absolute;
+  bottom:20px;
+}
+
+.tasks {
+  list-style:none;
+  margin-left:8px;
+  padding-left:0px;
+  font:9pt "Lucida Sans",Helvetica, Arial;
+}
+.tasks li {
+  height:24px;
+  vertical-align:50%;
+  border-bottom:1px solid #EDEDED;
+  border-top:1px solid #8D8E92;
+  padding-left:16px;
+  
+  /*background:#ffffff;
+  background-image:-moz-linear-gradient(top, #FF, #F8, #F0);*/
+  background: -moz-linear-gradient(top, #FFF, #F8F8F8 50%, #ededed);
+  -moz-border-radius:4px;
+}
+
+#splash {
+  position:absolute;
+  left:180px;
+  top:100px;
+  background-color:white;
+  padding:32px;
+  font:bold 14pt Helvetica, Arial;
+  z-index:2;
+  margin-right:32px;
+  border:4px solid black;
+  -moz-border-radius:8px;
+  -webkit-border-radius:8px;
+  -moz-box-shadow:4px 2px 2px #808080;
+}
+#splash .smaller {
+  font-size:12pt;
+}
+</style>
+</head>
+
+<script src="jquery-1.4.2.min.js"></script>
+<script>
+function onBlur() {
+	document.body.className = 'blurred';
+};
+function onFocus(){
+	document.body.className = 'focused';
+};
+
+if (/*@cc_on!@*/false) { // check for Internet Explorer
+	document.onfocusin = onFocus;
+	document.onfocusout = onBlur;
+} else {
+	window.onfocus = onFocus;
+	window.onblur = onBlur;
+}
+
+$(document).ready(function() {
+  $("#splash").show(500);
+});
+</script>
+
+<body class="focused">
+
+<div id="container">
+<div id="left">
+
+<ul class="organizer">
+<li>Inbox</li>
+<li class="separator"></li>
+<li>Today</li>
+<li>Starred</li>
+<li>Some Day</li>
+<li class="separator">Projects</li>
+<li></li>
+</ul>
+
+<ul class="bottom_org">
+<li>Completed</li>
+<li>Trash</li>
+</ul>
+
+</div>
+<div id="right">
+<ul class="tasks">
+</div>
+
+<div id="splash">
+Welcome to TaskTracker!<br><br>
+TaskTracker is a paid web application.  To use it,
+you must purchase it from a <a href="http://appstore.mozillalabs.com/app/1">web application store</a>.
+</div>
+</div>

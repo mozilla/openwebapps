@@ -254,6 +254,33 @@ function getOpenAppTabFn() {
 }
 
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+function externalNotify(title, text, data, onClick)
+{
+  var notifications = require("notifications");
+  notifications.notify( {
+                         title: title,
+                         text: text,
+                         data: data,
+                         onClick: onClick
+                        }
+                       );
+
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+function getNotificationFn() 
+{
+  return function(title, text, data, onClick) 
+  {
+    externalNotify(title, text, data, onClick);
+  }
+}
+
+
 /**
  * When a tab is loaded, inject our new methods into
  * navigator.apps.
@@ -267,6 +294,7 @@ tabs.onLoad = function(tab) {
     
     // Bind our function
     sandbox.importFunction(getOpenAppTabFn(), "openAppTab");
+    sandbox.importFunction(getNotificationFn(), "externalNotify");
 
     // Inject our function into the expected place
     sandbox.window = tab.contentWindow.wrappedJSObject;
@@ -274,6 +302,9 @@ tabs.onLoad = function(tab) {
         window.navigator.apps = {\
           openAppTab: function(app, url, options) {\
             openAppTab(window, app, url, options);\
+          },\
+          externalNotify: function(title, text, data, onClick) {\
+            externalNotify(title, text, data, onClick);\
           }\
         };\
       }", 

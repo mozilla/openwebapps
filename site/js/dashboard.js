@@ -340,6 +340,7 @@ function elem(type, clazz) {
 function NotificationDB() {
   this.notifications = [];
 }
+
 NotificationDB.prototype = {
   add: function(install, notifications) {
     for (var i=0;i<notifications.length;i++) {
@@ -347,6 +348,24 @@ NotificationDB.prototype = {
       notif.install = install;
       this.notifications.push(notif);
       dump("Adding notification with install " + install.app.name + " now\n");
+      
+      if (window.navigator && window.navigator.apps && window.navigator.apps.externalNotify) {
+        window.navigator.apps.externalNotify(notif.title, 
+                                             notif.summary, 
+                                             notif.link, 
+                                             function (data) {
+                                             
+                                                if (navigator.apps && navigator.apps.openAppTab)
+                                                {
+                                                  navigator.apps.openAppTab(install, data, {});
+                                                }
+                                                else
+                                                {
+                                                  window.open(data, "_blank");
+                                                }
+                                             });
+                                             
+      }
     }
   },
 
@@ -390,6 +409,7 @@ var gNotificationDB = new NotificationDB();
 function notificationsWereRefreshed(install, notifications)
 {
     try {
+      dump("Notifications for " + install.app.name + " were refreshed: " + notifications.length + "\n");
         gNotificationDB.add(install, notifications);
         render();
     } catch (e) {
@@ -475,8 +495,8 @@ function render()
   }
 }
 
-/*const*/ SORT_DATE = 1;
-/*const*/ SORT_APP = 2;
+const SORT_DATE = 1;
+const SORT_APP = 2;
 var gNotificationSort = SORT_DATE;
 function renderNotifications()
 {
