@@ -75,15 +75,24 @@
   // Reference shortcut so minifier can save on characters
   var storage = win.localStorage;
   
-  function applicationMatchesURL(application, url)
+  // Returns whether this application runs in the specified domain (scheme://hostname[:nonStandardPort])
+  function applicationMatchesDomain(application, domain)
   {
     // TODO look into optimizing this so we are not constructing
     // regexps over and over again, but make sure it works in IE
     for (var i=0;i<application.app.urls.length;i++)
     {
       var testURL = application.app.urls[i];
-      var re = RegExp("^" + testURL.replace("*", ".*"));// no trailing $
-      if (re.exec(url) != null) return true;
+      
+      try {
+        var splitOne = testURL.split("://")
+        var splitTwo = splitOne[1].split("/")
+        var testDomain = splitOne[0] + "://" + splitTwo[0];
+        if (testDomain == domain) return true;
+      } catch (e) {
+      }
+      // var re = RegExp("^" + testURL.replace("*", ".*"));// no trailing $
+      // if (re.exec(url) != null) return true;
     }
     return false;
   }
