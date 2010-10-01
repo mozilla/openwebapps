@@ -209,6 +209,11 @@ class OpenIDLoginHandler(FederatedLoginHandler):
       self.get_authenticated_user(self.async_callback(self._on_auth))
       return
 
+    # xheaders doesn't do all the right things to recover
+    # from being reverse-proxied: change it up here.
+    self.request.protocol = "https"
+    self.request.host = "appstore.mozillalabs.com"
+    
     return_to = self.get_argument("return_to", None)
     callback_uri = None
     if return_to:
