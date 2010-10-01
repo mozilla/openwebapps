@@ -314,6 +314,7 @@ settings = {
     "cookie_secret": config.cookie_secret,
     "login_url": "/login",
     "debug":True,
+    "xheaders":True,
 
     "twitter_consumer_key":"HvhrjQU3EKYZttdBglHT4Q",
     "twitter_consumer_secret":"ajyQvZn3hDLcVI9VYZfwZi3kxsF8g8arayxzoyPBIo",
