@@ -116,7 +116,7 @@
           throw "application has expired";
         }
 
-        if (applicationMatchesURL(install.app, origin)) {      
+        if (applicationMatchesDomain(install.app, origin)) {      
           result.push(install.app);
         }
 
