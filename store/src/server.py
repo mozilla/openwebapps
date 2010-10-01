@@ -57,10 +57,11 @@ class AppHandler(WebHandler):
     account = None
     if uid:
       account = model.user(uid)
-      try:
-        account.displayName = account.identities[0].displayName
-      except:
-        account.displayName = "anonymous"
+      if account:
+        try:
+          account.displayName = account.identities[0].displayName
+        except:
+          account.displayName = "anonymous"
         
     try:
       theApp = model.application(appID) 
