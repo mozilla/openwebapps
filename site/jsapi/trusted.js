@@ -169,6 +169,9 @@
         installTime: new Date().getTime(),
         installURL: origin
 			}
+      if (requestObj.authorization_url) {
+        installation.authorizationURL = requestObj.authorization_url;
+      }
 
       // cause the UI to display a prompt to the user, this 
       displayInstallPrompt(originHostname, manf, function (allowed) {
@@ -212,25 +215,25 @@
     'wallet::verify': function(originHostname, requestObj, origin) {
 
       // We will look for manifests whose app.url filter matches the origin.
-      // If we find one, we will initiate verification of the userid
+      // If we find one, we will initiate verification of the user
       // by contacting the identity server defined in the manifest.
 
       // If we find two... well, for now, we take the first one.
+      // Perhaps we should find the first one that has an authorization URL.
 
       var result = getApplicationsForOrigin(originHostname, requestObj, origin);      
       if (result.length == 0) return null;
 
       var install = result[0];
-      var app = install.app;
       
       // Must have authorizationURL
-      if (!app.authorizationURL)
+      if (!install.authorizationURL)
       {
         return null;
       }
       
       // TODO Could optionally have a returnto
-      win.parent.location = app.authorizationURL;
+      win.parent.location = install.authorizationURL;
 
       return {
         cmd: requestObj.cmd,

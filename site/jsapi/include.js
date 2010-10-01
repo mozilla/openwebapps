@@ -213,6 +213,7 @@ var AppClient = (function() {
     var requestObj = {
       cmd: 'wallet::install',
       manifest: args.manifest || {},
+      authorization_url: args.authorization_url || null,
       session: args.session || false,
       callback: args.callback || null
     }
