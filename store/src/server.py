@@ -210,8 +210,12 @@ class OpenIDLoginHandler(FederatedLoginHandler):
       return
 
     return_to = self.get_argument("return_to", None)
+    callback_uri = None
     if return_to:
-      callback_uri = self.request.path + "?" + urllib.urlencode({"to":return_to})
+      scheme, netloc, path, query, fragment = urlparse.urlsplit(self.uri)
+      callback_uri = "%s://%s%s?%s" % (
+        scheme, netloc, path, urllib.urlencode({"to":return_to})
+      )
     self.authenticate_redirect(callback_uri=callback_uri)
 
 class GoogleIdentityHandler(OpenIDLoginHandler, tornado.auth.GoogleMixin):
