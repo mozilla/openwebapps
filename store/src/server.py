@@ -212,9 +212,9 @@ class OpenIDLoginHandler(FederatedLoginHandler):
     return_to = self.get_argument("return_to", None)
     callback_uri = None
     if return_to:
-      scheme, netloc, path, query, fragment = urlparse.urlsplit(self.uri)
-      callback_uri = "%s://%s%s?%s" % (
-        scheme, netloc, path, urllib.urlencode({"to":return_to})
+      scheme, netloc, path, query, fragment = urlparse.urlsplit(self.request.uri)
+      callback_uri = "https://appstore.mozillalabs.com/%s?%s" % (
+        path, urllib.urlencode({"to":return_to})
       )
     self.authenticate_redirect(callback_uri=callback_uri)
 
