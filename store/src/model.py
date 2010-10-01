@@ -109,7 +109,7 @@ class Application(Base):
     launchURL = Column(String(1000), nullable=False, unique=True)
     updated = Column(DateTime, nullable=False)
     approved = Column(Boolean)
-    icon96URL = Column(String(1000))
+    icon96URL = Column(Text)
     description = Column(Text)
 
     developer_id = Column(Integer, ForeignKey("developers.id"))
