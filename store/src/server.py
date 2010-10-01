@@ -167,6 +167,8 @@ class FederatedLoginHandler(WebHandler):
     #   This user has this ID: welcome back, just keep going
     #   Somebody ELSE has this ID: we're on a stale session.  we can either switch sessions or report a problem.
 
+    logging.error("In onAuth handler: user is %s" % user)
+
     identifier = self.getIdentifier(user)
     name = user["name"] if "name" in user else identifier
     email = user["email"] if "email" in user else None
@@ -219,9 +221,14 @@ class OpenIDLoginHandler(FederatedLoginHandler):
     callback_uri = None
     if return_to:
       scheme, netloc, path, query, fragment = urlparse.urlsplit(self.request.uri)
-      callback_uri = "https://appstore.mozillalabs.com/%s?%s" % (
+      
+      schemeAndHost = "https://appstore.mozillalabs.com"
+      # schemeAndHost = "http://localhost:8400"
+      
+      callback_uri = "%s%s?%s" % ( schemeAndHost,
         path, urllib.urlencode({"to":return_to})
       )
+      logging.error("Sending OpenID request with callback of %s" % callback_uri)
     self.authenticate_redirect(callback_uri=callback_uri)
 
 class GoogleIdentityHandler(OpenIDLoginHandler, tornado.auth.GoogleMixin):
