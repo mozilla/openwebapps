@@ -55,7 +55,7 @@ class StoreRegistry(object):
 
         # Allow up to 5 minutes of clock drift
         delta = abs(now - time)
-        if delta.days < 0 and delta.seconds < 300:
+        if delta.days > 0 or delta.seconds > 300:
           logging.info("Store verification failure: timestamp is %d seconds from current time." % delta )
           return None
 
@@ -82,7 +82,10 @@ class MainHandler(WebHandler):
     verifiedUser = StoreRegistry().verify_request(self)
     if verifiedUser: # we just got a new validation; that overrides any previous data
       self.set_secure_cookie(str("ttracker_uid", verifiedUser))
-      user_id = registered_user
+
+      # and redirect the user to this page so they don't accidentally bookmark the validation
+      self.redirect("/")
+      return
     else:
       cookie_user = self.get_secure_cookie("ttracker_uid")
       if cookie_user:
@@ -110,7 +113,6 @@ settings = {
 }
 
 application = tornado.web.Application([
-
     (r"/", MainHandler),
  
 	], **settings)
