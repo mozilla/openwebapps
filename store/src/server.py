@@ -272,9 +272,10 @@ class XRDSHandler(WebHandler):
 
 TaskTrackerApp = {"name":"Task Tracker", 
                 "app":{
-                  "urls":["http://tasktracker.mozillalabs.com/"],
+                  "urls":["http://tasktracker.mozillalabs.com/",
+                          "https://tasktracker.mozillalabs.com/"],
                   "launch": {
-                    "web_url":"http://tasktracker.mozillalabs.com/"
+                    "web_url":"https://tasktracker.mozillalabs.com/"
                   }
                 },
                 "description":"Manage tasks with ease using this flexible task management application.\n\nCreate To Do lists or manage complex hierarchical tasks chains.\n\nIntegrates with many web-based calendars and notification systems.",
@@ -285,9 +286,10 @@ TaskTrackerApp = {"name":"Task Tracker",
 
 MozillaBallApp = {"name":"MozillaBall",
                 "app":{
-                  "urls":["http://mozillaball.mozillalabs.com/"],
+                  "urls":["http://mozillaball.mozillalabs.com/",
+                          "https://mozillaball.mozillalabs.com/"],
                   "launch": {
-                    "web_url":"http://mozillaball.mozillalabs.com/"
+                    "web_url":"https://mozillaball.mozillalabs.com/"
                   }
                 },
                 "description":"Fast and furious Open Web development game play!\n\nScore points by implementing Open Web features.\n\nWin powerups by upgrading your JavaScript engine, adding security features, and hardware acceleration.",
