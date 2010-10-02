@@ -161,19 +161,7 @@
       // cache the installOrigin
       installOrigin = origin;
 
-      var key = manf.app.launch.web_url;
-
-			// Create installation data structure
-			var installation = {
-				app: manf,
-        installTime: new Date().getTime(),
-        installURL: origin
-			}
-      if (requestObj.authorization_url) {
-        installation.authorizationURL = requestObj.authorization_url;
-      }
-
-      // cause the UI to display a prompt to the user, this 
+      // cause the UI to display a prompt to the user
       displayInstallPrompt(originHostname, manf, function (allowed) {
         if (allowed) {
           var key = manf.app.launch.web_url;
@@ -185,10 +173,8 @@
             installURL: origin
           }
 
-          if (requestObj.identity && requestObj.idserver)
-          {
-            installation.identity = requestObj.identity;
-            installation.idserver = requestObj.idserver;
+          if (requestObj.authorization_url) {
+            installation.authorizationURL = requestObj.authorization_url;
           }
 
           // Save - blow away any existing value
