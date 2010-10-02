@@ -19,7 +19,7 @@ $("#purchase_button").live('click', function() {
     // TODO also provide an error handler; failures will fail silently right now
 
     // and on success, install manifest:
-    AppClient.install({manifest: gAppManifest, callback: function (arg) {
+    AppClient.install({manifest: gAppManifest, authorization_url: "{{ authorizationURL }}", callback: function (arg) {
       $("#install_button").text('Installed!');
       $.jGrowl(gAppManifest.name + ' installed.<br><br><a href="http://myapps.mozillalabs.com" target="_myapps">View App Dashboard</a>', {sticky:true});
     }});    
