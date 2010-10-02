@@ -70,7 +70,7 @@ class AppHandler(WebHandler):
     
     mode = self.get_argument("m", None)
     
-    self.render("app.html", authorizationURL = "https://appstore.mozillalabs.com/verify/%d" % appID, appID=appID, app=theApp, account=account, mode=mode)
+    self.render("app.html", authorizationURL = "https://appstore.mozillalabs.com/verify/%d" % int(appID), appID=appID, app=theApp, account=account, mode=mode)
 
 class AccountHandler(WebHandler):
   @tornado.web.authenticated
