@@ -96,7 +96,7 @@ body {
 </style>
 </head>
 
-<script src="/static/jquery-1.4.2.min.js"></script>
+<script src="static/jquery-1.4.2.min.js"></script>
 <script>
 function onBlur() {
 	document.body.className = 'blurred';
@@ -117,7 +117,6 @@ $(document).ready(function() {
   $("#splash").show(500);
   
   AppClient.getInstalled({callback:function(manifests) {
-    alert("getInstalled callback: " + JSON.stringify(manifests));
     if (manifests && manifests.length > 0) {
       AppClient.verify();
     }
