@@ -15,23 +15,15 @@ from M2Crypto import BIO, RSA, EVP
 pubkey = None
 privkey = None
 
+# Some silliness here for our development and deployment directory trees
 try:
   pubkey = EVP.PKey()
-  pubkey.assign_rsa(RSA.load_pub_key("pubkey.pem"))
+  pubkey.assign_rsa(RSA.load_pub_key("../tasktracker.cfg/pubkey.pem"))
 except Exception, e:
-  pass
-  
-try:
-  privkey = EVP.load_key("privkey.pem")
-except Exception, e:
-  pass
-
-
-def sign_verification_token(verificationToken):
-  privkey.sign_init()
-  privkey.sign_update(verificationToken)
-  signature = privkey.sign_final()
-  return signature
+  try:
+    pubkey.assign_rsa(RSA.load_pub_key("pubkey.pem"))
+  except:
+    pass
   
 def verify_verification_token(verificationToken, signature):
   # we are using RSA-SHA1

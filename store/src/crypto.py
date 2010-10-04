@@ -14,18 +14,22 @@ True
 
 from M2Crypto import BIO, RSA, EVP
 import base64
+import logging
+import sys
+
 
 pubkey = None
 privkey = None
 
 try:
   pubkey = EVP.PKey()
-  pubkey.assign_rsa(RSA.load_pub_key("pubkey.pem"))
+  pubkey.assign_rsa(RSA.load_pub_key("../store.cfg/pubkey.pem"))
 except Exception, e:
-  pass
+  logging.error("Unable to start up: No public key found for application verification!")
+  sys.exit(1)
   
 try:
-  privkey = EVP.load_key("privkey.pem")
+  privkey = EVP.load_key("../store.cfg/privkey.pem")
 except Exception, e:
   pass
 
