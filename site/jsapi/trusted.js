@@ -260,6 +260,7 @@
     We can eventually toggle this using a debug.myapps.org store
   **/
   function logError(requestObj, message, originHostname) {
+    if (dump) dump(message + "\n");
     if(!requestObj || (typeof requestObj.id != 'number') ) {
       return;
     }
