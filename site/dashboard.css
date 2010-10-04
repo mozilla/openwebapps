@@ -1,420 +1,511 @@
-body {
-	padding: 0px;
-	margin: 0px;
-	font-family: "Helvetica Neue", Helvetica, Arial;
-  background:#ffffff;
-}
-a {
-  color:#3875D7;
-  text-decoration:none;
-}
-a:hover {
-  text-decoration:underline;
+/**************
+*
+* style.css
+*
+/**************/
+
+/* ------- HTML ELEMENTS ------- */
+
+html {
+	padding-bottom: 0px; 
+	padding-top: 40px;
+	padding-left: 20px;
+	padding-right: 20px;
+	
 }
 
-#header {
-  position:absolute;
-  left:16px;
-  top:16px;
-  width:90%;
-  background:transparent url("firefox_fill.png") repeat-x top left;
+body { 
+	font-family: Tahoma, sans-serif !important;
+	
+	background-color: rgb(230,230,230);
+	background: rgba(0,0,0,0.1) url('img/grain.png') repeat top center;
+	
+	color: rgb(180,180,180);
+	font-size:13px;	
 }
-#startbar {
-  position:relative;
-  left:0px;
-  top:21px;
-}
-#fill {
-  float:right;
-  display:inline-block;
-  margin-top:21px;
-  width:100%;
-  height:44px;
-  background:#000033 url("firefox_fill.png") repeat-x top left;
-}
-#badge {
-  display:inline-block;
-  float:right;
-  top:0px;
+
+@font-face{
+font-family: 'Museo'; 
+src: url('fonts/MuseoSans_500.otf') format('opentype');
 }
 
 #container {
-  position:absolute;
-  top:71px;
-  min-height:400px;
-  width:85%;
-  -moz-border-radius:8px;
-  border-top:1px solid #d0d0d0;
-  border-left:1px solid #d0d0d0;
-  border-right:1px solid #d0d0d0;
-  border-bottom:1px solid #d0d0d0;
-  margin-left:16px;
-  margin-right:16px;
-  margin-top:16px;
-  background-color:white;
-}
-#search {
-  margin-left:40px;
-  margin-top:55px;
-  font-family: arial,sans-serif;
-  position:relative;
-}
-.searchfield {
-  width:300px;
-}
-.searchbutton {
-  position:relative;
-  margin-top:4px;
-  width:90px;
-  left:220px;
-}
-#content {
-  font-size:0.8em;
-  margin:10px 20px 20px 40px;
+	margin: 0px auto;
 }
 
-#apps {
-  margin-right:40px;
-  min-height:60px;
-  margin-left:40px;
-  margin-top:8px;
-}
-#appheader {
-  margin-top:12px;
-  margin-left:40px;
-}
-#appcontrols {
-  font:8pt "Lucida Sans",Helvetica, Arial;
-  float:right;
-  display:inline-block;
-  margin-right:16px;
-}
-#appcontrols  {
-  cursor:pointer
-}
-#appcontrols a:hover {
-  border-bottom:1px dotted #3875d7;
-  text-decoration:none;
-}
-#debuggerbox {
-  position:absolute;
-  left:20px;
-  top:600px;
-  margin:8px;
-  padding:3px;
-  font:bold 8pt "Lucida Sans";
-  background:#d0d0d0;
-  width:850px;
-}
-#debugger {
-  background:#fff;
-  padding:4px;
-  width:850px;
-  cursor:pointer;
-  overflow-y: scroll;
-  height: 300px;
-}
-#debugger .time {
-  display:inline-block;
-  overflow:hidden;
-  width:60px;
-  font:9pt Helvetica;
-}
-#debugger .msg {
-  display:inline-block;
-  overflow:hidden;
-  width:620px;
-  font:9pt Helvetica;
-}
-#debugger .direction {
-  display:inline-block;
-  overflow:hidden;
-  width:30px;
-  font-family: 'lucida console', monaco, 'andale mono', 'bitstream vera sans mono', consolas, monospace;
-  font-size: 9pt;
-}
-#debugger .request { color: #900; }
-#debugger .response { color: #090; }
-#debugger .error { color: #F00; }
-#debugger .callback { color: #E6C200; }
-#debugger .notification { color: #0F0; }
-#debugger .app {
-  display:inline-block;
-  width:100px;
-  overflow:hidden;
-  font:9pt Helvetica;
-}
-.dbgrow:hover {
-  background-color:#f0f0ff;
-}
-.dbgrow .detail {
-  position:absolute;
-  display:none;
-  left:160px;
-  background:white;
-  padding:4px;
-  border:1px dotted black;
-  width:500px;
-  font:9pt Helvetica;
-}
-.dbgrow:hover .detail {
-  display:inline-block;
-}
+/* ---------------------------  */
+/* ------- HEADER -------  */
+/* ---------------------------  */
 
-
-.appbox {
-  display:inline-block;
-  width:80px;
-  height:80px;
-  text-align:center;
-  position:relative;
-  cursor:pointer;
-}
-
-.appbox canvas {
-  margin:auto;
-}
-
-/*.appbox:hover {
- -moz-transition-property: -moz-box-shadow;
- -moz-transition-duration: 0.1s;
- -moz-box-shadow: 2px 2px 10px #a0a000;
-}*/
-
-.appbox > .app_name {
-  padding-top:2px;
-  font:small-caption;
-  overflow:hidden;
-  
-}
-
-.appbox > .app_icon {
-  margin-left:auto;
-  margin-right:auto;
-}
-
-#notifications {
-  font:8pt "Lucida Sans",Arial;
-}
-#notifications .notIcon {
-  display:inline-block;
-  margin-right:3px;
-  width:16pxpx;
-}
-
-#notifications .notTitle {
-  display:inline-block;
-  width:400px;
-  overflow:hidden;
-}
-#notifications .notDate {
-  display:inline-block;
-  width:200px;
-  overflow:hidden;
-}
-.notification .notSummary { 
-  position:absolute;
-  left:10px;
-  background:white;
-  display:none;
-  padding:4px;
-  border:1px solid #303000;
-}
-.notification:hover .notSummary {
-  display:inline-block;
-}
-
-.getInfo {
-  position:relative;
-  width:48px;
-  height:48px;
-  opacity:1.0;
-  background:white;
-  background-color:white;
-  border:solid 1px #CCC;
-  z-index: 999;
-  -moz-box-shadow: 2px 2px 10px #a0a0a0;
-  
-  -moz-transition-property: left,width,height;
-  -moz-transition-timing-function: ease-in-out;
-  -moz-transition-duration: 0.20s;
-  -webkit-transition-property: left,width,height;
-  -webkit-transition-timing-function: ease-in-out;
-  -webkit-transition-duration: 0.20s;
-  -o-transition-property: left,width,height;
-  -o-transition-timing-function: ease-in-out;
-  -o-transition-duration: 0.20s;
-}
-.getInfo > .appBadge {
-  position:absolute;
-  display:inline-block;
-  width:80px;
-  height:80px;
-  text-align:center;
-  position:relative;
-  left:-1px;
-  top:7px;
-  cursor:pointer;
-}
-.getInfo > .appBadge canvas {
-  margin:auto;
-}
-
-.getInfo > .appBadge >.appBadgeName {
-  padding-top:2px;
-  font:small-caption
-}
-.getInfo > .appData {
-  position:absolute;
-  top:10px;
-  left:90px;
-  width:208px;
-}
-.getInfo > .appData > .appDataBox {
-  font:9pt Arial;
-}
-.getInfo > .appData > .appDataBox> .appDataLabel {
-  display:inline-block;
-  width:80px;
-}
-.getInfo > .appData > .appDataBox> .appDataValue {
-  display:inline-block;
-  width:124px;
-}
-.getInfo > .desc {
-  position:absolute;
-  font:9pt Arial;
-  width:264px;
-  left:10px;
-  padding-top:8px;
-  height:80px;
-}
-
-.developerName {
-  font:bold 12pt Arial;
-  text-align:right;
-  padding-right:12px;
-}
-.developerName a {
-  color:black;
-}
-.developerName a:hover {
-  color:#3875D7;
-}
-.developerLink {
-  font:10pt Arial;
-  text-align:right;
-  margin-right:12px;
-  overflow-x:hidden;
-  white-space:nowrap;
-}
-.developerName a {
-  color:black;
-}
-.developerName a:hover {
-  color:#3875D7;
-}
-
-
-.getInfo > .appProperties {
-  position:absolute;
-  left:12px;
-  width:270px;
-  top:164px;
-  height:150px;
-  padding:4px;
-  margin-top:8px;
-  font:9pt Arial;
-  overflow-y:auto;
-  border-top:1px solid #d0d0d0;
-  -moz-corner-radius:2px;
-}
-.getInfo > .appProperties > .appDataBox {
-  margin-bottom:2px;
-}
-
-.getInfo > .appProperties > .appDataBox> .appDataLabel {
-  font:bold 8pt Arial;
-  display:inline-block;
-  width:90px;
-  overflow:hidden;
-}
-.getInfo > .appProperties > .appDataBox> .appDataValue {
-  display:inline-block;
-  width:156px;
-  overflow:hidden;
-}
-
-.hdiv {
-  width:100%;
-  height:1px;
-  margin-top:4px;
-  margin-bottom:4px;
-  background-color:#d0d0d0
-}
-
-
-/* Generic context menu styles */
-.contextMenu {
-  font:small-caption;
-	position: absolute;
-	width: 150px;
-	z-index: 99999;
-	border: solid 1px #CCC;
-	background: #FBFBFB;
-	padding: 0px;
-	margin: 0px;
-	display: none;
-  -moz-box-shadow: 2px 2px 10px #a0a0a0;
- }
-
-.contextMenu LI {
-	list-style: none;
-	padding: 0px;
-	margin: 0px;
-}
-
-.contextMenu A {
-	color: #333;
-	text-decoration: none;
-	display: block;
-	line-height: 20px;
-	height: 20px;
-	background-position: 6px center;
-	background-repeat: no-repeat;
-	outline: none;
-	padding: 1px 5px;
-	padding-left: 28px;
-}
-
-.contextMenu LI.hover A {
-	color: #FFF;
-  background: #3399FF;
-}
-
-.contextMenu LI.disabled A {
-	color: #AAA;
-	cursor: default;
-}
-
-.contextMenu LI.hover.disabled A {
-	background-color: transparent;
-}
-
-.contextMenu LI.separator {
-	border-top: solid 1px #CCC;
-}
-
-/*
-	Adding Icons
+#header {
+	position: relative;
+	min-width: 600px;
+	height: 60px;
+	margin-bottom: 50px;
 	
-	You can add icons to the context menu by adding
-	classes to the respective LI element(s)
-*/
+	-moz-border-radius: 1em;
+		-webkit-border-radius: 1em;
+			border-radius: 1em;
+	
+	border: 1px solid rgba(0,0,0,0.3);
+	background: #fff url('img/testpilot-bg.jpg') repeat-x top center;background: transparent -moz-linear-gradient(top, rgba(255,255,255,0.6), rgba(255,255,255,1));
+	
+	-moz-box-shadow: 
+		inset rgba(255, 255, 255, 0.5) 0 1px 0px,
+		inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
+		rgba(0, 0, 0, 0.1) 0px 2px 0px;
+	-webkit-box-shadow: 
+		inset rgba(255, 255, 255, 0.5) 0 1px 0px,
+		inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
+		rgba(0, 0, 0, 0.1) 0px 2px 0px;
+	box-shadow: 
+		inset rgba(255, 255, 255, 0.5) 0 1px 0px,
+		inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
+		rgba(0, 0, 0, 0.1) 0px 2px 0px;	
+		
+}
 
-.contextMenu LI.edit A { background-image: url(images/page_white_edit.png); }
-.contextMenu LI.cut A { background-image: url(images/cut.png); }
-.contextMenu LI.copy A { background-image: url(images/page_white_copy.png); }
-.contextMenu LI.paste A { background-image: url(images/page_white_paste.png); }
-.contextMenu LI.delete A { background-image: url(images/page_white_delete.png); }
-.contextMenu LI.quit A { background-image: url(images/door.png); }
+#header img {
+	position: absolute;
+	top: -20px;
+	right: -10px;
+}
+
+.headerText {
+	position: absolute;
+	font-family: 'Museo'; 
+	color: rgb(80,80,80);
+	font-size: 42px; 
+	font-weight: normal; 
+	letter-spacing: -2px; 
+	margin-left: 20px;
+	margin-top: 2px;
+}
+
+/* -------------------------------------------------------------  */
+/* ------- MAIN CONTENT TABS AND FRAME -----  */
+/* -------------------------------------------------------------  */
+
+#maincontentmenu {
+	min-width: 600px;
+	height: 34px;
+}
+
+.maincontentmenuItemOn {
+	position: relative;
+	float: left;
+	font-family: 'Museo';
+	font-size: 16px;
+	vertical-align: middle;
+	letter-spacing: -0.5px;
+	width: 180px;
+	height: 18px;
+	margin-left: 12px;
+	padding: 5px 12px 10px 12px;
+	
+	-webkit-border-top-left-radius: 0.5em;
+	-webkit-border-top-right-radius: 0.5em;
+	-moz-border-radius-topleft: 0.5em;
+	-moz-border-radius-topright: 0.5em;
+	border-top-left-radius: 0.5em;
+	border-top-right-radius: 0.5em;	
+	
+	color: rgb(50,50,50);
+	border-left: 1px solid rgba(0,0,0,0.3);
+	border-right: 1px solid rgba(0,0,0,0.3);
+	border-top: 1px solid rgba(0,0,0,0.3);
+	border-bottom: 1px solid rgba(255,255,255,1);
+	background-color: white;
+	display: block;
+}
+
+.maincontentmenuItemOff {
+	position: relative;
+	float: left;
+	font-family: 'Museo';
+	font-size: 16px;
+	vertical-align: middle;
+	letter-spacing: -0.5px;
+	width: 180px;
+	height: 18px;
+	margin-left: 12px;
+	padding: 5px 12px 10px 12px;
+	
+	-webkit-border-top-left-radius: 0.5em;
+	-webkit-border-top-right-radius: 0.5em;
+	-moz-border-radius-topleft: 0.5em;
+	-moz-border-radius-topright: 0.5em;
+	border-top-left-radius: 0.5em;
+	border-top-right-radius: 0.5em;
+	
+	color: rgb(50,50,50);
+	border: 1px solid rgba(0,0,0,0.2);
+	
+	-moz-box-shadow: 
+		inset rgba(255, 255, 255, 1) 0 1px 0px,
+		inset rgba(0,0,0,0.05) 0 -3px 0px;
+	-webkit-box-shadow: 
+		inset rgba(255, 255, 255, 1) 0 1px 0px,
+		inset rgba(0,0,0,0.05) 0 -3px 0px;
+	box-shadow: 
+		inset rgba(255, 255, 255, 1) 0 1px 0px,
+		inset rgba(0,0,0,0.05) 0 -3px 0px;
+		
+	background-color: rgba(255,255,255,0.5);
+	display: block;
+}
+
+#maincontentmenu a{
+	color: rgb(50,50,50);
+	display: block;
+	position: absolute;
+	width: 192px;
+	height: 28px;
+	padding: 5px 0 0 12px;
+	margin: -5px 0px 0 -12px;
+	text-decoration: none;
+}
+
+#maincontentmenu a:hover{
+	color: rgb(0,0,0);
+}
+
+.countCircle {
+	position: absolute;
+	right: 12px;
+	top: -16px;
+	height: 36px;
+	width: 36px;
+	
+	-moz-border-radius: 1.2em;
+		-webkit-border-radius: 1.2em;
+			border-radius: 1.2em;
+			
+	background-color: rgb(134,214,106); /* for non-css3 browsers */
+	background: -webkit-gradient(linear, left top, left bottom, from(rgba(134,214,106,1)), to(rgba(78,152,52,1))); /* for webkit browsers */
+	background: -moz-linear-gradient(top,  rgba(134,214,106,1), rgba(78,152,52,1)); /* for firefox 3.6+ */
+	
+	-moz-box-shadow: 
+		inset rgba(218,255,191,1) 0 1px 0px,
+		inset rgba(0,0,0,0.2) 0 -2px 0px,
+		rgba(0,0,0,0.1) 0 3px 0px;
+	-webkit-box-shadow: 
+		inset rgba(218,255,191,1) 0 1px 0px,
+		inset rgba(0,0,0,0.2) 0 -2px 0px,
+		rgba(0,0,0,0.1) 0 3px 0px;
+	box-shadow: 
+		inset rgba(218,255,191,1) 0 1px 0px,
+		inset rgba(0,0,0,0.2) 0 -2px 0px,
+		rgba(0,0,0,0.1) 0 3px 0px;
+}
+
+.countNumber {
+	width: 34px;
+	font-family: 'Museo';
+	font-size: 20px;
+	letter-spacing: -2px;
+	color: rgb(255,255,255);
+	position: absolute;
+	top: 6px;
+	margin: 0px auto;
+	text-shadow: 0px 1px rgba(0, 0, 0, 0.3);
+	text-align: center;
+}
+
+#maincontent {
+	min-width: 560px;
+	padding: 20px;
+	padding-top: 10px;
+	
+	-moz-border-radius: 1em;
+		-webkit-border-radius: 1em;
+			border-radius: 1em;
+	
+	border: 1px solid rgba(0,0,0,0.3);
+	
+	-moz-box-shadow: 
+		inset rgba(255, 255, 255, 0.5) 0 1px 0px,
+		inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
+		rgba(0, 0, 0, 0.1) 0px 2px 0px;
+	-webkit-box-shadow: 
+		inset rgba(255, 255, 255, 0.5) 0 1px 0px,
+		inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
+		rgba(0, 0, 0, 0.1) 0px 2px 0px;
+	box-shadow: 
+		inset rgba(255, 255, 255, 0.5) 0 1px 0px,
+		inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
+		rgba(0, 0, 0, 0.1) 0px 2px 0px;	
+	
+	
+	background-color: rgb(255,255,255);
+}
+
+.button {
+	position: relative;
+	float: right;
+	font-family: 'Museo';
+	font-size: 16px;
+	vertical-align: middle;
+	text-align: center;
+	letter-spacing: -0.5px;
+	color: rgb(255,255,255);
+	text-shadow: 0px 1px rgba(0, 0, 0, 0.3);
+	width: 140px;
+	height: 28px;
+	line-height: 26px;
+	border: 1px solid rgba(0,0,0,0.2);
+	
+	-moz-border-radius: 1em;
+		-webkit-border-radius: 1em;
+			border-radius: 1em;
+			
+	-moz-box-shadow: 
+		inset rgba(218,255,191,1) 0 1px 0px,
+		inset rgba(0,0,0,0.2) 0 -2px 0px,
+		rgba(0,0,0,0.1) 0 2px 0px;
+	-webkit-box-shadow: 
+		inset rgba(218,255,191,1) 0 1px 0px,
+		inset rgba(0,0,0,0.2) 0 -2px 0px,
+		rgba(0,0,0,0.1) 0 2px 0px;
+	-box-shadow: 
+		inset rgba(218,255,191,1) 0 1px 0px,
+		inset rgba(0,0,0,0.2) 0 -2px 0px,
+		rgba(0,0,0,0.1) 0 2px 0px;
+		
+	background-color: rgb(134,214,106); /* for non-css3 browsers */
+	background: -webkit-gradient(linear, left top, left bottom, from(rgba(134,214,106,1)), to(rgba(78,152,52,1))); /* for webkit browsers */
+	background: -moz-linear-gradient(top,  rgba(134,214,106,1), rgba(78,152,52,1)); /* for firefox 3.6+ */
+	
+	
+	display: block;
+}
+
+#maincontentmenu .button a{
+	margin: 0px;
+	padding: 0px;
+	display: block;
+	position: absolute;
+	width: 140px;
+	height: 28px;
+	text-decoration: none;
+	
+	-moz-border-radius: 1em;
+		-webkit-border-radius: 1em;
+			border-radius: 1em;
+	
+	 -moz-box-shadow: 
+	 	inset rgba(255, 255, 255, 0.8) 0 1px 1px,
+		inset rgba(0, 0, 0, 0.1) 0 -2px 0px,
+		inset rgba(0, 156, 237, 0.2) 0 0px 12px, 
+		rgba(0, 156, 237, 0.6) 0 0px 12px, 
+		rgba(0, 156, 237, 1) 0 0px 4px;
+	-webkit-box-shadow: 
+		inset rgba(255, 255, 255, 0.8) 
+		inset rgba(0, 0, 0, 0.1) 0 -2px 0px,
+		inset rgba(0, 156, 237, 0.2) 0 0px 12px, 
+		rgba(0, 156, 237, 0.6) 0 0px 12px, 
+		rgba(0, 156, 237, 1) 0 0px 4px;
+	box-shadow: 
+		inset rgba(255, 255, 255, 0.8) 0 1px 1px,
+		inset rgba(0, 0, 0, 0.1) 0 -2px 0px,
+		inset rgba(0, 156, 237, 0.2) 0 0px 12px, 
+		rgba(0, 156, 237, 0.6) 0 0px 12px, 
+		rgba(0, 156, 237, 1) 0 0px 4px;
+    
+    -moz-transition: all 1s ease-out;  /* FF3.7+ */
+    -o-transition: all 1s ease-out;  /* Opera 10.5 */
+  	-webkit-transition: all 1s ease-out;  /* Saf3.2+, Chrome */
+  
+ 	opacity: 0;
+}
+
+#maincontentmenu .button a:hover{
+	
+	-moz-border-radius: 1em;
+		-webkit-border-radius: 1em;
+			border-radius: 1em;
+			
+	 -moz-box-shadow: 
+	 	inset rgba(255, 255, 255, 0.8) 0 1px 1px,
+		inset rgba(0, 0, 0, 0.1) 0 -2px 0px,
+		inset rgba(0, 156, 237, 0.2) 0 0px 12px, 
+		rgba(0, 156, 237, 0.6) 0 0px 12px, 
+		rgba(0, 156, 237, 1) 0 0px 4px;
+	-webkit-box-shadow: 
+		inset rgba(255, 255, 255, 0.8) 0 1px 1px,
+		inset rgba(0, 0, 0, 0.1) 0 -2px 0px,
+		inset rgba(0, 156, 237, 0.2) 0 0px 12px, 
+		rgba(0, 156, 237, 0.6) 0 0px 12px, 
+		rgba(0, 156, 237, 1) 0 0px 4px;
+	box-shadow: 
+		inset rgba(255, 255, 255, 0.8) 0 1px 1px,
+		inset rgba(0, 0, 0, 0.1) 0 -2px 0px,
+		inset rgba(0, 156, 237, 0.2) 0 0px 12px, 
+		rgba(0, 156, 237, 0.6) 0 0px 12px, 
+		rgba(0, 156, 237, 1) 0 0px 4px;
+	
+	-moz-transition: all 0.25s ease-out;  /* FF3.7+ */
+    -o-transition: all 0.25s ease-out;  /* Opera 10.5 */
+  	-webkit-transition: all 0.25s ease-out;  /* Saf3.2+, Chrome */
+  	
+ 	opacity: 1;
+}
+
+/* ---------------------  */
+/* ------- APPS -----  */
+/* ---------------------  */
+
+.icon {
+	position: relative;
+	width: 96px;
+	height: 96px;
+	text-align: center;
+	
+	background-image: url('img/default-icon.png');
+
+	-moz-border-radius: 1em;
+		-webkit-border-radius: 1em;
+			border-radius: 1em;
+	
+	-moz-box-shadow: 
+		inset rgba(255, 255, 255, 0.8) 0 1px 1px,
+		inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
+		rgba(0, 0, 0, 0.1) 0px 2px 12px,
+		rgba(0, 0, 0, 0.5) 0px 2px 1px;
+	-webkit-box-shadow: 
+		inset rgba(255, 255, 255, 0.8) 0 1px 1px,
+		inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
+		rgba(0, 0, 0, 0.1) 0px 2px 12px,
+		rgba(0, 0, 0, 0.5) 0px 2px 1px;
+	box-shadow: 
+		inset rgba(255, 255, 255, 0.8) 0 1px 1px,
+		inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
+		rgba(0, 0, 0, 0.1) 0px 2px 12px,
+		rgba(0, 0, 0, 0.5) 0px 2px 1px;
+		
+	margin: 10px;
+}
+
+.icon a {
+    display: block;
+	position: absolute;
+	width: 96px;
+	height: 96px;
+	font-size: 1.2em;
+	color: rgb(255,255,255);
+	text-decoration: none;
+	
+	-moz-border-radius: 1em;
+		-webkit-border-radius: 1em;
+			border-radius: 1em;
+	
+	-moz-box-shadow: 
+		inset rgba(255, 255, 255, 0.8) 0 1px 1px,
+		inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
+		rgba(0, 0, 0, 0.5) 0px 2px 1px,
+		inset rgba(0, 156, 237, 0.2) 0 0px 24px, 
+		rgba(0, 156, 237, 0.6) 0 0px 24px, 
+		rgba(0, 156, 237, 1) 0 0px 4px;
+	-webkit-box-shadow: 
+		inset rgba(255, 255, 255, 0.8) 0 1px 1px,
+		inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
+		rgba(0, 0, 0, 0.5) 0px 2px 1px,
+		inset rgba(0, 156, 237, 0.2) 0 0px 24px, 
+		rgba(0, 156, 237, 0.6) 0 0px 24px, 
+		rgba(0, 156, 237, 1) 0 0px 4px;
+	box-shadow: 
+		inset rgba(255, 255, 255, 0.8) 0 1px 1px,
+		inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
+		rgba(0, 0, 0, 0.5) 0px 2px 1px,
+		inset rgba(0, 156, 237, 0.2) 0 0px 24px, 
+		rgba(0, 156, 237, 0.6) 0 0px 24px, 
+		rgba(0, 156, 237, 1) 0 0px 4px;
+		
+	-moz-transition: all 1s ease-out;  /* FF3.7+ */
+    -o-transition: all 1s ease-out;  /* Opera 10.5 */
+  	-webkit-transition: all 1s ease-out;  /* Saf3.2+, Chrome */
+  	
+ 	opacity: 0;
+
+}
+
+.icon a:hover {
+	
+	-moz-transition: all 0.25s ease-out;  /* FF3.7+ */
+    -o-transition: all 0.25s ease-out;  /* Opera 10.5 */
+  	-webkit-transition: all 0.25s ease-out;  /* Saf3.2+, Chrome */
+  	
+ 	opacity: 1;
+
+}
+
+.app {
+	float: left;
+	position: relative;
+	margin: 0px 5px 30px 5px;
+}
+
+.appName{
+	color: rgb(120,120,120);
+	font-family:'Museo', Tahoma, sans-serif !important;
+	width: 96px;
+	font-size: 12px;
+	line-height: 12px;
+	letter-spacing: -0.2px;
+	top: 106px;
+	text-shadow: 0px 1px 0px rgba(255,255,255,0.5);
+	display: block;
+	text-align: center;
+	position: absolute;
+}
+
+.appList {
+	padding: 10px;
+	margin: 0px auto;
+	margin-top: 10px;
+	border: 1px solid rgba(0,0,0,0.2);
+	
+	background-color: rgb(230,230,230);
+	background: rgba(0,0,0,0.1) url('img/grain.png') repeat top center;
+	
+	-moz-border-radius: 1em;
+		-webkit-border-radius: 1em;
+			border-radius: 1em;
+	
+	-moz-box-shadow: 
+		rgba(255, 255, 255, 1) 0 1px 0px,
+		rgba(255, 255, 255, 1) 0 0px 12px,
+		inset rgba(0, 0, 0, 0.1) 0 0px 6px,
+		inset rgba(0, 0, 0, 0.05) 0 3px 
+	-webkit-box-shadow: 
+		rgba(255, 255, 255, 1) 0 1px 0px,
+		rgba(255, 255, 255, 1) 0 0px 12px,
+		inset rgba(0, 0, 0, 0.1) 0 0px 6px,
+		inset rgba(0, 0, 0, 0.05) 0 3px 0px;
+	box-shadow: 
+		rgba(255, 255, 255, 1) 0 1px 0px,
+		rgba(255, 255, 255, 1) 0 0px 12px,
+		inset rgba(0, 0, 0, 0.1) 0 0px 6px,
+		inset rgba(0, 0, 0, 0.05) 0 3px 0px;
+		
+}
+
+.appList:after { content: "."; display: block; height: 0; clear: both; visibility: hidden; }
+
+/* ---------------------------  */
+/* ------- FOOTER -------  */
+/* ---------------------------  */
+
+#footer {
+	clear: both;
+	padding: 12px 24px;
+	text-align: right;
+	font-size: 10px;
+
+}
+
+.mozLogo {
+	margin-bottom: -10px;
+	margin-right: 6px;
+}
+

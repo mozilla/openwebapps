@@ -1,65 +1,102 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-          "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
   <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
   <title>Application Dashboard</title>
-  <link rel="stylesheet" type="text/css" href="dashboard.css" />
-  <link rel="stylesheet" type="text/css" href="search.css" />
-  <link type="text/css" href="css/custom-theme/jquery-ui-1.8.5.custom.css" rel="stylesheet" />	
+	<link rel="stylesheet" href="dashboard2.css" type="text/css" title="screen">
+	<link rel="stylesheet" href="context_menu.css" type="text/css" title="screen">
+	<link rel="stylesheet" href="details.css" type="text/css" title="screen">
 </head>
 
 <body onload="init()" style="position:relative">
 
 <div id="container">
-  <div id="search">
-    <img src="websearch.png">
-    
-     <form action="/search" method="get" id="light">
-      <input class="searchfield" placeholder="Search across all your apps" type="text" size="50" value="" name="q" autocomplete="off" id="si"><br>
 
-      <div id="results">
-      </div>
 
-      <input class="searchbutton" type="submit" value="Search">
-     </form>
-
-    <div id="loading_results">Loading results....</div>
-    <div id="no_results" class="container"><span>We couldn't find any results for that term. Would you are to add another index? </span></div>
-  </div>
-
-  <div id="appheader">
-    <img src="webapps.png">
-    <div id="appcontrols"></div>
-  </div>
+  <div id="header"><img src="img/logo.png"><span class="headerText">App Dashboard</span></div>
 
   <div id="content">
-    <ul>
-      <li><a href="#apps">Applications</a></li>
-      <li><a id="notifTab" href="#notifications">Notifications</a></li>
-    </ul>
-    <div id="apps"></div>
-    <div id="notifications"></div>
+    
+    <div id="maincontentmenu">
+      <div class="maincontentmenuItemOn"><a href="">Applications</a></div>
+      <div class="maincontentmenuItemOff"><a href="">No Notifications</a></div>
+      <div id="demobutton" class="button"><a href=""></a>Get Demo Apps</div>
+
+    </div>
+    <div id="maincontent">
+    
+      <div class="appList" id="appList">
+  
+        <div class="app">
+          <div class="icon">
+            <a href=""></a>
+            <div class="appName">First App</div>
+          </div>
+
+        </div>
+        
+        <div class="app">
+          <div class="icon">
+            <a href=""></a>
+            <div class="appName">Random Very Long Name App</div>
+          </div>
+        </div>
+        
+        <div class="app">
+
+          <div class="icon" style="background: #fff url('img/task.png') 5px 0px no-repeat; background-size:115%" >
+            <a href=""></a>
+            <div class="appName">Firefox Home</div>
+          </div>
+        </div>
+        
+        <div class="app">
+          <div class="icon">
+            <a href=""></a>
+
+            <div class="appName">Another App</div>
+          </div>
+        </div>
+        
+        <div class="app">
+          <div class="icon">
+            <a href=""></a>
+            <div class="appName">Generic Multiple Line App</div>
+          </div>
+
+        </div>
+        
+        <div class="app">
+          <div class="icon">
+            <a href=""></a>
+            <div class="appName">App Du Jour</div>
+          </div>
+        </div>
+        
+        <div class="app">
+
+          <div class="icon">
+            <a href=""></a>
+            <div class="appName">Best Darn App</div>
+          </div>
+        </div>
+  
+      </div>
+    
+    </div>
+    
+    <div id="footer">a Mozilla Labs project</div>
+
+    
   </div>
   
-
-  <div id="debuggerbox">
-    Message Debugger:
-    <div id="debugger"></div>
-  </div>
+  
 
 </div>
-
-<div id="header">
-  <div id="badge"><img src="firefox_badge.png"></div>
-  <div id="startbar"><img src="firefox_start.png"></div>
-</div>
-
 
 
 <ul id="appContextMenu" class="contextMenu">
   <li class="menuGetInfo"><a href="#appDetails">Details...</a></li>
-  <li class="menuActivate separator"><a href="#appActivate">Activate Services</a></li>
   <li class="menuUninstall"><a href="#appUninstall">Uninstall App</a></li>
 </ul>
 
@@ -70,7 +107,7 @@
 <script type="text/javascript" src="js/jquery.contextMenu.js"></script>
 <script type="text/javascript" src="js/manifest.js"></script>
 <script type="text/javascript" src="js/apps.js"></script>
-<script type="text/javascript" src="js/dashboard.js"></script>
+<script type="text/javascript" src="js/dashboard2.js"></script>
 <script type="text/javascript" src="js/conduit.js"></script>
 <script type="text/javascript" src="js/search.js"></script>
 

@@ -34,12 +34,6 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-/*
-inbox icons from http://kateengland.bigcartel.com/product/workflow-desktop-icons
- we do not yet have license - redo, or negotiate with her!
-*/
-
-
 
 APP_STORAGE_DOMAIN = "http://myapps.mozillalabs.com";
 
@@ -255,7 +249,7 @@ window.localStorage.setItem("https://dictionary.mozillalabs.com",
       icons: {
         "48":"data:image/png;base64,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"
       },
-      description: "Dictionary",
+      description: "Powered by Wiktionary, the free dictionary.",
       developerName: "Mozilla Labs",
       conduit:"https://dictionary.mozillalabs.com/appconduit",
       supportedAPIs:["search", "notification"],
@@ -286,6 +280,8 @@ var gIconSize = 48;// get from pref
 
 function init() {
   try {
+    $("#demobutton").click(setUpDemoApps);
+
     // Construct our Apps handle
     gApps = new Apps();
 
@@ -449,7 +445,7 @@ function makeOpenAppTabFn(app, targetURL)
 // and labels for all apps.
 function render()
 {
-  var box = $("#apps");
+  var box = $("#appList");
   box.empty();
 
   var notifTab = $("#notifTab");
@@ -463,13 +459,6 @@ function render()
 
   if (false) { /*(showInbox) {*/
     box.append(createAppIcon(messageInboxInstall));
-  }
-  if (true /*gApps.installs.length == 0*/) {
-    var b = elem("button");
-    b.appendChild(document.createTextNode("Get Me Some Demo Apps!"));
-    b.setAttribute("style", "z-index:50;position:absolute;left:600px;top:10px");
-    b.onclick = setUpDemoApps;
-    box.append(b);
   }
 
   var selectedBox = null;
@@ -565,12 +554,13 @@ function showDarkOverlay() {
 
 function hideDarkOverlay() {
 //  document.getElementById(dialogId).style.display = "none";
-  document.body.removeChild(document.getElementById(overlayId));
+//  document.body.removeChild(document.getElementById(overlayId));
 }
 
 function renderAppInfo(selectedBox)
 {
-  var od = showDarkOverlay();
+//  var od = showDarkOverlay();
+  $("getInfo").remove();
 
   // Set up Info starting location
   var info = document.createElement("div");
@@ -595,12 +585,18 @@ function renderAppInfo(selectedBox)
   }, 0);
 
   var badge = elem("div", "appBadge");
-  var canvas = createAppCanvas(gSelectedInstall.app);
-  canvas.setAttribute("class", "app_icon");
-  badge.appendChild(canvas);
+  var appIcon = elem("div", "app_icon");
+  var icon = gApps.getIcon(gSelectedInstall.app, "96");
+  if (icon) {
+    appIcon.setAttribute("style", 
+      "background:url(\"" + icon + "\") no-repeat; background-size:100%");
+  }
+  
   var label = elem("div", "appBadgeName");
   label.appendChild(document.createTextNode(gSelectedInstall.app.name));
+
   badge.appendChild(label);
+  badge.appendChild(appIcon);
   info.appendChild(badge);
 
   // Render the contents once we reach full size
@@ -714,30 +710,37 @@ function renderAppInfo(selectedBox)
     $(document).click( function() {
       $(document).unbind('click');
       $(info).fadeOut(100);
-      hideDarkOverlay();
       return false;
     });
   }, 0);
 
-
-
 }
 
-function createAppIcon(install) {
+function createAppIcon(install) 
+{
+  var appDiv = elem("div", "app");
+  appDiv.onclick = makeOpenAppTabFn(install.app, install.app.app.launch.web_url);
+  appDiv.setAttribute("id", "app:" + install.app.app.launch.web_url);
 
-  var div = elem("div", "appbox");
-  div.onclick = makeOpenAppTabFn(install.app, install.app.app.launch.web_url);
-  div.setAttribute("id", "app:" + install.app.app.launch.web_url);
-  var canvas = createAppCanvas(install.app);
+  var iconDiv = elem("div", "icon");
+  $(iconDiv).appendTo($(appDiv));
+  
+  var icon = gApps.getIcon(install.app, "96");
+  if (icon) {
+    iconDiv.setAttribute("style", 
+      "background:url(\"" + icon + "\") no-repeat; background-size:100%");
+    //iconDiv.style.background = "url(\"" + icon + "\") no-repeat";
+    //iconDiv.style.backgroundScale = "100%";
+  }
 
-  canvas.setAttribute("class", "app_icon");
-  div.appendChild(canvas);
+  var link = elem("a");
+  $(link).appendTo($(iconDiv));
 
-  var label = elem("div", "app_name");
-  $(label).text(install.app.name).appendTo($(div));
-
+  var nameDiv = elem("div", "appName");
+  $(nameDiv).text(install.app.name).appendTo($(iconDiv));
+  
   // Set up the context menu:
-  $(div).contextMenu(
+  $(appDiv).contextMenu(
     {
       menu: 'appContextMenu'
     },
@@ -751,10 +754,6 @@ function createAppIcon(install) {
         gDisplayMode = APP_INFO;
         render();
       }
-      else if (action == "appActivate")
-      {
-        window.location = "startOAuth.html?app=" + gSelectedInstall.app.app.launch.web_url;
-      }
       else if (action == "appUninstall")
       {
         gApps.remove(app);
@@ -763,106 +762,9 @@ function createAppIcon(install) {
       }
     }
   );
-  return div;
+  return appDiv;
 }
 
-
-function createAppCanvas(manifest)
-{
-  var img = new Image();
-
-  var size = null;
-
-  var icons = manifest.icons;
-  if (icons["96"]) size = "96";
-  else if (icons["48"]) size = "48";
-  else{
-    // take the first one?
-  }
-  img.src = manifest.icons[size];
-
-  try {
-    var cvs = elem("canvas");
-    cvs.width = gIconSize+10;
-    cvs.height = gIconSize+10;
-    ctx = cvs.getContext("2d");
-
-    // TODO: put a generic icon in first because it could load slowly.
-    // TODO: be clever about which icon to use
-
-    img.onload = makeAppCanvasDrawFn(ctx, img, manifest);
-    return cvs;
-  } catch(e) {
-    // no canvas!
-  }
-
-  img.width = gIconSize+6;
-  img.height = gIconSize+6;
-
-  return img;
-}
-
-function makeAppCanvasDrawFn(ctx, img, manifest)
-{
-  return function() {
-    for (var i=0;i<6;i++) {
-      ctx.fillStyle = "rgba(0,0,0," + (i / 20.0) + ")";
-      roundRect(ctx, 6-i, 6-i, gIconSize, gIconSize, badgeRadius, true, false)
-    }
-    ctx.save();
-    ctx.beginPath();
-    var badgeRadius = gIconSize / 4;
-    roundRect(ctx, 0, 0, gIconSize, gIconSize, badgeRadius, false, true);
-    ctx.clip();
-    ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, gIconSize, gIconSize);
-    ctx.restore();
-
-    try {
-      var notificationList = gNotificationDB.getForApp(manifest.app.launch.web_url);
-      dump("App " + manifest.app.launch.web_url + " has " + notificationList.length + " notifications\n");
-      if (notificationList.length > 0) {
-        drawNotificationBadge(ctx, notificationList.length);
-      }
-    } catch (e) {
-      dump(e + "\n");
-    }
-  }
-}
-
-function  roundRect(ctx, x, y, width, height, radius, fill, stroke)
-{
-  stroke = stroke === undefined ? true : false;
-  radius = radius === undefined ? 5 : radius;
-  ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.lineTo(x + width - radius, y);
-  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-  ctx.lineTo(x + width, y + height - radius);
-  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-  ctx.lineTo(x + radius, y + height);
-  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-  ctx.lineTo(x, y + radius);
-  ctx.quadraticCurveTo(x, y, x + radius, y);
-  ctx.closePath();
-  if (fill) {
-    ctx.fill();
-  }
-  if (stroke) {
-    ctx.stroke();
-  }
-}
-
-function circle(ctx, x, y, radius, fill, stroke)
-{
-  if (fill) ctx.fillStyle = fill;
-  if (stroke) ctx.strokeStyle = stroke;
-  ctx.beginPath();
-  ctx.moveTo(x+radius, y);
-  ctx.arc(x, y, radius, 0, 2 * 3.14,false);
-  ctx.closePath();
-  if (fill) ctx.fill();
-  if (stroke) ctx.stroke();
-}
 
 function drawNotificationBadge(ctx, count)
 {
@@ -892,30 +794,6 @@ function drawAlertBadge(ctx)
   ctx.endPath();
 }
 
-function setIconSize(size)
-{
-  gIconSize = size;
-  var theRules;
-  if (document.styleSheets[0].cssRules) {
-		theRules = document.styleSheets[0].cssRules;
-	} else if (document.styleSheets[0].rules) {
-		theRules = document.styleSheets[0].rules;
-	}
-
-  // I'm not sure putting the icons into the DOM
-  // is really the right approach.  But this is
-  // necessary for spacing them out, for now.
-  /*for each (var r in theRules)
-  {
-    if (r.selectorText == ".ticket")
-    {
-      r.style.width = size + 24 + "px";
-      r.style.height = size + 24 + "px";
-    }
-  }*/
-  render();
-}
-
 function formatDate(dateStr)
 {
   if (!dateStr) return "null";
@@ -942,7 +820,7 @@ function formatDate(dateStr)
       var hr = Math.floor(Math.floor(hrs) % 12);
       if (hr == 0) hr =12;
       var mins = Math.floor(mins);
-      str = hr + ":" + (mins < 10 ? "0" : "") + Math.floor(mins) + " " + (hrs >= 12 ? "P.M." : "A.M.");
+      str = hr + ":" + (mins < 10 ? "0" : "") + Math.floor(mins) + " " + (hrs >= 12 ? "P.M." : "A.M.") + " today";
   }
   return str;
 }
@@ -979,7 +857,5 @@ if (window.addEventListener) {
 }
 
 $(function(){
-  $('#content').tabs();
-  $('#debuggerbox').draggable().resizable();
-  
+
 });
