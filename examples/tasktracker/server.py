@@ -22,7 +22,13 @@ class WebHandler(tornado.web.RequestHandler):
 
   def get_error_html(self, status_code, **kwargs):
     self.render("error.html", code = status_code, message = kwargs['exception'])
-            
+
+class VerificationException(Exception):
+  def __init__(self, msg):
+    self.msg = msg
+  
+  def __str__(self):
+    return self.msg
 
 # A simple object to keep track of the stores we're selling through
 class StoreRegistry(object):
@@ -55,23 +61,24 @@ class StoreRegistry(object):
 
         if str(appID) != str(MOZILLA_STORE_APP_ID):
           logging.info("Store verification failure: application ID should be %s" % appID)
-          return None
+          raise VerificationException("Mozilla store validation token has wrong appID")
           
         time = datetime.datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%f")
         now = datetime.datetime.now()
-        logging.error("Parsed time to %s" % time)
 
         # Allow up to 5 minutes of clock drift
         delta = abs(now - time)
         if delta.days > 0 or delta.seconds > 300:
           logging.info("Store verification failure: timestamp is %d seconds from current time." % delta )
-          return None
+          raise VerificationException("Mozilla store validation token has bad timestamp")
 
         return userID
       else:
         # signature does not match
         logging.info("Store verification failure: token is %s; signature does not verify" % verification_token)
-        return None
+        raise VerificationException("Mozilla store validation token failed signature check")
+    else: # status is not ok
+      raise VerificationException("Mozilla store returned failure status")
 
   
 
@@ -87,7 +94,12 @@ class MainHandler(WebHandler):
     #      put the IP address into a hash and revalidate if the user arrives on a new IP)
   
     user_id = None
-    verifiedUser = StoreRegistry().verify_request(self)
+    try:
+      verifiedUser = StoreRegistry().verify_request(self)
+    except ValidationException, e:
+      self.render("no_user_index.html", invalid_reg=True)
+      return
+      
     if verifiedUser: # we just got a new validation; that overrides any previous data
       self.set_secure_cookie(str("ttracker_uid"), verifiedUser)
 
@@ -106,7 +118,7 @@ class MainHandler(WebHandler):
     if user_id:
       self.render("user_index.html", user_id = user_id)
     else:
-      self.render("no_user_index.html")
+      self.render("no_user_index.html", invalid_reg=False)
 
 
 ##################################################################

@@ -7,22 +7,41 @@
 <script src="https://myapps.mozillalabs.com/jsapi/include.js"></script>
 <script>
 var gAppManifest = {{ app.manifest }};
+var gAlreadyPurchased = {{ "true" if (app.price == 0 or alreadyPurchased) else "false" }};
 var gAlreadyInstalled = false;
 
 $(function () {
   AppClient.getInstalledBy({callback:function(result) {
     if (result && result.installed)
     {
-      
       for (var i=0;i<result.installed.length;i++)
       {
         if (result.installed[i].manifest.app.launch.web_url == gAppManifest.app.launch.web_url)
         {
           gAlreadyInstalled = true;
           $("#install_button").hide();
-          $("#already_installed").text("You installed this application on " + new Date(result.installed[i].installTime).toLocaleDateString() + ".").show();
+          
+          // Multi-user error condition craziness...
+          if (gAlreadyPurchased) {
+{% if app.price > 0 %}
+            $("#already_installed_text").text("You purchased and installed this application on " + new Date(result.installed[i].installTime).toLocaleDateString() + ".")
+            $("#already_installed").show();
+{% else %}
+            $("#already_installed_text").text("You installed this application on " + new Date(result.installed[i].installTime).toLocaleDateString() + ".")
+            $("#already_installed").show();
+{% end %}
+          } else {
+            $("#already_installed_text").append("Whoops! You've installed this application in this browser, but the current user hasn't purchased it.<br><br>(See multi-user feature work here...)")
+            $("#already_installed").show();
+            $("#uninstall_hackery").hide();
+          }
         }
       }
+    }
+    if (!gAlreadyInstalled && gAlreadyPurchased)
+    {
+      $("#install_button").text("INSTALL");
+      $("#install_kicker").text("You've already purchased this app; just click to install.");
     }
   }});
 
@@ -135,7 +154,7 @@ BODY {margin:0;padding:0}
   border:1px solid #707090;
   margin:16px;
   padding:8px;
-  white-space:no-wrap;
+  white-space:nowrap;
   position:relative;
   height:400px;
 }
@@ -184,6 +203,9 @@ BODY {margin:0;padding:0}
 .app_page .right_column
 {
   margin-left:64px;
+  width:700px;
+  white-space:normal;
+  margin-right:auto;
   display:inline-block;
   vertical-align:top;
   height:400px;
@@ -192,17 +214,20 @@ BODY {margin:0;padding:0}
 .app_page .right_column .name
 {
   font:bold 14pt Helvetica,arial;
+  width:600px;
 }
 
 .app_page .right_column .desc
 {
   margin-top:16px;
+  white-space:normal;
   font:10pt Helvetica, arial;
 }
 
 .install_floater {
   float:right;
   margin-right:24px;
+  margin-bottom:25px;
 }
 
 .greenbutton {
@@ -221,7 +246,6 @@ BODY {margin:0;padding:0}
     color-stop(1, rgb(6,188,36)));
   height:24px;
   width:120px;
-  margin-bottom:25px;
   font:bold 14pt Helvetica, arial;
   color:white;
   margin-top:12px;
@@ -234,6 +258,11 @@ BODY {margin:0;padding:0}
   color:white;
   text-decoration:none
 }
+#install_kicker {
+  font:9pt Helvetica, Arial;
+  display:none;
+}
+
 #already_installed {
   -moz-border-radius:0.5em 0.5em 0.5em 0.5em;
   -webkit-border-radius:0.5em 0.5em 0.5em 0.5em;
@@ -244,15 +273,19 @@ BODY {margin:0;padding:0}
   color:#606060;
   margin-top:12px;
   padding:18px 10px 12px 10px;
-  width:120px;
+  width:180px;
   min-height:24px;
   font:12pt Helvetica;
-  margin-bottom:25px;
   text-align:center;
   border:1px solid #888;
   display:none;
 } 
-
+#uninstall_hackery {
+  font:9pt Helvetica, Arial;
+}
+#uninstall_hackery a {
+  color:#707090;
+}
 
 #dimmer {
   background:#000;
@@ -341,7 +374,10 @@ BODY {margin:0;padding:0}
 
 <div id="banner">
 
-<div id="branding"><a href="/">AppZilla: Demonstration Web Application Store</a></div>
+<div id="branding">
+  <a href="/"><img border="0" style="vertical-align:-2px;padding-right:4px" src="/static/home.png">
+    AppZilla: Demonstration Web Application Store</a>
+</div>
 <div id="status">
 {% if account %}
 Signed in as {{ account.displayName }} - [ <a href="/logout?return_to=/app/{{appID}}">Sign Out</a> ]
@@ -369,7 +405,7 @@ Signed in as {{ account.displayName }} - [ <a href="/logout?return_to=/app/{{app
 {% if app.price == 0 %}
 Free
 {% else %}
-${{int(app.price/100)}}.{{ "%02d" % (app.price % 100)  }}
+${{int(app.price/100)}}.{{ "%02d" % (app.price % 100)  }}{% if alreadyPurchased %} - PAID{%end%}
 {% end %}
 </div>
 <div class="fineprint">
@@ -392,7 +428,11 @@ Mobile Safari&nbsp;3.0, Android&nbsp;2.0
 
 <div class="install_floater">
 <div id="install_button" class="greenbutton">{% if app.price == 0 %}INSTALL{%else%}BUY{%end%}</div>
-<div id="already_installed"></div>
+<div id="install_kicker"></div>
+<div id="already_installed">
+  <div id="already_installed_text"></div>
+{% if app.price > 0 %}  <div id="uninstall_hackery">For demo purposes, you can <a href="/unregister/{{appID}}">unregister for an app</a> if you like.</div> {% end %}
+</div>
 </div>
 
 <div class="name">{{ app.name }}</div></a>

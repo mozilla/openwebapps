@@ -26,6 +26,12 @@ BODY {margin:0;padding:0}
   background-color:#707090;
   height:30px;
 }
+#banner a {
+  text-decoration:none;
+  color:white;
+}
+
+
 
 #branding {
   padding-top:4px;
@@ -90,7 +96,10 @@ BODY {margin:0;padding:0}
 
 <div id="banner">
 
-<div id="branding">AppZilla: Demonstration Web Application Store</div>
+<div id="branding">
+  <a href="/"><img border="0" style="vertical-align:-2px;padding-right:4px" src="/static/home.png">
+    AppZilla: Demonstration Web Application Store</a>
+</div>
 <div id="status">
 {% if account %}
 Signed in as {{ account.displayName }} - [ <a href="/logout">Sign Out</a> ]
