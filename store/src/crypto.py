@@ -7,10 +7,13 @@
 True
 >>> verify_verification_token("user|appid|timestamp", sign_verification_token("user|appid|timestamp").replace("a","b"))
 False
+>>> verify_verification_token("user|appid|timestamp", base64.b64decode(base64.b64encode(sign_verification_token("user|appid|timestamp"))))
+True
 
 """
 
 from M2Crypto import BIO, RSA, EVP
+import base64
 
 pubkey = None
 privkey = None

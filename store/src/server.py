@@ -140,10 +140,14 @@ class VerifyHandler(WebHandler):
       verificationToken = "%s|%s|%sT%s" % (uid, appID, timestamp.date(), timestamp.time())
       signature = crypto.sign_verification_token(verificationToken)      
 
+      logging.error("Generating signature")
+      logging.error("Verification token is %s" % verificationToken)
+      logging.error("Signature is %s" % base64.b64encode(signature))
+
       self.redirect("%s?%s" % (app.launchURL, urllib.urlencode( { 
         "moz_store.status":"ok",
         "verification":verificationToken,
-        "signature":signature } )))
+        "signature":base64.b64encode(signature) } )))
     else:
       # Could potentially provide multiple status codes, e.g. expired
       

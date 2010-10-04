@@ -5,7 +5,10 @@ import tornado.ioloop
 import os.path
 import tornado.web
 import logging
+import datetime
 import config
+import crypto
+import base64
 import sys
 
 # This is the ID that we were assigned when we listed our application in the
@@ -35,18 +38,23 @@ class StoreRegistry(object):
   # Mozilla demonstration app store: a simple token with RSA-SHA1 signature
   def verify_moz_store(self, request):
     status = request.get_argument("moz_store.status", None)
+    logging.error("Checking status of Mozilla signature: %s" % status);
     if status == "ok":
-      verification_token = self.get_argument("verification")
-      signature = self.get_argument("signature")
+      verification_token = request.get_argument("verification")
+      signature = request.get_argument("signature")
 
+      logging.error("Verifying Mozilla signature");
+      logging.error("Verification token is %s" % verification_token)
+      logging.error("Signature is %s" % signature)
+      
       # Simple single-key crypto verification routine here; replace with a more
       # sophisticated cert management as needed.
-      if crypto.verify_verification_token(verification_token, signature):
+      if crypto.verify_verification_token(str(verification_token), base64.b64decode(str(signature))):
         # Signature checks out - now check app ID and timestamp
-        appID, userID, timestamp = verification_token.split("|")
+        userID, appID, timestamp = verification_token.split("|")
 
-        if appID != MOZILLA_STORE_APP_ID:
-          logging.info("Store verification failure: application ID should be %d" % appID)
+        if str(appID) != str(MOZILLA_STORE_APP_ID):
+          logging.info("Store verification failure: application ID should be %s" % appID)
           return None
           
         time = datetime.datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%f")
@@ -81,7 +89,7 @@ class MainHandler(WebHandler):
     user_id = None
     verifiedUser = StoreRegistry().verify_request(self)
     if verifiedUser: # we just got a new validation; that overrides any previous data
-      self.set_secure_cookie(str("ttracker_uid", verifiedUser))
+      self.set_secure_cookie(str("ttracker_uid"), verifiedUser)
 
       # and redirect the user to this page so they don't accidentally bookmark the validation
       self.redirect("/")

@@ -97,7 +97,7 @@
     return false;
   }
   
-  function getApplicationsForOrigin(originHostname, requestObj, origin)
+  function getInstallsForOrigin(originHostname, requestObj, origin)
   {
     var result = [];
     var toRemove = [];
@@ -117,7 +117,7 @@
         }
 
         if (applicationMatchesDomain(install.app, origin)) {      
-          result.push(install.app);
+          result.push(install);
         }
 
       } catch(e) {
@@ -207,26 +207,20 @@
       // If we find two... well, for now, we take the first one.
       // Perhaps we should find the first one that has an authorization URL.
 
-      logError(requestObj, 'In the verify method', originHostname);
-
-      var result = getApplicationsForOrigin(originHostname, requestObj, origin);      
-
-      logError(requestObj, 'Found application list ' + result.length, originHostname);
+      var result = getInstallsForOrigin(originHostname, requestObj, origin);      
 
       if (result.length == 0) return null;
 
       var install = result[0];
-      logError(requestObj, 'Found install ' + JSON.stringify(install), originHostname);
       
       // Must have authorizationURL
       if (!install.authorizationURL)
       {
-        logError(requestObj, 'No authorization URL', originHostname);
         return null;
       }
       
       // TODO Could optionally have a returnto
-      // win.parent.location = install.authorizationURL;
+      win.parent.location = install.authorizationURL;
 
       return {
         cmd: requestObj.cmd,
@@ -245,8 +239,15 @@
     }
     **/
     'wallet::getInstalled': function(originHostname, requestObj, origin) {
-      //dump("TRACE wallet::getInstalled\n");
-      var result = getApplicationsForOrigin(originHostname, requestObj, origin);
+      var installsResult = getInstallsForOrigin(originHostname, requestObj, origin);
+
+      // Caller doesn't get to see installs, just apps:
+      var result = [];
+      for (var i=0;i<installsResult.length;i++)
+      {
+        result.push(installsResult[i].app);
+      }
+      
       return {
         cmd: requestObj.cmd,
         id: requestObj.id,
@@ -260,7 +261,6 @@
     We can eventually toggle this using a debug.myapps.org store
   **/
   function logError(requestObj, message, originHostname) {
-    if (dump) dump(message + "\n");
     if(!requestObj || (typeof requestObj.id != 'number') ) {
       return;
     }
@@ -289,7 +289,6 @@
     // event.origin will always be of the format scheme://hostname:port
     // http://www.whatwg.org/specs/web-apps/current-work/multipage/comms.html#dom-messageevent-origin
 
-    if (dump) dump("TRACE onMessage: " + event.data + "\n");
     var requestObj = JSON.parse(event.data);
     var originHostname = event.origin.split('://')[1].split(':')[0];
 
@@ -306,14 +305,11 @@
       || !requestObj.cmd || requestObj.id == undefined
       || checkDisabled()) {
       // A post message we don't understand
-      if (dump) dump("TRACE returning; onMessage failed\n");
-
       return;
     }
     
     if(WalletAPI[requestObj.cmd]) {
       // A command we understand, send the response on back to the posting window
-      if (dump) dump("Dispatching " + requestObj.cmd + ": " + event.data);
       var result = WalletAPI[requestObj.cmd](originHostname, requestObj, event.origin);
       sendResponse(result, event.origin);
     } else {
@@ -329,7 +325,6 @@
   }
 
   // Finally, tell the parent window we're ready.
- // dump("Posting ready\n");
   win.parent.postMessage(JSON.stringify({cmd: 'wallet::ready'}),"*");
 
   return {
