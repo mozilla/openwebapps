@@ -219,11 +219,12 @@
       }
       
       // TODO Could optionally have a returnto
-      win.parent.location = install.authorizationURL;
+      // win.parent.location = install.authorizationURL;
 
       return {
         cmd: requestObj.cmd,
-        id: requestObj.id
+        id: requestObj.id,
+        target: install.authorizationURL;
       };
     },
 
