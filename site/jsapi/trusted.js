@@ -289,7 +289,7 @@
     // event.origin will always be of the format scheme://hostname:port
     // http://www.whatwg.org/specs/web-apps/current-work/multipage/comms.html#dom-messageevent-origin
 
-    //dump("TRACE onMessage\n");
+    if (dump) dump("TRACE onMessage: " + event.data + "\n");
     var requestObj = JSON.parse(event.data);
     var originHostname = event.origin.split('://')[1].split(':')[0];
 
@@ -306,13 +306,18 @@
       || !requestObj.cmd || requestObj.id == undefined
       || checkDisabled()) {
       // A post message we don't understand
+      if (dump) dump("TRACE returning; onMessage failed\n");
+
       return;
     }
     
     if(WalletAPI[requestObj.cmd]) {
       // A command we understand, send the response on back to the posting window
+      if (dump) dump("Dispatching " + requestObj.cmd + ": " + event.data);
       var result = WalletAPI[requestObj.cmd](originHostname, requestObj, event.origin);
       sendResponse(result, event.origin);
+    } else {
+      logError(requestObj, "Unknown AppClient call " + requestObj.cmd, originHostname); 
     }
   }
 
