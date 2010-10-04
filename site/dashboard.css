@@ -463,6 +463,7 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
 	padding: 10px;
 	margin: 0px auto;
 	margin-top: 10px;
+  min-height:96px;
 	border: 1px solid rgba(0,0,0,0.2);
 	
 	background-color: rgb(230,230,230);

@@ -37,232 +37,6 @@
 
 APP_STORAGE_DOMAIN = "http://myapps.mozillalabs.com";
 
-
-  // HACK DEBUGGING
-function setUpDemoApps() {
-
-/*
-window.localStorage.setItem("http://www.debugapp.com", JSON.stringify({
-
-    installTime: new Date().getTime(),
-    installURL: "http://megaappsite.com",
-    app: {
-      name:"CowWorld",
-      app:{
-        urls: [],
-        launch: {
-          web_url: "http://www.debugapp.com"
-        }
-      },
-      icons: {
-        "96":"/cows.png"
-      },
-      description: "Manage your phlogiston remotely, using our fabulous fluxtronic impellers!",
-      developerName: "Miskatonix",
-      developerURL: "http://miskatonix.com/",
-      notification: "http://www.debugapp.com.faketld/notification.atom",
-      search: "http://www.debugapp.com.faketld/search?q={searchTerms}",
-      permissions: []
-    }})
-);
-
-window.localStorage.setItem("http://www.greplin.com",
-  JSON.stringify({
-    installTime: new Date().getTime(),
-    installURL: "http://megaappsite.com",
-    app: {
-      name:"Greplin",
-      app:{
-        urls: [],
-        launch: {
-          web_url: "http://www.greplin.com"
-        }
-      },
-      icons: {
-        "96":"cows.png"
-      },
-      description: "The search bar for your life.",
-      developerName: "greplin",
-      developerURL: "http://blog.greplin.com/",
-      search: "https://www.greplin.com/ajax/spotlight?q={searchTerms}&fq=0",
-      permissions: []
-    }
-  }
-));
-
-window.localStorage.setItem("http://docs.google.com",
-  JSON.stringify({
-    installTime: new Date().getTime(),
-    installURL: "http://megaappsite.com",
-    app: {
-      name:"Google Docs",
-      app:{
-        urls: [],
-        launch: {
-          web_url: "http://docs.google.com"
-        }
-      },
-      icons: {
-        "96":"cows.png"
-      },
-      description: "Create documents, spreadsheets and presentations online.",
-      developerName: "Google",
-      developerURL: "http://www.google.com/support",
-      search: "https://docs.google.com/feeds/default/private/full", // ?q={searchTerms}", // v=3?
-      searchScope: "https://docs.google.com/feeds",
-      oauthGetRequestURL:"https://www.google.com/accounts/OAuthGetRequestToken",
-      oauthAuthorizeURL:"https://www.google.com/accounts/OAuthAuthorizeToken",
-      oauthGetAccessURL:"https://www.google.com/accounts/OAuthGetAccessToken",
-      permissions: []
-    }
-  }
-));
-
-window.localStorage.setItem("http://contacts.google.com",
-  JSON.stringify({
-    installTime: new Date().getTime(),
-    installURL: "http://megaappsite.com",
-    app: {
-      name:"Google Contacts",
-      app:{
-        urls: [],
-        launch: {
-          web_url: "http://contacts.google.com"
-        }
-      },
-      icons: {
-        "96":"cows.png"
-      },
-      description: "Google Contacts is a place to import, store and view all of the contact information that's important to you.",
-      developerName: "Google",
-      developerURL: "http://www.google.com/support",
-      search: "https://www.google.com/m8/feeds/contacts/default/full",//?q={searchTerms}",
-      searchScope: "https://www.google.com/m8/feeds",
-      oauthGetRequestURL:"https://www.google.com/accounts/OAuthGetRequestToken",
-      oauthAuthorizeURL:"https://www.google.com/accounts/OAuthAuthorizeToken",
-      oauthGetAccessURL:"https://www.google.com/accounts/OAuthGetAccessToken",
-      permissions: []
-    }
-  }
-));
-
-window.localStorage.setItem("http://www.facebook.com",
-  JSON.stringify({
-    installTime: new Date().getTime(),
-    installURL: "http://megaappsite.com",
-    app: {
-      name:"Facebook",
-      app:{
-        urls: [],
-        launch: {
-          web_url: "http://www.facebook.com"
-        }
-      },
-      icons: {
-        "96":"cows.png"
-      },
-      description: "Facebook!",
-      developerName: "Facebook",
-      developerURL: "http://www.facebook.com/about",
-
-      // Search notes:
-      // Ajax typeahead is:
-      // http://www.facebook.com/ajax/typeahead/search.php?__a=1&value={searchTerms}&viewer={usernumber}
-      //
-      // There's a Graph API search too.
-      // oauthVersion:"2.0",
-      // oauthAuthorizeURL:"https://graph.facebook.com/oauth/authorize",
-      // oauthGetAccessURL:"https://graph.facebook.com/oauth/access_token",
-      permissions: []
-    }
-  }
-));
-*/
-
-
-window.localStorage.setItem(
-    "https://tweetsup.mozillalabs.com",
-    JSON.stringify({
-        installTime: new Date().getTime(),
-        installURL: "https://tweetsup.mozillalabs.com",
-        app: {
-            "name": "TweetSup?",
-            "app": {
-                "urls": [
-                    "https://tweetsup.mozillalabs.com"
-                ],
-                "launch": {
-                    "web_url": "https://tweetsup.mozillalabs.com"
-                }
-            },
-            "icons": {
-                "48": "https://tweetsup.mozillalabs.com/icon.png"
-            },
-            "description": "Perform searches across your twitter friends timelines and receive notifications from inside your application dashboard",
-            "developerName": "Mozilla Labs",
-            "auth": "https://tweetsup.mozillalabs.com/auth",
-            "conduit": "https://tweetsup.mozillalabs.com/conduit/",
-            "supportedAPIs": [
-                "search",
-                "notification"
-            ]
-        }
-    })
-);
-
-window.localStorage.setItem("https://bugzapp.mozillalabs.com",
-  JSON.stringify({
-    installTime: new Date().getTime(),
-    installURL: "https://bugzapp.mozillalabs.com",
-    app: {
-      name:"Bugzapp",
-      app:{
-        urls: [ "https://bugzapp.mozillalabs.com" ],
-        launch: {  web_url: "https://bugzapp.mozillalabs.com" }
-      },
-      icons: {
-        "48":"http://bugzilla.mozilla.org/skins/custom/images/bugzilla.png",
-        "96":"http://bugzilla.mozilla.org/skins/custom/images/bugzilla.png"
-      },
-      description: "Bugzilla search",
-      developerName: "Mozilla Labs",
-      conduit:"https://bugzapp.mozillalabs.com/appconduit",
-      supportedAPIs:["search"],
-      permissions: []
-    }
-  }
-));
-
-
-window.localStorage.setItem("https://dictionary.mozillalabs.com",
-  JSON.stringify({
-    installTime: new Date().getTime(),
-    installURL: "https://dictionary.mozillalabs.com",
-    app: {
-      name:"Dictionary",
-      app:{
-        urls: ["http://en.wiktionary.org"],
-        launch: {
-          web_url: "http://en.wiktionary.org"
-        }
-      },
-      icons: {
-        "48":"data:image/png;base64,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"
-      },
-      description: "Powered by Wiktionary, the free dictionary.",
-      developerName: "Mozilla Labs",
-      conduit:"https://dictionary.mozillalabs.com/appconduit",
-      supportedAPIs:["search", "notification"],
-      permissions: []
-    }
-  }
-));
-
-init();
-}
-
-
-
 // Singleton instance of the Apps object:
 var gApps = null;
 
@@ -280,21 +54,12 @@ var gIconSize = 48;// get from pref
 
 function init() {
   try {
-    $("#demobutton").click(setUpDemoApps);
-
     // Construct our Apps handle
     gApps = new Apps();
 
     // Draw it
     gDisplayMode = ROOT;
     try {
-/*      if (window.location.hash) {
-        var action = JSON.parse(window.location.hash.substring(1));
-        if (action.a == "info")
-        {
-          gDisplayMode = APP_INFO;
-        }
-      }*/
     } catch (e) {
       gApps.logError("Error while initializing apps: " + e);
     }
@@ -307,31 +72,11 @@ function init() {
   }
 }
 
-// pseudoinstallation for the global inbox
-var messageInboxInstall = {
-  app:
-  {
-    name:"Messages",
-    app:{
-      urls: [],
-      launch: {
-        web_url: "http://www.gmail.com"
-      }
-    },
-    icons: {
-      "96":"inbox_96.png"
-    }
-  }
-};
-
 function elem(type, clazz) {
 	var e = document.createElement(type);
   if (clazz) e.setAttribute("class", clazz);
   return e;
 }
-
-// TODO: got some notifications. do something.
-
 
 function NotificationDB() {
   this.notifications = [];
@@ -343,7 +88,6 @@ NotificationDB.prototype = {
       var notif = notifications[i];
       notif.install = install;
       this.notifications.push(notif);
-      dump("Adding notification with install " + install.app.name + " now\n");
       
       if (window.navigator && window.navigator.apps && window.navigator.apps.externalNotify) {
         window.navigator.apps.externalNotify(notif.title, 
@@ -405,7 +149,6 @@ var gNotificationDB = new NotificationDB();
 function notificationsWereRefreshed(install, notifications)
 {
     try {
-      dump("Notifications for " + install.app.name + " were refreshed: " + notifications.length + "\n");
         gNotificationDB.add(install, notifications);
         render();
     } catch (e) {

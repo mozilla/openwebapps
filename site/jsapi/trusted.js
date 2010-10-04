@@ -75,6 +75,18 @@
   // Reference shortcut so minifier can save on characters
   var storage = win.localStorage;
   
+  function urlMatchesDomain(url, domain)
+  {
+    try {
+      var splitOne = url.split("://")
+      var splitTwo = splitOne[1].split("/")
+      var testDomain = splitOne[0] + "://" + splitTwo[0];
+      if (testDomain == domain) return true;
+    } catch (e) {
+    }
+    return false;  
+  }
+  
   // Returns whether this application runs in the specified domain (scheme://hostname[:nonStandardPort])
   function applicationMatchesDomain(application, domain)
   {
@@ -83,16 +95,7 @@
     for (var i=0;i<application.app.urls.length;i++)
     {
       var testURL = application.app.urls[i];
-      
-      try {
-        var splitOne = testURL.split("://")
-        var splitTwo = splitOne[1].split("/")
-        var testDomain = splitOne[0] + "://" + splitTwo[0];
-        if (testDomain == domain) return true;
-      } catch (e) {
-      }
-      // var re = RegExp("^" + testURL.replace("*", ".*"));// no trailing $
-      // if (re.exec(url) != null) return true;
+      if (urlMatchesDomain(testURL, domain)) return true;
     }
     return false;
   }
@@ -135,6 +138,46 @@
 
     return result;
   }
+  
+  
+  function getInstallsByOrigin(originHostname, requestObj, origin)
+  {
+    var result = [];
+    var toRemove = [];
+
+    for (var i =0;i<storage.length;i++)
+    {
+      var key = localStorage.key(i);
+      var item = localStorage.getItem(key);
+      try {
+        // validate the manifest
+        var install = JSON.parse(item);
+        install.app = Manifest.validate(install.app);
+
+        // Clean up out-of-date tickets as we go
+        if (Manifest.expired(install.app)) {
+          throw "application has expired";
+        }
+
+        if (urlMatchesDomain(install.installURL, origin)) {
+          result.push(install);
+        }
+
+      } catch(e) {
+        logError(requestObj, 'Purging application: ' + e, originHostname);        
+        toRemove.push(key);
+      }
+    }
+
+    // Clean up
+    if (toRemove.length > 0) {
+      for (var i=0;i<toRemove.length;i++) {
+        storage.removeItem(toRemove[i]);
+      }
+    }
+    return result;
+  }
+  
   
   // Set up the API
   var WalletAPI = {
@@ -253,7 +296,54 @@
         id: requestObj.id,
         installed: result
       };
+    },
+    
+    /**
+    Determines which applications were installed by the origin domain.
+    
+    Request object will look like:
+    {
+      cmd:'wallet::getInstalledBy',
+      id:1
     }
+    
+    Response object will look like:
+    {
+      id:1,
+      installs: [
+        {
+          installURL: 'http://something',
+          installTime: 1286222924782, // return from new Date().getTime()
+          manifest: {
+            <a manifest>
+          }
+        },
+        (more installs)
+      ]
+    }
+    **/
+    'wallet::getInstalledBy': function(originHostname, requestObj, origin) {
+      var installsResult = getInstallsByOrigin(originHostname, requestObj, origin);
+
+      // Caller gets to see installURL, installTime, and manifest
+      var result = [];
+      for (var i=0;i<installsResult.length;i++)
+      {
+        result.push({
+          installURL: installsResult[i].installURL,
+          installTime: installsResult[i].installTime,
+          manifest: installsResult[i].app,
+        });
+      }
+      
+      return {
+        cmd: requestObj.cmd,
+        id: requestObj.id,
+        installed: result
+      };
+    }
+    
+    
   }
 
   /**

@@ -7,8 +7,24 @@
 <script src="https://myapps.mozillalabs.com/jsapi/include.js"></script>
 <script>
 var gAppManifest = {{ app.manifest }};
+var gAlreadyInstalled = false;
 
 $(function () {
+  AppClient.getInstalledBy({callback:function(result) {
+    if (result && result.installed)
+    {
+      
+      for (var i=0;i<result.installed.length;i++)
+      {
+        if (result.installed[i].manifest.app.launch.web_url == gAppManifest.app.launch.web_url)
+        {
+          gAlreadyInstalled = true;
+          $("#install_button").hide();
+          $("#already_installed").text("You installed this application on " + new Date(result.installed[i].installTime).toLocaleDateString() + ".").show();
+        }
+      }
+    }
+  }});
 
 {% if app.price > 0 %}
 
@@ -218,6 +234,25 @@ BODY {margin:0;padding:0}
   color:white;
   text-decoration:none
 }
+#already_installed {
+  -moz-border-radius:0.5em 0.5em 0.5em 0.5em;
+  -webkit-border-radius:0.5em 0.5em 0.5em 0.5em;
+  -moz-box-shadow:0 -3px 0 rgba(0, 0, 0, 0.1) inset, 0 -3px 12px rgba(240, 240, 240, 0.3) inset, 0 20px 40px rgba(240, 240, 240, 0.3) inset, 0 2px 0 rgba(200, 200, 200, 0.3);
+  box-shadow:0 -3px 0 rgba(0, 0, 0, 0.1) inset, 0 -3px 12px rgba(240, 240, 240, 0.3) inset, 0 20px 40px rgba(240, 240, 240, 0.3) inset, 0 2px 0 rgba(200, 200, 200, 0.3);
+
+  background-color:#f0f0f0;
+  color:#606060;
+  margin-top:12px;
+  padding:18px 10px 12px 10px;
+  width:120px;
+  min-height:24px;
+  font:12pt Helvetica;
+  margin-bottom:25px;
+  text-align:center;
+  border:1px solid #888;
+  display:none;
+} 
+
 
 #dimmer {
   background:#000;
@@ -357,6 +392,7 @@ Mobile Safari&nbsp;3.0, Android&nbsp;2.0
 
 <div class="install_floater">
 <div id="install_button" class="greenbutton">{% if app.price == 0 %}INSTALL{%else%}BUY{%end%}</div>
+<div id="already_installed"></div>
 </div>
 
 <div class="name">{{ app.name }}</div></a>

@@ -238,10 +238,20 @@ var AppClient = (function() {
     queueRequest(requestObj);
   }
 
+  function callGetInstalledBy(args) {
+    if(!args) { args = {}; }
+    var requestObj = {
+      cmd: 'wallet::getInstalledBy',
+      callback: args.callback || null
+    }
+    queueRequest(requestObj);
+  }
+
   // Return AppClient object with exposed API calls
   return {
     install: callInstall,
     verify: callVerify,
-    getInstalled: callGetInstalled
+    getInstalled: callGetInstalled,
+    getInstalledBy: callGetInstalledBy
   };
 })();

@@ -62,7 +62,7 @@ Apps.prototype.reload = function() {
     var install = JSON.parse(item);
     this.installs.push(install);
   }
-  this.makeConduits();
+  //this.makeConduits();
 
   this.installs.sort(function (a,b) {
       return a.app.name.localeCompare(b.app.name);
