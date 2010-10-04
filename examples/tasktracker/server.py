@@ -96,7 +96,7 @@ class MainHandler(WebHandler):
     user_id = None
     try:
       verifiedUser = StoreRegistry().verify_request(self)
-    except ValidationException, e:
+    except VerificationException, e:
       self.render("no_user_index.html", invalid_reg=True)
       return
       
