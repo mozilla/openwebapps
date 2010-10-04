@@ -224,7 +224,7 @@
       return {
         cmd: requestObj.cmd,
         id: requestObj.id,
-        target: install.authorizationURL;
+        target: install.authorizationURL
       };
     },
 
