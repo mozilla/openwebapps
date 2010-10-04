@@ -117,8 +117,11 @@ $(document).ready(function() {
   $("#splash").show(500);
   
   AppClient.getInstalled({callback:function(manifests) {
+    alert("Callback from getInstalled");
     if (manifests && manifests.length > 0) {
-      AppClient.verify();
+      AppClient.verify({callback:function(result) {
+        alert("Callback from verify");
+      }});
     }
   }});
 });

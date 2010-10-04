@@ -207,14 +207,21 @@
       // If we find two... well, for now, we take the first one.
       // Perhaps we should find the first one that has an authorization URL.
 
+      logError(requestObj, 'In the verify method', originHostname);
+
       var result = getApplicationsForOrigin(originHostname, requestObj, origin);      
+
+      logError(requestObj, 'Found application list ' + result.length, originHostname);
+
       if (result.length == 0) return null;
 
       var install = result[0];
+      logError(requestObj, 'Found install ' + JSON.stringify(install), originHostname);
       
       // Must have authorizationURL
       if (!install.authorizationURL)
       {
+        logError(requestObj, 'No authorization URL', originHostname);
         return null;
       }
       
