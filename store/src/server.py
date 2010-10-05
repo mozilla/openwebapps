@@ -84,7 +84,7 @@ class AppHandler(WebHandler):
     mode = self.get_argument("m", None)
     already_purchased = (model.purchase_for_user_app(uid, appID) != None) # potentially could use purchase metadata?
     
-    if True or (self.request.headers["User-Agent"].find("iPhone") >= 0):
+    if (self.request.headers["User-Agent"].find("iPhone") >= 0):
       self.render("app_iphone.html", authorizationURL = "https://appstore.mozillalabs.com/iphone_verify/%d" % int(appID), appID=appID, app=theApp, account=account, mode=mode, alreadyPurchased=already_purchased)
     else:
       self.render("app.html", authorizationURL = "https://appstore.mozillalabs.com/verify/%d" % int(appID), appID=appID, app=theApp, account=account, mode=mode, alreadyPurchased=already_purchased)
