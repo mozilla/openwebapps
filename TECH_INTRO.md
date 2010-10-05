@@ -1,4 +1,4 @@
-== Installable Web Apps Technical Overview ==
+## Installable Web Apps Technical Overview
 
 This document describes an architecture for "Installable Web Applications."  These are applications constructed using standard web technologies including HTML5, CSS3, and JavaScript, which can run in any modern web browser.
 
@@ -6,7 +6,7 @@ The system presented here provides for both free and paid applications.  It pres
 
 This document is intended as a proposal to the web user and developer community, and direct constructive feedback is very welcome.  Throughout the document, links to the Mozilla wiki are placed inline where a topic of discussion is raised.  Readers are encouraged to visit the wiki to contribute to the conversation.
 
-=== Overview ===
+### Overview
 
 This proposal defines an "Installable Web Application" in terms of the existing HTML and HTTP technology stack.  The HTML5 specification describes how a web browser can provide local storage, offline access to applications and data, geolocation services, and rich 2D and 3D graphics capabilities.
 
@@ -24,7 +24,7 @@ The basic set of concepts required to construct a Web Application are:
 
 The approach taken in this proposal is to create an application repository and application dashboard, which reside entirely in the local storage of the browser.  We have created a prototype repository and dashboard that run entirely in HTML5, and are hosted at myapps.mozillalabs.com.  The ability to install applications and verify user registration is exposed to applications through a cross-domain JavaScript library that uses the HTML5 postMessage API to securely communicate between the application and the myapps domain.  The capabilities of the repository and dashboard could equally be provided by browser-native functions, with some security benefits (see discussion below).  Note that, while though the code for the dashboard is provided by myapps.mozillalabs.com, users' installed application manifests are stored entirely on their local browsers.  The myapps server has no database of users or apps, and issues no cookies to its users; it serves only to provide a JavaScript program which runs entirely inside the browser.
 
-=== The Application Manifest ===
+### The Application Manifest
 
 The Manifest is a complete description of what the web browser needs to interact with the application.  It provides both human-readable elements (a name, a set of icons, and a description; possibly in multiple languages) and machine-readable elements (URLs, lists of capabilities), which allow the application repository and dashboard to display and launch applications.
 
@@ -74,7 +74,7 @@ For a discussion of the security and privacy considerations around the applicati
     }
   }
 
-=== HTML5 implementation vs. browser-native implementation ===
+### HTML5 implementation vs. browser-native implementation
 
 The prototype myapps.mozillalabs.com repository can be included in any website through a simple JavaScript include.  It provides the install, getInstalled, and verifyIdentity methods through a secure cross-domain messaging API.    The myapps.mozillalabs.com dashboard can be loaded by simply navigating to the site in a browser.  It displays the currently installed applications, and launches them when they are clicked.
 
@@ -91,7 +91,7 @@ Browser-native implementations can take deeper security measures, and integrate 
 Any access to browser or OS-level functionality should require a more stringent installation step, and may require verification of the manifest - see Security and Privacy Considerations.
 
 
-=== The User's Application Repository and Dashboard ===
+### The User's Application Repository and Dashboard
 
 The application repository is a trusted collection of the manifests that the user has consented to install.  It provides a limited, privacy-respecting API to web content, which allows it to interact with other websites to give users a smooth experience of using web applications.  It also provides the dashboard, a rich HTML5 interface to manage and launch applications from the browser.
 
@@ -105,7 +105,7 @@ In the myapps.mozillalabs.com case, we expose three APIs:
 • verifyIdentity ( [<return-to>], <callback> ):
 	selects the application whose URL matches the calling site, and initiates the verification flow for that application by loading that URL.  {what happens when more than one matches?} See The Verification Flow.
 
-=== The Verification Flow ===
+### The Verification Flow
 
 The goal of this flow is to allow a user to load a purchased or registered application and, without presenting any additional credentials, receive an authenticated and personalized experience.  This proposal does not require any one federated authentication solution, but provides a simple system to initiate federated login for a particular user-store-application combination.
 
@@ -113,12 +113,12 @@ The verification flow is very similar to a directed OpenID authentication flow, 
 
 Note that there is no requirement that the application store provide a global identifier for the user.  The verification flow requires only that the store provide proof-of-purchase to the application.  Some application stores might choose to provide an identifier which only identifies a user within an application, others might choose to create globally unique IDs for users, and another may provide the user an option to choose.
 
-==== Verification for offline use ====
+#### Verification for offline use
 An application that has been installed using HTML5 AppCache will be available to the browser even when the user's computer is disconnected from the network.  Applications are encouraged to use cookies or HTML5 local storage techniques to persist an access token, good for some "grace period" of time, which is used before the application repeats the verification flow.  Any access token that is positioned locally can be tampered with by a diligent attacker; if an application is truly concerned about secure offline verification, cryptography will be required.  See wiki:Verification#Offline{need real url here} for more discussion on this point. 
 
-=== Mobile User Interactions ===
+### Mobile User Interactions
 
-=== Security and Privacy Considerations ===
+### Security and Privacy Considerations
 
 Here we present some of our analysis of the possible security and privacy attacks on this system, and the countermeasures we can take against them.
 
@@ -143,5 +143,5 @@ TODO:
 Discussion of account sharing at store and countermeasures
 
 
-=== Integration With the Dashboard and Between Applications ===
+### Integration With the Dashboard and Between Applications ===
 
