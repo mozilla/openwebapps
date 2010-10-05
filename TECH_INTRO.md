@@ -16,12 +16,12 @@ It is a primary goal of this proposal to allow a user to navigate through a coll
 
 It is not a goal of this proposal to explain how an all-HTML5 application can be downloaded to a desktop computer and subsequently protected from copying.  The focus of this proposal is on online verification of user proof-of-install, or proof-of-purchase.
 
-The basic set of concepts required to construct a Web Application are:
+The basic set of concepts required to enable Installable Web Applications are:
 
-* An application manifest, which describes the location, requirements, and capabilities of an application.
-* A method to install an application into a user's browser, which can be used by stores and directories (for purchased or curated applications) or by an application itself (for a self-published application)
-* A view to manage, browse, and launch the installed applications
-* A network interaction to allow the application to confirm the user's registration or purchase from a store.
+* Application manifests, which describes the location, requirements, and capabilities of an application.
+* A method to install an application into a user's browser, which can be used by stores and directories or by an application author itself (for self-published applications)
+* A view to manage, browse, and launch installed applications.
+* A network interaction to allow applications to confirm a user's ownership (that she has purchased or installed the application from a store).
 
 The approach taken in this proposal is to create an application repository and application dashboard, which reside entirely in the local storage of the browser.  We have created a prototype repository and dashboard that run entirely in HTML5, and are hosted at myapps.mozillalabs.com.  The ability to install applications and verify user registration is exposed to applications through a cross-domain JavaScript library that uses the HTML5 postMessage API to securely communicate between the application and the myapps domain.  The capabilities of the repository and dashboard could equally be provided by browser-native functions, with some security benefits (see discussion below).  Note that, while though the code for the dashboard is provided by myapps.mozillalabs.com, users' installed application manifests are stored entirely on their local browsers.  The myapps server has no database of users or apps, and issues no cookies to its users; it serves only to provide a JavaScript program which runs entirely inside the browser.
 
