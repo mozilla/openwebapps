@@ -8,7 +8,11 @@ import logging
 import re
 import os
 import subprocess
-import simplejson as json
+try:
+  import simplejson as json
+except:
+  import json
+
 from datetime import datetime
 
 import sqlalchemy

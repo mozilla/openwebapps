@@ -81,10 +81,12 @@ class AppHandler(WebHandler):
       return self.redirect("/")
     
     mode = self.get_argument("m", None)
-
     already_purchased = (model.purchase_for_user_app(uid, appID) != None) # potentially could use purchase metadata?
     
-    self.render("app.html", authorizationURL = "https://appstore.mozillalabs.com/verify/%d" % int(appID), appID=appID, app=theApp, account=account, mode=mode, alreadyPurchased=already_purchased)
+    if True or (self.request.headers["User-Agent"].find("iPhone") >= 0):
+      self.render("app_iphone.html", authorizationURL = "https://appstore.mozillalabs.com/iphone_verify/%d" % int(appID), appID=appID, app=theApp, account=account, mode=mode, alreadyPurchased=already_purchased)
+    else:
+      self.render("app.html", authorizationURL = "https://appstore.mozillalabs.com/verify/%d" % int(appID), appID=appID, app=theApp, account=account, mode=mode, alreadyPurchased=already_purchased)
 
 class AccountHandler(WebHandler):
   @tornado.web.authenticated
@@ -145,13 +147,24 @@ class UnregisterHandler(WebHandler):
     self.redirect("/app/%s" % appID)
 
 class VerifyHandler(WebHandler):
-  @tornado.web.authenticated
   def get(self, appID):
     uid = self.get_current_user()
     try:
       app = model.application(appID)
     except:
       raise ValueError("Unable to load application")
+        
+    isIPhone = "User-Agent" in self.request.headers and self.request.headers["User-Agent"].find("iPhone") >= 0
+        
+    # TODO refactor this logic; we're landing here on free apps for iPhone installs
+    if app.price == 0 and isIPhone:
+      self.render("iphone_verify.html", validationURL=app.launchURL, appIcon=app.icon96URL, appLaunchScreen=app.icon96URL)
+      return
+
+    if app.price != 0 and not uid:
+      # user needs to be authenticated to verify a non-free app!
+      self.redirect("/login?" + urllib.urlencode({"return_to":"/verify/%s" % appID}))
+      return
 
     if model.purchase_for_user_app(uid, appID):
       
@@ -160,14 +173,17 @@ class VerifyHandler(WebHandler):
       verificationToken = "%s|%s|%sT%s" % (uid, appID, timestamp.date(), timestamp.time())
       signature = crypto.sign_verification_token(verificationToken)      
 
-      logging.error("Generating signature")
-      logging.error("Verification token is %s" % verificationToken)
-      logging.error("Signature is %s" % base64.b64encode(signature))
-
-      self.redirect("%s?%s" % (app.launchURL, urllib.urlencode( { 
+      verifyURL = "%s?%s" % (app.launchURL, urllib.urlencode( { 
         "moz_store.status":"ok",
         "verification":verificationToken,
-        "signature":base64.b64encode(signature) } )))
+        "signature":base64.b64encode(signature) } ))
+
+      if isIPhone:
+        self.render("iphone_verify.html", validationURL=verifyURL, appIcon=app.icon96URL, appLaunchScreen=app.icon96URL)
+      else:
+        self.redirect(verifyURL)
+        
+       
     else:
       # Could potentially provide multiple status codes, e.g. expired
       
@@ -238,16 +254,25 @@ class OpenIDLoginHandler(FederatedLoginHandler):
 
     # xheaders doesn't do all the right things to recover
     # from being reverse-proxied: change it up here.
-    self.request.protocol = "https"
-    self.request.host = "appstore.mozillalabs.com"
+
+    HACKING = True
+    if not HACKING:
+      self.request.protocol = "https"
+      self.request.host = "appstore.mozillalabs.com"
+    else:
+      # defaults are fine
+      self.request.host = "10.250.7.215:8400"
+      pass
     
     return_to = self.get_argument("return_to", None)
     callback_uri = None
     if return_to:
       scheme, netloc, path, query, fragment = urlparse.urlsplit(self.request.uri)
-      
-      schemeAndHost = "https://appstore.mozillalabs.com"
-      # schemeAndHost = "http://localhost:8400"
+
+      if HACKING:
+        schemeAndHost = "http://10.250.7.215:8400"
+      else:
+        schemeAndHost = "https://appstore.mozillalabs.com"
       
       callback_uri = "%s%s?%s" % ( schemeAndHost,
         path, urllib.urlencode({"to":return_to})

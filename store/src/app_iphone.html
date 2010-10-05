@@ -1,68 +1,30 @@
 <html>
 <head>
 <title>App Detail: {{ app.name }}</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="viewport" content="initial-scale=1.0">
+<meta name="viewport" content="maximum-scale=1.0">
+<meta name="viewport" content="user-scalable=no">
+<meta name="viewport" content="width=device-width">
+    
 <link rel="stylesheet" type="text/css" href="/static/jquery.jgrowl.css" />
 <script src="/static/jquery-1.4.2.min.js"></script>
 <script src="/static/jquery.jgrowl_minimized.js"></script>
 <script src="https://myapps.mozillalabs.com/jsapi/include.js"></script>
 <script>
 var gAppManifest = {{ app.manifest }};
-var gAlreadyPurchased = {{ "true" if (app.price == 0 or alreadyPurchased) else "false" }};
-var gAlreadyInstalled = false;
-
-$(function () {
-  AppClient.getInstalledBy({callback:function(result) {
-    if (result && result.installed)
-    {
-      for (var i=0;i<result.installed.length;i++)
-      {
-        if (result.installed[i].manifest.app.launch.web_url == gAppManifest.app.launch.web_url)
-        {
-          gAlreadyInstalled = true;
-          $("#install_button").hide();
-          
-          // Multi-user error condition craziness...
-          if (gAlreadyPurchased) {
-{% if app.price > 0 %}
-            $("#already_installed_text").text("You purchased and installed this application on " + new Date(result.installed[i].installTime).toLocaleDateString() + ".")
-            $("#already_installed").show();
-{% else %}
-            $("#already_installed_text").text("You installed this application on " + new Date(result.installed[i].installTime).toLocaleDateString() + ".")
-            $("#already_installed").show();
-{% end %}
-          } else {
-            $("#already_installed_text").append("Whoops! You've installed this application in this browser, but the current user hasn't purchased it.<br><br>(See multi-user feature work here...)")
-            $("#already_installed").show();
-            $("#uninstall_hackery").hide();
-          }
-        }
-      }
-    }
-    if (!gAlreadyInstalled && gAlreadyPurchased)
-    {
-      $("#install_button").text("INSTALL");
-      $("#install_kicker").text("You've already purchased this app; just click to install.");
-    }
-  }});
 
 {% if app.price > 0 %}
 
 $("#purchase_button").live('click', function() {
+
   // submit Ajax to serve confirming purchase authorization...
   jQuery.post("/api/buy", {appid:{{appID}}}, function(data, textStatus) {
 
     // TODO also provide an error handler; failures will fail silently right now
-    
-    // copy this, and in the iphone case, set window.location to /verify/{{appID}}
-
-    // and on success, install manifest:
-    AppClient.install({manifest: gAppManifest, authorization_url: "{{ authorizationURL }}", callback: function (arg) {
-      $("#install_button").text('Installed!');
-      $.jGrowl(gAppManifest.name + ' installed.<br><br><a href="http://myapps.mozillalabs.com" target="_myapps">View App Dashboard</a>', {sticky:true});
-    }});    
+    window.location.href = "/verify/{{ appID }}";
     $("#dimmer").fadeOut(300);
     $("#login_purchase").fadeOut(300);
-
   })
 });
 
@@ -83,14 +45,9 @@ $("#login_purchase").show();
 
 {% else %}
   $("#install_button").live('click', function() {
-    AppClient.install({manifest: gAppManifest, callback: function (arg) {
-      $("#install_button").text('Installed!');
-      $.jGrowl(gAppManifest.name + ' installed.<br><br><a href="http://myapps.mozillalabs.com" target="_myapps">View App Dashboard</a>', {sticky:true});
-    }});    
+      window.location.href = "/verify/{{ appID }}";
   });
 {% end %}
-
-});
 
 </script>
  <style>
@@ -98,17 +55,18 @@ $("#login_purchase").show();
 BODY {margin:0;padding:0}
 
 #dev_preview_splash  {
-  margin:16px 16px 64px 16px;
-  padding:12px;
-  border:1px solid #888;
-  box-shadow:8px 8px 8px #999;
+  background-color:#e0e0e0;
+  padding-bottom:4px;
+  padding-top:4px;
 }
 
 #dev_preview_splash .banner {
-  font:32pt Helvetica, arial;
+  text-align:center;
+  font:bold 14pt Helvetica, arial;
 }
 #dev_preview_splash .footer {
   font-family: Helvetica, arial;
+  text-align:center;
   font-size:10pt;
 }
 
@@ -150,32 +108,26 @@ BODY {margin:0;padding:0}
 }
 
 .app_page {
-  -moz-border-radius:8px;
-  -webkit-border-radius:8px;
-  border-radius:8px;
-  border:1px solid #707090;
-  margin:16px;
-  padding:8px;
-  white-space:nowrap;
+  margin:8px 4px 0px 4px;
+  padding:0px;
+  white-space:no-wrap;
   position:relative;
-  height:400px;
+  height:600px;
 }
 
 .app_page .left_column
 {
-  float:left;
   display:inline-block;
-  width:140px;
-  height:400px;
 }
 .app_page .left_column .icon 
 {
+  text-align:center;
   padding-left:12px;
 }
 
 .app_page .left_column .price
 {
-  font:bold 10pt Helvetica, Arial;
+  font:bold 14pt Helvetica, Arial;
   padding:4px 4px 4px 4px;
   text-align:center;
   margin:12px 0px 0px 12px;
@@ -204,55 +156,38 @@ BODY {margin:0;padding:0}
 
 .app_page .right_column
 {
-  margin-left:64px;
-  width:700px;
-  white-space:normal;
-  margin-right:auto;
-  display:inline-block;
   vertical-align:top;
-  height:400px;
 }
 
 .app_page .right_column .name
 {
   font:bold 14pt Helvetica,arial;
-  width:600px;
 }
 
 .app_page .right_column .desc
 {
   margin-top:16px;
-  white-space:normal;
   font:10pt Helvetica, arial;
 }
 
 .install_floater {
   float:right;
-  margin-right:24px;
-  margin-bottom:25px;
+  margin-right:0px;
 }
 
 .greenbutton {
-  -moz-border-radius:0.5em 0.5em 0.5em 0.5em;
   -webkit-border-radius:0.5em 0.5em 0.5em 0.5em;
-  -moz-box-shadow:0 -3px 0 rgba(0, 0, 0, 0.1) inset, 0 -3px 12px rgba(240, 240, 240, 0.3) inset, 0 20px 40px rgba(240, 240, 240, 0.3) inset, 0 2px 0 rgba(200, 200, 200, 0.3);
-  box-shadow:0 -3px 0 rgba(0, 0, 0, 0.1) inset, 0 -3px 12px rgba(240, 240, 240, 0.3) inset, 0 20px 40px rgba(240, 240, 240, 0.3) inset, 0 2px 0 rgba(200, 200, 200, 0.3);
   -webkit-box-shadow:0 -3px 0 rgba(0, 0, 0, 0.1) inset, 0 -3px 12px rgba(240, 240, 240, 0.3) inset, 0 20px 40px rgba(240, 240, 240, 0.3) inset, 0 2px 0 rgba(200, 200, 200, 0.3);
   background-color:#6bc246;
-  background-image:-moz-linear-gradient(center top , #6BC246 0%, #5CA33E 100%);
-  background-image:-webkit-gradient(
-    linear,
-    left top,
-    left bottom,
-    color-stop(0, rgb(5,202,51)),
-    color-stop(1, rgb(6,188,36)));
-  height:24px;
-  width:120px;
-  font:bold 14pt Helvetica, arial;
+  background-image:-webkit-gradient(linear, left top, left bottom, color-stop(0, rgb(5,202,51)), color-stop(1, rgb(6,188,36)));
+  height:18px;
+  width:60px;
+  margin-bottom:4px;
+  font:bold 10pt Helvetica, arial;
   color:white;
-  margin-top:12px;
+  margin:12px 4px 6px 4px;
   cursor:pointer;
-  padding:18px 10px 12px 10px;
+  padding:4px 8px 2px 8px;
   text-align:center;
 }
 
@@ -260,11 +195,6 @@ BODY {margin:0;padding:0}
   color:white;
   text-decoration:none
 }
-#install_kicker {
-  font:9pt Helvetica, Arial;
-  display:none;
-}
-
 #already_installed {
   -moz-border-radius:0.5em 0.5em 0.5em 0.5em;
   -webkit-border-radius:0.5em 0.5em 0.5em 0.5em;
@@ -275,19 +205,15 @@ BODY {margin:0;padding:0}
   color:#606060;
   margin-top:12px;
   padding:18px 10px 12px 10px;
-  width:180px;
+  width:120px;
   min-height:24px;
   font:12pt Helvetica;
+  margin-bottom:25px;
   text-align:center;
   border:1px solid #888;
   display:none;
 } 
-#uninstall_hackery {
-  font:9pt Helvetica, Arial;
-}
-#uninstall_hackery a {
-  color:#707090;
-}
+
 
 #dimmer {
   background:#000;
@@ -376,10 +302,6 @@ BODY {margin:0;padding:0}
 
 <div id="banner">
 
-<div id="branding">
-  <a href="/"><img border="0" style="vertical-align:-2px;padding-right:4px" src="/static/home.png">
-    AppZilla: Demonstration Web Application Store</a>
-</div>
 <div id="status">
 {% if account %}
 Signed in as {{ account.displayName }} - [ <a href="/logout?return_to=/app/{{appID}}">Sign Out</a> ]
@@ -392,22 +314,34 @@ Signed in as {{ account.displayName }} - [ <a href="/logout?return_to=/app/{{app
 
 
 <div id="dev_preview_splash">
-  <div class="banner">Web App Store Developer Preview</div>
-  <div class="footer">This is not a production system: it is an interaction prototype, intended for a technical audience.<br><br>
-    If you'd like to learn more about open web application stores, <a href="#">read more on our blog.</a></div>
+  <div class="banner">Mozilla App Store Preview</div>
+  <div class="footer">Demo system - not final!  <a href="#">read more...</a></div>
 </div>
 
 <div class="app_page">
 
+<div class="right_column">
+
+<div class="install_floater">
+<div id="install_button" class="greenbutton">{% if app.price == 0 %}INSTALL{%else%}BUY{%end%}</div>
+<div id="already_installed"></div>
+</div>
+
+<div class="name">{{ app.name }}</div></a>
+
+<div class="desc">{{ app.description.replace("\n", "<br>") }}</div></a>
+
+</div>
+
 <div class="left_column">
 <div class="icon">
-  <img width="128" height="128" src="{{ app.icon96URL }}">
+  <img width="64" height="64" src="{{ app.icon96URL }}">
 </div>
 <div class="price">
 {% if app.price == 0 %}
 Free
 {% else %}
-${{int(app.price/100)}}.{{ "%02d" % (app.price % 100)  }}{% if alreadyPurchased %} - PAID{%end%}
+${{int(app.price/100)}}.{{ "%02d" % (app.price % 100)  }}
 {% end %}
 </div>
 <div class="fineprint">
@@ -428,18 +362,7 @@ Mobile Safari&nbsp;3.0, Android&nbsp;2.0
 
 <div class="right_column">
 
-<div class="install_floater">
-<div id="install_button" class="greenbutton">{% if app.price == 0 %}INSTALL{%else%}BUY{%end%}</div>
-<div id="install_kicker"></div>
-<div id="already_installed">
-  <div id="already_installed_text"></div>
-{% if app.price > 0 %}  <div id="uninstall_hackery">For demo purposes, you can <a href="/unregister/{{appID}}">unregister for an app</a> if you like.</div> {% end %}
-</div>
-</div>
 
-<div class="name">{{ app.name }}</div></a>
-
-<div class="desc">{{ app.description.replace("\n", "<br>") }}</div></a>
 </div>
 
 </div>
