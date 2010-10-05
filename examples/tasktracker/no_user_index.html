@@ -115,13 +115,15 @@ if (/*@cc_on!@*/false) { // check for Internet Explorer
 
 $(document).ready(function() {
   $("#splash").show(500);
-  
+
+{% if not invalid_reg %}  
   AppClient.getInstalled({callback:function(result) {
     if (result && result.installed && result.installed.length > 0) {
       AppClient.verify({callback:function(result) {
       }});
     }
   }});
+{% end %}
 });
 </script>
 
@@ -154,5 +156,9 @@ $(document).ready(function() {
 Welcome to TaskTracker!<br><br>
 TaskTracker is a paid web application.  To use it,
 you must purchase it from a <a href="http://appstore.mozillalabs.com/app/1">web application store</a>.
+<br><br>
+{% if invalid_reg %}
+Bad registration... recover...
+{% end %}
 </div>
 </div>

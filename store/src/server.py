@@ -69,14 +69,12 @@ class AppHandler(WebHandler):
       return self.redirect("/")
     
     mode = self.get_argument("m", None)
-   
+    already_purchased = (model.purchase_for_user_app(uid, appID) != None) # potentially could use purchase metadata?
     
-     ## DAW go here 
     if True or (self.request.headers["User-Agent"].find("iPhone") >= 0):
-      self.render("app_iphone.html", authorizationURL = "https://appstore.mozillalabs.com/iphone_verify/%d" % int(appID), appID=appID, app=theApp, account=account, mode=mode)
-    
+      self.render("app_iphone.html", authorizationURL = "https://appstore.mozillalabs.com/iphone_verify/%d" % int(appID), appID=appID, app=theApp, account=account, mode=mode, alreadyPurchased=already_purchased)
     else:
-      self.render("app.html", authorizationURL = "https://appstore.mozillalabs.com/verify/%d" % int(appID), appID=appID, app=theApp, account=account, mode=mode)
+      self.render("app.html", authorizationURL = "https://appstore.mozillalabs.com/verify/%d" % int(appID), appID=appID, app=theApp, account=account, mode=mode, alreadyPurchased=already_purchased)
 
 class AccountHandler(WebHandler):
   @tornado.web.authenticated
@@ -129,6 +127,12 @@ class BuyHandler(WebHandler):
       self.write("""{"status":"ok", "message":"Purchase successful."}""")
       return       
 
+class UnregisterHandler(WebHandler):
+  @tornado.web.authenticated
+  def get(self, appID):
+    uid = self.get_current_user();
+    model.remove_purchase_for_user_app(uid, appID)
+    self.redirect("/app/%s" % appID)
 
 class VerifyHandler(WebHandler):
   def get(self, appID):
@@ -376,6 +380,7 @@ application = tornado.web.Application([
     (r"/logout", LogoutHandler),
     (r"/verify/(.*)", VerifyHandler),
     (r"/api/buy", BuyHandler),
+    (r"/unregister/(.*)", UnregisterHandler),
     (r"/account", AccountHandler),
     (r"/account/addid/google", GoogleIdentityHandler),    
     (r"/account/addid/yahoo", YahooIdentityHandler),    

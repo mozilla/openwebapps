@@ -268,6 +268,9 @@ def purchase(id):
 def purchase_for_user_app(userid, appid):
   return session.query(Purchase).filter(Purchase.user_id == userid).filter(Purchase.app_id == appid).first()
 
+def remove_purchase_for_user_app(userid, appid):
+  session.query(Purchase).filter(Purchase.user_id == userid).filter(Purchase.app_id == appid).delete()
+
 def createPurchaseForUserApp(uid, appid):
   try:
     p = Purchase(uid, appid, datetime.now())
