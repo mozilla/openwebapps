@@ -146,7 +146,7 @@ class VerifyHandler(WebHandler):
         
     # TODO refactor this logic; we're landing here on free apps for iPhone installs
     if app.price == 0 and isIPhone:
-      self.render("iphone_verify.html", validationURL=app.launchURL, appIcon=app.icon96URL, appLaunchScreen=app.icon96URL)
+      self.render("iphone_verify.html", validationURL=app.launchURL, appName=app.name, appIcon=app.icon96URL, appLaunchScreen=app.icon96URL)
       return
 
     if app.price != 0 and not uid:

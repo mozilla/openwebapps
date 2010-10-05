@@ -232,13 +232,13 @@ BODY {margin:0;padding:0}
 {
   display:none ;
   position:absolute;
-  left:150px;
-  top:150px;
+  left:-2px;
+  top:0px;
   border:3px solid black;
   -moz-border-radius:0.5em;
   border-radius:0.5em;
   webkit-border-radius:0.5em;
-  width:500px;
+  width:320px;
   background-color:white;
   height:400px;
   z-index:999;
@@ -274,7 +274,7 @@ BODY {margin:0;padding:0}
 
 #purchase
 {
-  padding:48px 8px 0px 8px;
+  padding:8px 8px 0px 8px;
   font:10pt Helvetica, Arial;
 }
 #purchase .head
@@ -286,8 +286,8 @@ BODY {margin:0;padding:0}
 #login_purchase .controls
 {
   position:absolute;
-  left:270px;
-  top:350px;
+  left:60px;
+  top:308px;
 }
 
 #login_purchase .controls button
@@ -360,10 +360,6 @@ Mobile Safari&nbsp;3.0, Android&nbsp;2.0
 
 </div>
 
-<div class="right_column">
-
-
-</div>
 
 </div>
 
@@ -381,8 +377,6 @@ Before you can purchase an application, we need you to <b>sign in</b>:<br><br>
 <a href="/account/addid/google?return_to=/app/{{appID}}%3fm=b"><img border="0" src="/static/googleOpenID.png"></a>
 <a href="/account/addid/yahoo?return_to=/app/{{appID}}%3fm=b"><img border="0" src="/static/yahooOpenID.png"></a>
 <a href="/account/addid/twitter?return_to=/app/{{appID}}%3fm=b"><img border="0" src="/static/twitterOpenID.png"></a><br>
-<div class="small">(for demo purposes, we're supporting a few OpenID/OAuth providers;<br>
-a real store would use more robust authentication)</div>
 {% end if %}
 
 </div>
