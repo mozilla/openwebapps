@@ -14,33 +14,20 @@
     <script type="text/javascript" src="/static/iphone/main.js" charset="utf-8"></script>
 </head>
 <body onload="load();">
-    <div id="browser">
-        <div id="header">
-            <div id="back_button" class="back_button_template dashcode-header-backbutton"></div>
-        </div>
-        <div id="stackLayout">
-            <div id="listLevel">
-                <ul id="list">
-                    <li id="listRowTemplate" class="listRowTemplate_template first" style="" onclick="itemClicked(event)">
-                        <div class="rowTitle_template" id="rowTitle"></div>
-                        <div id="rowArrow" class="rowArrow_template"></div>
-                    </li>
-                </ul>
-            </div>
-            <div id="detailLevel">
-                <div id="detailBox">
-                    <div id="detailTitle"></div>
-                    <div id="detailSubtitle"></div>
-                    <div id="detailDescription"></div>
-                </div>
-            </div>
-        </div>
+    <div id="box">
+        <div id="button"></div>
+        <div id="button1"></div>
+        <div id="button2"></div>
     </div>
-</body>
-</html>
-
-
-
-
+    <ul id="list">
+        <li id="listRowTemplate" class="listRowTemplate_template first" style="">
+            <div id="label" class="label_template"></div>
+            <div id="arrow" class="arrow_template">
+            </div>
+            <div id="image" class="image_template">
+                <img id="DC_img" class="DC_img_template">
+            </div>
+        </li>
+    </ul>
 </body>
 </html>

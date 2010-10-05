@@ -40,7 +40,8 @@ class WebHandler(tornado.web.RequestHandler):
       UA = self.request.headers["User-Agent"]
       if UA.find("iPhone") >= 0:
         target_file = target_file + "_iphone"
-        
+    if self.get_argument("cloak", None):
+      target_file = file + "_" + self.get_argument("cloak", None)
       
     self.render(target_file + ".html", **kwargs)
     
