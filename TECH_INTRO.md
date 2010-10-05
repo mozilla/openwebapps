@@ -48,7 +48,7 @@ For a discussion of the security and privacy considerations around the applicati
         "authorization_url": "https://store.somewhere.com"
       },
       "capabilities": [
-      "geolocation"
+        "geolocation"
       ],
       "icons": {
         "16": "icon-16.png",
@@ -100,7 +100,7 @@ In the myapps.mozillalabs.com case, we expose three APIs:
 
 *   `install( <manifest> , <callback>):`
 
-   	prompts the user for confirmation of the manifest, possibly checking the installation and application domains against a registry of known malware sites.  If the user consents, the manifest is installed into the repository, along with the hostname of the installing site and a timestamp.  If the installing site does not use SSL, the user will be strongly discouraged from installing the application.   When the installation flow is completed with success or failure, the installing website is notified through the callback.
+    prompts the user for confirmation of the manifest, possibly checking the installation and application domains against a registry of known malware sites.  If the user consents, the manifest is installed into the repository, along with the hostname of the installing site and a timestamp.  If the installing site does not use SSL, the user will be strongly discouraged from installing the application.   When the installation flow is completed with success or failure, the installing website is notified through the callback.
     
 *   `getInstalled( <callback> ):`
     
