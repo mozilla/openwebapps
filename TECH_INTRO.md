@@ -35,45 +35,45 @@ For detailed description of the manifest, and discussion of its design, visit wi
 
 For a discussion of the security and privacy considerations around the application manifest, please see Security and Privacy Considerations, below.  In particular, for a discussion of using digital signatures to create tamper-evident manifests, see wiki:Manifest#Signatures {need real url here}
 
-  {
-    "name": "MozillaBall",
-    "description": "Exciting Open Web development action!",
-    "app": {
-      "urls": [
-        "https://mozillaball.mozillalabs.com"
-      ],
-      "base_url": "https://mozillaball.mozillalabs.com",
-      "launch_path": "",
-      "update_path": "manifest/manifest.json",
-      "authorization_url": "https://store.somewhere.com"
-    },
-    "capabilities": [
-    "geolocation"
-    ],
-    "icons": {
-      "16": "icon-16.png",
-      "48": "icon-48.png",
-      "128": "icon-128.png"
-    },
-    "developer": {
-      "name": "Mozilla Labs",
-      "url": "http://mozillalabs.com"
-    }
-    "locales": {
-      "es": {
-        "description": "¡Acción abierta emocionante del desarrollo del Web!",
-        "developer": {
-          "url": "http://es.mozillalabs.com/",
-        }
+    {
+      "name": "MozillaBall",
+      "description": "Exciting Open Web development action!",
+      "app": {
+        "urls": [
+          "https://mozillaball.mozillalabs.com"
+        ],
+        "base_url": "https://mozillaball.mozillalabs.com",
+        "launch_path": "",
+        "update_path": "manifest/manifest.json",
+        "authorization_url": "https://store.somewhere.com"
       },
-      "it": {
-        "description": "Azione aperta emozionante di sviluppo di fotoricettore!",
-        "developer": {
-          "url": "http://it.mozillalabs.com/"
+      "capabilities": [
+      "geolocation"
+      ],
+      "icons": {
+        "16": "icon-16.png",
+        "48": "icon-48.png",
+        "128": "icon-128.png"
+      },
+      "developer": {
+        "name": "Mozilla Labs",
+        "url": "http://mozillalabs.com"
+      }
+      "locales": {
+        "es": {
+          "description": "¡Acción abierta emocionante del desarrollo del Web!",
+          "developer": {
+            "url": "http://es.mozillalabs.com/",
+          }
+        },
+        "it": {
+          "description": "Azione aperta emozionante di sviluppo di fotoricettore!",
+          "developer": {
+            "url": "http://it.mozillalabs.com/"
+          }
         }
       }
     }
-  }
 
 ### HTML5 implementation vs. browser-native implementation
 
