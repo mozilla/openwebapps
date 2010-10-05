@@ -256,7 +256,7 @@ class OpenIDLoginHandler(FederatedLoginHandler):
     # xheaders doesn't do all the right things to recover
     # from being reverse-proxied: change it up here.
 
-#    HACKING = True
+    HACKING = False
     if not HACKING:
       self.request.protocol = "https"
       self.request.host = "appstore.mozillalabs.com"
