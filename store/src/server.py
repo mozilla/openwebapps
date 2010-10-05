@@ -32,6 +32,18 @@ class WebHandler(tornado.web.RequestHandler):
            "<body><div class='box'>We're sorry, something went wrong!<br><br>Perhaps "\
            "you should <a href='/'>return to the front page.</a><br><br><div class='small'>%s %s</div></div>" % (
           status_code, kwargs['exception'])
+
+  def render_platform(self, file, **kwargs):
+    target_file = file
+
+    if  "User-Agent" in self.request.headers:
+      UA = self.request.headers["User-Agent"]
+      if UA.find("iPhone") >= 0:
+        target_file = target_file + "_iphone"
+        
+      
+    self.render(target_file + ".html", **kwargs)
+    
             
                
 class MainHandler(WebHandler):
@@ -49,7 +61,7 @@ class MainHandler(WebHandler):
     else:
       account = None
     
-    self.render("index.html", errorMessage=None, account=account)
+    self.render_platform("index", errorMessage=None, account=account)
 
 class AppHandler(WebHandler):
   def get(self, appID):
