@@ -2,7 +2,7 @@
 
 This document describes an architecture for "Installable Web Applications."  These are applications constructed using standard web technologies including HTML5, CSS3, and JavaScript, which can run in any modern web browser.
 
-The system presented here provides for both free and paid applications.  It presumes that there will be multiple application stores, and that users will have applications from multiple stores on their devices.  Developers are similarly expected to be free to list their applications on multiple stores, and to enter independent relationships with each.  Developers should be free to self-publish their application, or to create a curated application directory.
+The system presented here provides for both free and paid applications.  It presumes that there will be multiple stores from which users may install applications.  Developers are free to list their applications on multiple stores, and to enter independent relationships with each.  Developers should be free to self-publish their application, or to themselves create a curated application directory.
 
 This document is intended as a proposal to the web user and developer community, and direct constructive feedback is very welcome.  Throughout the document, links to the Mozilla wiki are placed inline where a topic of discussion is raised.  Readers are encouraged to visit the wiki to contribute to the conversation.
 
