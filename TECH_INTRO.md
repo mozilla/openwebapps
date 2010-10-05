@@ -17,6 +17,7 @@ It is a primary goal of this proposal to allow a user to navigate through a coll
 It is not a goal of this proposal to explain how an all-HTML5 application can be downloaded to a desktop computer and subsequently protected from copying.  The focus of this proposal is on online verification of user proof-of-install, or proof-of-purchase.
 
 The basic set of concepts required to construct a Web Application are:
+
 * An application manifest, which describes the location, requirements, and capabilities of an application.
 * A method to install an application into a user's browser, which can be used by stores and directories (for purchased or curated applications) or by an application itself (for a self-published application)
 * A view to manage, browse, and launch the installed applications
