@@ -31,7 +31,7 @@ The Manifest is a complete description of what the web browser needs to interact
 
 The Manifest is encoded as a JSON data structure, and is provided to the browser when the application is installed.  A self-published application manifest is provided by the application developer.  A curated or purchased application manifest is provided by the directory or store.  The manifest is persisted in local storage and is used by the dashboard and repository for subsequent interactions with the user.
 
-For detailed description of the manifest, and discussion of its design, visit wiki:Manifest. {need real url here}  (Note that the design of the manifest is intended to build on and comment on existing work by Google on hosted web application manifests; please see the wiki for more in-depth discussion)
+For detailed description of the manifest, and discussion of its design, visit wiki:Manifest. {need real url here}  (Note that the design of the manifest is intended to build on and comment on existing work by Google on [hosted web application manifests](http://code.google.com/chrome/apps/docs/developers_guide.html#live); please see the wiki for more in-depth discussion)
 
 For a discussion of the security and privacy considerations around the application manifest, please see Security and Privacy Considerations, below.  In particular, for a discussion of using digital signatures to create tamper-evident manifests, see wiki:Manifest#Signatures {need real url here}
 
