@@ -97,14 +97,18 @@ Any access to browser or OS-level functionality should require a more stringent 
 The application repository is a trusted collection of the manifests that the user has consented to install.  It provides a limited, privacy-respecting API to web content, which allows it to interact with other websites to give users a smooth experience of using web applications.  It also provides the dashboard, a rich HTML5 interface to manage and launch applications from the browser.
 
 In the myapps.mozillalabs.com case, we expose three APIs:
-• install( <manifest> , <callback>):
-	prompts the user for confirmation of the manifest, possibly checking the installation and application domains against a registry of known malware sites.  If the user consents, the manifest is installed into the repository, along with the hostname of the installing site and a timestamp.  If the installing site does not use SSL, the user will be strongly discouraged from installing the application.   When the installation flow is completed with success or failure, the installing website is notified through the callback.
 
-• getInstalled( <callback> ):
-	returns, through the callback, the installed applications whose URLs are contained by the calling site.  This allows an application to find out whether its manifest has been installed on a browser when the user visits the site.
+*   `install( <manifest> , <callback>):`
 
-• verifyIdentity ( [<return-to>], <callback> ):
-	selects the application whose URL matches the calling site, and initiates the verification flow for that application by loading that URL.  {what happens when more than one matches?} See The Verification Flow.
+   	prompts the user for confirmation of the manifest, possibly checking the installation and application domains against a registry of known malware sites.  If the user consents, the manifest is installed into the repository, along with the hostname of the installing site and a timestamp.  If the installing site does not use SSL, the user will be strongly discouraged from installing the application.   When the installation flow is completed with success or failure, the installing website is notified through the callback.
+    
+*   `getInstalled( <callback> ):`
+    
+    returns, through the callback, the installed applications whose URLs are contained by the calling site.  This allows an application to find out whether its manifest has been installed on a browser when the user visits the site.
+    
+*   `verifyIdentity ( [<return-to>], <callback> ):`
+    
+    selects the application whose URL matches the calling site, and initiates the verification flow for that application by loading that URL.  {what happens when more than one matches?} See The Verification Flow.
 
 ### The Verification Flow
 
