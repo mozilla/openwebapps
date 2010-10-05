@@ -8,7 +8,7 @@ This document is intended as a proposal to the web user and developer community,
 
 ### Overview
 
-This proposal defines an "Installable Web Application" in terms of the existing HTML and HTTP technology stack.  The HTML5 specification describes how a web browser can provide local storage, offline access to applications and data, geolocation services, and rich 2D and 3D graphics capabilities.
+This proposal defines an *Installable Web Application* in terms of the existing HTML and HTTP technology stack.  The HTML5 specification describes how a web browser can provide local storage, offline access to applications and data, geolocation services, and rich 2D and 3D graphics capabilities.
 
 A Web Application is built on the HTML5 foundation, adding easy browsing and launching, an explicit installation flow, and verification of user registration between stores and applications, which enables proof of purchase.  The basic set of interactions require no new browser features and should work in any modern web browser with HTML5 support.  Some richer interactions, which would require additional browser work but can often be implemented with extensions, are also described here.
 
