@@ -159,7 +159,7 @@ class VerifyHandler(WebHandler):
         
     # TODO refactor this logic; we're landing here on free apps for iPhone installs
     if app.price == 0 and isIPhone:
-      self.render("iphone_verify.html", validationURL=app.launchURL, appIcon=app.icon96URL, appLaunchScreen=app.icon96URL)
+      self.render("iphone_verify.html", validationURL=app.launchURL, appName=app.name, appIcon=app.icon96URL, appLaunchScreen=app.icon96URL)
       return
 
     if app.price != 0 and not uid:
@@ -256,13 +256,13 @@ class OpenIDLoginHandler(FederatedLoginHandler):
     # xheaders doesn't do all the right things to recover
     # from being reverse-proxied: change it up here.
 
-    HACKING = True
+#    HACKING = True
     if not HACKING:
       self.request.protocol = "https"
       self.request.host = "appstore.mozillalabs.com"
     else:
       # defaults are fine
-      self.request.host = "10.250.7.215:8400"
+      self.request.host = "your_host:8400"
       pass
     
     return_to = self.get_argument("return_to", None)
@@ -271,7 +271,7 @@ class OpenIDLoginHandler(FederatedLoginHandler):
       scheme, netloc, path, query, fragment = urlparse.urlsplit(self.request.uri)
 
       if HACKING:
-        schemeAndHost = "http://10.250.7.215:8400"
+        schemeAndHost = "http://your_host:8400"
       else:
         schemeAndHost = "https://appstore.mozillalabs.com"
       
