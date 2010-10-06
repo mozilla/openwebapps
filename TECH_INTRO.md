@@ -96,9 +96,11 @@ Browser-native implementations can take deeper security measures, and integrate 
 
 * Implementation of an installed application repository that resides in secure, tamper-evident desktop storage (e.g. with a digital signature)
 * Ability to launch applications into an "app tab" or "pinned tab" that has a fixed location in the tab bar, or in a separate process with its own icon, menu-bar, etc.
+* Access to OS-level <a href="http://www.w3.org/2010/web-notifications/">notification systems</a>
 * Integration with browser-based permission APIs, including camera, microphone, geolocation, storage, file access, and cross-domain network access.
 * Ability to launch applications into a "chromeless" mode (with no toolbars, location bar, or forward or backward buttons)
-* Access to OS-level notification systems
+* Ability to launch <a href="http://www.whatwg.org/specs/web-workers/current-work/">web workers</a> to perform background processing or notification polling.
+* Integration with push-based notification or message delivery systems
 
 Any access to browser or OS-level functionality should require a more stringent installation step, and may require verification of the manifest - see Security and Privacy Considerations.
 
@@ -144,7 +146,7 @@ The installation flow on a mobile device must validate the manifest, present a r
 
 To support offline use, developers should make use of HTML5 AppCache and localStorage to enable the local components of their application to run without network access.  Application stores are encouraged to provide an option for local caching of registration and payment assertions, to allow a developer to indicate that they do not require online verification for every run; in many cases, a single check, or a weekly/monthly check is sufficient.
 
-Developers are encouraged to use cross-platform JavaScript toolkits to target multiple mobile platforms.  For further reading, see <a href="http://www.sencha.com/">Sencha</a> and <a href="http://jquerymobile.com/">jQuery Mobile</a>.
+Developers are encouraged to use cross-platform JavaScript toolkits to target multiple mobile platforms.  For further reading, see <a href="http://www.sencha.com/products/touch/">Sencha</a> and <a href="http://jquerymobile.com/">jQuery Mobile</a>.
 
 ### Security and Privacy Considerations
 
@@ -154,7 +156,7 @@ Here we present some of our analysis of the possible security and privacy attack
 
 Once the application manifest has been installed on a user's computer, an attacker may try to tamper with the manifest in order to manipulate the user.  These attacks include:
   
-  * **Tampering with the application manifest in local storage:** If the attacker is able to tamper with the application manifest, either by compromising the dashboard code or by gaining file system access through a different attack vector, they may be able to tamper with the application manifest.  (Note that if the attacker has access to the file system, they can probably replace the web browser, so this consideration may be theoretical).  This kind of tampering can be detected by using tamper-evident signatures, e.g. through digital signatures.  For more on this approach, see wiki:Manifests#Signatures.  Any manifest that extends higher API privileges to an application should be subject to some sort of verification.
+  * **Tampering with the application manifest in local storage:** If the attacker is able compromise a web-based dashboard, or gain file system access through a different attack vector, they may be able to tamper with the application manifest.  (Note that if the attacker has access to the file system, they can probably replace the web browser, so this consideration may be theoretical).  This kind of tampering can be detected by using tamper-evident signatures, e.g. through digital signatures.  For more on this approach, see wiki:Manifests#Signatures.  Any manifest that extends higher API privileges to an application should be subject to some sort of verification.
   
   * **Interception of the user during application launch:** If the attacker is able to intercept the user during the launch of an application (e.g. through man-in-the-middle), they could construct a phishing site that appears to be an application store and attempt to steal the user's credentials.  This is identical to the problem faced by many federated login providers in systems like OpenID.  Existing systems to detect and block malware sites can help with this problem, which is not unique to the web application use case.
   
