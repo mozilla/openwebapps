@@ -356,6 +356,22 @@ MozillaBallApp = {"name":"MozillaBall",
                 }
                 }
 
+GmailApp = {"name":"Gmail",
+                "app":{
+                  "urls":["http://mail.google.com/mail/",
+                          "https://mail.google.com/mail/",
+                          "http://www.google.com/mail/"
+                          "https://www.google.com/mail/"],
+                  "launch": {
+                    "web_url":"http://mail.google.com/mail/"
+                  }
+                },
+                "description":"7+ GB of storage, less spam, and mobile access. Gmail is email that's intuitive, efficient, and useful. And maybe even fun.",
+                "icons":{
+                  "96":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAMAAADVRocKAAAAYFBMVEWqGAC4GwCzJwyuU0vBHgDIIwDSKwDZOADcRQDjSQDnUADPcE/WinC2trbRlIzZrqrmqpTnt6vsxbbIyMnZ2dnnycb02tX449ro6Oj26ef68ez9/f0AAAAAAAAAAAAAAABTB10MAAAFQElEQVRoge3Y65ajKBAAYJQkotB4SUCB93/P5S4gOt0zu3v27LF+9UXrs7AgBKD+4QA3cAM3cAM3cAP/FiC3JKRa2Sr3C2T235+FdID+IQmlJkImMi2McZE9i/xxbJsB8vxSSYLRMAwYY6JjWpasoJ8xWtCAlNmDCjKk4SA6a0jkF/46tKCA3Irb1hwYejxPlBBf0GwK+jakkx8BjociJl2s4JwZKBQ0m4J+CVWB5QCgKQ6qWDlbXEGYYEJ1RVyeQ1VgPgDDsJRvbzUFGQdiQ03jWC2oCkxHoMcHYS9oxt3r+WxbCHVF48zTVqgBklYqGDA7dqCbS+uEuu6licejaQBojcQuAVLJr2tYDzPA5SddZ4CXBmw0mqHKD1cNSLoU97lgb8mD4a4ANAFG9fnIMyB2qR74dLAQSRcOn3/BHXLAMwHaWb3PARYBopasWUnZJVIPP0K+gAg0TcvV1/sUiF3aU3UtrAQhhLoCaB4NFPLrvIJp8COPJvMbSgWaXsowqgJNA+X2LWBxo5AKU1op6j3wMkDTtgHA6vP1USeA7tIAcPd7Jsz78KO+Twpo4ASb2KXvr+0CCE1qASVwRdDD3/f9PkLPBvO19QU04zUQmh/7tuT5dOBu+PveCm4WPNtJKhaAVgPvU2DFfR+6VAVhSIXVDn9awNOuDUsTAKa79BTgAUARUEs2SGRyjx9fcUttrZN7BbpLV+mnQQ1Yht4JacekraQT9xEw+eHiLiL+HSfToAbMg705aRiVNWvf9/nzE+4vwgHAcRrUgMmncNNgf/UoTx8AOIW7pelSk7+hcRpUAN1EIQFP/qzfParkf+H9ojUAYIpdegn45TkEx6hIr5+fJgssb30ByTSoAAKHFPiwFyifH8/Z0hSAdoldWgF0l/o5RFQRC0Zp+o5kY6jmxhcA42JdAxZzcx2QM0qGZ3+7PigIwN6lFWC2t5t1bFJFCD6FBQghzMtPHwIaD+xdWgHsZ5QRsi41l+qttqAue4emvAPM/7FJbooge5dWAOIBhFh2u9vr28+wrsOLOBQgoAeSxboCSLsJsWOcvkIRruH6/4jo7IKVO9rWjxAYLwG3C9FbhWQayC22u96mwFm4n4q9QgDaS2DFLyd0cRrIdUvySBYSFzXM/h0D26WnAGtfXghdKsqNX/w1F2gERFysK8CsASu8aDV9Frug1b1Lk2lwBMb2+bLEyywD9kvcRQTB7PFwmGckmQZHgLZPK7z0giLFdXodmxHcPh76lQIki3UFII+nE1p2OTppDRaod+kBkPhhBB2QiWrGSg1ul13t0gMgoNkY6PwP+L38UVhCEyVbigrA3e7v8Xzgb+Z3wibH2KXrvlgfAdaGHSzxXwC+JejXVZ8GB2CMAJX5AcOVtn2EIDuQdOkBoI0HwCz2I5MDVQqCrTAA6WJ9BPRzOKBdRO105qwmsUQgXawrQwSh/hoKQNPSmXEudNTPgUondClorwFlziTmkRJoA1M6amc9c3ZqB8ZrYIdWNlKKHUSoLegckn6xBgBm06ACbNsnnIXZCwRfxpFGZ2Ru5ApAuC4FAKR7Fg8UB1LuC/xHR+qYgsLIYQ+tu+O6FFhApl0qt+ORWjwlsIqN+Ah6UTMQhjgraFsxcPkBMdNgS/IcDwVLJnF2aGXzOBKMQ0EQ+LCL9ZbkPx5r1sLmf7tICtKbJWZ6jhDf3sBOg/f+8tUPD2bl/obsK4oTjbFltMdT+TRQPwVyqBw4UxDPuvS3gR3aSihd6v4cyCDnvD/FJ/nfeThunXJd+H8c79/ADdzADdzAfx74Cw1GMWre/2/1AAAAAElFTkSuQmCC"
+                }
+                }
+
       
 def create_bogus_apps():
   try:
@@ -369,6 +385,11 @@ def create_bogus_apps():
     model.application(2)
   except:
     model.createApplication(json.dumps(MozillaBallApp), json.dumps(MozillaBallApp))
+
+  try:
+    model.application(3)
+  except:
+    model.createApplication(json.dumps(GmailApp), json.dumps(GmailApp))
   
 ##################################################################
 # Main Application Setup
