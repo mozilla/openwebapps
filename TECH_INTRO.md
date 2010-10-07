@@ -166,7 +166,7 @@ The prototype dashboard deployed at `myapps.mozillalabs.com` could be an attack 
   
 Countermeasures for this threat include requiring HTTPS for all interaction with the dashboard server, to make sure the origin of the dashboard and repository code is trusted.
 
-If a serious effort is made to support an cross-browser HTML5 dashboard, issues of governance, version control, and operational security will need to be jointly addressed by stakeholders.  An existing technical coordination group could take on the job, or a new independent organization could be created and jointly funded by the browser makers.
+If a serious effort is made to support a cross-browser HTML5 dashboard, issues of governance, version control, and operational security will need to be jointly addressed by stakeholders.  An existing technical coordination group could take on the job, or a new independent organization could be created and jointly funded by the browser makers.
 
 If, on the other hand, application repositories are going to live entirely in browser-private storage, the HTML5 dashboard becomes less important and is an uninteresting attack target.
 
