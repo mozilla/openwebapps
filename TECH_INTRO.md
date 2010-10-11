@@ -183,6 +183,7 @@ Users may accidentally, unknowingly, or maliciously share logins to an applicati
 
 A malicious site, directory, or store could attempt to convince a user to install an application that abused the user's confidence in some way.  The most serious attacks would involve accessing the privileged APIs of the browser, and, as noted above, should require some sort of verification and a trusted source.  Less serious, but still potentially troubling, attacks could involve manipulating the identity token provided by a store to enable cross-domain tracking of the user.  The countermeasures for this class of attack are essentially identical to those required for browser add-ons and downloads: tracking of malware sites, strongly-worded user warnings, and the ability to return the system to a previously-saved state.
 
+When installing from a malicious site, an HTML repository that depends on iframes for the installation flow could be vulnerable to an iframe defacement attack.  This attack could partially obscure the confirmation dialog to hide the true nature of the application being installed.  A native application repository would not have this problem; also, work on secure user interfaces for HTML content, which could mitigate iframe defacement attacks, is ongoing.  A repository that did not use iframes for the confirmation flow would not be vulnerable to this attack.
 
 ### Integration With the Dashboard and Between Applications
 
