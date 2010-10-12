@@ -8,7 +8,7 @@ The application repository provides a limited, privacy-respecting API to web con
 
 If the application repository is implemented by browser makers (or in extensions), a similar API will need to be provided.
 
-In the `myapps.mozillalabs.com` case, we expose three APIs:
+In the `myapps.mozillalabs.com` case, we expose four functions:
 
 *   `install( <manifest> , [ <authorizationURL> ], [ <signature> ], <callback>):`
 
