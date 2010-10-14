@@ -47,6 +47,8 @@ var AppClient = (function() {
   
   // TODO: https support. Needs CDN to have a proper cert
   var WalletOrigin = "https://myapps.mozillalabs.com";
+  //var WalletOrigin = "http://localhost:8123";
+
   var WalletServerUrl = WalletOrigin + "/jsapi/include.html";
 
   // Cached references
@@ -147,18 +149,21 @@ var AppClient = (function() {
     iframe = document.createElement("iframe");
     iframe.id = dialogId;
     iframe.style.position = "absolute";
-    iframe.style.left = "200px";
-    iframe.style.top = "100px";
-    iframe.style.width = "400px";
-    iframe.style.height = "250px";
+    iframe.style.left = "140px";
+    iframe.style.top = "0px";
+    iframe.style.width = "410px";
+    iframe.style.height = "332px";
     iframe.style.zIndex ="999";
     iframe.style.opacity = "1";
-    iframe.style.border = "0";
-    iframe.style.MozBorderRadius = "8px";
-    iframe.style.WebkitBorderRadius = "8px";
-    iframe.style.borderRadius = "8px";
-    iframe.style.border = "8px solid black";
 
+     iframe.style.border = "2px solid #aaaaaa";
+     iframe.style.borderTop = "10px solid #aaaaaa";
+
+    iframe.style.MozBorderRadius = "0px 0px 8px 8px";
+    iframe.style.WebkitBorderRadius = "0px 0px 8px 8px";
+    iframe.style.borderRadius = "0px 0px 8px 8px";
+                 
+          
     // the "hidden" part
     iframe.style.display = "none";
 
