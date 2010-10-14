@@ -1,5 +1,6 @@
 <html>
 <head>
+<meta http-equiv="X-UA-Compatible" content="IE=8"/> 
 <title>App Detail: {{ app.name }}</title>
 <link rel="stylesheet" type="text/css" href="/static/jquery.jgrowl.css" />
 <script src="/static/jquery-1.4.2.min.js"></script>
@@ -12,7 +13,7 @@ var gAppManifest = {{ app.manifest }};
 var gAlreadyPurchased = {{ "true" if (app.price == 0 or alreadyPurchased) else "false" }};
 var gAlreadyInstalled = false;
 
-$(function () {
+$(document).ready(function () {
   AppClient.getInstalledBy({callback:function(result) {
     if (result && result.installed)
     {

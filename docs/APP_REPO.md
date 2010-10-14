@@ -4,11 +4,11 @@ The application repository is a client-side trusted collection of the manifests 
 
 We have implemented a prototype repository in HTML5 at `myapps.mozillalabs.com`, but future repositories could be implemented in browser extensions or as part of a web browser platform.
 
-It provides a limited, privacy-respecting API to web content, which allows it to interact with other websites to give users a smooth experience of using web applications.  It also provides the dashboard, a rich HTML5 interface to manage and launch applications from the browser.
+The application repository provides a limited, privacy-respecting API to web content, which allows it to interact with other websites to give users a smooth experience of using web applications.  It also powers the **application dashboard**, a rich HTML5 interface to manage and launch applications from the browser.
 
 If the application repository is implemented by browser makers (or in extensions), a similar API will need to be provided.
 
-In the `myapps.mozillalabs.com` case, we expose three APIs:
+In the `myapps.mozillalabs.com` case, we expose four functions:
 
 *   `install( <manifest> , [ <authorizationURL> ], [ <signature> ], <callback>):`
 
@@ -19,6 +19,10 @@ In the `myapps.mozillalabs.com` case, we expose three APIs:
 *   `getInstalled( <callback> ):`
     
     returns, through the callback, the installed applications whose URLs are contained by the calling site.  This allows an application to find out whether its manifest has been installed on a browser when the user visits the site.
+
+*   `getInstalledBy( <callback> ):`
+    
+    returns, through the callback, the applications that were installed by the calling domain.  This allows an application directory or store to determine if an application is already installed, during browsing.
     
 *   `verifyIdentity ( [<return-to>], <callback> ):`
     
@@ -27,8 +31,4 @@ In the `myapps.mozillalabs.com` case, we expose three APIs:
 
 #### Mobile Considerations
 
-Most mobile platforms already organize themselves around an *application launcher*.  On mobile platforms, Installed Web Apps should work with existing platforms to make the web application launch act like a platform-specific binary application.
-
-In most cases, application directories or stores can perform the "heavy lifting" of platform integration.
-
-*Example*: Apple Computer's iOS provides excellent support for the display and launch of web applications from the default application launcher.  JavaScript extensions exist on the Mobile Safari platform to determine whether the application is being viewed in Safari, or as a standalone ("webclip") application.  Application stores that wish to provide proof-of-purchase verification to web applications can easily save their verification URL as the target URL of the webclip, and can verify the user's registration and forward to the application on startup; caching of this verification for a reasonable period can reduce the latency of startup to create a faster launch experience.
+Most mobile platforms already organize themselves around an *application launcher*.  See the <a href="mobile.html">Mobile Platforms</a> page for more discussion of these platforms.

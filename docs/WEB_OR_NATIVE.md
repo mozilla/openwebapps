@@ -1,6 +1,6 @@
 ### HTML5 implementation vs. browser-native implementation
 
-The prototype `myapps.mozillalabs.com` repository can be included in any website through a simple JavaScript include.  It provides the `install`, `getInstalled`, `getInstalledBy`, and `verify` methods through a secure cross-domain messaging API.    The `myapps.mozillalabs.com` dashboard can be loaded by simply navigating to the site in a browser.  It displays the currently installed applications, and launches them when they are clicked.
+The prototype `myapps.mozillalabs.com` repository can be referenced in any website through a simple JavaScript include.  It provides the `install`, `getInstalled`, `getInstalledBy`, and `verify` methods through a secure cross-domain messaging API.    The `myapps.mozillalabs.com` dashboard can be loaded by simply navigating to the site in a browser.  It displays the currently installed applications, and launches them when they are clicked.
 
 Note that we do not propose making `myapps.mozillalabs.com` a permanent delivery point for an application dashboard; see the <a href="security.html">Security and Privacy Considerations</a> section for a discussion of a longer-term strategy.
 
@@ -14,9 +14,9 @@ Specific directions for browser integration include:
 
 * Ability to launch applications into an "app tab" or "pinned tab" that has a fixed location in the tab bar, or in a separate process with its own icon, menu-bar, etc.
 
-* Access to OS-level <a href="http://www.w3.org/2010/web-notifications/">notification systems</a>
+* Access to OS-level notification systems - see the <a href="<a href="http://www.w3.org/2010/web-notifications/">W3C working group on Web Notifications</a>
 
-* Use of the `capabilities` field of the manifest for integration with browser-based permission APIs, including camera, microphone, geolocation, storage, file access, and cross-domain network access.
+* Use of the `capabilities` field of the manifest for integration with browser-based permission APIs, including camera, microphone, geolocation, storage, file access, and cross-domain network access - see the <a href="http://www.w3.org/2009/dap/">W3C Device APIs and Policy</a> working group, especially the <a href="http://www.w3.org/TR/2010/WD-api-perms-20101005/">Permissions for Device API Access</a> working draft, for some current work on this.
 
 * Ability to launch applications into a "chromeless" mode (with no toolbars, location bar, or forward or backward buttons)
 

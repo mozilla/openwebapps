@@ -77,8 +77,9 @@ body {
 
 #splash {
   position:absolute;
-  left:180px;
-  top:100px;
+  left:120px;
+  top:80px;
+  width:300px;
   background-color:white;
   padding:32px;
   font:bold 14pt Helvetica, Arial;
@@ -126,8 +127,8 @@ $(document).ready(function() {
 <li>Inbox</li>
 <li class="separator"></li>
 <li>Today</li>
-<li>Starred</li>
-<li>Some Day</li>
+<li>Highlighted</li>
+<li>Later</li>
 <li class="separator">Projects</li>
 <li></li>
 </ul>
@@ -146,7 +147,16 @@ $(document).ready(function() {
 Welcome to TaskTracker!<br><br>
 If this were a real app, we would give you some first-run tutorial here.<br><br>
 <div class="smaller">
-You are seeing this because the store sent information
-to the application confirming that you purchased it.</div>
+When the page was loaded, it noticed that you were an unvalidated user and
+called the <code>verify</code> method of your application repository.  That
+sent you to the application store, where you were authenticated and your
+purchase record was retrieved.
+<br><br>
+You were then returned to the app with validation information:<br>
+Application ID: {{ verify["verification"](0) }}<br>
+User ID: {{ verify["verification"](1) }}<br>
+Timestamp: {{ verify["verification"](2) }}<br>
+Signature: {{ verify["verification"](3) }}<br>
+</div>
 </div>
 </div>

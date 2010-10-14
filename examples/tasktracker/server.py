@@ -101,10 +101,13 @@ class MainHandler(WebHandler):
       return
       
     if verifiedUser: # we just got a new validation; that overrides any previous data
-      self.set_secure_cookie(str("ttracker_uid"), verifiedUser)
-
-      # and redirect the user to this page so they don't accidentally bookmark the validation
-      self.redirect("/")
+      # in a real app, we would set a secure cookie here, so we
+      # don't need to reverify every time.  We would then redirect
+      # to '/' so the user doesn't see all the verification arguments.
+      
+      # For demo purposes, we actually want that, so just report
+      # the result.
+      self.render("user_index.html", verify = {"verification":self.request.get_argument("verification").split("|"), "signature":self.request.get_argument("signature")}, user_id = user_id)
       return
     else:
       cookie_user = self.get_secure_cookie("ttracker_uid")

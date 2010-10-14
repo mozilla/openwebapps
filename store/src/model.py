@@ -270,6 +270,7 @@ def purchase_for_user_app(userid, appid):
 
 def remove_purchase_for_user_app(userid, appid):
   session.query(Purchase).filter(Purchase.user_id == userid).filter(Purchase.app_id == appid).delete()
+  session.commit()
 
 def createPurchaseForUserApp(uid, appid):
   try:

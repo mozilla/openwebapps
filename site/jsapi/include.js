@@ -197,6 +197,7 @@ var AppClient = (function() {
   // request Id and either queues up the request before the iframe
   // is created or makes the actual request
   function queueRequest(requestObj) {
+
     if(unsupported) { return; }
     requestObj.id = requestId;
     openRequests[requestId++] = requestObj;

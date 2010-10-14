@@ -46,121 +46,39 @@ var gSelectedInstall = null;
 // Display mode:
 /* const */ ROOT = 1;
 /* const */ APP_INFO = 2;
-/* const */ NOTIFICATIONS = 3;
 var gDisplayMode = ROOT;
 
 // Various display settings
 var gIconSize = 48;// get from pref
 
-function init() {
-  try {
-    // Construct our Apps handle
-    gApps = new Apps();
+$(document).ready(function() {
+    // can this user use myapps?
+    var w = window;
+    if (w.JSON && w.postMessage && w.localStorage) {
+        $("#container").fadeIn(500);
+        try {
+            // Construct our Apps handle
+            gApps = new Apps();
 
-    // Draw it
-    gDisplayMode = ROOT;
-    try {
-    } catch (e) {
-      gApps.logError("Error while initializing apps: " + e);
+            // Draw it
+            gDisplayMode = ROOT;
+            try {
+            } catch (e) {
+                gApps.logError("Error while initializing apps: " + e);
+            }
+            render();
+        } catch (e) {
+            alert(e);
+        }
+    } else {
+        $("#unsupportedBrowser").fadeIn(500);
     }
-    render();
-
-    // Refresh notifications
-    gApps.refreshNotifications(notificationsWereRefreshed);
-  } catch (e) {
-    alert(e);
-  }
-}
+});
 
 function elem(type, clazz) {
 	var e = document.createElement(type);
   if (clazz) e.setAttribute("class", clazz);
   return e;
-}
-
-function NotificationDB() {
-  this.notifications = [];
-}
-
-NotificationDB.prototype = {
-  add: function(install, notifications) {
-    for (var i=0;i<notifications.length;i++) {
-      var notif = notifications[i];
-      notif.install = install;
-      this.notifications.push(notif);
-      
-      if (window.navigator && window.navigator.apps && window.navigator.apps.externalNotify) {
-        window.navigator.apps.externalNotify(notif.title, 
-                                             notif.summary, 
-                                             notif.link, 
-                                             function (data) {
-                                             
-                                                if (navigator.apps && navigator.apps.openAppTab)
-                                                {
-                                                  navigator.apps.openAppTab(install, data, {});
-                                                }
-                                                else
-                                                {
-                                                  window.open(data, "_blank");
-                                                }
-                                             });
-                                             
-      }
-    }
-  },
-
-  getForApp: function(appKey) {
-    var result = [];
-    for (var i=0;i<this.notifications.length;i++) {
-      var notif = this.notifications[i];
-
-      if (notif.install.app.app.launch.web_url == appKey) {
-        result.push(notif);
-      }
-    }
-    return result;
-  },
-
-  getSortedByDate: function() {
-    this.notifications.sort(function(a,b) {
-      if (a.updated && b.updated) {
-        return new Date(b.updated) - new Date(a.updated);
-      } else if (a.updated) {
-        return 1;
-      } else if (b.updated) {
-        return -1;
-      } else {
-        return 0;
-      }
-    });
-    return this.notifications;
-  },
-
-  anyNotifications: function() {
-    return (this.notifications.length > 0);
-  },
-
-  count: function() {
-    return this.notifications.length;
-  }
-}
-var gNotificationDB = new NotificationDB();
-
-function notificationsWereRefreshed(install, notifications)
-{
-    try {
-        gNotificationDB.add(install, notifications);
-        render();
-    } catch (e) {
-        dump("Error while parsing notification: " + e + "\n");
-    }
-}
-
-
-function showNotifications()
-{
-  gDisplayMode = NOTIFICATIONS;
-  render();
 }
 
 // Creates an opener for an app tab.  The usual behavior
@@ -191,19 +109,6 @@ function render()
   var box = $("#appList");
   box.empty();
 
-  var notifTab = $("#notifTab");
-  notifTab.empty();
-  if (gNotificationDB.anyNotifications()) {
-    notifTab.text("Notifications (" + gNotificationDB.count() + ")");
-    renderNotifications();
-  } else {
-    notifTab.text("No notifications");
-  }
-
-  if (false) { /*(showInbox) {*/
-    box.append(createAppIcon(messageInboxInstall));
-  }
-
   var selectedBox = null;
   for (var i=0;i<gApps.installs.length;i++)
   {
@@ -222,55 +127,15 @@ function render()
     }
   }
 
-  if (gDisplayMode == APP_INFO) {
-    renderAppInfo(selectedBox);
-  }
-}
-
-const SORT_DATE = 1;
-const SORT_APP = 2;
-var gNotificationSort = SORT_DATE;
-function renderNotifications()
-{
-  var box = $("#notifications");
-  box.empty();
-  
-  var nots;
-  if (gNotificationSort == SORT_DATE) {
-    nots = gNotificationDB.getSortedByDate();
-  } else if (gNotificationSort == SORT_APP) {
-    nots = gNotificationDB.getSortedByApp();
-  }
-
-  for (var i=0;i<nots.length;i++)
-  {
-    var nBox = $("<div>").addClass("notification");
-    var nIconBox = $("<div>").addClass("notIcon");
-    var nIcon = $("<img>").attr({
-      width:16, height:16, src:gApps.getIcon(nots[i].install.app, 16)});
-    nIconBox.append(nIcon);
-    nBox.append(nIconBox);
-
-    var nTitle = $("<div>").addClass("notTitle");
-    nBox.append(nTitle);
-
-    if (nots[i].link) {
-      var nLink = $("<a>").text(nots[i].title).attr({href:"#"});
-      nLink.click(makeOpenAppTabFn(nots[i].install.app, nots[i].link));
-      // attr({href:nots[i].link}).
-      nTitle.append(nLink);
-    } else {
-      nTitle.text(nots[i].title);
+    if (gDisplayMode == APP_INFO) {
+        // kick back to "ROOT" display mode if there's no
+        // selected application for which to display an info pane
+        if (selectedBox) {
+            renderAppInfo(selectedBox);
+        } else {
+            gDisplayMode == ROOT;
+        }
     }
-    var nDate = $("<div>").addClass("notDate").text(formatDate(nots[i].updated));
-    nBox.append(nDate);
-    var nSummary = $("<div>").addClass("notSummary").text(nots[i].summary);
-    nBox.append(nSummary);
-
-    // TODO support ActivityStreams for image preview, etc.
-
-    box.append(nBox);
-  }
 }
 
 var overlayId = "myAppsDialogOverlay";
@@ -302,239 +167,165 @@ function hideDarkOverlay() {
 
 function renderAppInfo(selectedBox)
 {
-//  var od = showDarkOverlay();
-  $("getInfo").remove();
+    $("#getInfo").remove();
 
-  // Set up Info starting location
-  var info = document.createElement("div");
-  info.id = getInfoId;
-  info.className = "getInfo";
-  info.style.width="96px";
-  info.style.height="96px";
-  var rect = selectedBox.getBoundingClientRect();
-  info.style.left= rect.left + "px";
-  info.style.top= rect.top-8 + "px";
+    // Set up Info starting location
+    var info = document.createElement("div");
+    info.id = getInfoId;
+    info.className = "getInfo";
 
-  // Start animation to target size
-  var width = 300, height = 340;
-  var docRect = document.body.getBoundingClientRect();
-  var targetLeft = rect.left;
-  var targetTop = rect.top - 8;
-  if (rect.left + width > docRect.right-20) targetLeft = docRect.right-20 - width;
-  window.setTimeout(function() {
-    if (targetLeft != rect.left) info.style.left = targetLeft +"px";
-    info.style.width=width+"px";
-    info.style.height=height+"px";
-  }, 0);
-
-  var badge = elem("div", "appBadge");
-  var appIcon = elem("div", "app_icon");
-  var icon = gApps.getIcon(gSelectedInstall.app, "96");
-  if (icon) {
-    appIcon.setAttribute("style", 
-      "background:url(\"" + icon + "\") no-repeat; background-size:100%");
-  }
-  
-  var label = elem("div", "appBadgeName");
-  label.appendChild(document.createTextNode(gSelectedInstall.app.name));
-
-  badge.appendChild(label);
-  badge.appendChild(appIcon);
-  info.appendChild(badge);
-
-  // Render the contents once we reach full size
-  window.setTimeout(function() {
-
-    var data = elem("div", "appData");
-    function makeColumn(label, value) {
-      var boxDiv = elem("div", "appDataBox");
-      var labelDiv = elem("div", "appDataLabel");
-      var valueDiv = elem("div", "appDataValue");
-      labelDiv.appendChild(document.createTextNode(label));
-      if (typeof value == "string") {
-        valueDiv.appendChild(document.createTextNode(value));
-      } else {
-        valueDiv.appendChild(value);
-      }
-      boxDiv.appendChild(labelDiv);
-      boxDiv.appendChild(valueDiv);
-      return boxDiv;
+    var badge = elem("div", "appBadge");
+    var appIcon = elem("div", "app_icon");
+    var icon = gApps.getIcon(gSelectedInstall.app, "96");
+    if (icon) {
+        appIcon.setAttribute("style", 
+                             "background:url(\"" + icon + "\") no-repeat; background-size:100%");
     }
-    var dev = elem("div", "developerName");
-    if (gSelectedInstall.app.developerURL) {
-      var a = elem("a");
-      a.setAttribute("href", gSelectedInstall.app.developerURL);
-      a.setAttribute("target", "_blank");
-      a.appendChild(document.createTextNode(gSelectedInstall.app.developerName));
-      dev.appendChild(a);
-      data.appendChild(dev);
+    
+    var label = elem("div", "appBadgeName");
+    label.appendChild(document.createTextNode(gSelectedInstall.app.name));
 
-      var linkbox = elem("div", "developerLink");
-      a = elem("a");
-      a.setAttribute("href", gSelectedInstall.app.developerURL);
-      a.setAttribute("target", "_blank");
-      a.appendChild(document.createTextNode(gSelectedInstall.app.developerURL));
-      linkbox.appendChild(a);
-      data.appendChild(linkbox);
+    badge.appendChild(appIcon);
+    badge.appendChild(label);
+    info.appendChild(badge);
 
-    } else {
-      if (gSelectedInstall.app.developerName) {
-        dev.appendChild(document.createTextNode(gSelectedInstall.app.developerName));
-        data.appendChild(dev);
-      } else {
-        dev.appendChild(document.createTextNode("No developer info"));
-        $(dev).addClass("devUnknown");
-        data.appendChild(dev);
-      }
-    }
-    info.appendChild(data);
-
-    var desc = elem("div", "desc");
-    desc.appendChild(document.createTextNode(gSelectedInstall.app.description));
-    info.appendChild(desc);
-
-    var props = elem("div", "appProperties");
-
-    var searchable = false;
-    var notifications = false;
-    if (gSelectedInstall.app.supportedAPIs) {
-        for (var i=0; i < gSelectedInstall.app.supportedAPIs.length; i++) {
-            if (gSelectedInstall.app.supportedAPIs[i] === 'search') {
-                searchable=true;
-            } else if (gSelectedInstall.app.supportedAPIs[i] === 'notification') {
-	        notifications=true;
+    var off = $(selectedBox).offset();
+    $(info).css("postion", "absolute").css("top", off.top + 6).css("left", off.left + 6);
+    $(info).width(110).height(128).animate({
+        width: 300,
+        height: 300
+    }, 200, function() {
+        var data = elem("div", "appData");
+        function makeColumn(label, value) {
+            var boxDiv = elem("div", "appDataBox");
+            var labelDiv = elem("div", "appDataLabel");
+            var valueDiv = elem("div", "appDataValue");
+            labelDiv.appendChild(document.createTextNode(label));
+            if (typeof value == "string") {
+                valueDiv.appendChild(document.createTextNode(value));
+            } else {
+                valueDiv.appendChild(value);
             }
-	}
-    }
+            boxDiv.appendChild(labelDiv);
+            boxDiv.appendChild(valueDiv);
+            return boxDiv;
+        }
+        var dev = elem("div", "developerName");
+        if (gSelectedInstall.app.developerURL) {
+            var a = elem("a");
+            a.setAttribute("href", gSelectedInstall.app.developerURL);
+            a.setAttribute("target", "_blank");
+            a.appendChild(document.createTextNode(gSelectedInstall.app.developerName));
+            dev.appendChild(a);
+            data.appendChild(dev);
 
-    if (searchable) {
-      var searchDiv = elem("div", "cbox");
-      var cbox = elem("input");
-      cbox.setAttribute("type", "checkbox");
-      searchDiv.appendChild(cbox);
-      if (!(gSelectedInstall.prefs && gSelectedInstall.prefs.doNotSearch))
-      {
-        cbox.checked = true;
-      }
-      searchDiv.appendChild(document.createTextNode("Include in search results"));
-      props.appendChild(makeColumn("Search?", searchDiv));
-    } else {
-      props.appendChild(makeColumn("Search?", "Not searchable"));
-    }
+            var linkbox = elem("div", "developerLink");
+            a = elem("a");
+            a.setAttribute("href", gSelectedInstall.app.developerURL);
+            a.setAttribute("target", "_blank");
+            a.appendChild(document.createTextNode(gSelectedInstall.app.developerURL));
+            linkbox.appendChild(a);
+            data.appendChild(linkbox);
 
-    if (notifications) {
-      var notifyDiv = elem("div", "cbox");
-      var cbox = elem("input");
-      cbox.setAttribute("type", "checkbox");
-      notifyDiv.appendChild(cbox);
-      if (!(gSelectedInstall.prefs && gSelectedInstall.prefs.doNotNotify))
-      {
-        cbox.checked = true;
-      }
-      notifyDiv.appendChild(document.createTextNode("Display notifications"));
-      props.appendChild(makeColumn("Notifications?", notifyDiv));
-    } else {
-      props.appendChild(makeColumn("Notifications?", "None"));
-    }
+        } else {
+            if (gSelectedInstall.app.developerName) {
+                dev.appendChild(document.createTextNode(gSelectedInstall.app.developerName));
+                data.appendChild(dev);
+            } else {
+                dev.appendChild(document.createTextNode("No developer info"));
+                $(dev).addClass("devUnknown");
+                data.appendChild(dev);
+            }
+        }
+        info.appendChild(data);
 
-    props.appendChild(elem("div", "hdiv"));
-    props.appendChild(makeColumn("Install Date", formatDate(gSelectedInstall.installTime)));
-    props.appendChild(makeColumn("Installed From", gSelectedInstall.installURL));
-    if (gSelectedInstall.authorization_token) props.appendChild(makeColumn("Authz Token", gSelectedInstall.authorization_token));
+        var desc = elem("div", "desc");
+        desc.appendChild(document.createTextNode(gSelectedInstall.app.description));
+        info.appendChild(desc);
 
-    info.appendChild(props);
-    $(info).click(function() {return false;});
-  }, 200);
+        var props = elem("div", "appProperties");
 
-  document.body.appendChild(info);
+        props.appendChild(makeColumn("Install Date", formatDate(gSelectedInstall.installTime)));
+        props.appendChild(makeColumn("Installed From", gSelectedInstall.installURL));
+        if (gSelectedInstall.authorization_token) props.appendChild(makeColumn("Authz Token", gSelectedInstall.authorization_token));
 
-  // Dismiss box when user clicks anywhere else
-  setTimeout( function() { // Delay for Mozilla
-    $(document).click( function() {
-      $(document).unbind('click');
-      $(info).fadeOut(100);
-      return false;
+        info.appendChild(props);
+
+        // finally, a delete link and action
+        $("<div/>").text("Delete this application.").addClass("deleteText").appendTo(info).click(function() {
+            gApps.remove(gSelectedInstall.app.app.launch.web_url);
+            gSelectedInstall = null;
+            gDisplayMode = ROOT;
+            render();
+
+            // let's now create a synthetic click to the document to cause the info dialog to get dismissed and
+            // cleaned up properly
+            $(document).click();
+
+            return false;
+        });
+
+        $(info).click(function() {return false;});
     });
-  }, 0);
 
+    $("body").append(info);
+
+    // Dismiss box when user clicks anywhere else
+    setTimeout( function() { // Delay for Mozilla
+        $(document).click(function() {
+            $(document).unbind('click');
+            $(info).fadeOut(100, function() { $("#"+getInfoId).remove(); });
+            return false;
+        });
+    }, 0);
 }
 
 function createAppIcon(install) 
 {
-  var appDiv = elem("div", "app");
-  appDiv.onclick = makeOpenAppTabFn(install.app, install.app.app.launch.web_url);
-  appDiv.setAttribute("id", "app:" + install.app.app.launch.web_url);
+    var appDiv = elem("div", "app");
+    appDiv.onclick = makeOpenAppTabFn(install.app, install.app.app.launch.web_url);
+    appDiv.setAttribute("id", "app:" + install.app.app.launch.web_url);
 
-  var iconDiv = elem("div", "icon");
-  $(iconDiv).appendTo($(appDiv));
-  
-  var icon = gApps.getIcon(install.app, "96");
-  if (icon) {
-    iconDiv.setAttribute("style", 
-      "background:url(\"" + icon + "\") no-repeat; background-size:100%");
-    //iconDiv.style.background = "url(\"" + icon + "\") no-repeat";
-    //iconDiv.style.backgroundScale = "100%";
-  }
+    var iconDiv = $("<div/>").addClass("icon");
+    $(appDiv).append(iconDiv);
 
-  var link = elem("a");
-  $(link).appendTo($(iconDiv));
+    var icon = gApps.getIcon(install.app, "96");
+    if (icon) {
+        iconDiv.css({
+            background: "url(\"" + icon + "\") no-repeat",
+            backgroundSize: "100%"
+        });
+    }
 
-  var nameDiv = elem("div", "appName");
-  $(nameDiv).text(install.app.name).appendTo($(iconDiv));
-  
-  // Set up the context menu:
-  $(appDiv).contextMenu(
-    {
-      menu: 'appContextMenu'
-    },
-    function(action, el, pos) {
-      var app = $(el).attr('id').substring(4);
-      gSelectedInstall = gApps.getInstall(app);
-      if (!gSelectedInstall) return;
+    var moreInfo = $("<div/>").addClass("moreInfo").appendTo(iconDiv);
+    $("<a/>").appendTo(iconDiv);
+    $("<div/>").text(install.app.name).addClass("appName").appendTo(iconDiv);
 
-      if (action == "appDetails")
-      {
+    // Set up the hover handler.  Only fade in after the user hovers for 
+    // 500ms.
+    var tHandle;
+    $(iconDiv).hover(function() {
+        var self = $(this);
+        tHandle = setTimeout(function() {
+            self.find(".moreInfo").fadeIn();
+        }, 500);
+    }, function() {
+        $(this).find(".moreInfo").hide();
+        clearTimeout(tHandle);
+    });
+
+    // bring up detail display when user clicks on info icon
+    moreInfo.click(function(e) {
+        var app = install.app.app.launch.web_url;
+        gSelectedInstall = gApps.getInstall(app);
+        if (!gSelectedInstall) return;
+
         gDisplayMode = APP_INFO;
         render();
-      }
-      else if (action == "appUninstall")
-      {
-        gApps.remove(app);
-        gSelectedInstall = null;
-        render();
-      }
-    }
-  );
-  return appDiv;
-}
+        return false;
+    });
 
-
-function drawNotificationBadge(ctx, count)
-{
-  circle(ctx, gIconSize - 2, 12, 10, "rgba(0,0,0,200)", null);
-  circle(ctx, gIconSize - 3, 11, 10, "rgb(255,0,0)", "rgba(0,0,0,0)");
-  ctx.beginPath();
-  ctx.fillStyle = "rgb(255,255,255)";
-  ctx.strokeStyle = "rgb(255,255,255)";
-  ctx.font = "11px Helvetica, sans-serif";
-  ctx.fillText("" + count, gIconSize - 8, 14);
-  ctx.strokeText("" + count, gIconSize - 8, 14);
-}
-
-function drawAlertBadge(ctx)
-{
-  ctx.beginPath();
-  ctx.moveTo(gIconSize - 10, 17);
-  ctx.lineTo(gIconSize , 0);
-  ctx.lineTo(gIconSize + 10, 17);
-  ctx.lineTo(gIconSize - 10, 17);
-  ctx.fillStyle = "rgb(239,221,112)";
-  ctx.strokeStyle = "rgb(0,0,0)";
-  ctx.fill();
-  ctx.stroke();
-  ctx.font = "11px serif";
-  ctx.strokeText("!", gIconSize-2, 14);
-  ctx.endPath();
+    return appDiv;
 }
 
 function formatDate(dateStr)
@@ -581,8 +372,6 @@ function onFocus(event)
   if (gApps) {
     gApps.reload();
     render();
-    gNotificationDB = new NotificationDB();
-    gApps.refreshNotifications(notificationsWereRefreshed);
   }
 }
 
