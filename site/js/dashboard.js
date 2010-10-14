@@ -227,8 +227,8 @@ function render()
   }
 }
 
-const SORT_DATE = 1;
-const SORT_APP = 2;
+/* const */ SORT_DATE = 1;
+/* const */ SORT_APP = 2;
 var gNotificationSort = SORT_DATE;
 function renderNotifications()
 {
@@ -476,13 +476,11 @@ function createAppIcon(install)
     //iconDiv.style.backgroundScale = "100%";
   }
 
-  var link = elem("a");
-  $(link).appendTo($(iconDiv));
-
-  var nameDiv = elem("div", "appName");
-  $(nameDiv).text(install.app.name).appendTo($(iconDiv));
+  $("<a/>").appendTo($(iconDiv));
+  $("<div/>").text(install.app.name).addClass("appName").appendTo($(iconDiv));
   
   // Set up the context menu:
+/*
   $(appDiv).contextMenu(
     {
       menu: 'appContextMenu'
@@ -505,6 +503,7 @@ function createAppIcon(install)
       }
     }
   );
+*/
   return appDiv;
 }
 
