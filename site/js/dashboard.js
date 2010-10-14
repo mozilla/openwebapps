@@ -190,7 +190,6 @@ function renderAppInfo(selectedBox)
         width: 300,
         height: 300
     }, 200, function() {
-        console.log("begin rendering");
         var data = elem("div", "appData");
         function makeColumn(label, value) {
             var boxDiv = elem("div", "appDataBox");
