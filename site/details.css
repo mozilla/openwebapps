@@ -136,3 +136,15 @@
   margin-bottom:4px;
   background-color:#d0d0d0
 }
+
+.getInfo > .deleteText {
+  position: absolute;    
+  bottom: 1em;
+  right: 1em;
+  color: #900;
+  cursor: pointer;
+}
+
+.getInfo > .deleteText:hover {
+  color: #c33;
+}

@@ -443,6 +443,21 @@ function renderAppInfo(selectedBox)
     if (gSelectedInstall.authorization_token) props.appendChild(makeColumn("Authz Token", gSelectedInstall.authorization_token));
 
     info.appendChild(props);
+
+    // finally, a delete link and action
+    $("<div/>").text("Delete this application.").addClass("deleteText").appendTo(info).click(function() {
+        gApps.remove(gSelectedInstall.app.app.launch.web_url);
+        gSelectedInstall = null;
+        gDisplayMode = ROOT;
+        render();
+
+        // let's now create a synthetic click to the document to cause the info dialog to get dismissed and
+        // cleaned up properly
+        $(document).click();
+
+        return false;
+    });
+
     $(info).click(function() {return false;});
   }, 200);
 
@@ -450,9 +465,9 @@ function renderAppInfo(selectedBox)
 
   // Dismiss box when user clicks anywhere else
   setTimeout( function() { // Delay for Mozilla
-    $(document).click( function() {
+    $(document).click(function() {
       $(document).unbind('click');
-      $(info).fadeOut(100);
+      $(info).fadeOut(100, function() { $("#"+getInfoId).remove(); });
       return false;
     });
   }, 0);
@@ -461,50 +476,50 @@ function renderAppInfo(selectedBox)
 
 function createAppIcon(install) 
 {
-  var appDiv = elem("div", "app");
-  appDiv.onclick = makeOpenAppTabFn(install.app, install.app.app.launch.web_url);
-  appDiv.setAttribute("id", "app:" + install.app.app.launch.web_url);
+    var appDiv = elem("div", "app");
+    appDiv.onclick = makeOpenAppTabFn(install.app, install.app.app.launch.web_url);
+    appDiv.setAttribute("id", "app:" + install.app.app.launch.web_url);
 
-  var iconDiv = elem("div", "icon");
-  $(iconDiv).appendTo($(appDiv));
-  
-  var icon = gApps.getIcon(install.app, "96");
-  if (icon) {
-    iconDiv.setAttribute("style", 
-      "background:url(\"" + icon + "\") no-repeat; background-size:100%");
-    //iconDiv.style.background = "url(\"" + icon + "\") no-repeat";
-    //iconDiv.style.backgroundScale = "100%";
-  }
+    var iconDiv = $("<div/>").addClass("icon");
+    $(appDiv).append(iconDiv);
 
-  $("<a/>").appendTo($(iconDiv));
-  $("<div/>").text(install.app.name).addClass("appName").appendTo($(iconDiv));
-  
-  // Set up the context menu:
-/*
-  $(appDiv).contextMenu(
-    {
-      menu: 'appContextMenu'
-    },
-    function(action, el, pos) {
-      var app = $(el).attr('id').substring(4);
-      gSelectedInstall = gApps.getInstall(app);
-      if (!gSelectedInstall) return;
+    var icon = gApps.getIcon(install.app, "96");
+    if (icon) {
+        iconDiv.css({
+            background: "url(\"" + icon + "\") no-repeat",
+            backgroundSize: "100%"
+        });
+    }
 
-      if (action == "appDetails")
-      {
+    var moreInfo = $("<div/>").addClass("moreInfo").appendTo(iconDiv);
+    $("<a/>").appendTo(iconDiv);
+    $("<div/>").text(install.app.name).addClass("appName").appendTo(iconDiv);
+
+    // Set up the hover handler.  Only fade in after the user hovers for 
+    // 500ms.
+    var tHandle;
+    $(iconDiv).hover(function() {
+        var self = $(this);
+        tHandle = setTimeout(function() {
+            self.find(".moreInfo").fadeIn();
+        }, 500);
+    }, function() {
+        $(this).find(".moreInfo").hide();
+        clearTimeout(tHandle);
+    });
+
+    // bring up detail display when user clicks on info icon
+    moreInfo.click(function(e) {
+        var app = install.app.app.launch.web_url;
+        gSelectedInstall = gApps.getInstall(app);
+        if (!gSelectedInstall) return;
+
         gDisplayMode = APP_INFO;
         render();
-      }
-      else if (action == "appUninstall")
-      {
-        gApps.remove(app);
-        gSelectedInstall = null;
-        render();
-      }
-    }
-  );
-*/
-  return appDiv;
+        return false;
+    });
+
+    return appDiv;
 }
 
 
