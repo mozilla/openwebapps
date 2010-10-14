@@ -16,3 +16,10 @@ cat techSiteFooter.html >> $page.html
 count=$count+1
 done
 
+echo "<html><head><title>Installable Web Applications</title>" > oneFile.html
+echo "<link href='techsite.css' media='screen' rel='stylesheet' type='text/css' /></head><body><div class='docs'>" >> oneFile.html
+for page in ${pages[@]}
+do
+markdown `echo $page | tr "[:lower:]" "[:upper:]"`.md >> oneFile.html
+done
+cat techSiteFooter.html >> oneFile.html
