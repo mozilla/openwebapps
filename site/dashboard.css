@@ -549,7 +549,7 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
 }
 
 #unsupportedBrowserContent div {
-  padding: 40px;
+  padding: 30px;
 }
 
 #unsupportedBrowserContent p {
