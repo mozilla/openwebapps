@@ -128,7 +128,13 @@ function render()
   }
 
     if (gDisplayMode == APP_INFO) {
-        renderAppInfo(selectedBox);
+        // kick back to "ROOT" display mode if there's no
+        // selected application for which to display an info pane
+        if (selectedBox) {
+            renderAppInfo(selectedBox);
+        } else {
+            gDisplayMode == ROOT;
+        }
     }
 }
 
@@ -182,7 +188,6 @@ function renderAppInfo(selectedBox)
     badge.appendChild(appIcon);
     badge.appendChild(label);
     info.appendChild(badge);
-
 
     var off = $(selectedBox).offset();
     $(info).css("postion", "absolute").css("top", off.top + 6).css("left", off.left + 6);
@@ -311,10 +316,6 @@ function createAppIcon(install)
 
     // bring up detail display when user clicks on info icon
     moreInfo.click(function(e) {
-        // if there is currently an open info window, this synthetic click will
-        // cause it to be cleaned up.  if not, its a noop.
-        $(document).click();
-
         var app = install.app.app.launch.web_url;
         gSelectedInstall = gApps.getInstall(app);
         if (!gSelectedInstall) return;
