@@ -51,22 +51,29 @@ var gDisplayMode = ROOT;
 // Various display settings
 var gIconSize = 48;// get from pref
 
-function init() {
-  try {
-    // Construct our Apps handle
-    gApps = new Apps();
+$(document).ready(function() {
+    // can this user use myapps?
+    var w = window;
+    if (w.JSON && w.postMessage && w.localStorage) {
+        $("#container").fadeIn(500);
+        try {
+            // Construct our Apps handle
+            gApps = new Apps();
 
-    // Draw it
-    gDisplayMode = ROOT;
-    try {
-    } catch (e) {
-      gApps.logError("Error while initializing apps: " + e);
+            // Draw it
+            gDisplayMode = ROOT;
+            try {
+            } catch (e) {
+                gApps.logError("Error while initializing apps: " + e);
+            }
+            render();
+        } catch (e) {
+            alert(e);
+        }
+    } else {
+        $("#unsupportedBrowser").fadeIn(500);
     }
-    render();
-  } catch (e) {
-    alert(e);
-  }
-}
+});
 
 function elem(type, clazz) {
 	var e = document.createElement(type);

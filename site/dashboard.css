@@ -4,6 +4,12 @@
 *
 /**************/
 
+/* don't display anything at inital pageload, wait for page load where
+ * browser feature checking will occur */
+body > div {
+  display: none;
+}
+
 /* ------- HTML ELEMENTS ------- */
 
 html {
@@ -524,3 +530,29 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
 	margin-right: 6px;
 }
 
+/* -----------------------------------  */
+/* ------- UNSUPPORTED BROWSER -------  */
+/* -----------------------------------  */
+
+#unsupportedBrowser {
+  width: 600px;
+  margin: auto;
+  text-align: center;
+}
+
+#unsupportedBrowser > div {
+  padding: 40px;
+}
+
+#unsupportedBrowser > p {
+  font-size: 1.5em;
+  color: #666;
+}
+
+#unsupportedBrowser a {
+  color: #666;
+}
+
+#unsupportedBrowser a:hover {
+  color: #333;
+}
