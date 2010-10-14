@@ -1,61 +1,36 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
+  <meta http-equiv="X-UA-Compatible" content="IE=8"/> 
   <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
   <title>Application Dashboard</title>
   <link rel="shortcut icon" href="favicon.png" type="image/png">
   <link rel="stylesheet" href="dashboard.css" type="text/css" title="screen">
-	<link rel="stylesheet" href="context_menu.css" type="text/css" title="screen">
-	<link rel="stylesheet" href="details.css" type="text/css" title="screen">
+  <link rel="stylesheet" href="details.css" type="text/css" title="screen">
 </head>
 
 <body onload="init()" style="position:relative">
 
 <div id="container">
-
-
   <div id="header"><img src="img/logo.png"><span class="headerText">App Dashboard</span></div>
-
   <div id="content">
-    
     <div id="maincontentmenu">
       <div class="maincontentmenuItemOn"><a href="">Applications</a></div>
       <div id="demobutton" class="button"><a href="https://appstore.mozillalabs.com/"></a>Get Demo Apps</div>
-
     </div>
     <div id="maincontent">
-    
       <div class="appList" id="appList">
-  
       </div>
-    
     </div>
-    
     <div id="footer">a Mozilla Labs project</div>
-
-    
   </div>
-  
-  
-
 </div>
 
-
-<ul id="appContextMenu" class="contextMenu">
-  <li class="menuGetInfo"><a href="#appDetails">Details...</a></li>
-  <li class="menuUninstall"><a href="#appUninstall">Uninstall App</a></li>
-</ul>
-
 <script type="text/javascript" src="js/compat.js"></script>
-<script type="text/javascript" src="js/jschannel.js"></script>
 <script type="text/javascript" src="js/jquery-1.4.2.min.js"></script>
-<script type="text/javascript" src="js/jquery-ui-1.8.5.custom.min.js"></script>
-<script type="text/javascript" src="js/jquery.contextMenu.js"></script>
 <script type="text/javascript" src="js/manifest.js"></script>
 <script type="text/javascript" src="js/apps.js"></script>
 <script type="text/javascript" src="js/dashboard.js"></script>
-<script type="text/javascript" src="js/conduit.js"></script>
-<script type="text/javascript" src="js/search.js"></script>
 
 </body>
 </html>

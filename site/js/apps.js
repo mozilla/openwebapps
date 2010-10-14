@@ -62,7 +62,6 @@ Apps.prototype.reload = function() {
     var install = JSON.parse(item);
     this.installs.push(install);
   }
-  //this.makeConduits();
 
   this.installs.sort(function (a,b) {
       return a.app.name.localeCompare(b.app.name);
@@ -145,45 +144,6 @@ Apps.prototype.getInstall = function(url)
   return null;
 }
 
-Apps.prototype.makeConduits = function()
-{
-  if (this.conduits) {
-    for (var i=0;i<this.conduits.length;i++) {
-      this.conduits[i].destroy();
-      // also need to clear out the references in the installs; we'll do that next
-    }
-  }
-  this.conduits = [];
-  for (var i=0;i<this.installs.length;i++)
-  {
-    var install = this.installs[i];
-    install.conduit = null;
-    if (install.app.conduit)
-    {
-      var key = install.app.app.launch.web_url;
-      var conduit = new AppConduit(key, install.app.conduit);
-      install.conduit = conduit;
-      this.conduits.push(conduit);
-    }
-  }
-}
-
-Apps.prototype.refreshNotifications = function(callback)
-{
-  function makeCallback(install, callback) {
-    return function(result) {
-      callback(install, result);
-    }
-  }
-  for (var i=0;i<this.installs.length;i++)
-  {
-    var install = this.installs[i];
-    if (install.conduit && install.app.supportedAPIs.indexOf("notification") >= 0)
-    {
-      install.conduit.notifications(makeCallback(install, callback));
-    }
-  }
-}
 
 Apps.prototype.applicationsForURL = function(url)
 {
