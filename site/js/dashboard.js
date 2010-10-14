@@ -330,6 +330,10 @@ function createAppIcon(install)
 
     // bring up detail display when user clicks on info icon
     moreInfo.click(function(e) {
+        // if there is currently an open info window, this synthetic click will
+        // cause it to be cleaned up.  if not, its a noop.
+        $(document).click();
+
         var app = install.app.app.launch.web_url;
         gSelectedInstall = gApps.getInstall(app);
         if (!gSelectedInstall) return;
