@@ -1,5 +1,14 @@
-var myModule = require("apps");
+var apps = require("apps");
+var url = require("url");
 
-exports.ensureAdditionWorks = function(test) {
-  test.assertEqual(myModule.add(1, 1), 2, "1 + 1 = 2");
+exports.applicationMatchesURL = function(test) {
+  var app = 
+    {
+      app:
+      {
+        urls:["http://www.helloworld.com"]
+      }
+    };
+
+  test.assert(apps.applicationMatchesURL(app, "http://www.helloworld.com"));
 };
