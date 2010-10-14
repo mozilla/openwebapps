@@ -539,17 +539,21 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
 /* -----------------------------------  */
 
 #unsupportedBrowser {
+  text-align: center;
+}
+
+#unsupportedBrowserContent {
   width: 600px;
   margin: auto;
   text-align: center;
 }
 
-#unsupportedBrowser > div {
+#unsupportedBrowserContent div {
   padding: 40px;
 }
 
-#unsupportedBrowser > p {
-  font-size: 1.5em;
+#unsupportedBrowserContent p {
+  font-size: 1.3em;
   color: #666;
 }
 
