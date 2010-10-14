@@ -26,7 +26,7 @@
 .getInfo > .appBadge {
   position:absolute;
   display:inline-block;
-  width:80px;
+/*  width:80px; */
   height:116px;
   text-align:center;
   position:relative;
