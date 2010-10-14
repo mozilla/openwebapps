@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="details.css" type="text/css" title="screen">
 </head>
 
-<body onload="init()" style="position:relative">
+<body>
 
 <div id="container">
   <div id="header"><img src="img/logo.png"><span class="headerText">App Dashboard</span></div>
@@ -25,6 +25,16 @@
     <div id="footer">a Mozilla Labs project</div>
   </div>
 </div>
+<div id="unsupportedBrowser">
+  <div id="unsupportedBrowserContent">
+    <div><img src="img/logo-192.png"></div>
+    <p>
+      This Mozilla Labs technology demo requires features that are not present in your browser.  Please consider upgrading 
+      to a modern browser!  There are <a href="http://www.whatbrowser.org/en/browser/">many free browsers to choose from</a>.
+    </p>
+  </div>
+</div>
+</body>
 
 <script type="text/javascript" src="js/compat.js"></script>
 <script type="text/javascript" src="js/jquery-1.4.2.min.js"></script>
@@ -32,6 +42,5 @@
 <script type="text/javascript" src="js/apps.js"></script>
 <script type="text/javascript" src="js/dashboard.js"></script>
 
-</body>
 </html>
 
