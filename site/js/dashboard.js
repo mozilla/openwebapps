@@ -46,7 +46,6 @@ var gSelectedInstall = null;
 // Display mode:
 /* const */ ROOT = 1;
 /* const */ APP_INFO = 2;
-/* const */ NOTIFICATIONS = 3;
 var gDisplayMode = ROOT;
 
 // Various display settings
@@ -64,9 +63,6 @@ function init() {
       gApps.logError("Error while initializing apps: " + e);
     }
     render();
-
-    // Refresh notifications
-    gApps.refreshNotifications(notificationsWereRefreshed);
   } catch (e) {
     alert(e);
   }
@@ -76,91 +72,6 @@ function elem(type, clazz) {
 	var e = document.createElement(type);
   if (clazz) e.setAttribute("class", clazz);
   return e;
-}
-
-function NotificationDB() {
-  this.notifications = [];
-}
-
-NotificationDB.prototype = {
-  add: function(install, notifications) {
-    for (var i=0;i<notifications.length;i++) {
-      var notif = notifications[i];
-      notif.install = install;
-      this.notifications.push(notif);
-      
-      if (window.navigator && window.navigator.apps && window.navigator.apps.externalNotify) {
-        window.navigator.apps.externalNotify(notif.title, 
-                                             notif.summary, 
-                                             notif.link, 
-                                             function (data) {
-                                             
-                                                if (navigator.apps && navigator.apps.openAppTab)
-                                                {
-                                                  navigator.apps.openAppTab(install, data, {});
-                                                }
-                                                else
-                                                {
-                                                  window.open(data, "_blank");
-                                                }
-                                             });
-                                             
-      }
-    }
-  },
-
-  getForApp: function(appKey) {
-    var result = [];
-    for (var i=0;i<this.notifications.length;i++) {
-      var notif = this.notifications[i];
-
-      if (notif.install.app.app.launch.web_url == appKey) {
-        result.push(notif);
-      }
-    }
-    return result;
-  },
-
-  getSortedByDate: function() {
-    this.notifications.sort(function(a,b) {
-      if (a.updated && b.updated) {
-        return new Date(b.updated) - new Date(a.updated);
-      } else if (a.updated) {
-        return 1;
-      } else if (b.updated) {
-        return -1;
-      } else {
-        return 0;
-      }
-    });
-    return this.notifications;
-  },
-
-  anyNotifications: function() {
-    return (this.notifications.length > 0);
-  },
-
-  count: function() {
-    return this.notifications.length;
-  }
-}
-var gNotificationDB = new NotificationDB();
-
-function notificationsWereRefreshed(install, notifications)
-{
-    try {
-        gNotificationDB.add(install, notifications);
-        render();
-    } catch (e) {
-        dump("Error while parsing notification: " + e + "\n");
-    }
-}
-
-
-function showNotifications()
-{
-  gDisplayMode = NOTIFICATIONS;
-  render();
 }
 
 // Creates an opener for an app tab.  The usual behavior
@@ -191,15 +102,6 @@ function render()
   var box = $("#appList");
   box.empty();
 
-  var notifTab = $("#notifTab");
-  notifTab.empty();
-  if (gNotificationDB.anyNotifications()) {
-    notifTab.text("Notifications (" + gNotificationDB.count() + ")");
-    renderNotifications();
-  } else {
-    notifTab.text("No notifications");
-  }
-
   if (false) { /*(showInbox) {*/
     box.append(createAppIcon(messageInboxInstall));
   }
@@ -224,52 +126,6 @@ function render()
 
   if (gDisplayMode == APP_INFO) {
     renderAppInfo(selectedBox);
-  }
-}
-
-/* const */ SORT_DATE = 1;
-/* const */ SORT_APP = 2;
-var gNotificationSort = SORT_DATE;
-function renderNotifications()
-{
-  var box = $("#notifications");
-  box.empty();
-  
-  var nots;
-  if (gNotificationSort == SORT_DATE) {
-    nots = gNotificationDB.getSortedByDate();
-  } else if (gNotificationSort == SORT_APP) {
-    nots = gNotificationDB.getSortedByApp();
-  }
-
-  for (var i=0;i<nots.length;i++)
-  {
-    var nBox = $("<div>").addClass("notification");
-    var nIconBox = $("<div>").addClass("notIcon");
-    var nIcon = $("<img>").attr({
-      width:16, height:16, src:gApps.getIcon(nots[i].install.app, 16)});
-    nIconBox.append(nIcon);
-    nBox.append(nIconBox);
-
-    var nTitle = $("<div>").addClass("notTitle");
-    nBox.append(nTitle);
-
-    if (nots[i].link) {
-      var nLink = $("<a>").text(nots[i].title).attr({href:"#"});
-      nLink.click(makeOpenAppTabFn(nots[i].install.app, nots[i].link));
-      // attr({href:nots[i].link}).
-      nTitle.append(nLink);
-    } else {
-      nTitle.text(nots[i].title);
-    }
-    var nDate = $("<div>").addClass("notDate").text(formatDate(nots[i].updated));
-    nBox.append(nDate);
-    var nSummary = $("<div>").addClass("notSummary").text(nots[i].summary);
-    nBox.append(nSummary);
-
-    // TODO support ActivityStreams for image preview, etc.
-
-    box.append(nBox);
   }
 }
 
@@ -316,7 +172,7 @@ function renderAppInfo(selectedBox)
   info.style.top= rect.top-8 + "px";
 
   // Start animation to target size
-  var width = 300, height = 340;
+  var width = 300, height = 300;
   var docRect = document.body.getBoundingClientRect();
   var targetLeft = rect.left;
   var targetTop = rect.top - 8;
@@ -395,49 +251,6 @@ function renderAppInfo(selectedBox)
 
     var props = elem("div", "appProperties");
 
-    var searchable = false;
-    var notifications = false;
-    if (gSelectedInstall.app.supportedAPIs) {
-        for (var i=0; i < gSelectedInstall.app.supportedAPIs.length; i++) {
-            if (gSelectedInstall.app.supportedAPIs[i] === 'search') {
-                searchable=true;
-            } else if (gSelectedInstall.app.supportedAPIs[i] === 'notification') {
-	        notifications=true;
-            }
-	}
-    }
-
-    if (searchable) {
-      var searchDiv = elem("div", "cbox");
-      var cbox = elem("input");
-      cbox.setAttribute("type", "checkbox");
-      searchDiv.appendChild(cbox);
-      if (!(gSelectedInstall.prefs && gSelectedInstall.prefs.doNotSearch))
-      {
-        cbox.checked = true;
-      }
-      searchDiv.appendChild(document.createTextNode("Include in search results"));
-      props.appendChild(makeColumn("Search?", searchDiv));
-    } else {
-      props.appendChild(makeColumn("Search?", "Not searchable"));
-    }
-
-    if (notifications) {
-      var notifyDiv = elem("div", "cbox");
-      var cbox = elem("input");
-      cbox.setAttribute("type", "checkbox");
-      notifyDiv.appendChild(cbox);
-      if (!(gSelectedInstall.prefs && gSelectedInstall.prefs.doNotNotify))
-      {
-        cbox.checked = true;
-      }
-      notifyDiv.appendChild(document.createTextNode("Display notifications"));
-      props.appendChild(makeColumn("Notifications?", notifyDiv));
-    } else {
-      props.appendChild(makeColumn("Notifications?", "None"));
-    }
-
-    props.appendChild(elem("div", "hdiv"));
     props.appendChild(makeColumn("Install Date", formatDate(gSelectedInstall.installTime)));
     props.appendChild(makeColumn("Installed From", gSelectedInstall.installURL));
     if (gSelectedInstall.authorization_token) props.appendChild(makeColumn("Authz Token", gSelectedInstall.authorization_token));
@@ -522,35 +335,6 @@ function createAppIcon(install)
     return appDiv;
 }
 
-
-function drawNotificationBadge(ctx, count)
-{
-  circle(ctx, gIconSize - 2, 12, 10, "rgba(0,0,0,200)", null);
-  circle(ctx, gIconSize - 3, 11, 10, "rgb(255,0,0)", "rgba(0,0,0,0)");
-  ctx.beginPath();
-  ctx.fillStyle = "rgb(255,255,255)";
-  ctx.strokeStyle = "rgb(255,255,255)";
-  ctx.font = "11px Helvetica, sans-serif";
-  ctx.fillText("" + count, gIconSize - 8, 14);
-  ctx.strokeText("" + count, gIconSize - 8, 14);
-}
-
-function drawAlertBadge(ctx)
-{
-  ctx.beginPath();
-  ctx.moveTo(gIconSize - 10, 17);
-  ctx.lineTo(gIconSize , 0);
-  ctx.lineTo(gIconSize + 10, 17);
-  ctx.lineTo(gIconSize - 10, 17);
-  ctx.fillStyle = "rgb(239,221,112)";
-  ctx.strokeStyle = "rgb(0,0,0)";
-  ctx.fill();
-  ctx.stroke();
-  ctx.font = "11px serif";
-  ctx.strokeText("!", gIconSize-2, 14);
-  ctx.endPath();
-}
-
 function formatDate(dateStr)
 {
   if (!dateStr) return "null";
@@ -596,7 +380,6 @@ function onFocus(event)
     gApps.reload();
     render();
     gNotificationDB = new NotificationDB();
-    gApps.refreshNotifications(notificationsWereRefreshed);
   }
 }
 
