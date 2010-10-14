@@ -109,10 +109,6 @@ function render()
   var box = $("#appList");
   box.empty();
 
-  if (false) { /*(showInbox) {*/
-    box.append(createAppIcon(messageInboxInstall));
-  }
-
   var selectedBox = null;
   for (var i=0;i<gApps.installs.length;i++)
   {
@@ -131,9 +127,9 @@ function render()
     }
   }
 
-  if (gDisplayMode == APP_INFO) {
-    renderAppInfo(selectedBox);
-  }
+    if (gDisplayMode == APP_INFO) {
+        renderAppInfo(selectedBox);
+    }
 }
 
 var overlayId = "myAppsDialogOverlay";
@@ -165,133 +161,119 @@ function hideDarkOverlay() {
 
 function renderAppInfo(selectedBox)
 {
-//  var od = showDarkOverlay();
-  $("getInfo").remove();
+    $("#getInfo").remove();
 
-  // Set up Info starting location
-  var info = document.createElement("div");
-  info.id = getInfoId;
-  info.className = "getInfo";
-  info.style.width="96px";
-  info.style.height="96px";
-  var rect = selectedBox.getBoundingClientRect();
-  info.style.left= rect.left + "px";
-  info.style.top= rect.top-8 + "px";
+    // Set up Info starting location
+    var info = document.createElement("div");
+    info.id = getInfoId;
+    info.className = "getInfo";
 
-  // Start animation to target size
-  var width = 300, height = 300;
-  var docRect = document.body.getBoundingClientRect();
-  var targetLeft = rect.left;
-  var targetTop = rect.top - 8;
-  if (rect.left + width > docRect.right-20) targetLeft = docRect.right-20 - width;
-  window.setTimeout(function() {
-    if (targetLeft != rect.left) info.style.left = targetLeft +"px";
-    info.style.width=width+"px";
-    info.style.height=height+"px";
-  }, 0);
-
-  var badge = elem("div", "appBadge");
-  var appIcon = elem("div", "app_icon");
-  var icon = gApps.getIcon(gSelectedInstall.app, "96");
-  if (icon) {
-    appIcon.setAttribute("style", 
-      "background:url(\"" + icon + "\") no-repeat; background-size:100%");
-  }
-  
-  var label = elem("div", "appBadgeName");
-  label.appendChild(document.createTextNode(gSelectedInstall.app.name));
-
-  badge.appendChild(label);
-  badge.appendChild(appIcon);
-  info.appendChild(badge);
-
-  // Render the contents once we reach full size
-  window.setTimeout(function() {
-
-    var data = elem("div", "appData");
-    function makeColumn(label, value) {
-      var boxDiv = elem("div", "appDataBox");
-      var labelDiv = elem("div", "appDataLabel");
-      var valueDiv = elem("div", "appDataValue");
-      labelDiv.appendChild(document.createTextNode(label));
-      if (typeof value == "string") {
-        valueDiv.appendChild(document.createTextNode(value));
-      } else {
-        valueDiv.appendChild(value);
-      }
-      boxDiv.appendChild(labelDiv);
-      boxDiv.appendChild(valueDiv);
-      return boxDiv;
+    var badge = elem("div", "appBadge");
+    var appIcon = elem("div", "app_icon");
+    var icon = gApps.getIcon(gSelectedInstall.app, "96");
+    if (icon) {
+        appIcon.setAttribute("style", 
+                             "background:url(\"" + icon + "\") no-repeat; background-size:100%");
     }
-    var dev = elem("div", "developerName");
-    if (gSelectedInstall.app.developerURL) {
-      var a = elem("a");
-      a.setAttribute("href", gSelectedInstall.app.developerURL);
-      a.setAttribute("target", "_blank");
-      a.appendChild(document.createTextNode(gSelectedInstall.app.developerName));
-      dev.appendChild(a);
-      data.appendChild(dev);
+    
+    var label = elem("div", "appBadgeName");
+    label.appendChild(document.createTextNode(gSelectedInstall.app.name));
 
-      var linkbox = elem("div", "developerLink");
-      a = elem("a");
-      a.setAttribute("href", gSelectedInstall.app.developerURL);
-      a.setAttribute("target", "_blank");
-      a.appendChild(document.createTextNode(gSelectedInstall.app.developerURL));
-      linkbox.appendChild(a);
-      data.appendChild(linkbox);
+    badge.appendChild(label);
+    badge.appendChild(appIcon);
+    info.appendChild(badge);
 
-    } else {
-      if (gSelectedInstall.app.developerName) {
-        dev.appendChild(document.createTextNode(gSelectedInstall.app.developerName));
-        data.appendChild(dev);
-      } else {
-        dev.appendChild(document.createTextNode("No developer info"));
-        $(dev).addClass("devUnknown");
-        data.appendChild(dev);
-      }
-    }
-    info.appendChild(data);
 
-    var desc = elem("div", "desc");
-    desc.appendChild(document.createTextNode(gSelectedInstall.app.description));
-    info.appendChild(desc);
+    var off = $(selectedBox).offset();
+    $(info).css("postion", "absolute").css("top", off.top).css("left", off.left);
+    $(info).width(96).height(96).animate({
+        width: 300,
+        height: 300
+    }, 200, function() {
+        console.log("begin rendering");
+        var data = elem("div", "appData");
+        function makeColumn(label, value) {
+            var boxDiv = elem("div", "appDataBox");
+            var labelDiv = elem("div", "appDataLabel");
+            var valueDiv = elem("div", "appDataValue");
+            labelDiv.appendChild(document.createTextNode(label));
+            if (typeof value == "string") {
+                valueDiv.appendChild(document.createTextNode(value));
+            } else {
+                valueDiv.appendChild(value);
+            }
+            boxDiv.appendChild(labelDiv);
+            boxDiv.appendChild(valueDiv);
+            return boxDiv;
+        }
+        var dev = elem("div", "developerName");
+        if (gSelectedInstall.app.developerURL) {
+            var a = elem("a");
+            a.setAttribute("href", gSelectedInstall.app.developerURL);
+            a.setAttribute("target", "_blank");
+            a.appendChild(document.createTextNode(gSelectedInstall.app.developerName));
+            dev.appendChild(a);
+            data.appendChild(dev);
 
-    var props = elem("div", "appProperties");
+            var linkbox = elem("div", "developerLink");
+            a = elem("a");
+            a.setAttribute("href", gSelectedInstall.app.developerURL);
+            a.setAttribute("target", "_blank");
+            a.appendChild(document.createTextNode(gSelectedInstall.app.developerURL));
+            linkbox.appendChild(a);
+            data.appendChild(linkbox);
 
-    props.appendChild(makeColumn("Install Date", formatDate(gSelectedInstall.installTime)));
-    props.appendChild(makeColumn("Installed From", gSelectedInstall.installURL));
-    if (gSelectedInstall.authorization_token) props.appendChild(makeColumn("Authz Token", gSelectedInstall.authorization_token));
+        } else {
+            if (gSelectedInstall.app.developerName) {
+                dev.appendChild(document.createTextNode(gSelectedInstall.app.developerName));
+                data.appendChild(dev);
+            } else {
+                dev.appendChild(document.createTextNode("No developer info"));
+                $(dev).addClass("devUnknown");
+                data.appendChild(dev);
+            }
+        }
+        info.appendChild(data);
 
-    info.appendChild(props);
+        var desc = elem("div", "desc");
+        desc.appendChild(document.createTextNode(gSelectedInstall.app.description));
+        info.appendChild(desc);
 
-    // finally, a delete link and action
-    $("<div/>").text("Delete this application.").addClass("deleteText").appendTo(info).click(function() {
-        gApps.remove(gSelectedInstall.app.app.launch.web_url);
-        gSelectedInstall = null;
-        gDisplayMode = ROOT;
-        render();
+        var props = elem("div", "appProperties");
 
-        // let's now create a synthetic click to the document to cause the info dialog to get dismissed and
-        // cleaned up properly
-        $(document).click();
+        props.appendChild(makeColumn("Install Date", formatDate(gSelectedInstall.installTime)));
+        props.appendChild(makeColumn("Installed From", gSelectedInstall.installURL));
+        if (gSelectedInstall.authorization_token) props.appendChild(makeColumn("Authz Token", gSelectedInstall.authorization_token));
 
-        return false;
+        info.appendChild(props);
+
+        // finally, a delete link and action
+        $("<div/>").text("Delete this application.").addClass("deleteText").appendTo(info).click(function() {
+            gApps.remove(gSelectedInstall.app.app.launch.web_url);
+            gSelectedInstall = null;
+            gDisplayMode = ROOT;
+            render();
+
+            // let's now create a synthetic click to the document to cause the info dialog to get dismissed and
+            // cleaned up properly
+            $(document).click();
+
+            return false;
+        });
+
+        $(info).click(function() {return false;});
     });
 
-    $(info).click(function() {return false;});
-  }, 200);
+    $("body").append(info);
 
-  document.body.appendChild(info);
-
-  // Dismiss box when user clicks anywhere else
-  setTimeout( function() { // Delay for Mozilla
-    $(document).click(function() {
-      $(document).unbind('click');
-      $(info).fadeOut(100, function() { $("#"+getInfoId).remove(); });
-      return false;
-    });
-  }, 0);
-
+    // Dismiss box when user clicks anywhere else
+    setTimeout( function() { // Delay for Mozilla
+        $(document).click(function() {
+            $(document).unbind('click');
+            $(info).fadeOut(100, function() { $("#"+getInfoId).remove(); });
+            return false;
+        });
+    }, 0);
 }
 
 function createAppIcon(install) 
@@ -390,7 +372,6 @@ function onFocus(event)
   if (gApps) {
     gApps.reload();
     render();
-    gNotificationDB = new NotificationDB();
   }
 }
 
