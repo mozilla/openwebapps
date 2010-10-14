@@ -1,0 +1,3 @@
+# a SQLALCHEMY connection string which embeds database engine, uname, pass and
+# database.  for mysql, something like
+export CONFIG_SQLALCHEMY=mysql://uname:pass@localhost/appstore
