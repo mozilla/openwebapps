@@ -6,7 +6,11 @@
 
 /* don't display anything at inital pageload, wait for page load where
  * browser feature checking will occur */
-body > div {
+#container {
+  display: none;
+}
+
+#unsupportedBrowser {
   display: none;
 }
 
