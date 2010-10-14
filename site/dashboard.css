@@ -431,14 +431,15 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
 
 .icon .moreInfo {
 	background-image: url('img/info.png');
-    z-order: 999;
-    width: 32px;
-    height: 32px;
-    position: absolute;
-    left: -10px;
-    top: -10px;
-    display: none;
-    z-index: 900;
+  z-order: 999;
+  width: 32px;
+  height: 32px;
+  position: absolute;
+  left: -10px;
+  top: -10px;
+  display: none;
+  z-index: 900;
+  cursor:pointer;
 }
 
 
