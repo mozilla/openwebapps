@@ -5,6 +5,8 @@
 <script src="/static/jquery-1.4.2.min.js"></script>
 <script src="/static/jquery.jgrowl_minimized.js"></script>
 <script src="https://myapps.mozillalabs.com/jsapi/include.js"></script>
+<!-- <script src="http://localhost:8123/jsapi/include.js"></script> -->
+
 <script>
 var gAppManifest = {{ app.manifest }};
 var gAlreadyPurchased = {{ "true" if (app.price == 0 or alreadyPurchased) else "false" }};
