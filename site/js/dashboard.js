@@ -179,14 +179,14 @@ function renderAppInfo(selectedBox)
     var label = elem("div", "appBadgeName");
     label.appendChild(document.createTextNode(gSelectedInstall.app.name));
 
-    badge.appendChild(label);
     badge.appendChild(appIcon);
+    badge.appendChild(label);
     info.appendChild(badge);
 
 
     var off = $(selectedBox).offset();
-    $(info).css("postion", "absolute").css("top", off.top).css("left", off.left);
-    $(info).width(96).height(96).animate({
+    $(info).css("postion", "absolute").css("top", off.top + 6).css("left", off.left + 6);
+    $(info).width(110).height(128).animate({
         width: 300,
         height: 300
     }, 200, function() {

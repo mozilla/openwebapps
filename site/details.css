@@ -35,6 +35,7 @@
   cursor:pointer;
 }
 .getInfo > .appBadge .app_icon {
+  margin-top:-4px;
   margin-left:4px;
   width:96px;
   height:96px;
@@ -42,8 +43,10 @@
 }
 
 .getInfo > .appBadge >.appBadgeName {
-  padding-top:2px;
-  font:small-caption
+  font-family: Museo, Tahoma, sans-serif;
+  font-size: 12px;
+  margin-top: 5px;
+  margin-left: 23px;
 }
 .getInfo > .appData {
   position:absolute;
