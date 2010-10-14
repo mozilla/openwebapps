@@ -1,88 +1,201 @@
+
 <html>
 <head>
 <meta http-equiv="X-UA-Compatible" content="IE=8"/>
 <title>Install Apps</title>
 <style type="text/css" media="screen">
-body {
-  font-family:sans-serif;
-  background: #FFF;
-  height: 224px;
-  width: 384px;
+
+html
+{
+  background-color:   #aaaaaa;
+  overflow: hidden;
 }
 
-#logo {
+body 
+{
+  font-family:sans-serif;
+}
+
+
+#contentwrapper
+{
+	border: 1px solid #aaaaaa;
+ 	-moz-border-radius: 8px;
+  -webkit-border-radius: 8px;
+  border-radius: 8px;
+  background-color: white;
+}
+
+
+#header
+{
+ height:80;
+}
+
+#maincontent
+{
+  height:120;
+  margin-left:10;
+  margin-right:10;
+  background-color: #f0f0f0;
+  -moz-border-radius: 1em;
+  -webkit-border-radius: 1em;
+  border-radius: 1em;
+
+  border: 1px solid rgba(0,0,0,0.3);
+
+  -moz-box-shadow: 
+    inset rgba(255, 255, 255, 0.5) 0 1px 0px,
+    inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
+    rgba(0, 0, 0, 0.1) 0px 2px 0px;
+  -webkit-box-shadow: 
+    inset rgba(255, 255, 255, 0.5) 0 1px 0px,
+    inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
+    rgba(0, 0, 0, 0.1) 0px 2px 0px;
+  box-shadow: 
+    inset rgba(255, 255, 255, 0.5) 0 1px 0px,
+    inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
+    rgba(0, 0, 0, 0.1) 0px 2px 0px;	
+
+}
+
+#footer
+{
+ height:112;
+}
+
+#storelogo {
   width:48;
   height:48;
-  position: block;
-  left:10;
-  top:8;
+  float:left;
+  padding:12;
+  padding-right:20;
 }
 
-#title {
-  font-size: 20pt;
+#installrequest 
+{
+  font-size: 12pt;
   font-weight: bold;
-  position: absolute;
-  left:68;
-  top:14;
+  padding:20;
 }
 
-#description {
+
+#appicon 
+{
+  padding-top:10;
+  float:left;
+  margin-right:20;
+  margin-left:20;
+}
+
+#apptitle 
+{
+  font-size: 14pt;
+  font-weight: bold;
+  padding-left:20;
+  padding-top:20;
+}
+
+#base_url
+{
   font-size: 10pt;
-  position: block;
-  margin: 10px;
-  top:60;
+  padding-top:10;
+  padding-left:20;
 }
 
-#appinfo {
-  padding: 5px;
-  margin: 20px;
-  font-size: 70%;
-  scroll: auto;
-  height: 55px;
+#warning 
+{
+  font-size: 12pt;
+  padding:20;
 }
 
-#appname {
-  font-weight: bold;
-}
+
 
 #site {
   color: #F00;
 }
 
-#installButton {
-  position: absolute;
-  right: 50px;
-  bottom: 20px;
+.yesbutton {
+  -moz-border-radius:0.5em 0.5em 0.5em 0.5em;
+  -webkit-border-radius:0.5em 0.5em 0.5em 0.5em;
+  -moz-box-shadow:0 -3px 0 rgba(0, 0, 0, 0.1) inset, 0 -3px 12px rgba(240, 240, 240, 0.3) inset, 0 20px 40px rgba(240, 240, 240, 0.3) inset, 0 2px 0 rgba(200, 200, 200, 0.3);
+  box-shadow:0 -3px 0 rgba(0, 0, 0, 0.1) inset, 0 -3px 12px rgba(240, 240, 240, 0.3) inset, 0 20px 40px rgba(240, 240, 240, 0.3) inset, 0 2px 0 rgba(200, 200, 200, 0.3);
+  -webkit-box-shadow:0 -3px 0 rgba(0, 0, 0, 0.1) inset, 0 -3px 12px rgba(240, 240, 240, 0.3) inset, 0 20px 40px rgba(240, 240, 240, 0.3) inset, 0 2px 0 rgba(200, 200, 200, 0.3);
+  background-color:#6bc246;
+  background-image:-moz-linear-gradient(center top , #6BC246 0%, #3C831E 100%);
+  background-image:-webkit-gradient(
+    linear,
+    left top,
+    left bottom,
+    color-stop(0, rgb(5,202,51)),
+    color-stop(1, rgb(6,188,36)));
+  height:12px;
+  width:100px;
+  font:bold 10pt Helvetica, arial;
+  color:white;
+  cursor:pointer;
+  padding:8px 8px 8px 8px;
+  text-align:center;
+  margin-left:12;
+  margin-right:12;
+  float:right;
 }
 
-#cancelButton {
-  position: absolute;
-  right: 120px;
-  bottom: 20px;
-}
+.nobutton {
+  -moz-border-radius:0.5em 0.5em 0.5em 0.5em;
+  -webkit-border-radius:0.5em 0.5em 0.5em 0.5em;
+  -moz-box-shadow:0 -3px 0 rgba(0, 0, 0, 0.1) inset, 0 -3px 12px rgba(240, 240, 240, 0.3) inset, 0 20px 40px rgba(240, 240, 240, 0.3) inset, 0 2px 0 rgba(200, 200, 200, 0.3);
+  box-shadow:0 -3px 0 rgba(0, 0, 0, 0.1) inset, 0 -3px 12px rgba(240, 240, 240, 0.3) inset, 0 20px 40px rgba(240, 240, 240, 0.3) inset, 0 2px 0 rgba(200, 200, 200, 0.3);
+  -webkit-box-shadow:0 -3px 0 rgba(0, 0, 0, 0.1) inset, 0 -3px 12px rgba(240, 240, 240, 0.3) inset, 0 20px 40px rgba(240, 240, 240, 0.3) inset, 0 2px 0 rgba(200, 200, 200, 0.3);
+  background-color:#6bc246;
+  background-image:-moz-linear-gradient(center top , #b26f48 0%, #833C1E 100%);
+  background-image:-webkit-gradient(
+    linear,
+    left top,
+    left bottom,
+    color-stop(0, rgb(202,5,51)),
+    color-stop(1, rgb(188,6,36)));
+  height:12px;
+  width:100px;
+  font:bold 10pt Helvetica, arial;
+  color:white;
+  cursor:pointer;
+  padding:8px 8px 8px 8px;
+  text-align:center;
+  margin-left:12;
+  margin-right:12;
 
-#appicon {
-  margin-right:5px;
-  margin-bottom:5px;
   float:left;
 }
 
 </style>
 </head>
 <body>
-<div id="logo"><img  width="48" height="48" src="logo.png"></div> 
-<div id="title">Install a Web App?</div>
-<div id="description">
-  <span id="site"></span> would like to install a WebApp.  You should approve this
-  request only if you trust this site and use it often. The application is:
+<div id="contentwrapper">
+<div id="header">
+  <div id="storelogo"><img src="logo.png"></div> 
+
+  <div id="installrequest">
+  <span id="site"></span> wants to install the application: 
+  </div>
 </div>
-<div id="appinfo">
-  <img id="appicon" src="" width="36" height="36">
-  <span id="appname"></span><br>
-  <span id="appdesc"></span>
+
+<div id="maincontent" >
+  <img id="appicon"  width="96" height="96">
+  <div id="apptitle"><span id="appname"></span></div>
+  <div id="base_url"></div>
 </div>
-<div id="cancelButton"><input type="button" value="Cancel"></div>
-<div id="installButton"><input type="button" value="Install"></div>
+
+<div id="footer">
+  <div id="warning">
+    You should only approve the installation if you trust this site.
+  </div>
+
+  <div id="cancelButton" class="nobutton">Cancel</div>
+  <div id="installButton" class="yesbutton">Install</div>
+
+</div>
+</div>
 <script>
 
 function displayInstallPrompt(originHostname, manifest, clientCB) {
@@ -96,10 +209,8 @@ function displayInstallPrompt(originHostname, manifest, clientCB) {
   document.getElementById("site").textContent = originHostname;
   // !!! think about this.  These values cannot be trusted!
   document.getElementById("appname").textContent = manifest.name;
-  if (manifest.description) {
-    document.getElementById("appdesc").textContent = manifest.description;
-  }
-
+  document.getElementById("base_url").textContent = manifest.app.launch.web_url;
+  
   if (manifest.icons) {
 
     // prefer to use 48-pixel icon
