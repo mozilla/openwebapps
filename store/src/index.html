@@ -2,102 +2,8 @@
 <head>
  <meta http-equiv="X-UA-Compatible" content="IE=8"/> 
  <meta http-equiv="X-XRDS-Location" content="https://appstore.mozillalabs.com/xrds"/>
- <title>Mozilla Developer Preview: Web Application Store</title>
- <style>
-
-BODY {margin:0;padding:0}
-
-#dev_preview_splash  {
-  margin:16px 16px 64px 16px;
-  padding:12px;
-  border:1px solid #888;
-  box-shadow:8px 8px 8px #999;
-}
-
-#dev_preview_splash .banner {
-  font:32pt Helvetica, arial;
-}
-#dev_preview_splash .footer {
-  font-family: Helvetica, arial;
-  font-size:10pt;
-}
-
-#banner {
-  width:100%;
-  background-color:#707090;
-  height:30px;
-}
-#banner a {
-  text-decoration:none;
-  color:white;
-}
-
-
-
-#branding {
-  padding-top:4px;
-  color:white;
-  float:left;
-  padding-left:16px;  
-  font:12pt Helvetica, arial;
-}
-#status {
-  padding-top:4px;
-  float:right;
-  color:white;
-  padding-right:16px;
-  font:bold 10pt Helvetica,arial;
-}
-#status a {
-  color:white;
-  text-decoration:none
-}
-#status a:hover {
-  text-decoration:underline
-}
-
-.button 
-{
-}
-
-.app_display {
-  -moz-border-radius:8px;
-  -webkit-border-radius:8px;
-  border-radius:8px;
-  border:1px solid #707090;
-  margin:16px;
-  padding:8px;
-}
-
-.app_display .display_area_head
-{
-  font:bold 14pt Helvetica, arial;
-}
-
-
-.app {
-  display:inline-block;
-  margin:16px;
-}
-
-.app .name {
-  font:bold 10pt Helvetica, arial;
-}
-.app .name a {
-  color:black;
-  text-decoration:none;
-}
-.app .category {
-  font:9pt Helvetica, arial;
-}
-
-#footer {
-  width:300px;
-  margin:auto;
-  font:8pt Helvetica, Arial;
-}
-
-</style>
+ <title>AppMonkey: A Demonstration Web App Store</title>
+ <link rel="stylesheet" type="text/css" href="/static/demostore.css" />
 </head>
 <body>
 
@@ -105,7 +11,7 @@ BODY {margin:0;padding:0}
 
 <div id="branding">
   <a href="/"><img border="0" style="vertical-align:-2px;padding-right:4px" src="/static/home.png">
-    AppZilla: Demonstration Web Application Store</a>
+    AppMonkey: Demonstration Web App Store</a>
 </div>
 <div id="status">
 {% if account %}
@@ -118,10 +24,10 @@ Signed in as {{ account.displayName }} - [ <a href="/logout">Sign Out</a> ]
 
 
 
-<div id="dev_preview_splash">
-  <div class="banner">Web App Store Developer Preview</div>
-  <div class="footer">This is not a production system: it is an interaction prototype, intended for a technical audience.<br><br>
-    If you'd like to learn more about open web application stores, <a href="#">read more on our blog.</a></div>
+<div id="demo_splash">
+  <div class="banner">Demonstration Web App Store</div>
+  <div class="footer">AppMonkey is a demonstration by Mozilla Labs of how an application store can work with Installable Web Apps.<br><br>
+    To learn about Installable Web Apps, <a href="http://apps.mozillalabs.com">visit our site.</a></div>
 </div>
 
 <div class="app_display">
@@ -132,18 +38,21 @@ Signed in as {{ account.displayName }} - [ <a href="/logout">Sign Out</a> ]
 <div class="icon"><a href="/app/1"><img border="0" width="64" height="64" src="/static/task.png"><!-- icon GPL, by Oliver Scholtz http://linux.softpedia.com/developer/Oliver-Scholtz-93.html --></a></div>
 <div class="name"><a href="/app/1">Task Tracker</a></div></a>
 <div class="category">Productivity</div>
+<div class="explanation">this app demonstrates the purchased-application experience.<br><br>click through to "purchase" the app(no real money involved!)</div
 </div>
 
 <div class="app">
 <div class="icon"><a href="/app/2"><img border="0" width="64" height="64" src="/static/mozilla.png"><!-- icon GPL, Alessandro Rei, http://kde-look.org/usermanager/search.php?username=mentalrey --></a></div>
 <div class="name"><a href="/app/2">MozillaBall</a></div></a>
 <div class="category">Games</div>
+<div class="explanation">this app demonstrates the free application experience<br><br>click through to install the app.</div>
 </div>
 
 <div class="app">
 <div class="icon"><a href="/app/3"><img border="0" width="64" height="64" src="/static/gmail_96.png"><!-- icon (c) Google, Inc.--></a></div>
 <div class="name"><a href="/app/3">Gmail</a></div></a>
 <div class="category">Communciation</div>
+<div class="explanation">this app shows an existing web application can fit into the system.<br><br>GMail is a registered trademark of Google, Inc.</div>
 </div>
 
 

@@ -3,6 +3,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=8"/> 
 <title>App Detail: {{ app.name }}</title>
 <link rel="stylesheet" type="text/css" href="/static/jquery.jgrowl.css" />
+<link rel="stylesheet" type="text/css" href="/static/demostore.css" />
 <script src="/static/jquery-1.4.2.min.js"></script>
 <script src="/static/jquery.jgrowl_minimized.js"></script>
 <script src="https://myapps.mozillalabs.com/jsapi/include.js"></script>
@@ -97,59 +98,14 @@ $("#login_purchase").show();
 
 </script>
  <style>
-
-BODY {margin:0;padding:0}
-
-#dev_preview_splash  {
-  margin:16px 16px 64px 16px;
-  padding:12px;
-  border:1px solid #888;
-  box-shadow:8px 8px 8px #999;
-}
-
-#dev_preview_splash .banner {
-  font:32pt Helvetica, arial;
-}
-#dev_preview_splash .footer {
-  font-family: Helvetica, arial;
-  font-size:10pt;
-}
-
-#banner {
-  width:100%;
-  background-color:#707090;
-  height:30px;
-}
-#banner a {
-  text-decoration:none;
-  color:white;
-}
-
-
-#branding {
-  padding-top:4px;
-  color:white;
-  float:left;
-  padding-left:16px;  
-  font:12pt Helvetica, arial;
-}
-#status {
-  padding-top:4px;
-  float:right;
-  color:white;
-  padding-right:16px;
-  font:bold 10pt Helvetica,arial
-}
-#status a {
-  color:white;
-  text-decoration:none
-}
-#status a:hover {
-  text-decoration:underline
-}
-
 .button 
 {
+}
+
+.app_nav {
+  margin-right:24px;
+  text-align:right;
+	font:bold 12pt "MuesoSans", "trebuchet ms",sans-serif;
 }
 
 .app_page {
@@ -324,6 +280,7 @@ BODY {margin:0;padding:0}
 {
   padding:8px 8px 0px 8px;
   font:10pt Helvetica, Arial;
+  height:200px;
 }
 #login .head
 {
@@ -381,7 +338,7 @@ BODY {margin:0;padding:0}
 
 <div id="branding">
   <a href="/"><img border="0" style="vertical-align:-2px;padding-right:4px" src="/static/home.png">
-    AppZilla: Demonstration Web Application Store</a>
+    AppMonkey: Demonstration Web App Store</a>
 </div>
 <div id="status">
 {% if account %}
@@ -394,10 +351,14 @@ Signed in as {{ account.displayName }} - [ <a href="/logout?return_to=/app/{{app
 
 
 
-<div id="dev_preview_splash">
-  <div class="banner">Web App Store Developer Preview</div>
-  <div class="footer">This is not a production system: it is an interaction prototype, intended for a technical audience.<br><br>
-    If you'd like to learn more about open web application stores, <a href="#">read more on our blog.</a></div>
+<div id="demo_splash">
+  <div class="banner">Demonstration Web App Store</div>
+  <div class="footer">AppMonkey is a demonstration by Mozilla Labs of how an application store can work with Installable Web Apps.<br><br>
+    To learn about Installable Web Apps, <a href="http://apps.mozillalabs.com">visit our site.</a></div>
+</div>
+
+<div class="app_nav">
+<a href="/">Return to directory page</a>
 </div>
 
 <div class="app_page">
@@ -457,20 +418,28 @@ You are signed in as {{ account.displayName }}.
 <div class="verysmall">(<a href="/logout?return_to=/app/{{appID}}%3fm=b">Not you?</a>)</div>
 {% else %}
 <div class="head">Sign In Required</div>
-Before you can purchase an application, we need you to <b>sign in</b>:<br><br>
+Before you can purchase an application, we need you to <b>sign in</b>.<br>
+Your application purchase will be linked with your account.<br><br>
+<div class="small">
+For demo purposes, we're supporting a few OpenID/OAuth providers;<br>
+click one of these icons to log in using an account there.<br>
+</div>
 <a href="/account/addid/google?return_to=/app/{{appID}}%3fm=b"><img border="0" src="/static/googleOpenID.png"></a>
 <a href="/account/addid/yahoo?return_to=/app/{{appID}}%3fm=b"><img border="0" src="/static/yahooOpenID.png"></a>
 <a href="/account/addid/twitter?return_to=/app/{{appID}}%3fm=b"><img border="0" src="/static/twitterOpenID.png"></a><br>
-<div class="small">(for demo purposes, we're supporting a few OpenID/OAuth providers;<br>
-a real store would use more robust authentication)</div>
-{% end if %}
+<br>
+<div class="small">
+A real store would use more robust authentication.</div>
 
+{% end if %}
 </div>
+{% if account %}
 <div id="purchase">
 <div class="head">Confirm Purchase</div>
 Here, we verify the users intent to purchase, and confirm the payment mechanism.<br><br>
 If necessary, we send the user off to PayPal or a similar provider to set up a payment authorization.
 </div>
+{% end %}
 
 <div class="controls">
 <button id="cancel_button">Cancel</button>
