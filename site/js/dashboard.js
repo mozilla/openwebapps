@@ -292,7 +292,7 @@ function createAppIcon(install)
     var icon = gApps.getIcon(install.app, "96");
     if (icon) {
         iconDiv.css({
-            background: "url(\"" + icon + "\") no-repeat",
+            background: "url(\"" + icon + "\") no-repeat #FFFFFF",
             backgroundSize: "100%"
         });
     }
