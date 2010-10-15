@@ -1,0 +1,121 @@
+BODY {
+  margin:0;
+  padding:0;
+  background-color:#f0f8f8;
+}
+
+@font-face {
+	font-family: "MuseoSans";
+	src: url("http://mozillalabs.com/wp-content/themes/labs_project/fonts/MuseoSans_500.otf") format("opentype");
+}
+
+a {
+  color:#4050E0;
+}
+a:visited {
+  color:#4050E0;
+}
+
+#demo_splash  {
+  margin:16px 16px 16px 16px;
+  padding:12px;
+  border:1px solid #888;
+  box-shadow:8px 8px 8px #999;
+  -moz-border-radius:16px;
+  background-color:#fff8f0;
+}
+
+#demo_splash .banner {
+	font:32pt "MuseoSans", "trebuchet ms",sans-serif;
+}
+#demo_splash .footer {
+	font:12pt "MuseoSans", "trebuchet ms",sans-serif;
+  font-size:10pt;
+}
+
+#banner {
+  width:100%;
+  background-color:#707090;
+  height:30px;
+}
+#banner a {
+  text-decoration:none;
+  color:white;
+}
+
+
+
+#branding {
+  padding-top:4px;
+  color:white;
+  float:left;
+  padding-left:16px;  
+	font:12pt "MuesoSans", "trebuchet ms",sans-serif;
+}
+#status {
+  padding-top:4px;
+  float:right;
+  color:white;
+  padding-right:16px;
+  font:bold 10pt Helvetica,arial;
+}
+#status a {
+  color:white;
+  text-decoration:none
+}
+#status a:hover {
+  text-decoration:underline
+}
+
+.button 
+{
+}
+
+.app_display {
+  -moz-border-radius:8px;
+  -webkit-border-radius:8px;
+  border-radius:8px;
+  border:1px solid #707090;
+  margin:16px;
+  padding:8px;
+  background-color:white;
+}
+
+.app_display .display_area_head
+{
+  font:bold 14pt Helvetica, arial;
+}
+
+
+.app {
+  display:inline-block;
+  vertical-align:top;
+  margin:16px;
+}
+
+.app .name {
+  font:bold 10pt "MuseoSans", "trebuchet ms",sans-serif;
+}
+.app .name a {
+  color:black;
+  text-decoration:none;
+}
+.app .category {
+  font:9pt Helvetica, arial;
+}
+
+#footer {
+  width:300px;
+  margin:auto;
+  font:8pt Helvetica, Arial;
+}
+
+.explanation {
+  font:8pt "MuseoSans", "trebuchet ms",sans-serif;
+  margin-top:5px;
+  width:150px;
+  -moz-border-radius:3px;
+  padding:6px;
+  background-color:#fff0e0;
+  border:1px solid #808080;
+}
