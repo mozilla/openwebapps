@@ -34,7 +34,7 @@ body.subpage {
 }
 
 #blogBg {
-background:url("http://mozillalabs.com/wp-content/themes/labs_project/img/menu-home-bg.png") repeat-x scroll center top transparent;
+  background:url("http://mozillalabs.com/wp-content/themes/labs_project/img/menu-home-bg.png") repeat-x scroll center top transparent;
 }
 a {
 	text-decoration: none;
@@ -1105,7 +1105,8 @@ ul.metadata {
 
 .footercontent {
 	clear: left;
-	padding-bottom: 40px;
+  padding-top:40px;
+	padding-bottom: 80px;
 }
 
 .footercontent .archivelist li { 
