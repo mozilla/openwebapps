@@ -1,10 +1,50 @@
 <html>
 <head>
 <title>MozillaBall</title>
+
+<script>
+var context;
+var x=100;
+var y=200;
+var dx=5;
+var dy=5;
+
+function init()
+{
+  context= myCanvas.getContext('2d');
+  setInterval(draw,10);
+}
+
+function draw()
+{
+  context.clearRect(0,0, 300,300);
+  context.beginPath();
+  context.fillStyle="#0000ff";
+  // Draws a circle of radius 20 at the coordinates 100,100 on the canvas
+  context.arc(x,y,20,0,Math.PI*2,true);
+  context.closePath();
+  context.fill();
+
+  if( x<20 || x>280) dx=-dx;
+  if( y<20 || y>280) dy=-dy;
+  x+=dx;
+  y+=dy;
+}
+
+</script>
 </head>
-<body>
+
+<body onLoad="init();">
+  <canvas id="myCanvas" style="margin-left:50px;margin-top:50px" width="300" height="300" >
+  </canvas>
 
 <div style="position:absolute;left:100px;top:100px;font:bold 24pt Helvetica;color:#908040">This is MozillaBall.</div>
+<div style="position:absolute;left:420px;width:300px;top:100px;font:bold 10pt Helvetica;color:black">
+This page exists as an example of how a normal website can
+be wrapped up as an Installable Web Application.<br><br>
+</div>
+
+</body>
 
 </body>
 </html>
