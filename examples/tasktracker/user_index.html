@@ -58,13 +58,15 @@ $(document).ready(function() {
 Welcome to TaskTracker!<br><br>
 
 <div class="smaller">
-You have been automatically verified as a register user of the application.<br><br>
+You have been automatically verified as a registered user of the application.<br><br>
 
 When the application was loaded, it called the <code>verify</code> method of
 your application repository.  That sent you to the application store, where you
 were authenticated and your purchase record was retrieved.
 <br><br>
-You were then returned to the app with validation information:<br>
+You were then returned to the app with validation information.  In a real
+application, this information would be saved, a cookie would be set on your
+browser, and the application would redirect you to clean up the URL.<br><br>
 <div class="debug_data">
 Application ID: {{ verify["verification"][0] }}<br>
 User ID: {{ verify["verification"][1] }}<br>
