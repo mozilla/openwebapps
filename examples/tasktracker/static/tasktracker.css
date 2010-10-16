@@ -75,7 +75,7 @@ body {
   position:absolute;
   left:120px;
   top:80px;
-  width:300px;
+  width:340px;
   background-color:white;
   padding:32px;
   font:bold 14pt Helvetica, Arial;
@@ -90,6 +90,6 @@ body {
   font:10pt Helvetica,Arial;
 }
 .debug_data {
-  font:10pt Courier,monospace;
+  font:9pt Courier,monospace;
   margin-left:16px;
 }

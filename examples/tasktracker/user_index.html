@@ -71,9 +71,9 @@ browser, and the application would redirect you to clean up the URL.<br><br>
 Application ID: {{ verify["verification"][0] }}<br>
 User ID: {{ verify["verification"][1] }}<br>
 Timestamp: {{ verify["verification"][2] }}<br>
-Signature: <div id="signature" style="display:none">{{ verify["signature"] }}</div><button onClick="$('#signature').show();$(this).hide()">Show Signature</button>
+Signature: <div id="signature" style="display:none">{{ verify["signature"] }}</div><button onClick="document.getElementById('signature').style.display='inline';this.style.display='none'">Show Signature</button>
 </div>
-
+<br><br>
 If you would like to verify again, <a href="/">go here</a>.
 </div>
 </div>

@@ -98,7 +98,7 @@ class MainHandler(WebHandler):
     try:
       verifiedUser = StoreRegistry().verify_request(self)
     except VerificationException, e:
-      self.render("no_user_index.html", invalid_reg=True)
+      self.render("no_user_index.html", invalid_reg=e)
       return
       
     if verifiedUser: # we just got a new validation; that overrides any previous data
