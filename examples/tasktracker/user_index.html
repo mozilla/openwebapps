@@ -1,98 +1,9 @@
 <html>
 <head>
 <title>TaskTracker</title>
+<link rel="stylesheet" type="text/css" href="/static/tasktracker.css" />
 <style>
-body {
-  margin:0;
-  padding:0;
-  background-color:#babdc6;
-  min-height:300px;
-}
 
-#container {
-  position:absolute;
-  left:0;
-  top:0;
-  height:100%;
-  width:100%;
-}
-#left {
-  height:100%;
-  position:absolute;
-  top:0px;
-  left:0px;
-  width:150px;
-  border-right:1px solid #808080;
-}
-#right {
-  position:absolute;
-  top:0px;
-  left:150px;
-  height:100%;
-  margin-left:1px;
-  min-width:500px;
-}
-.focused #left {
-  background-color:#e0e3ea;
-}
-.blurred #left {
-  background-color:#e0e0e0;
-}
-
-.organizer {
-  list-style:none;
-  font:10pt "Lucida Sans",Helvetica, Arial;
-  line-height:200%;
-  min-height:200px
-}
-.organizer .separator {
-  margin-top:32px;
-}
-.bottom_org {
-  list-style:none;
-  font:10pt "Lucida Sans",Helvetica, Arial;
-  line-height:200%;
-  position:absolute;
-  bottom:20px;
-}
-
-.tasks {
-  list-style:none;
-  margin-left:8px;
-  padding-left:0px;
-  font:9pt "Lucida Sans",Helvetica, Arial;
-}
-.tasks li {
-  height:24px;
-  vertical-align:50%;
-  border-bottom:1px solid #EDEDED;
-  border-top:1px solid #8D8E92;
-  padding-left:16px;
-  
-  /*background:#ffffff;
-  background-image:-moz-linear-gradient(top, #FF, #F8, #F0);*/
-  background: -moz-linear-gradient(top, #FFF, #F8F8F8 50%, #ededed);
-  -moz-border-radius:4px;
-}
-
-#splash {
-  position:absolute;
-  left:120px;
-  top:80px;
-  width:300px;
-  background-color:white;
-  padding:32px;
-  font:bold 14pt Helvetica, Arial;
-  z-index:2;
-  margin-right:32px;
-  border:4px solid black;
-  -moz-border-radius:8px;
-  -webkit-border-radius:8px;
-  -moz-box-shadow:4px 2px 2px #808080;
-}
-#splash .smaller {
-  font-size:12pt;
-}
 </style>
 </head>
 
@@ -145,18 +56,23 @@ $(document).ready(function() {
 
 <div id="splash">
 Welcome to TaskTracker!<br><br>
-If this were a real app, we would give you some first-run tutorial here.<br><br>
+
 <div class="smaller">
-When the page was loaded, it noticed that you were an unvalidated user and
-called the <code>verify</code> method of your application repository.  That
-sent you to the application store, where you were authenticated and your
-purchase record was retrieved.
+You have been automatically verified as a register user of the application.<br><br>
+
+When the application was loaded, it called the <code>verify</code> method of
+your application repository.  That sent you to the application store, where you
+were authenticated and your purchase record was retrieved.
 <br><br>
 You were then returned to the app with validation information:<br>
-Application ID: {{ verify["verification"](0) }}<br>
-User ID: {{ verify["verification"](1) }}<br>
-Timestamp: {{ verify["verification"](2) }}<br>
-Signature: {{ verify["verification"](3) }}<br>
+<div class="debug_data">
+Application ID: {{ verify["verification"][0] }}<br>
+User ID: {{ verify["verification"][1] }}<br>
+Timestamp: {{ verify["verification"][2] }}<br>
+Signature: <div id="signature" style="display:none">{{ verify["signature"] }}</div><button onClick="$('#signature').show();$(this).hide()">Show Signature</button>
+</div>
+
+If you would like to verify again, <a href="/">go here</a>.
 </div>
 </div>
 </div>

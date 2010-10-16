@@ -9,6 +9,7 @@ import datetime
 import config
 import crypto
 import base64
+import textwrap
 import sys
 
 # This is the ID that we were assigned when we listed our application in the
@@ -107,7 +108,7 @@ class MainHandler(WebHandler):
       
       # For demo purposes, we actually want that, so just report
       # the result.
-      self.render("user_index.html", verify = {"verification":self.request.get_argument("verification").split("|"), "signature":self.request.get_argument("signature")}, user_id = user_id)
+      self.render("user_index.html", verify = {"verification":self.get_argument("verification").split("|"), "signature":" ".join(textwrap.wrap(self.get_argument("signature"),40))}, user_id = user_id)
       return
     else:
       cookie_user = self.get_secure_cookie("ttracker_uid")
