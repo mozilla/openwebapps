@@ -9,7 +9,7 @@ echo = False
 if 'CONFIG_SQLALCHEMY_ECHO' in os.environ:
   echo = os.environ['CONFIG_SQLALCHEMY_ECHO'] == "true"
 
-engine = create_engine(os.environ['CONFIG_SQLALCHEMY'], echo=echo)
+engine = create_engine(os.environ['CONFIG_SQLALCHEMY'], echo=echo, pool_recycle=120, echo_pool=True)
 
 Session = sessionmaker(bind=engine)
 session = Session()

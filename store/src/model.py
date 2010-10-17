@@ -186,9 +186,18 @@ def createUser():
     logging.exception(e)  
     session.rollback()
     raise ValueError("Unable to create user")
+  except Exception, e:
+    logging.exception(e)
+    session.rollback()
+    raise ValueError("Unable to create application")
 
 def user(id):
-  return session.query(User).filter(User.id == id).first()
+  try:
+    return session.query(User).filter(User.id == id).first()
+  except Exception, e:
+    logging.exception(e)
+    session.rollback()
+    raise ValueError("Unable to select user")
     
 
 def addIdentity(uid, identifier, displayName, email):
@@ -202,15 +211,34 @@ def addIdentity(uid, identifier, displayName, email):
     logging.exception(e)
     session.rollback()
     raise ValueError("Unable to create identity")
+  except Exception, e:
+    logging.exception(e)
+    session.rollback()
+    raise ValueError("Unable to add identity")
 
 def identity_by_identifier(identifier):
-  return session.query(Identity).filter(Identity.identifier == identifier).first()
+  try:
+    return session.query(Identity).filter(Identity.identifier == identifier).first()
+  except Exception, e:
+    logging.exception(e)
+    session.rollback()
+    raise ValueError("Unable to select identity for identifier")
     
 def applications():
-  return session.query(Application).all()
+  try:
+    return session.query(Application).all()
+  except Exception, e:
+    logging.exception(e)
+    session.rollback()
+    raise ValueError("Unable to select applications")
 
 def application(id):
-  return session.query(Application).filter(Application.id == int(id)).one()
+  try:
+    return session.query(Application).filter(Application.id == int(id)).one()
+  except Exception, e:
+    logging.exception(e)
+    session.rollback()
+    raise ValueError("Unable to select application")
 
 def createApplication(manifestText, manifestSrc, manifestObj = None):
   try:
@@ -237,16 +265,29 @@ def createApplication(manifestText, manifestSrc, manifestObj = None):
   except sqlalchemy.exc.IntegrityError:
     session.rollback()
     raise ValueError("An application is already registered for that launch URL.")
+  except Exception, e:
+    logging.exception(e)
+    session.rollback()
+    raise ValueError("Unable to create application")
 
 def save(obj):
-  session.add(obj)
-  session.commit()
-
+  try:
+    session.add(obj)
+    session.commit()
+  except Exception, e:
+    logging.exception(e)
+    session.rollback()
+    raise ValueError("Unable to save object")
 
 def categories(parent=None):
-  q = session.query(Category)
-  if parent: q = q.filter(Category.parent_id == parent)
-  return q.all()
+  try:
+    q = session.query(Category)
+    if parent: q = q.filter(Category.parent_id == parent)
+    return q.all()
+  except Exception, e:
+    logging.exception(e)
+    session.rollback()
+    raise ValueError("Unable to select categories")
 
 def createCategory(name, parent=None):
   try:
@@ -263,14 +304,29 @@ def createCategory(name, parent=None):
 
 
 def purchase(id):
-  return session.query(Purchase).filter(Purchase.id == id).one()
+  try:
+    return session.query(Purchase).filter(Purchase.id == id).one()
+  except Exception, e:
+    logging.exception(e)
+    session.rollback()
+    raise ValueError("Unable to select purchase")
 
 def purchase_for_user_app(userid, appid):
-  return session.query(Purchase).filter(Purchase.user_id == userid).filter(Purchase.app_id == appid).first()
+  try:
+    return session.query(Purchase).filter(Purchase.user_id == userid).filter(Purchase.app_id == appid).first()
+  except Exception, e:
+    logging.exception(e)
+    session.rollback()
+    raise ValueError("Unable to select purchases for user")
 
 def remove_purchase_for_user_app(userid, appid):
-  session.query(Purchase).filter(Purchase.user_id == userid).filter(Purchase.app_id == appid).delete()
-  session.commit()
+  try:
+    session.query(Purchase).filter(Purchase.user_id == userid).filter(Purchase.app_id == appid).delete()
+    session.commit()
+  except Exception, e:
+    logging.exception(e)
+    session.rollback()
+    raise ValueError("Unable to remove purchase")
 
 def createPurchaseForUserApp(uid, appid):
   try:
@@ -279,7 +335,7 @@ def createPurchaseForUserApp(uid, appid):
     session.commit()
     return p
 
-  except sqlalchemy.exc.IntegrityError, e:
+  except Exception, e:
     logging.exception(e)
     session.rollback()
     raise ValueError("Unable to create purchase")
