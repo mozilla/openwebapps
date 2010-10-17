@@ -2,7 +2,7 @@
 
 This system supports a wide range of potential application deployment models.
 
-A *self-published* application can be created by a developer.  The developer creates a manifest and places a call to the `install` method on their webiste, driven by a button or link.  When the user clicks, the repository prompts the user for confirmation, and adds the application to the user's dashboard.  If the application requests additional permissions, the user is prompted to confirm them.  This process is essentially identical to the existing process of using a web site and bookmarking it, but adds a simplifying metaphor to the experience.
+A *self-published* application can be created by a developer.  The developer creates a manifest and places a call to the `install` method on their website, driven by a button or link.  When the user clicks, the repository prompts the user for confirmation, and adds the application to the user's dashboard.  If the application requests additional permissions, the user is prompted to confirm them.  This process is essentially identical to the existing process of using a web site and bookmarking it, but adds a simplifying metaphor to the experience.
 
 An application directory is simply a web site, which may provide additional tools to help a user find the applications they want &mdash; perhaps including search, rankings, social features, discussion boards, reviews, etc.  
 
