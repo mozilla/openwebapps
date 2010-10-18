@@ -11,7 +11,7 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * The Original Code is Wallet; substantial portions derived
+ * The Original Code is trusted.js; substantial portions derived
  * from XAuth code originally produced by Meebo, Inc., and provided
  * under the Apache License, Version 2.0; see http://github.com/xauth/xauth
  *
@@ -75,13 +75,20 @@
   // Reference shortcut so minifier can save on characters
   var storage = win.localStorage;
   
+  // Returns whether the given URL belongs to the specified domain (scheme://hostname[:nonStandardPort])
   function urlMatchesDomain(url, domain)
   {
     try {
-      var splitOne = url.split("://")
-      var splitTwo = splitOne[1].split("/")
-      var testDomain = splitOne[0] + "://" + splitTwo[0];
-      if (testDomain == domain) return true;
+      var parsedDomain = Manifest.parseUri(domain);
+      var parsedURL = Manifest.parseUri(url);
+    
+      if (parsedDomain.protocol.toLowerCase() == parsedURL.protocol.toLowerCase() &&
+        parsedDomain.host.toLowerCase() == parsedURL.host.toLowerCase())
+      {
+        var inputPort = parsedDomain.port ? parsedDomain.port : (parsedDomain.protocol.toLowerCase() == "https" ? 443 : 80);
+        var testPort = parsedURL.port ? parsedURL.port : (parsedURL.protocol.toLowerCase() == "https" ? 443 : 80);        
+        if (inputPort == testPort) return true;
+      }
     } catch (e) {
     }
     return false;  
@@ -90,16 +97,15 @@
   // Returns whether this application runs in the specified domain (scheme://hostname[:nonStandardPort])
   function applicationMatchesDomain(application, domain)
   {
-    // TODO look into optimizing this so we are not constructing
-    // regexps over and over again, but make sure it works in IE
-    for (var i=0;i<application.app.urls.length;i++)
+    for (var i=0;i<application.app_urls.length;i++)
     {
-      var testURL = application.app.urls[i];
+      var testURL = application.app_urls[i];
       if (urlMatchesDomain(testURL, domain)) return true;
     }
     return false;
   }
   
+  // Return all installations that belong to the given origin domain
   function getInstallsForOrigin(originHostname, requestObj, origin)
   {
     var result = [];
@@ -113,11 +119,6 @@
         // validate the manifest
         var install = JSON.parse(item);
         install.app = Manifest.validate(install.app);
-
-        // Clean up out-of-date tickets as we go
-        if (Manifest.expired(install.app)) {
-          throw "application has expired";
-        }
 
         if (applicationMatchesDomain(install.app, origin)) {      
           result.push(install);
@@ -139,7 +140,7 @@
     return result;
   }
   
-  
+  // Return all installations that were installed by the given origin domain 
   function getInstallsByOrigin(originHostname, requestObj, origin)
   {
     var result = [];
@@ -153,11 +154,6 @@
         // validate the manifest
         var install = JSON.parse(item);
         install.app = Manifest.validate(install.app);
-
-        // Clean up out-of-date tickets as we go
-        if (Manifest.expired(install.app)) {
-          throw "application has expired";
-        }
 
         if (urlMatchesDomain(install.installURL, origin)) {
           result.push(install);
@@ -180,18 +176,18 @@
   
   
   // Set up the API
-  var WalletAPI = {
+  var AppAPI = {
     /**
     Request object will look like:
     {
-      cmd:'wallet::install',
+      cmd:'app::install',
       id:1,
       manifest: MANIFEST_DATA,
       expire: JS date timestamp number,
     }
     **/
   
-    'wallet::install': function(originHostname, requestObj, origin) {
+    'app::install': function(originHostname, requestObj, origin) {
       // Validate and clean the request
       var manf;
       try {
@@ -207,7 +203,7 @@
       // cause the UI to display a prompt to the user
       displayInstallPrompt(originHostname, manf, function (allowed) {
         if (allowed) {
-          var key = manf.app.launch.web_url;
+          var key = manf.base_url;
 
           // Create installation data structure
           var installation = {
@@ -237,23 +233,21 @@
     /**
     Request object will look like:
     {
-      cmd:'wallet::verify',
+      cmd:'app::verify',
       id:1
     }
     **/
-    'wallet::verify': function(originHostname, requestObj, origin) {
+    'app::verify': function(originHostname, requestObj, origin) {
 
-      // We will look for manifests whose app.url filter matches the origin.
+      // We will look for manifests whose app_urls filter matches the origin.
       // If we find one, we will initiate verification of the user
-      // by contacting the identity server defined in the manifest.
+      // by contacting the authorizationURL defined in the installation record.
 
       // If we find two... well, for now, we take the first one.
       // Perhaps we should find the first one that has an authorization URL.
 
       var result = getInstallsForOrigin(originHostname, requestObj, origin);      
-
       if (result.length == 0) return null;
-
       var install = result[0];
       
       // Must have authorizationURL
@@ -277,11 +271,11 @@
     
     Request object will look like:
     {
-      cmd:'wallet::getInstalled',
+      cmd:'app::getInstalled',
       id:1
     }
     **/
-    'wallet::getInstalled': function(originHostname, requestObj, origin) {
+    'app::getInstalled': function(originHostname, requestObj, origin) {
       var installsResult = getInstallsForOrigin(originHostname, requestObj, origin);
 
       // Caller doesn't get to see installs, just apps:
@@ -303,7 +297,7 @@
     
     Request object will look like:
     {
-      cmd:'wallet::getInstalledBy',
+      cmd:'app::getInstalledBy',
       id:1
     }
     
@@ -322,7 +316,7 @@
       ]
     }
     **/
-    'wallet::getInstalledBy': function(originHostname, requestObj, origin) {
+    'app::getInstalledBy': function(originHostname, requestObj, origin) {
       var installsResult = getInstallsByOrigin(originHostname, requestObj, origin);
 
       // Caller gets to see installURL, installTime, and manifest
@@ -368,12 +362,6 @@
     win.parent.postMessage(JSON.stringify(responseObj), origin);
   }
   
-  // Dynamically called since the user can open up xauth.org and disable
-  // the entire thing while another browser tab has an xauth.org iframe open
-  function checkDisabled() {
-    return (storage.getItem('disabled.myapps.org') == '1');
-  }
-  
   // Listener for window message events, receives messages from parent window
   function onMessage(event) {
     // event.origin will always be of the format scheme://hostname:port
@@ -385,7 +373,7 @@
     /**
     message generally looks like
     {
-      cmd: wallet::command_name,
+      cmd: app::command_name,
       id: request_id,
       other parameters
     }
@@ -393,14 +381,14 @@
 
     if(!requestObj || typeof requestObj != 'object' 
       || !requestObj.cmd || requestObj.id == undefined
-      || checkDisabled()) {
+    ) {
       // A post message we don't understand
       return;
     }
     
-    if(WalletAPI[requestObj.cmd]) {
+    if(AppAPI[requestObj.cmd]) {
       // A command we understand, send the response on back to the posting window
-      var result = WalletAPI[requestObj.cmd](originHostname, requestObj, event.origin);
+      var result = AppAPI[requestObj.cmd](originHostname, requestObj, event.origin);
       sendResponse(result, event.origin);
     } else {
       logError(requestObj, "Unknown AppClient call " + requestObj.cmd, originHostname); 
@@ -415,10 +403,10 @@
   }
 
   // Finally, tell the parent window we're ready.
-  win.parent.postMessage(JSON.stringify({cmd: 'wallet::ready'}),"*");
+  win.parent.postMessage(JSON.stringify({cmd: 'app::ready'}),"*");
 
   return {
-    showDialog: function() { sendResponse( { id: -1, cmd: "wallet::showme" }, installOrigin); },
-    hideDialog: function() { sendResponse( { id: -1, cmd: "wallet::hideme" }, installOrigin); }
+    showDialog: function() { sendResponse( { id: -1, cmd: "app::showme" }, installOrigin); },
+    hideDialog: function() { sendResponse( { id: -1, cmd: "app::hideme" }, installOrigin); }
   }
 })();

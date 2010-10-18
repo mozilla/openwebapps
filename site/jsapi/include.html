@@ -207,9 +207,9 @@ function displayInstallPrompt(originHostname, manifest, clientCB) {
   };
 
   document.getElementById("site").textContent = originHostname;
-  // !!! think about this.  These values cannot be trusted!
+
   document.getElementById("appname").textContent = manifest.name;
-  document.getElementById("base_url").textContent = manifest.app.launch.web_url;
+  document.getElementById("base_url").textContent = manifest.base_url;
   
   if (manifest.icons) {
 

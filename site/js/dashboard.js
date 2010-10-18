@@ -11,7 +11,7 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * The Original Code is App Dashboard
+ * The Original Code is App Dashboard, dashboard.js
  *
  * The Initial Developer of the Original Code is Mozilla.
  * Portions created by the Initial Developer are Copyright (C) 2010
@@ -211,31 +211,33 @@ function renderAppInfo(selectedBox)
             return boxDiv;
         }
         var dev = elem("div", "developerName");
-        if (gSelectedInstall.app.developerURL) {
+        if (gSelectedInstall.app.developer) {
+          if (gSelectedInstall.app.developer.url) {
             var a = elem("a");
-            a.setAttribute("href", gSelectedInstall.app.developerURL);
+            a.setAttribute("href", gSelectedInstall.app.developer.url);
             a.setAttribute("target", "_blank");
-            a.appendChild(document.createTextNode(gSelectedInstall.app.developerName));
+            a.appendChild(document.createTextNode(gSelectedInstall.app.developer.name));
             dev.appendChild(a);
             data.appendChild(dev);
 
             var linkbox = elem("div", "developerLink");
             a = elem("a");
-            a.setAttribute("href", gSelectedInstall.app.developerURL);
+            a.setAttribute("href", gSelectedInstall.app.developer.url);
             a.setAttribute("target", "_blank");
-            a.appendChild(document.createTextNode(gSelectedInstall.app.developerURL));
+            a.appendChild(document.createTextNode(gSelectedInstall.app.developer.url));
             linkbox.appendChild(a);
             data.appendChild(linkbox);
 
-        } else {
-            if (gSelectedInstall.app.developerName) {
-                dev.appendChild(document.createTextNode(gSelectedInstall.app.developerName));
+          } else {
+            if (gSelectedInstall.app.developer.name) {
+                dev.appendChild(document.createTextNode(gSelectedInstall.app.developer.name));
                 data.appendChild(dev);
             } else {
                 dev.appendChild(document.createTextNode("No developer info"));
                 $(dev).addClass("devUnknown");
                 data.appendChild(dev);
             }
+          }
         }
         info.appendChild(data);
 
@@ -247,13 +249,12 @@ function renderAppInfo(selectedBox)
 
         props.appendChild(makeColumn("Install Date", formatDate(gSelectedInstall.installTime)));
         props.appendChild(makeColumn("Installed From", gSelectedInstall.installURL));
-        if (gSelectedInstall.authorization_token) props.appendChild(makeColumn("Authz Token", gSelectedInstall.authorization_token));
 
         info.appendChild(props);
 
         // finally, a delete link and action
         $("<div/>").text("Delete this application.").addClass("deleteText").appendTo(info).click(function() {
-            gApps.remove(gSelectedInstall.app.app.launch.web_url);
+            gApps.remove(gSelectedInstall.app.base_url);
             gSelectedInstall = null;
             gDisplayMode = ROOT;
             render();
@@ -283,8 +284,8 @@ function renderAppInfo(selectedBox)
 function createAppIcon(install) 
 {
     var appDiv = elem("div", "app");
-    appDiv.onclick = makeOpenAppTabFn(install.app, install.app.app.launch.web_url);
-    appDiv.setAttribute("id", "app:" + install.app.app.launch.web_url);
+    appDiv.onclick = makeOpenAppTabFn(install.app, install.app.base_url + install.app.launch_path);
+    appDiv.setAttribute("id", "app:" + install.app.base_url);
 
     var iconDiv = $("<div/>").addClass("icon");
     $(appDiv).append(iconDiv);
@@ -316,7 +317,7 @@ function createAppIcon(install)
 
     // bring up detail display when user clicks on info icon
     moreInfo.click(function(e) {
-        var app = install.app.app.launch.web_url;
+        var app = install.app.base_url;
         gSelectedInstall = gApps.getInstall(app);
         if (!gSelectedInstall) return;
 

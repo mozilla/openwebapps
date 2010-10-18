@@ -110,7 +110,7 @@ class Application(Base):
     price = Column(Integer, default=0)
     manifest = Column(Text, nullable=False)
     manifestText = Column(Text, nullable=False) # source of manifest, can include whitespace and comments
-    launchURL = Column(String(1000), nullable=False, unique=True)
+    baseURL = Column(String(1000), nullable=False, unique=True)
     updated = Column(DateTime, nullable=False)
     approved = Column(Boolean)
     icon96URL = Column(Text)
@@ -122,11 +122,11 @@ class Application(Base):
     purchases = relationship("Purchase", backref="app")  
      # TODO it may make sense to keep a version history here.
 
-    def __init__(self, name, manifest, manifestText, launchURL, updated, icon96, description):
+    def __init__(self, name, manifest, manifestText, baseURL, updated, icon96, description):
       self.name = name
       self.manifest = manifest
       self.manifestText = manifestText
-      self.launchURL = launchURL
+      self.baseURL = baseURL
       self.updated = updated
       self.icon96URL = icon96
       self.approved = False
@@ -246,7 +246,7 @@ def createApplication(manifestText, manifestSrc, manifestObj = None):
       manifestObj = json.loads(manifestSrc)
       
     name = manifestObj['name']
-    launchURL = manifestObj['app']['launch']['web_url']
+    baseURL = manifestObj['base_url']
     icon96 = None
     if 'icons' in manifestObj:
       if '96' in manifestObj['icons']:
@@ -257,7 +257,7 @@ def createApplication(manifestText, manifestSrc, manifestObj = None):
 
     description = manifestObj['description']
 
-    a = Application(name, manifestSrc, manifestText, launchURL, datetime.now(), icon96, description)
+    a = Application(name, manifestSrc, manifestText, baseURL, datetime.now(), icon96, description)
     session.add(a)
     session.commit()
     return a

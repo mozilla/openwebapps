@@ -20,7 +20,7 @@ $(document).ready(function () {
     {
       for (var i=0;i<result.installed.length;i++)
       {
-        if (result.installed[i].manifest.app.launch.web_url == gAppManifest.app.launch.web_url)
+        if (result.installed[i].manifest.base_url == gAppManifest.base_url)
         {
           gAlreadyInstalled = true;
           $("#install_button").hide();
@@ -35,7 +35,7 @@ $(document).ready(function () {
             $("#already_installed").show();
 {% end %}
           } else {
-            $("#already_installed_text").append("Whoops! You've installed this application in this browser, but the current user hasn't purchased it.<br><br>(See multi-user feature work here...)")
+            $("#already_installed_text").append("You've installed this application in this browser, but the current user hasn't purchased it.<br><br>Please check your account signin.")
             $("#already_installed").show();
             $("#uninstall_hackery").hide();
           }
@@ -56,9 +56,6 @@ $("#purchase_button").live('click', function() {
   jQuery.post("/api/buy", {appid:{{appID}}}, function(data, textStatus) {
 
     // TODO also provide an error handler; failures will fail silently right now
-    
-    // copy this, and in the iphone case, set window.location to /verify/{{appID}}
-
     // and on success, install manifest:
     AppClient.install({manifest: gAppManifest, authorization_url: "{{ authorizationURL }}", callback: function (arg) {
       $("#install_button").text('Installed!');
@@ -118,6 +115,7 @@ $("#login_purchase").show();
   white-space:nowrap;
   position:relative;
   height:400px;
+  background:white;
 }
 
 .app_page .left_column
@@ -280,7 +278,6 @@ $("#login_purchase").show();
 {
   padding:8px 8px 0px 8px;
   font:10pt Helvetica, Arial;
-  height:200px;
 }
 #login .head
 {

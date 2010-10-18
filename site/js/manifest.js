@@ -11,7 +11,7 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * The Original Code is Wallet; substantial portions derived
+ * The Original Code is manifest.js; substantial portions derived
  * from XAuth code originally produced by Meebo, Inc., and provided
  * under the Apache License, Version 2.0; see http://github.com/xauth/xauth
  *
@@ -42,16 +42,59 @@
   Manifest validation code broken out into a separate file.
 **/
 
+
 ;var Manifest = (function() {
+
+  // parseUri 1.2.2
+  // (c) Steven Levithan <stevenlevithan.com>
+  // MIT License
+  function parseUri (str) {
+    var	o   = parseUri.options,
+      m   = o.parser[o.strictMode ? "strict" : "loose"].exec(str),
+      uri = {},
+      i   = 14;
+    while (i--) uri[o.key[i]] = m[i] || "";
+    uri[o.q.name] = {};
+    uri[o.key[12]].replace(o.q.parser, function ($0, $1, $2) {
+      if ($1) uri[o.q.name][$1] = $2;
+    });
+    return uri;
+  };
+
+  parseUri.options = {
+    strictMode: false,
+    key: ["source","protocol","authority","userInfo","user","password","host","port","relative","path","directory","file","query","anchor"],
+    q:   {
+      name:   "queryKey",
+      parser: /(?:^|&)([^&=]*)=?([^&]*)/g
+    },
+    parser: {
+      strict: /^(?:([^:\/?#]+):)?(?:\/\/((?:(([^:@]*)(?::([^:@]*))?)?@)?([^:\/?#]*)(?::(\d*))?))?((((?:[^?#\/]*\/)*)([^?#]*))(?:\?([^#]*))?(?:#(.*))?)/,
+      loose:  /^(?:(?![^:@]+:[^:@\/]*@)([^:\/?#.]+):)?(?:\/\/)?((?:(([^:@]*)(?::([^:@]*))?)?@)?([^:\/?#]*)(?::(\d*))?)(((\/(?:[^?#](?![^?#\/]*\.[^?#\/.]+(?:[?#]|$)))*\/?)?([^?#\/]*))(?:\?([^#]*))?(?:#(.*))?)/
+    }
+  };
+  // end parseUri
+
   function applicationMatchesURL(application, url)
   {
-    // TODO look into optimizing this so we are not constructing
-    // regexps over and over again, but make sure it works in IE
-    for (var i=0;i<application.app.urls.length;i++)
+    if (application.app_urls)
     {
-      var testURL = application.app.urls[i];
-      var re = RegExp("^" + testURL.replace("*", ".*"));// no trailing $
-      if (re.exec(url) != null) return true;
+      var inputURL = parseUri(url);
+      for (var i=0;i<application.app_urls.length;i++)
+      {
+        var testURL = application.app_urls[i];
+        if (url.indexOf(testURL) == 0) {
+          // prefix matched: now make sure the domain is an exact match
+          var testParse = parseUri(testURL);
+          if (testParse.protocol == inputURL.protocol &&
+            testParse.host == inputURL.host)
+          {
+            var requiredPort = inputURL.port ? inputURL.port : (inputURL.scheme == "https" ? 443 : 80);
+            var testPort = testParse.port ? testParse.port : (testParse.scheme == "https" ? 443 : 80);
+            if (requiredPort == testPort) return true;
+          }
+        }
+      }
     }
     return false;
   }
@@ -65,45 +108,49 @@
       throw('Invalid manifest: null');
     }
 
-    if (manf.expiration) {
-      var numericValue = Number(manf.expiration); // Cast to numeric timestamp
-      var dateCheck = new Date(numericValue);
-      if(dateCheck < new Date()) { // If you pass garbage into the date, this will be false
-        throw('Invalid request: malformed expiration (' + manf.expiration + '; ' + dateCheck + ')');
-      }
-      manf.expiration = numericValue;
-    }
     if (!manf.name) {
       throw('Invalid manifest: missing application name');
     }
-    if (!manf.app) {
-      throw('Invalid manifest: missing "app" property');
+    if (!manf.base_url) {
+      throw('Invalid manifest: missing "base_url" property');
     }
-    if (!manf.app.urls) {
-      throw('Invalid request: missing "urls" property of "app"');
+    if (!manf.app_urls) {
+      throw('Invalid request: missing "app_urls" property');
     }
-    if (!manf.app.launch) {
-      throw('Invalid request: missing "launch" property of "app"');
+    if (manf.app_urls.length == 0) {
+      throw('Invalid request: "app_urls" property must not be empty');
     }
-    if (!manf.app.launch.web_url) {
-      throw('Invalid request: missing "web_url" property of "app.launch"');
+    if (manf.launch_path == undefined) { // empty string is legal
+      throw('Invalid request: missing "launch_path" property');
     }
 
-    // Launch URL must be part of the set of app.urls
-    if (!applicationMatchesURL(manf, manf.app.launch.web_url)) {
-      throw('Invalid request: "web_url" ('+ manf.app.launch.web_url +
-            ') property of "app.launch" must be a subset of app.urls.');
+    // '..' is forbidden in all paths
+    if (manf.launch_path.indexOf("..") >= 0)
+      throw('Invalid request: ".." is forbidden in launch_path');
+    if (manf.update_path && manf.update_path.indexOf("..") >= 0)
+      throw('Invalid request: ".." is forbidden in update_path');
+    if (manf.icons) 
+    {
+      for (var size in manf.icons) 
+      {
+        if (manf.icons[size].indexOf("..") >= 0)
+          throw('Invalid request: ".." is forbidden in icons');
+      }
+    }
+
+    // Base URL must be part of the set of app_urls
+    if (!applicationMatchesURL(manf, manf.base_url)) 
+      throw('Invalid request: base_url property must be a subset of app_urls.');
+
+    // Launch URL must be part of the set of app_urls
+    if (!applicationMatchesURL(manf, manf.base_url + manf.launch_path)) {
+      throw('Invalid request: base_url + launch_path property must be a subset of app_urls.');
     } 
-    //if (console && console.log) console.log("returning manifest");
     return manf;
-  }
-
-  function expired(manf) {
-    return (manf.app.expiration && new Date(manf.app.expiration) < new Date());
   }
 
   return {
     validate: validate,
-    expired: expired
+    parseUri: parseUri
   }
 })();

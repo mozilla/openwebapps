@@ -11,7 +11,7 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * The Original Code is Wallet; substantial portions derived
+ * The Original Code is include.js; substantial portions derived
  * from XAuth code originally produced by Meebo, Inc., and provided
  * under the Apache License, Version 2.0; see http://github.com/xauth/xauth
  *
@@ -34,7 +34,7 @@
 
 /**
   2010-07-14
-  First version of wallet client code
+  First version of app client code
   -Michael Hanson. Mozilla
 **/
 
@@ -45,11 +45,8 @@ var AppClient = (function() {
   // Check for browser capabilities
   var unsupported = !(win.postMessage && win.localStorage && win.JSON);
   
-  // TODO: https support. Needs CDN to have a proper cert
-  var WalletOrigin = "https://myapps.mozillalabs.com";
-  //var WalletOrigin = "http://localhost:8123";
-
-  var WalletServerUrl = WalletOrigin + "/jsapi/include.html";
+  var AppRepositoryOrigin = "https://myapps.mozillalabs.com";
+  var AppRepositoryServerURL = AppRepositoryOrigin + "/jsapi/include.html";
 
   // Cached references
   var iframe = null;
@@ -67,13 +64,13 @@ var AppClient = (function() {
   var requestQueue = [];
 
   // Listener for window message events, receives messages from only
-  // the wallet host:port that we set up in the iframe
+  // the app repo host:port that we set up in the iframe
   function onMessage(event) {
     // event.origin will always be of the format scheme://hostname:port
     // http://www.whatwg.org/specs/web-apps/current-work/multipage/comms.html#dom-messageevent-origin
 
-    if(event.origin != WalletOrigin) {
-      // Doesn't match https://myapps.mozillalabs.com, reject
+    if(event.origin != AppRepositoryOrigin) {
+      // Doesn't match our repo; reject
       return;
     }
     
@@ -85,7 +82,7 @@ var AppClient = (function() {
 
     // Check for special iframe ready message and call any pending
     // requests in our queue made before the iframe was created.
-    if(msg.cmd === 'wallet::ready') {
+    if(msg.cmd === 'app::ready') {
       // Cache the reference to the iframe window object
       postWindow = iframe.contentWindow;
       setTimeout(makePendingRequests, 0);
@@ -93,12 +90,12 @@ var AppClient = (function() {
     }
     // Check for special iframe requests to become visible/hidden and
     // do the right thing.
-    else if(msg.cmd === 'wallet::showme') {
+    else if(msg.cmd === 'app::showme') {
       // Cache the reference to the iframe window object
       showInstallDialog();
       return;
     }
-    else if(msg.cmd === 'wallet::hideme') {
+    else if(msg.cmd === 'app::hideme') {
       // Cache the reference to the iframe window object
       hideInstallDialog();
       return;
@@ -169,14 +166,13 @@ var AppClient = (function() {
 
     // Setup postMessage event listeners
     if (win.addEventListener) {
-      //dump("Setting event listener\n");
       win.addEventListener('message', onMessage, false);
     } else if(win.attachEvent) {
       win.attachEvent('onmessage', onMessage);
     }
     // Append iframe to the dom and load up myapps.mozillalabs.com inside
     doc.body.appendChild(iframe);
-    iframe.src = WalletServerUrl;
+    iframe.src = AppRepositoryServerURL;
   }
   
   // Called immediately after iframe has told us it's ready for communication
@@ -189,8 +185,7 @@ var AppClient = (function() {
   // Simple wrapper for the postMessage command that sends serialized requests
   // to the myapps.mozillalabs.com iframe window
   function makeRequest(requestObj) {
-    //dump("postMessage: " + JSON.stringify(requestObj) + "\n");
-    postWindow.postMessage(JSON.stringify(requestObj), WalletServerUrl);
+    postWindow.postMessage(JSON.stringify(requestObj), AppRepositoryServerURL);
   }
 
   // All requests funnel thru queueRequest which assigns it a unique
@@ -217,7 +212,7 @@ var AppClient = (function() {
   function callInstall(args) {
     if(!args) { args = {}; }
     var requestObj = {
-      cmd: 'wallet::install',
+      cmd: 'app::install',
       manifest: args.manifest || {},
       authorization_url: args.authorization_url || null,
       session: args.session || false,
@@ -229,7 +224,7 @@ var AppClient = (function() {
   function callVerify(args) {
     if(!args) { args = {}; }
     var requestObj = {
-      cmd: 'wallet::verify',
+      cmd: 'app::verify',
       callback: args.callback || null
     }
     queueRequest(requestObj);
@@ -238,7 +233,7 @@ var AppClient = (function() {
   function callGetInstalled(args) {
     if(!args) { args = {}; }
     var requestObj = {
-      cmd: 'wallet::getInstalled',
+      cmd: 'app::getInstalled',
       callback: args.callback || null
     }
     queueRequest(requestObj);
@@ -247,7 +242,7 @@ var AppClient = (function() {
   function callGetInstalledBy(args) {
     if(!args) { args = {}; }
     var requestObj = {
-      cmd: 'wallet::getInstalledBy',
+      cmd: 'app::getInstalledBy',
       callback: args.callback || null
     }
     queueRequest(requestObj);
