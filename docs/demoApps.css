@@ -37,7 +37,7 @@ body.subpage {
   background:url("http://mozillalabs.com/wp-content/themes/labs_project/img/menu-home-bg.png") repeat-x scroll center top transparent;
 }
 a {
-	text-decoration: none;
+	text-decoration: underline;
 	color: rgba(85,130,145,0.8);
 	-moz-transition-property: color;
  	-moz-transition-duration: 0.5s;

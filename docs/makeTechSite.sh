@@ -6,7 +6,7 @@ count=0
 
 for page in ${pages[@]}
 do
-echo "<html><head><title>Installable Web Applications: " > $page.html
+echo "<html><head><title>Open Web Applications: " > $page.html
 echo ${titles[${count}]} >> $page.html
 echo "</title>" >> $page.html
 cat techSiteHeader.html >> $page.html

@@ -1,6 +1,6 @@
-## Installable Web Apps Technical Overview
+## Open Web Apps Technical Overview
 
-This document describes an architecture for *Installable Web Applications.*  These are applications constructed using standard web technologies including HTML5, CSS3, and JavaScript, which can run in any modern web browser  Like today's web applications, they are made with a combination of server-side logic and client-side logic.
+This document describes an architecture for *Open Web Applications.*  These are applications constructed using standard web technologies including HTML5, CSS3, and JavaScript, which can run in any modern web browser  Like today's web applications, they are made with a combination of server-side logic and client-side logic.
 
 The system presented here provides for both free and paid applications.  It presumes that there will be multiple stores from which users may install applications.  Developers are free to list their applications on multiple stores, and to enter independent relationships with each.  Developers should be free to self-publish their application, or to themselves create a curated application directory.  Applications deployed using this system should work on desktop and mobile platforms, and should degrade gracefully when advanced browser capabilities are not present.
 
@@ -8,15 +8,15 @@ This document is intended as a proposal to the web user and developer community,
 
 ### Overview
 
-This proposal defines an *Installable Web Application* in terms of the existing web technology stack.  These applications leverage the HTML5 specification, which describes how a web browser can provide local storage, offline access to applications and data, geolocation services, and rich 2D and 3D graphics capabilities.
+This proposal defines an *Open Web Application* in terms of the existing web technology stack.  These applications leverage the HTML5 specification, which describes how a web browser can provide local storage, offline access to applications and data, geolocation services, and rich 2D and 3D graphics capabilities.
 
-Installable Web Applications build upon this HTML5 foundation by adding easy launching, an explicit installation flow, and verification of user registration between stores and applications (enabling proof of purchase).  This basic set of interactions requires no new browser features and should work in any modern web browser.  Richer interactions are also described which would be made possible by native browser support (that may be built-in, or supplied via browser extensions).
+Open Web Applications build upon this HTML5 foundation by adding easy launching, an explicit installation flow, and verification of user registration between stores and applications (enabling proof of purchase).  This basic set of interactions requires no new browser features and should work in any modern web browser.  Richer interactions are also described which would be made possible by native browser support (that may be built-in, or supplied via browser extensions).
 
 Using this system, a user can navigate through a collection of applications in a store or directory, select one to install, provide payment information if needed, and receive the installed application into a "dashboard" that holds all of his or her applications.  When the user subsequently launches the application (by mouse, keyboard, or followed link), the application should be able to verify the user's ownership immediately, so that the user experiences a "one click" launch into a personalized application.
 
 It is not a goal of this proposal to explain how an all-HTML5 application can be downloaded to a desktop computer and subsequently protected from copying.  The focus of the payment proposal is on online verification of user proof-of-install, or proof-of-purchase (in other words, how web apps can work with a <a href="http://en.wikipedia.org/wiki/Key_server_%28software_licensing%29">license server</a>).
 
-The basic set of concepts required to enable Installable Web Applications are:
+The basic set of concepts required to enable Open Web Applications are:
 
 * **Application manifests**, which describes the location, requirements, and capabilities of an application.
 

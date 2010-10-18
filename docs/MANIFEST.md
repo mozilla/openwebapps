@@ -15,14 +15,15 @@ For a discussion of the security and privacy considerations around the applicati
     {
       "name": "MozillaBall",
       "description": "Exciting Open Web development action!",
-      "app": {
-        "urls": [
-          "https://mozillaball.mozillalabs.com"
-        ],
-        "base_url": "https://mozillaball.mozillalabs.com",
-        "launch_path": "",
-        "update_path": "manifest/manifest.json"
-      },
+
+      "base_url": "https://mozillaball.mozillalabs.com",
+      "launch_path": "",
+      "update_path": "manifest/manifest.json",
+
+      "app_urls": [
+        "https://mozillaball.mozillalabs.com/"
+      ],
+
       "capabilities": [
         "geolocation"
       ],
@@ -60,15 +61,13 @@ For detailed technical discussion of the manifest, please visit wiki:Manifest.  
 
 * **description**: A human-readable description of the application.
 
-* **app**: A structured field containing details of the application's network location.  Subfields include:
+* **base_url**: The URL that is used as a base for relative URLs which follow.  The base_url must belong to the application.
 
-    * **urls**: A list of URL prefixes, which must contain at least a scheme and hostname, but may optionally have a path portion.  Any URL that begins with one these URL prefixes, including a full match on the scheme, hostname, and port of the manifest URL, is said to "belong" to the application, and should be consolidated into a single browsing experience by an application-aware browser.  
+* **launch_path**: The path that is appended to base_url to create the "launch URL" for the application, which is the page that is loaded when the application starts.
 
-    * **base_url**: The URL that is used as a base for relative URLs which follow.  The base_url must belong to the application.
+* **update_path**: (optional) The path that is appended to base_url to create the "update URL" for the application, which must return a manifest.  Application repositories should check for a new manifest periodically and apply the update to their local repository copy if the manifest found there is newer than the local copy.
 
-    * **launch_path**: The path that is appended to base_url to create the "launch URL" for the application, which is the page that is loaded when the application starts
-
-    * **update_path**: (optional) The path that is appended to base_url to create the "update URL" for the application, which must return a manifest.  Application repositories should check for a new manifest periodically and apply the update to their local repository copy if the manifest found there is newer than the local copy.
+* **app_urls**: A list of URL prefixes, which must contain at least a scheme and hostname, but may optionally have a path portion.  Any URL that begins with one these URL prefixes, with a full match on the scheme, hostname, and port of the manifest URL, is said to "belong" to the application, and should be consolidated into a single browsing experience by an application-aware browser.  Incomplete hostnames, e.g. "http://www", will fail to match any application and are invalid.  base_url must be included in the set defined by app_urls, and the manifest is invalid if it is not.
 
 * **capabilities**: a list of string tokens describing advanced web browser capabilities that the application requests.  Browser-native application repositories should prompt the user for permission to use these capabilities at installation time; the user is free to deny access to any or all of these permission requests, but this may cause the application to behave incorrectly.
 
@@ -80,7 +79,7 @@ For detailed technical discussion of the manifest, please visit wiki:Manifest.  
 
     * **url**: the URL of an information site for the developer; the developer is free to place a URL that provides more detailed information about this app in this field
 
-* **locales**: a map of local-specific overrides on the data contained in the manifest, which UIs should use to provide localized views.  Each locale entry is keyed on a local code, and contains a sparse representation of the manifest; any field that is present in the locale value should override the matching field in the manifest.
+* **locales**: a map of local-specific overrides on the data contained in the manifest, which UIs should use to provide localized views.  Each locale entry is keyed on a local code, and contains a sparse representation of the manifest; any field that is present in the locale value should override the matching field in the manifest.  Locales are not allowed to override the capabilities field; a manifest that does so is invalid.
 
 * **release**: A timestamp in ISO 8601 format representing when this version of the manifest came into effect (see below)
 
