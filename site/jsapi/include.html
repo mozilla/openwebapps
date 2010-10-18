@@ -56,7 +56,8 @@ body
     inset rgba(255, 255, 255, 0.5) 0 1px 0px,
     inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
     rgba(0, 0, 0, 0.1) 0px 2px 0px;	
-
+  white-space: nowrap;
+  position:relative;
 }
 
 #footer
@@ -82,25 +83,29 @@ body
 
 #appicon 
 {
-  padding-top:10;
-  float:left;
-  margin-right:20;
-  margin-left:20;
+  position:absolute;
+  left:20px;
+  top:11px;
 }
 
 #apptitle 
 {
+  position:absolute;
   font-size: 14pt;
   font-weight: bold;
-  padding-left:20;
-  padding-top:20;
+  left:136px;
+  top:20px;
 }
 
 #base_url
 {
-  font-size: 10pt;
-  padding-top:10;
-  padding-left:20;
+  font-size: 9pt;
+  position:absolute;
+  left:136px;
+  top: 44px;
+  width:225px;
+  word-wrap:break-word;
+  white-space:normal;
 }
 
 #warning 

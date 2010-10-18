@@ -344,7 +344,7 @@ TaskTrackerApp = {"name":"Task Tracker",
                 }
 
 MozillaBallApp = {"name":"MozillaBall",
-                  "urls":["http://mozillaball.mozillalabs.com/",
+                  "app_urls":["http://mozillaball.mozillalabs.com/",
                           "https://mozillaball.mozillalabs.com/"],
                   "base_url": "https://mozillaball.mozillalabs.com/",
                   "launch_path": "",
@@ -360,7 +360,7 @@ MozillaBallApp = {"name":"MozillaBall",
 
 GmailApp = {"name":"Gmail",
                 "description":"7+ GB of storage, less spam, and mobile access. Gmail is email that's intuitive, efficient, and useful. And maybe even fun.",
-                  "urls":["http://mail.google.com/mail/",
+                  "app_urls":["http://mail.google.com/mail/",
                           "https://mail.google.com/mail/",
                           "http://www.google.com/mail/",
                           "https://www.google.com/mail/"],
