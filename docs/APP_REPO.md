@@ -2,31 +2,33 @@
 
 The application repository is a client-side trusted collection of the manifests that the user has installed.
 
-We have implemented a prototype repository in HTML5 at `myapps.mozillalabs.com`, but future repositories could be implemented in browser extensions or as part of a web browser platform.
+We have implemented a prototype repository in HTML5 at `myapps.mozillalabs.com`, but future repositories could be implemented in browser extensions or as part of a web browser platform. <!-- FIXME: I think we have some specific reasons for a hosted repository, which we could explain?  Particularly browser-neutrality and portability -->
 
 The application repository provides a limited, privacy-respecting API to web content, which allows it to interact with other websites to give users a smooth experience of using web applications.  It also powers the **application dashboard**, a rich HTML5 interface to manage and launch applications from the browser.
 
 If the application repository is implemented by browser makers (or in extensions), a similar API will need to be provided.
 
-In the `myapps.mozillalabs.com` case, we expose four functions:
+App stores or specific applications can interact with the repository by including the Javascript from `https://myapps.mozillalabs.com/jsapi/include.js` and use the `AppClient` object that is exposed.  In the `myapps.mozillalabs.com` case, we expose four functions:
 
 *   `install( <manifest> , [ <authorizationURL> ], [ <signature> ], <callback>):`
 
     prompts the user for confirmation of the manifest, possibly checking the installation and application domains against a registry of known malware sites.  If the user consents, the manifest is installed into the repository, along with the hostname of the installing site and a timestamp.  If the installing site does not use SSL, the user will be strongly discouraged from installing the application.   When the installation flow is completed with success or failure, the installing website is notified through the callback.
-    
+
      the optional authorizationURL and signature fields are persisted into local storage along with the manifest, as part of the installation.
-    
+
 *   `getInstalled( <callback> ):`
-    
+
     returns, through the callback, the installed applications whose URLs are contained by the calling site.  This allows an application to find out whether its manifest has been installed on a browser when the user visits the site.
 
 *   `getInstalledBy( <callback> ):`
-    
+
     returns, through the callback, the applications that were installed by the calling domain.  This allows an application directory or store to determine if an application is already installed, during browsing.
-    
+
 *   `verifyIdentity ( [<return-to>], <callback> ):`
-    
-    selects the application whose URL matches the calling site, and initiates the verification flow for that application by loading the authorizationURL of the application.  {what happens when more than one matches?} See The Verification Flow.
+
+    selects the application whose URL matches the calling site, and initiates the verification flow for that application by loading the authorizationURL of the application.  <!-- FIXME: what happens when more than one matches? --> See [The Verification Flow](verification.html).
+
+<!-- FIXME: probably some simple example is called for here? -->
 
 
 #### Mobile Considerations
