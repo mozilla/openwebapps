@@ -1,0 +1,90 @@
+This lists all the pages that have so far been linked to from the
+documents.
+
+Also in several pages there have been links to a section of the page.
+The sections need not be in the order given here, but should have the
+same names (or the .md documents should be updated).
+
+/Labs/Apps
+
+/Labs/Apps/Installation
+
+"Installation Flow"
+
+/Labs/Apps/Proof_Of_Purchase
+
+This could also link to verification.html
+
+/Labs/Apps/Browser_Support
+
+Should list what browsers we plan to support (IE8+, Firefox 3.6+, ...?)
+
+/Labs/Apps/Server_Repositories
+
+"It is easy to imagine server-based repositories" -- speculative/discussion
+
+/Labs/Apps/Repository_Synchronization
+
+"web browser synchronization techniques to copy application manifests"
+
+Obviously link to Firefox Sync, emphasize some cross-browser sync
+implementations, and server-side implementation.
+
+/Labs/Apps/JSChannel
+
+Obviously link to the project, describe how it is used here.
+
+/Labs/Apps/Browser_Native_Repository
+
+Speculative/discussion of what this could be
+
+Sections:
+#Security
+#AppTab
+#Chromeless
+
+/Labs/Apps/MyApps
+
+Talk about the code, link to repo
+
+Sections:
+#JS_API (install, etc)
+#install (func)
+#getInstalled
+
+/Labs/Apps/Manifest
+
+Big page!  Describes the entire manifest.
+
+Sections:
+
+#Signatures
+#name
+#description
+#base_url
+#update_path
+#app_urls
+#capabilities (probably deserves a second page of its own)
+#icons
+#developer
+#developer.name
+#developer.url
+#locales
+#release
+
+Should note differences/reasons between this and Chrome store manifest
+
+/Labs/Apps/Examples
+
+Not linked to from anywhere, but should be and should exist
+
+/Labs/Apps/Notifications
+
+linked from web-or-native
+
+Sections:
+#Push
+
+/Labs/Apps/Capabilities
+
+/Labs/Apps/Background_Processing
