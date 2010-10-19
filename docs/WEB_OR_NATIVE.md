@@ -14,7 +14,7 @@ Specific directions for browser integration include:
 
 * Ability to launch applications into an "app tab" or "pinned tab" that has a fixed location in the tab bar, or in a separate process with its own icon, menu-bar, etc. ([wiki](http://wiki.mozilla.org/Labs/Apps/Browser_Native_Repository#AppTab))
 
-* Access to OS-level notification systems - see the <a href="<a href="http://www.w3.org/2010/web-notifications/">W3C working group on Web Notifications</a>. ([wiki](http://wiki.mozilla.org/Labs/Apps/Notifications))
+* Access to OS-level notification systems - see the <a href="http://www.w3.org/2010/web-notifications/">W3C working group on Web Notifications</a>. ([wiki](http://wiki.mozilla.org/Labs/Apps/Notifications))
 
 * Use of the `capabilities` field of the manifest for integration with browser-based permission APIs, including camera, microphone, geolocation, storage, file access, and cross-domain network access - see the <a href="http://www.w3.org/2009/dap/">W3C Device APIs and Policy</a> working group, especially the <a href="http://www.w3.org/TR/2010/WD-api-perms-20101005/">Permissions for Device API Access</a> working draft, for some current work on this. ([wiki](http://wiki.mozilla.org/Labs/Apps/Capabilities))
 
