@@ -20,7 +20,6 @@ For a discussion of the security and privacy considerations around the applicati
 
       "base_url": "https://mozillaball.mozillalabs.com",
       "launch_path": "",
-      "update_path": "manifest/manifest.json",
 
       "app_urls": [
         "https://mozillaball.mozillalabs.com/"
@@ -67,8 +66,6 @@ For detailed technical discussion of the manifest, please visit [the wiki](http:
 
 * [**launch_path**](http://wiki.mozilla.org/Labs/Apps/Manifest#launch_path): The path that is appended to base_url to create the "launch URL" for the application, which is the page that is loaded when the application starts.
 
-* [**update_path**](http://wiki.mozilla.org/Labs/Apps/Manifest#update_path): (optional) The path that is appended to base_url to create the "update URL" for the application, which must return a manifest.  Application repositories should check for a new manifest periodically and apply the update to their local repository copy if the manifest found there is newer than the local copy. <!-- FIXME: if this is the case, then stores should not be able to provide a manifest themselves, as it could be immediately wiped by this update, and because of URL restrictions the store can't rewrite this path to something store-specific -->
-
 * [**app_urls**](http://wiki.mozilla.org/Labs/Apps/Manifest#app_urls): A list of URL prefixes, which must contain at least a scheme and hostname, but may optionally have a path portion.  Any URL that begins with one these URL prefixes, with a full match on the scheme, hostname, and port of the manifest URL, is said to "belong" to the application, and should be consolidated into a single browsing experience by an application-aware browser.  Incomplete hostnames, e.g. "http://www", will fail to match any application and are invalid.  base_url must be included in the set defined by app_urls, and the manifest is invalid if it is not.
 
 * [**capabilities**](http://wiki.mozilla.org/Labs/Apps/Manifest#capabilities): a list of string tokens describing advanced web browser capabilities that the application requests.  Browser-native application repositories should prompt the user for permission to use these capabilities at installation time; the user is free to deny access to any or all of these permission requests, but this may cause the application to behave incorrectly.
@@ -87,6 +84,6 @@ For detailed technical discussion of the manifest, please visit [the wiki](http:
 
 #### On Updating
 
-Note that, because the logic for a web application is loaded using the normal rules for web caching, and may optionally use [HTML5 AppCache](http://www.whatwg.org/specs/web-apps/current-work/multipage/offline.html#offline) for bulk caching, there is no need to deploy new versions of the manifest or the application to clients.  In normal operation, when the web application is updated, the client notes the presence of new content, and downloads it automatically, with no need for user interaction.  <!-- FIXME: this confused me; I think I know what it means, but maybe it can be reworded? -->
+Note that, because the logic for a web application is loaded using the normal rules for web caching, and may optionally use [HTML5 AppCache](http://www.whatwg.org/specs/web-apps/current-work/multipage/offline.html#offline) for bulk caching, there is no need to deploy new versions of the manifest or the application to clients.  The normal web caching rules apply, so that when a browser is online it will check for new versions of application logic, text, images, and sound, and download them if needed.
 
-The manifest update mechanism is provided only for those situations where the manifest must actually change.  This could include a new URL, a new web browser capability, or a change to the icon, descriptive text, or localized strings.  The release date contained in the manifest is the only source of versioning data for this operation. <!-- FIXME: Why couldn't manifest updating be based on the same cache rules? -->
+A manifest update would be required only in situations where the manifest must actually change.  This could include a new URL, a new web browser capability, or a change to the icon, descriptive text, or localized strings.  The release date contained in the manifest is the only source of versioning data for this operation.  See [**updating manifests**](http://wiki.mozilla.org/Labs/Apps/Manifest) for more discussion.
