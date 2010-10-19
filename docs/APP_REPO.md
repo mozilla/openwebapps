@@ -28,9 +28,9 @@ App stores or specific applications can interact with the repository by includin
 
     returns, through the callback, the applications that were installed by the calling domain.  This allows an application directory or store to determine if an application is already installed, during browsing. ([wiki](http://wiki.mozilla.org/Labs/Apps/MyApps#getInstalledBy))
 
-*   `verifyIdentity ( [<return-to>], <callback> ):`
+*   `verify ( [<return-to>], <callback> ):`
 
-    selects the application whose URL matches the calling site, and initiates the verification flow for that application by loading the authorizationURL of the application.  <!-- FIXME: what happens when more than one matches? --> See [The Verification Flow](verification.html). ([wiki](http://wiki.mozilla.org/Labs/Apps/MyApps#verifyIdentity))
+    selects the application whose URL matches the calling site, and initiates the verification flow for that application by loading the authorizationURL of the application.  <!-- FIXME: what happens when more than one matches? --> See [The Verification Flow](verification.html). ([wiki](http://wiki.mozilla.org/Labs/Apps/MyApps#verify))
 
 <!-- FIXME: probably some simple example is called for here? Or link to some examples page on wiki -->
 
