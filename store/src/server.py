@@ -18,6 +18,7 @@ import cgi
 import config
 import datetime
 import crypto
+import hashlib
 import model
 import urlparse
 import urllib
@@ -208,15 +209,29 @@ class FederatedLoginHandler(WebHandler):
     #   This user has this ID: welcome back, just keep going
     #   Somebody ELSE has this ID: we're on a stale session.  we can either switch sessions or report a problem.
 
-    logging.error("In onAuth handler: user is %s" % user)
-
     identifier = self.getIdentifier(user)
     name = user["name"] if "name" in user else identifier
-    email = user["email"] if "email" in user else None
+
+    # Since we're not really processing payments in this demo,
+    # we don't persist the identifier (which could be an
+    # email address).  We could make changes to the innards
+    # of Tornado to eliminate the data entirely, if needed.
+
+    # If we use the identifier as a displayName (e.g. a twitter handle)
+    # we still persist it in the name field.  The database
+    # should be treated as containing sensitive personal information.
+    identifierHash = hashlib.sha1(identifier).hexdigest()
     
     uid = self.get_secure_cookie("uid")
+    if uid:
+      try:
+        u = model.user(uid)
+      except ValueError, e:
+        # uid is no longer valid; give them a new one
+        uid = None
+    
     if not uid:
-      ident = model.identity_by_identifier(identifier)
+      ident = model.identity_by_identifier(identifierHash)
       if ident:
         # welcome back
         self.set_secure_cookie("uid", str(ident.user_id))
@@ -224,9 +239,9 @@ class FederatedLoginHandler(WebHandler):
         u = model.createUser()
         uid = u.id
         self.set_secure_cookie("uid", str(uid))
-        i = model.addIdentity(uid, identifier, name, email)
-    else:
-      ident = model.identity_by_identifier(identifier)
+        i = model.addIdentity(uid, identifierHash, name, None)
+    else:      
+      ident = model.identity_by_identifier(identifierHash)
       if ident:
         if int(ident.user_id) != int(uid):
           # hm, somebody else has this ID.  the user just switched accounts.
@@ -237,26 +252,29 @@ class FederatedLoginHandler(WebHandler):
           pass
         
       else: # add this ident to the user
-        i = model.addIdentity(uid, identifier, name, email)
+        i = model.addIdentity(uid, identifierHash, name, None)
     
-    return_to = self.get_argument("to")
+    return_to = self.get_argument("to", None)
+    if not return_to:
+      return_to = self.recoverReturnTo()
+
     if return_to:
       self.redirect(return_to)
     else:
-      self.redirect("/account") # where to?
+      self.redirect("/") # where to?
 
+  def recoverReturnTo(self):
+    return None
 
-class OpenIDLoginHandler(FederatedLoginHandler):
-  @tornado.web.asynchronous
-  def handle_get(self):
-    if self.get_argument("openid.mode", None):
-      self.get_authenticated_user(self.async_callback(self._on_auth))
-      return
+  # Generate the return-to URL for use in a federated login
+  def getReturnTo(self):
+    HACKING = False
 
     # xheaders doesn't do all the right things to recover
     # from being reverse-proxied: change it up here.
+    # if you're working locally, change HACKING to true
+    # and fiddle .host if needed.
 
-    HACKING = False
     if not HACKING:
       self.request.protocol = "https"
       self.request.host = "appstore.mozillalabs.com"
@@ -264,7 +282,6 @@ class OpenIDLoginHandler(FederatedLoginHandler):
       # defaults are fine
       self.request.host = "your_host:8400"
       pass
-    
     return_to = self.get_argument("return_to", None)
     callback_uri = None
     if return_to:
@@ -278,7 +295,19 @@ class OpenIDLoginHandler(FederatedLoginHandler):
       callback_uri = "%s%s?%s" % ( schemeAndHost,
         path, urllib.urlencode({"to":return_to})
       )
-      logging.error("Sending OpenID request with callback of %s" % callback_uri)
+    return callback_uri
+
+
+
+
+class OpenIDLoginHandler(FederatedLoginHandler):
+  @tornado.web.asynchronous
+  def handle_get(self):
+    if self.get_argument("openid.mode", None):
+      self.get_authenticated_user(self.async_callback(self._on_auth))
+      return
+
+    callback_uri = self.getReturnTo()
     self.authenticate_redirect(callback_uri=callback_uri)
 
 class GoogleIdentityHandler(OpenIDLoginHandler, tornado.auth.GoogleMixin):
@@ -305,7 +334,16 @@ class TwitterIdentityHandler(FederatedLoginHandler, tornado.auth.TwitterMixin):
     if self.get_argument("oauth_token", None):
       self.get_authenticated_user(self.async_callback(self._on_auth))
       return
+
+    return_to = self.get_argument("return_to", None)
+    if return_to: self.set_secure_cookie("twitter_return_to", return_to);
+    
     self.authorize_redirect()
+
+  def recoverReturnTo(self):
+    return_to = self.get_secure_cookie("twitter_return_to")
+    self.set_cookie("twitter_return_to", "", expires=datetime.datetime(1970,1,1,0,0,0,0))
+    return return_to
 
   def getIdentifier(self, user):
     return "%s@twitter.com" % user["username"] 
