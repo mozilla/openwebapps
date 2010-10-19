@@ -7,7 +7,6 @@
 <script src="/static/jquery-1.4.2.min.js"></script>
 <script src="/static/jquery.jgrowl_minimized.js"></script>
 <script src="https://myapps.mozillalabs.com/jsapi/include.js"></script>
-<!-- <script src="http://localhost:8123/jsapi/include.js"></script> -->
 
 <script>
 var gAppManifest = {{ app.manifest }};
@@ -15,6 +14,10 @@ var gAlreadyPurchased = {{ "true" if (app.price == 0 or alreadyPurchased) else "
 var gAlreadyInstalled = false;
 
 $(document).ready(function () {
+  window.setTimeout(function() {
+    $("#install_floater").show();
+  }, 500);
+
   AppClient.getInstalledBy({callback:function(result) {
     if (result && result.installed)
     {
@@ -45,11 +48,13 @@ $(document).ready(function () {
     if (!gAlreadyInstalled && gAlreadyPurchased)
     {
       $("#install_button").text("INSTALL");
-      $("#install_kicker").text("You've already purchased this app; just click to install.");
+      $("#install_kicker").text("You've already purchased this app.  Click to install it in this browser.").show();
     }
   }});
 
 {% if app.price > 0 %}
+
+{% if not alreadyPurchased %}
 
 $("#purchase_button").live('click', function() {
   // submit Ajax to serve confirming purchase authorization...
@@ -80,6 +85,15 @@ $("#cancel_button").live('click', function() {
 {% if mode == "b" %}
 $("#dimmer").show();
 $("#login_purchase").show();
+{% end %}
+
+{% else %}
+$("#install_button").live('click', function() {
+  AppClient.install({manifest: gAppManifest, authorization_url: "{{ authorizationURL }}", callback: function (arg) {
+    $("#install_button").text('Installed!');
+    $.jGrowl(gAppManifest.name + ' installed.<br><br><a href="http://myapps.mozillalabs.com" target="_myapps">View App Dashboard</a>', {sticky:true});
+  }});    
+});
 {% end %}
 
 {% else %}
@@ -218,7 +232,8 @@ $("#login_purchase").show();
   text-decoration:none
 }
 #install_kicker {
-  font:9pt Helvetica, Arial;
+  font:bold 9pt Helvetica, Arial;
+  width:200px;
   display:none;
 }
 
@@ -389,7 +404,7 @@ Mobile Safari&nbsp;3.0, Android&nbsp;2.0
 
 <div class="right_column">
 
-<div class="install_floater">
+<div class="install_floater" id="install_floater" style="display:none" >
 <div id="install_button" class="greenbutton">{% if app.price == 0 %}INSTALL{%else%}BUY{%end%}</div>
 <div id="install_kicker"></div>
 <div id="already_installed">
