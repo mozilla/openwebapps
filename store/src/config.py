@@ -1,4 +1,5 @@
 import os
+import os.path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -14,4 +15,12 @@ engine = create_engine(os.environ['CONFIG_SQLALCHEMY'], echo=echo, pool_recycle=
 Session = sessionmaker(bind=engine)
 session = Session()
 
-cookie_secret = "E57AF6AA-F756-4EC7-A48B-883507DC84A6"
+# If store.cfg exists, we will get cookie_secret from it;
+# otherwise we will use a trivial secret.  Never run in
+# production with the trivial secret.
+try:
+  f = open("../store.cfg/cookie_secret")
+  cookie_secret = f.read()
+  f.close()
+except:
+  cookie_secret = "E57AF6AA-F756-4EC7-A48B-883507DC84A6"
