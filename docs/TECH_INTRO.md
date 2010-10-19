@@ -4,7 +4,7 @@ This document describes an architecture for *Open Web Applications.*  These are 
 
 The system presented here provides for both free and paid applications.  It presumes that there will be multiple stores from which users may install applications.  Developers are free to list their applications on multiple stores and to enter independent relationships with each.  Developers should be free to self-publish their application, or create their own curated application directory.  Applications deployed using this system should work on desktop and mobile platforms, and should degrade gracefully when advanced browser capabilities are not present.
 
-This document is intended as a proposal to the web user and developer community, and direct constructive feedback ([via the mailing list](http://groups.google.com/group/mozilla-labs)) is very welcome.  Throughout the document, links to the [Mozilla wiki](wiki.mozilla.org/Labs/Apps/) are placed inline where a topic of discussion is raised.  Readers are encouraged to visit the wiki to contribute to the conversation.
+This document is intended as a proposal to the web user and developer community, and direct constructive feedback ([via the mailing list](http://groups.google.com/group/mozilla-labs)) is very welcome.  Throughout the document, links to the [Mozilla wiki](http://wiki.mozilla.org/Labs/Apps/) are placed inline where a topic of discussion is raised.  Readers are encouraged to visit the wiki to contribute to the conversation.
 
 ### Overview
 

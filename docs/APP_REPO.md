@@ -14,11 +14,11 @@ Also see the related [wiki page](http://wiki.mozilla.org/Labs/Apps/MyApps#JS_API
 
 App stores or specific applications can interact with the repository by including the Javascript from `https://myapps.mozillalabs.com/jsapi/include.js` and use the `AppClient` object that is exposed.  In the `myapps.mozillalabs.com` case, we expose four functions:
 
-*   `install( <manifest> , [ <authorizationURL> ], [ <signature> ], <callback>):`
+*   `install({ manifest: <manifest object> , [  authorization_url: <url> ], [ session: <session> ], [ signature: <sig> ], callback: <function> }):`
 
-    prompts the user for confirmation of the manifest, possibly checking the installation and application domains against a registry of known malware sites.  If the user consents, the manifest is installed into the repository, along with the hostname of the installing site and a timestamp.  If the installing site does not use SSL, the user will be strongly discouraged from installing the application.   When the installation flow is completed with success or failure, the installing website is notified through the callback.
+    Prompts the user for confirmation of the manifest, possibly checking the installation and application domains against a registry of known malware sites.  If the user consents, the manifest is installed into the repository, along with the hostname of the installing site and a timestamp.  If the installing site does not use SSL, the user will be strongly discouraged from installing the application.   When the installation flow is completed with success or failure, the installing website is notified through the callback.
 
-     the optional authorizationURL and signature fields are persisted into local storage along with the manifest, as part of the installation. ([wiki](http://wiki.mozilla.org/Labs/Apps/MyApps#install))
+     The optional authorization_url and signature fields are persisted into local storage along with the manifest, as part of the installation. ([wiki](http://wiki.mozilla.org/Labs/Apps/MyApps#install))
 
 *   `getInstalled( <callback> ):`
 
