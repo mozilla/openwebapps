@@ -529,6 +529,10 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
 
 }
 
+#footer a {
+    color: #888;
+}
+
 .mozLogo {
 	margin-bottom: -10px;
 	margin-right: 6px;
