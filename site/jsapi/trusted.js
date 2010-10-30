@@ -277,16 +277,39 @@
     });
 
 
+    /* a function to check that an invoking page has "management" permission
+     * all this means today is that the invoking page (dashboard) is served
+     * from the same domain as the application repository. */
+    function verifyMgmtPermission(origin) {
+        var loc = win.location;
+        // make an exception for local testing, who via postmessage events
+        // have an origin of "null"
+        if ((origin === 'null' && window.location.protocol === 'file:') ||
+            ((loc.protocol + "//" + loc.host) === origin))
+        {
+            return;
+        }
+        throw [ 'permissionDenied',
+                "to access open web apps management apis, you must be on the same domain " +
+                "as the application repostiory" ];
+    }
+
     /* Management APIs for dashboards live beneath here */ 
     chan.bind('list', function(t, args) {
+        verifyMgmtPermission(t.origin);
+
+        console.log(t.origin);
+        console.log(window.location);
         throw 'notImplemented';
     });
 
     chan.bind('remove', function(t, args) {
+        verifyMgmtPermission(t.origin);
         throw 'notImplemented';
     });
 
     chan.bind('launch', function(t, args) {
+        verifyMgmtPermission(t.origin);
         throw 'notImplemented';
     });
 

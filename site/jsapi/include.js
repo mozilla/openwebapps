@@ -208,6 +208,48 @@ if (!navigator.apps || !navigator.apps.install) {
             });
         }
 
+        /* launch an application. */
+        function callLaunch(id, func) {
+            chan.call({
+                method: "launch",
+                params: id,
+                error: function(error, message) {
+                    // XXX we need to relay this to the client
+                    alert("couldn't launch: "  + error + " - " + message); 
+                },
+                success: function(v) {
+                    if (func) func(v);
+                }
+            });
+        }
+
+        function callList(func) {
+            chan.call({
+                method: "list",
+                error: function(error, message) {
+                    // XXX we need to relay this to the client
+                    alert("couldn't list apps: "  + error + " - " + message); 
+                },
+                success: function(v) {
+                    if (func) func(v);
+                }
+            });
+        }
+
+        function callRemove(id, func) {
+            chan.call({
+                method: "remove",
+                params: id,
+                error: function(error, message) {
+                    // XXX we need to relay this to the client
+                    alert("couldn't remove: "  + error + " - " + message); 
+                },
+                success: function(v) {
+                    if (func) func(v);
+                }
+            });
+        }
+
         setupWindow();
 
         // Return AppClient object with exposed API calls
@@ -215,7 +257,10 @@ if (!navigator.apps || !navigator.apps.install) {
             install: callInstall,
             verify: callVerify,
             getInstalled: callGetInstalled,
-            getInstalledBy: callGetInstalledBy
+            getInstalledBy: callGetInstalledBy,
+            list: callList,
+            remove: callRemove,
+            launch: callLaunch
         };
     })();
 }
