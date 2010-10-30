@@ -36,223 +36,186 @@
   2010-07-14
   First version of app client code
   -Michael Hanson. Mozilla
+
+  2010-10-29
+  Major revision of app client code, using jschannel for cross
+  document communication.
+  -Lloyd Hilaiel. Mozilla   
 **/
 
-var AppClient = (function() {
-  // Reference shortcut so minifier can save on characters
-  var win = window;
 
-  // Check for browser capabilities
-  var unsupported = !(win.postMessage && win.localStorage && win.JSON);
-  
-  var AppRepositoryOrigin = "https://myapps.mozillalabs.com";
-  var AppRepositoryServerURL = AppRepositoryOrigin + "/jsapi/include.html";
+// inject into navigator.apps if it doesn't exist
+if (!navigator) navigator = {};
+if (!navigator.apps) navigator.apps = {};
+if (!navigator.apps.mgmt) navigator.apps.mgmt = {};
 
-  // Cached references
-  var iframe = null;
-  var postWindow = null;
+// only inject if navigator.apps.install isn't defined
+if (!navigator.apps || !navigator.apps.install) {
+    navigator.apps = (function() {
+        // Reference shortcut so minifier can save on characters
+        var win = window;
 
-  // Requests are done asynchronously so we add numeric ids to each
-  // postMessage request object. References to the request objects
-  // are stored in the openRequests object keyed by the request id.
-  var openRequests = {};
-  var requestId = 0;
+        var AppRepositoryOrigin = "."; // "https://myapps.mozillalabs.com";
+        var AppRepositoryServerURL = AppRepositoryOrigin + "/jsapi/include.html";
 
-  // All requests made before the iframe is ready are queued (referenced by
-  // request id) in the requestQueue array and then called in order after
-  // the iframe has messaged to us that it's ready for communication
-  var requestQueue = [];
+        // Cached references
+        var iframe = null;
 
-  // Listener for window message events, receives messages from only
-  // the app repo host:port that we set up in the iframe
-  function onMessage(event) {
-    // event.origin will always be of the format scheme://hostname:port
-    // http://www.whatwg.org/specs/web-apps/current-work/multipage/comms.html#dom-messageevent-origin
+        // The jschannel to the applicaiton repositiory
+        var chan = null;
 
-    if(event.origin != AppRepositoryOrigin) {
-      // Doesn't match our repo; reject
-      return;
-    }
-    
-    // unfreeze request message into object
-    var msg = JSON.parse(event.data);
-    if(!msg) {
-      return;
-    }
+        /* const */ var overlayId = "myappsOrgInstallOverlay";
+        /* const */ var dialogId = "myappsTrustedIFrame";
 
-    // Check for special iframe ready message and call any pending
-    // requests in our queue made before the iframe was created.
-    if(msg.cmd === 'app::ready') {
-      // Cache the reference to the iframe window object
-      postWindow = iframe.contentWindow;
-      setTimeout(makePendingRequests, 0);
-      return;
-    }
-    // Check for special iframe requests to become visible/hidden and
-    // do the right thing.
-    else if(msg.cmd === 'app::showme') {
-      // Cache the reference to the iframe window object
-      showInstallDialog();
-      return;
-    }
-    else if(msg.cmd === 'app::hideme') {
-      // Cache the reference to the iframe window object
-      hideInstallDialog();
-      return;
-    }
+        function showInstallDialog() {
+            try { hideInstallDialog() } catch(e) { };
+            // create a opacity overlay to focus the users attention 
+            var od = document.createElement("div");
+            od.id = overlayId;
+            od.style.background = "#000";
+            od.style.opacity = ".66";
+            od.style.filter = "alpha(opacity=66)";
+            od.style.position = "fixed";
+            od.style.top = "0";
+            od.style.left = "0";
+            od.style.height = "100%";
+            od.style.width = "100%";
+            od.style.zIndex ="998";
+            document.body.appendChild(od);
+            document.getElementById(dialogId).style.display = "inline";
+        }
 
-    // Look up saved request object and send response message to callback
-    var request = openRequests[msg.id];
-    if(request) {
-      if(request.callback) {
-        request.callback(msg);
-      }
-      delete openRequests[msg.id];
-    }
-  }
+        function hideInstallDialog() {
+            document.getElementById(dialogId).style.display = "none";
+            document.body.removeChild(document.getElementById(overlayId));
+        }
 
-  var overlayId = "myappsOrgInstallOverlay";
-  var dialogId = "myappsTrustedIFrame";
+        // Called once on first command to create the iframe to myapps.mozillalabs.com
+        function setupWindow() {
+            if(iframe) { return; }
 
-  function showInstallDialog() {
-    try { hideInstallDialog() } catch(e) { };
-    // create a opacity overlay to focus the users attention 
-    var od = document.createElement("div");
-    od.id = overlayId;
-    od.style.background = "#000";
-    od.style.opacity = ".66";
-    od.style.filter = "alpha(opacity=66)";
-    od.style.position = "fixed";
-    od.style.top = "0";
-    od.style.left = "0";
-    od.style.height = "100%";
-    od.style.width = "100%";
-    od.style.zIndex ="998";
-    document.body.appendChild(od);
-    document.getElementById(dialogId).style.display = "inline";
-  }
+            // Create hidden iframe dom element
+            var doc = win.document;
+            iframe = document.createElement("iframe");
+            iframe.id = dialogId;
+            iframe.style.position = "absolute";
+            iframe.style.left = "140px";
+            iframe.style.top = "0px";
+            iframe.style.width = "410px";
+            iframe.style.height = "332px";
+            iframe.style.zIndex ="999";
+            iframe.style.opacity = "1";
 
-  function hideInstallDialog() {
-    document.getElementById(dialogId).style.display = "none";
-    document.body.removeChild(document.getElementById(overlayId));
-  }
+            iframe.style.border = "2px solid #aaaaaa";
+            iframe.style.borderTop = "10px solid #aaaaaa";
 
-  // Called once on first command to create the iframe to myapps.mozillalabs.com
-  function setupWindow() {
-    if(iframe || postWindow) { return; }
+            iframe.style.MozBorderRadius = "0px 0px 8px 8px";
+            iframe.style.WebkitBorderRadius = "0px 0px 8px 8px";
+            iframe.style.borderRadius = "0px 0px 8px 8px";
+            
+            // the "hidden" part
+            iframe.style.display = "none";
 
-    // Create hidden iframe dom element
-    var doc = win.document;
-    iframe = document.createElement("iframe");
-    iframe.id = dialogId;
-    iframe.style.position = "absolute";
-    iframe.style.left = "140px";
-    iframe.style.top = "0px";
-    iframe.style.width = "410px";
-    iframe.style.height = "332px";
-    iframe.style.zIndex ="999";
-    iframe.style.opacity = "1";
+            // Append iframe to the dom and load up myapps.mozillalabs.com inside
+            doc.body.appendChild(iframe);
+            iframe.src = AppRepositoryServerURL;
 
-     iframe.style.border = "2px solid #aaaaaa";
-     iframe.style.borderTop = "10px solid #aaaaaa";
+            chan = Channel.build({
+                window: iframe.contentWindow,
+                origin: "*",
+                scope: "openwebapps",
+                debugOutput: true
+            });
 
-    iframe.style.MozBorderRadius = "0px 0px 8px 8px";
-    iframe.style.WebkitBorderRadius = "0px 0px 8px 8px";
-    iframe.style.borderRadius = "0px 0px 8px 8px";
-                 
-          
-    // the "hidden" part
-    iframe.style.display = "none";
+            // occasionally the application repository will request that we show/hide
+            // its iframe content.
+            // NOTE:  eventually we should probably be opening a new window from
+            // inside the repo to mitigate clickjacking risks  
+            chan.bind("showme", function(trans, args) {
+                // Cache the reference to the iframe window object
+                showInstallDialog();
+            });
 
-    // Setup postMessage event listeners
-    if (win.addEventListener) {
-      win.addEventListener('message', onMessage, false);
-    } else if(win.attachEvent) {
-      win.attachEvent('onmessage', onMessage);
-    }
-    // Append iframe to the dom and load up myapps.mozillalabs.com inside
-    doc.body.appendChild(iframe);
-    iframe.src = AppRepositoryServerURL;
-  }
-  
-  // Called immediately after iframe has told us it's ready for communication
-  function makePendingRequests() {
-    for(var i=0; i<requestQueue.length; i++) {
-      makeRequest(openRequests[requestQueue.shift()]);
-    }
-  }
+            chan.bind("hideme", function(trans, args) {
+                hideInstallDialog();
+            });
+        }
 
-  // Simple wrapper for the postMessage command that sends serialized requests
-  // to the myapps.mozillalabs.com iframe window
-  function makeRequest(requestObj) {
-    postWindow.postMessage(JSON.stringify(requestObj), AppRepositoryServerURL);
-  }
+        // Following three functions are just API wrappers that clean up the
+        // the arguments passed in before they're sent and attach the
+        // appropriate command strings to the request objects
+        function callInstall(args) {
+            if (!args) { args = {}; }
+            chan.call({
+                method: "install",
+                params: {
+                    manifest: args.manifest || {},
+                    authorization_url: args.authorization_url || null,
+                    session: args.session || false,
+                },
+                error: function(error, message) {
+                    // XXX we need to relay this to the client
+                    alert( " installation failed: "  + error + " - " + message); 
+                },
+                success: function(v) {
+                    if (args.callback) args.callback(v);
+                }
+            });
+        }
+        
+        function callVerify(args) {
+            chan.call({
+                method: "verify",
+                error: function(error, message) {
+                    // XXX we need to relay this to the client
+                    alert( " couldn't begin verification: "  + error + " - " + message); 
+                },
+                success: function(v) {
+                    // XXX: what's the utility of this callback?  it depends on
+                    // verification flow
+                    if (args.callback) args.callback(v);
+                }
+            });
+        }
 
-  // All requests funnel thru queueRequest which assigns it a unique
-  // request Id and either queues up the request before the iframe
-  // is created or makes the actual request
-  function queueRequest(requestObj) {
+        function callGetInstalled(args) {
+            chan.call({
+                method: "getInstalled",
+                error: function(error, message) {
+                    // XXX we need to relay this to the client
+                    alert( " couldn't begin verification: "  + error + " - " + message); 
+                },
+                success: function(v) {
+                    // XXX: what's the utility of this callback?  it depends on
+                    // verification flow
+                    if (args.callback) args.callback(v);
+                }
+            });
+        }
 
-    if(unsupported) { return; }
-    requestObj.id = requestId;
-    openRequests[requestId++] = requestObj;
+        function callGetInstalledBy(args) {
+            chan.call({
+                method: "getInstalledBy",
+                error: function(error, message) {
+                    // XXX we need to relay this to the client
+                    alert( " couldn't begin verification: "  + error + " - " + message); 
+                },
+                success: function(v) {
+                    // XXX: what's the utility of this callback?  it depends on
+                    // verification flow
+                    if (args.callback) args.callback(v);
+                }
+            });
+        }
 
-    // If window isn't ready, add it to a queue
-    if(!iframe || !postWindow) {
-      requestQueue.push(requestObj.id);
-      setupWindow(); // must happen after we've added to the queue
-    } else {
-      makeRequest(requestObj);
-    }
-  }
-  
-  // Following three functions are just API wrappers that clean up the
-  // the arguments passed in before they're sent and attach the
-  // appropriate command strings to the request objects
-  function callInstall(args) {
-    if(!args) { args = {}; }
-    var requestObj = {
-      cmd: 'app::install',
-      manifest: args.manifest || {},
-      authorization_url: args.authorization_url || null,
-      session: args.session || false,
-      callback: args.callback || null
-    }
-    queueRequest(requestObj);
-  }
-  
-  function callVerify(args) {
-    if(!args) { args = {}; }
-    var requestObj = {
-      cmd: 'app::verify',
-      callback: args.callback || null
-    }
-    queueRequest(requestObj);
-  }
+        setupWindow();
 
-  function callGetInstalled(args) {
-    if(!args) { args = {}; }
-    var requestObj = {
-      cmd: 'app::getInstalled',
-      callback: args.callback || null
-    }
-    queueRequest(requestObj);
-  }
-
-  function callGetInstalledBy(args) {
-    if(!args) { args = {}; }
-    var requestObj = {
-      cmd: 'app::getInstalledBy',
-      callback: args.callback || null
-    }
-    queueRequest(requestObj);
-  }
-
-  // Return AppClient object with exposed API calls
-  return {
-    install: callInstall,
-    verify: callVerify,
-    getInstalled: callGetInstalled,
-    getInstalledBy: callGetInstalledBy
-  };
-})();
+        // Return AppClient object with exposed API calls
+        return {
+            install: callInstall,
+            verify: callVerify,
+            getInstalled: callGetInstalled,
+            getInstalledBy: callGetInstalledBy
+        };
+    })();
+}

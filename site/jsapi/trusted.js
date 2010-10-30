@@ -55,358 +55,242 @@
 */
 
 ;ClientBridge = (function() {
-  // Reference shortcut so minifier can save on characters
-  var win = window;
+    var chan = Channel.build({
+        window: window.parent,
+        origin: "*",
+        scope: "openwebapps",
+        debugOutput: true
+    });
 
-  // when we recieve an install message we'll cache the origin
-  // so we can instruct the client on how to handle visibility
-  var installOrigin;
+    // Reference shortcut so minifier can save on characters
+    var win = window;
 
-  // We're the top window, don't do anything
-  if(win.top == win) {
-    return;
-  }
+    // when we recieve an install message we'll cache the origin
+    // so we can instruct the client on how to handle visibility
+    var installOrigin;
 
-  // unsupported browser
-  if(!win.postMessage || !win.localStorage || !win.JSON) {
-    return;
-  }
+    // We're the top window, don't do anything
+    if(win.top == win) return;
 
-  // Reference shortcut so minifier can save on characters
-  var storage = win.localStorage;
+    // unsupported browser
+    if(!win.postMessage || !win.localStorage || !win.JSON) return;
+
+    // Reference shortcut so minifier can save on characters
+    var storage = win.localStorage;
   
-  // Returns whether the given URL belongs to the specified domain (scheme://hostname[:nonStandardPort])
-  function urlMatchesDomain(url, domain)
-  {
-    try {
-      var parsedDomain = Manifest.parseUri(domain);
-      var parsedURL = Manifest.parseUri(url);
-    
-      if (parsedDomain.protocol.toLowerCase() == parsedURL.protocol.toLowerCase() &&
-        parsedDomain.host.toLowerCase() == parsedURL.host.toLowerCase())
-      {
-        var inputPort = parsedDomain.port ? parsedDomain.port : (parsedDomain.protocol.toLowerCase() == "https" ? 443 : 80);
-        var testPort = parsedURL.port ? parsedURL.port : (parsedURL.protocol.toLowerCase() == "https" ? 443 : 80);        
-        if (inputPort == testPort) return true;
-      }
-    } catch (e) {
-    }
-    return false;  
-  }
-  
-  // Returns whether this application runs in the specified domain (scheme://hostname[:nonStandardPort])
-  function applicationMatchesDomain(application, domain)
-  {
-    for (var i=0;i<application.app_urls.length;i++)
+    // Returns whether the given URL belongs to the specified domain (scheme://hostname[:nonStandardPort])
+    function urlMatchesDomain(url, domain)
     {
-      var testURL = application.app_urls[i];
-      if (urlMatchesDomain(testURL, domain)) return true;
-    }
-    return false;
-  }
-  
-  // Return all installations that belong to the given origin domain
-  function getInstallsForOrigin(originHostname, requestObj, origin)
-  {
-    var result = [];
-    var toRemove = [];
-
-    for (var i =0;i<storage.length;i++)
-    {
-      var key = localStorage.key(i);
-      var item = localStorage.getItem(key);
-      try {
-        // validate the manifest
-        var install = JSON.parse(item);
-        install.app = Manifest.validate(install.app);
-
-        if (applicationMatchesDomain(install.app, origin)) {      
-          result.push(install);
+        try {
+            var parsedDomain = Manifest.parseUri(domain);
+            var parsedURL = Manifest.parseUri(url);
+            
+            if (parsedDomain.protocol.toLowerCase() == parsedURL.protocol.toLowerCase() &&
+                parsedDomain.host.toLowerCase() == parsedURL.host.toLowerCase())
+            {
+                var inputPort = parsedDomain.port ? parsedDomain.port : (parsedDomain.protocol.toLowerCase() == "https" ? 443 : 80);
+                var testPort = parsedURL.port ? parsedURL.port : (parsedURL.protocol.toLowerCase() == "https" ? 443 : 80);        
+                if (inputPort == testPort) return true;
+            }
+        } catch (e) {
         }
-
-      } catch(e) {
-        logError(requestObj, 'Purging application: ' + e, originHostname);        
-        toRemove.push(key);
-      }
-    }
-
-    // Clean up
-    if (toRemove.length > 0) {
-      for (var i=0;i<toRemove.length;i++) {
-        storage.removeItem(toRemove[i]);
-      }
-    }
-
-    return result;
-  }
-  
-  // Return all installations that were installed by the given origin domain 
-  function getInstallsByOrigin(originHostname, requestObj, origin)
-  {
-    var result = [];
-    var toRemove = [];
-
-    for (var i =0;i<storage.length;i++)
-    {
-      var key = localStorage.key(i);
-      var item = localStorage.getItem(key);
-      try {
-        // validate the manifest
-        var install = JSON.parse(item);
-        install.app = Manifest.validate(install.app);
-
-        if (urlMatchesDomain(install.installURL, origin)) {
-          result.push(install);
-        }
-
-      } catch(e) {
-        logError(requestObj, 'Purging application: ' + e, originHostname);        
-        toRemove.push(key);
-      }
-    }
-
-    // Clean up
-    if (toRemove.length > 0) {
-      for (var i=0;i<toRemove.length;i++) {
-        storage.removeItem(toRemove[i]);
-      }
-    }
-    return result;
-  }
-  
-  
-  // Set up the API
-  var AppAPI = {
-    /**
-    Request object will look like:
-    {
-      cmd:'app::install',
-      id:1,
-      manifest: MANIFEST_DATA,
-      expire: JS date timestamp number,
-    }
-    **/
-  
-    'app::install': function(originHostname, requestObj, origin) {
-      // Validate and clean the request
-      var manf;
-      try {
-        manf = Manifest.validate(requestObj.manifest);
-      } catch(e) {
-        logError(requestObj, e, originHostname);
-        return null;
-      }
-
-      // cache the installOrigin
-      installOrigin = origin;
-
-      // cause the UI to display a prompt to the user
-      displayInstallPrompt(originHostname, manf, function (allowed) {
-        if (allowed) {
-          var key = manf.base_url;
-
-          // Create installation data structure
-          var installation = {
-            app: manf,
-            installTime: new Date().getTime(),
-            installURL: origin
-          }
-
-          if (requestObj.authorization_url) {
-            installation.authorizationURL = requestObj.authorization_url;
-          }
-
-          // Save - blow away any existing value
-          storage.setItem(key, JSON.stringify(installation));
-          
-          // Send Response Object
-          sendResponse({
-            cmd: requestObj.cmd,
-            id: requestObj.id
-          }, origin);
-        } else {
-          logError(requestObj, 'User denied installation request', originHostname);
-        }
-      });
-    },
-
-    /**
-    Request object will look like:
-    {
-      cmd:'app::verify',
-      id:1
-    }
-    **/
-    'app::verify': function(originHostname, requestObj, origin) {
-
-      // We will look for manifests whose app_urls filter matches the origin.
-      // If we find one, we will initiate verification of the user
-      // by contacting the authorizationURL defined in the installation record.
-
-      // If we find two... well, for now, we take the first one.
-      // Perhaps we should find the first one that has an authorization URL.
-
-      var result = getInstallsForOrigin(originHostname, requestObj, origin);      
-      if (result.length == 0) return null;
-      var install = result[0];
-      
-      // Must have authorizationURL
-      if (!install.authorizationURL)
-      {
-        return null;
-      }
-      
-      // TODO Could optionally have a returnto
-      win.parent.location = install.authorizationURL;
-
-      return {
-        cmd: requestObj.cmd,
-        id: requestObj.id,
-        target: install.authorizationURL
-      };
-    },
-
-    /**
-    Determines which applications are installed for the origin domain.
-    
-    Request object will look like:
-    {
-      cmd:'app::getInstalled',
-      id:1
-    }
-    **/
-    'app::getInstalled': function(originHostname, requestObj, origin) {
-      var installsResult = getInstallsForOrigin(originHostname, requestObj, origin);
-
-      // Caller doesn't get to see installs, just apps:
-      var result = [];
-      for (var i=0;i<installsResult.length;i++)
-      {
-        result.push(installsResult[i].app);
-      }
-      
-      return {
-        cmd: requestObj.cmd,
-        id: requestObj.id,
-        installed: result
-      };
-    },
-    
-    /**
-    Determines which applications were installed by the origin domain.
-    
-    Request object will look like:
-    {
-      cmd:'app::getInstalledBy',
-      id:1
+        return false;  
     }
     
-    Response object will look like:
+    // Returns whether this application runs in the specified domain (scheme://hostname[:nonStandardPort])
+    function applicationMatchesDomain(application, domain)
     {
-      id:1,
-      installs: [
+        for (var i=0;i<application.app_urls.length;i++)
         {
-          installURL: 'http://something',
-          installTime: 1286222924782, // return from new Date().getTime()
-          manifest: {
-            <a manifest>
-          }
-        },
-        (more installs)
-      ]
+            var testURL = application.app_urls[i];
+            if (urlMatchesDomain(testURL, domain)) return true;
+        }
+        return false;
     }
-    **/
-    'app::getInstalledBy': function(originHostname, requestObj, origin) {
-      var installsResult = getInstallsByOrigin(originHostname, requestObj, origin);
+    
+    // Return all installations that belong to the given origin domain
+    function getInstallsForOrigin(origin, reqObj)
+    {
+        var result = [];
+        var toRemove = [];
 
-      // Caller gets to see installURL, installTime, and manifest
-      var result = [];
-      for (var i=0;i<installsResult.length;i++)
-      {
-        result.push({
-          installURL: installsResult[i].installURL,
-          installTime: installsResult[i].installTime,
-          manifest: installsResult[i].app,
-        });
-      }
-      
-      return {
-        cmd: requestObj.cmd,
-        id: requestObj.id,
-        installed: result
-      };
+        for (var i =0;i<storage.length;i++)
+        {
+            var key = localStorage.key(i);
+            var item = localStorage.getItem(key);
+            try {
+                // validate the manifest
+                var install = JSON.parse(item);
+                install.app = Manifest.validate(install.app);
+
+                if (applicationMatchesDomain(install.app, origin)) {      
+                    result.push(install);
+                }
+
+            } catch(e) {
+                toRemove.push(key);
+            }
+        }
+
+        // Clean up
+        if (toRemove.length > 0) {
+            for (var i=0;i<toRemove.length;i++) {
+                storage.removeItem(toRemove[i]);
+            }
+        }
+
+        return result;
+    }
+    
+    // Return all installations that were installed by the given origin domain 
+    function getInstallsByOrigin(origin, requestObj)
+    {
+        var result = [];
+        var toRemove = [];
+
+        for (var i =0;i<storage.length;i++)
+        {
+            var key = localStorage.key(i);
+            var item = localStorage.getItem(key);
+            try {
+                // validate the manifest
+                var install = JSON.parse(item);
+                install.app = Manifest.validate(install.app);
+
+                if (urlMatchesDomain(install.installURL, origin)) {
+                    result.push(install);
+                }
+
+            } catch(e) {
+                toRemove.push(key);
+            }
+        }
+
+        // Clean up
+        if (toRemove.length > 0) {
+            for (var i=0;i<toRemove.length;i++) {
+                storage.removeItem(toRemove[i]);
+            }
+        }
+        return result;
     }
     
     
-  }
+    chan.bind("install", function(t, args) {
+        // indicate that response will occur asynchronously, later.
+        t.delayReturn(true);
 
-  /**
-    help with debugging issues
-    We can eventually toggle this using a debug.myapps.org store
-  **/
-  function logError(requestObj, message, originHostname) {
-    if(!requestObj || (typeof requestObj.id != 'number') ) {
-      return;
-    }
-    if(win.console && win.console.log) {
-      win.console.log(requestObj.cmd + ' Error: ' + message);
-    }
-  }
-  
-  // Make sure response message has an id and send it on to parent window
-  // origin is the URI of the window we're postMessaging to
-  function sendResponse(responseObj, origin) {
-    if(!responseObj || (typeof responseObj.id != 'number') ) {
-      return;
-    }
-    win.parent.postMessage(JSON.stringify(responseObj), origin);
-  }
-  
-  // Listener for window message events, receives messages from parent window
-  function onMessage(event) {
-    // event.origin will always be of the format scheme://hostname:port
-    // http://www.whatwg.org/specs/web-apps/current-work/multipage/comms.html#dom-messageevent-origin
+        // Validate and clean the request
+        var manf;
+        try {
+            manf = Manifest.validate(args.manifest);
+        } catch(e) {
+            throw [ "invalidManifest", "couldn't validate your mainfest" ];
+        }
 
-    var requestObj = JSON.parse(event.data);
-    var originHostname = event.origin.split('://')[1].split(':')[0];
+        // cache the installOrigin
+        installOrigin = t.origin;
+
+        // cause the UI to display a prompt to the user
+        displayInstallPrompt(t.origin, manf, function (allowed) {
+            if (allowed) {
+                var key = manf.base_url;
+
+                // Create installation data structure
+                var installation = {
+                    app: manf,
+                    installTime: new Date().getTime(),
+                    installURL: t.origin
+                };
+
+                if (args.authorization_url) {
+                    installation.authorizationURL = args.authorization_url;
+                }
+
+                // Save - blow away any existing value
+                storage.setItem(key, JSON.stringify(installation));
+                    
+                // Send Response Object
+                t.complete(true);
+            } else {
+                t.error("denied", "User denied installation request");
+            }
+        });  
+    });
+
+    chan.bind('verify', function(t, args) {
+        // We will look for manifests whose app_urls filter matches the origin.
+        // If we find one, we will initiate verification of the user
+        // by contacting the authorizationURL defined in the installation record.
+        
+        // If we find two... well, for now, we take the first one.
+        // Perhaps we should find the first one that has an authorization URL.
+        
+        var result = getInstallsForOrigin(t.origin, args);      
+        if (result.length == 0) return null;
+        var install = result[0];
+        
+        // Must have authorizationURL
+        if (!install.authorizationURL)
+        {
+            throw ['invalidArguments', 'missing authorization url' ];
+        }
+            
+        // TODO Could optionally have a returnto
+        win.parent.location = install.authorizationURL;
+
+        // return value isn't meaningful.  as a result of overwriting
+        // the parent location, we'll be torn down.
+        return; 
+    });
+
+    /** Determines which applications are installed for the origin domain */
+    chan.bind('getInstalled', function(t, args) {
+        var installsResult = getInstallsForOrigin(t.origin, args);
+
+        // Caller doesn't get to see installs, just apps:
+        var result = [];
+        for (var i=0;i<installsResult.length;i++)
+        {
+            result.push(installsResult[i].app);
+        }
+        
+        return result;
+    });
+        
+    /** Determines which applications were installed by the origin domain. */
+    chan.bind('getInstalledBy', function(t, args) {
+        var installsResult = getInstallsByOrigin(t.origin, args);
+
+        // Caller gets to see installURL, installTime, and manifest
+        var result = [];
+        for (var i=0;i<installsResult.length;i++)
+        {
+            result.push({
+                installURL: installsResult[i].installURL,
+                installTime: installsResult[i].installTime,
+                manifest: installsResult[i].app,
+            });
+        }
+        
+        return result;
+    });
 
     /**
-    message generally looks like
-    {
-      cmd: app::command_name,
-      id: request_id,
-      other parameters
-    }
+       help with debugging issues
+       We can eventually toggle this using a debug.myapps.org store
     **/
-
-    if(!requestObj || typeof requestObj != 'object' 
-      || !requestObj.cmd || requestObj.id == undefined
-    ) {
-      // A post message we don't understand
-      return;
+    function logError(requestObj, message, originHostname) {
+        if(!requestObj || (typeof requestObj.id != 'number') ) {
+            return;
+        }
+        if(win.console && win.console.log) {
+            win.console.log(requestObj.cmd + ' Error: ' + message);
+        }
     }
-    
-    if(AppAPI[requestObj.cmd]) {
-      // A command we understand, send the response on back to the posting window
-      var result = AppAPI[requestObj.cmd](originHostname, requestObj, event.origin);
-      sendResponse(result, event.origin);
-    } else {
-      logError(requestObj, "Unknown AppClient call " + requestObj.cmd, originHostname); 
+
+    return {
+        showDialog: function() { chan.notify({ method: "showme" }); },
+        hideDialog: function() { chan.notify({ method: "hideme" }); }
     }
-  }
-
-  // Setup postMessage event listeners
-  if (win.addEventListener) {
-    win.addEventListener('message', onMessage, false);
-  } else if(win.attachEvent) {
-    win.attachEvent('onmessage', onMessage);
-  }
-
-  // Finally, tell the parent window we're ready.
-  win.parent.postMessage(JSON.stringify({cmd: 'app::ready'}),"*");
-
-  return {
-    showDialog: function() { sendResponse( { id: -1, cmd: "app::showme" }, installOrigin); },
-    hideDialog: function() { sendResponse( { id: -1, cmd: "app::hideme" }, installOrigin); }
-  }
 })();
