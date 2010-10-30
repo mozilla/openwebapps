@@ -276,6 +276,20 @@
         return result;
     });
 
+
+    /* Management APIs for dashboards live beneath here */ 
+    chan.bind('list', function(t, args) {
+        throw 'notImplemented';
+    });
+
+    chan.bind('remove', function(t, args) {
+        throw 'notImplemented';
+    });
+
+    chan.bind('launch', function(t, args) {
+        throw 'notImplemented';
+    });
+
     /**
        help with debugging issues
        We can eventually toggle this using a debug.myapps.org store
