@@ -81,16 +81,16 @@
 
     // iterates over all stored applications manifests and passes them to a
     // callback function.  This function should be used instead of manual
-    // iteration as it will parse manifests and purge any that are invalid
+    // iteration as it will parse manifests and purge any that are invalid.
     function iterateApps(cb) {
         // we'll automatically clean up malformed installation records as we go
         var toRemove = [];
 
         for (var i =0;i<storage.length;i++)
         {
-            var key = localStorage.key(i);
+            var key = storage.key(i);
             try {
-                var item = JSON.parse(localStorage.getItem(key));
+                var item = JSON.parse(storage.getItem(key));
                 item.app = Manifest.validate(item.app);
                 cb(key, item);
             } catch (e) {
@@ -295,6 +295,7 @@
             // to the list function?
             name: intView.app.name,
             description: intView.app.description,
+            launchURL: intView.app.base_url + intView.app.launch_path
         };
     }
 
@@ -316,10 +317,31 @@
         throw 'notImplemented';
     });
 
-    chan.bind('launch', function(t, args) {
+    /* this seemed a good idea, however launching applications from inside an iframe
+     * is too fragile given the abundance of popup blockers.  given that, it seems
+     * wiser to return a launchurl in list.
+    chan.bind('launch', function(t, key) {
         verifyMgmtPermission(t.origin);
-        throw 'notImplemented';
+
+        console.log(key);
+        var item = storage.getItem(key);
+        if (item) {
+            try {
+                item = JSON.parse(item);
+                item.app = Manifest.validate(item.app);
+            } catch (e) {
+                logError("invalid application removed: " + e);
+                storage.removeItem(key);
+                item = null;
+            }
+        }
+        if (!item) throw [ "noSuchApplication", "no application exists with the id: " + key ]; 
+
+        win.open(item.app.base_url + item.app.launch_path, "__" + key);
+
+        return true;
     });
+     */
 
     /**
        help with debugging issues
