@@ -312,9 +312,12 @@
         return installed;
     });
 
-    chan.bind('remove', function(t, args) {
+    chan.bind('remove', function(t, key) {
         verifyMgmtPermission(t.origin);
-        throw 'notImplemented';
+        var item = storage.getItem(key);
+        if (!item) throw [ "noSuchApplication", "no application exists with the id: " + key ]; 
+        storage.removeItem(key);
+        return true;
     });
 
     /* this seemed a good idea, however launching applications from inside an iframe
@@ -323,7 +326,6 @@
     chan.bind('launch', function(t, key) {
         verifyMgmtPermission(t.origin);
 
-        console.log(key);
         var item = storage.getItem(key);
         if (item) {
             try {
