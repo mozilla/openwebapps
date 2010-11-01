@@ -77,14 +77,40 @@
 
     // Reference shortcut so minifier can save on characters
     var storage = win.localStorage;
-  
+
+
+    // iterates over all stored applications manifests and passes them to a
+    // callback function.  This function should be used instead of manual
+    // iteration as it will parse manifests and purge any that are invalid
+    function iterateApps(cb) {
+        // we'll automatically clean up malformed installation records as we go
+        var toRemove = [];
+
+        for (var i =0;i<storage.length;i++)
+        {
+            var key = localStorage.key(i);
+            try {
+                var item = JSON.parse(localStorage.getItem(key));
+                item.app = Manifest.validate(item.app);
+                cb(key, item);
+            } catch (e) {
+                logError("invalid application detected: " + e);
+                toRemove.append(key);
+            }
+        }
+
+        for (var j = 0; j < toRemove.length; j++) {
+            storage.removeItem(toRemove[i]);
+        }
+    }
+
     // Returns whether the given URL belongs to the specified domain (scheme://hostname[:nonStandardPort])
     function urlMatchesDomain(url, domain)
     {
         try {
             var parsedDomain = Manifest.parseUri(domain);
             var parsedURL = Manifest.parseUri(url);
-            
+
             if (parsedDomain.protocol.toLowerCase() == parsedURL.protocol.toLowerCase() &&
                 parsedDomain.host.toLowerCase() == parsedURL.host.toLowerCase())
             {
@@ -94,9 +120,9 @@
             }
         } catch (e) {
         }
-        return false;  
+        return false;
     }
-    
+
     // Returns whether this application runs in the specified domain (scheme://hostname[:nonStandardPort])
     function applicationMatchesDomain(application, domain)
     {
@@ -107,75 +133,35 @@
         }
         return false;
     }
-    
+
     // Return all installations that belong to the given origin domain
     function getInstallsForOrigin(origin, reqObj)
     {
         var result = [];
-        var toRemove = [];
 
-        for (var i =0;i<storage.length;i++)
-        {
-            var key = localStorage.key(i);
-            var item = localStorage.getItem(key);
-            try {
-                // validate the manifest
-                var install = JSON.parse(item);
-                install.app = Manifest.validate(install.app);
-
-                if (applicationMatchesDomain(install.app, origin)) {      
-                    result.push(install);
-                }
-
-            } catch(e) {
-                toRemove.push(key);
+        iterateApps(function(key, item) {
+            if (applicationMatchesDomain(item.app, origin)) {
+                result.push(item);
             }
-        }
-
-        // Clean up
-        if (toRemove.length > 0) {
-            for (var i=0;i<toRemove.length;i++) {
-                storage.removeItem(toRemove[i]);
-            }
-        }
+        });
 
         return result;
     }
-    
+
     // Return all installations that were installed by the given origin domain 
     function getInstallsByOrigin(origin, requestObj)
     {
         var result = [];
-        var toRemove = [];
 
-        for (var i =0;i<storage.length;i++)
-        {
-            var key = localStorage.key(i);
-            var item = localStorage.getItem(key);
-            try {
-                // validate the manifest
-                var install = JSON.parse(item);
-                install.app = Manifest.validate(install.app);
-
-                if (urlMatchesDomain(install.installURL, origin)) {
-                    result.push(install);
-                }
-
-            } catch(e) {
-                toRemove.push(key);
+        iterateApps(function(key, item) {
+            if (urlMatchesDomain(item.installURL, origin)) {
+                result.push(item);
             }
-        }
+        });
 
-        // Clean up
-        if (toRemove.length > 0) {
-            for (var i=0;i<toRemove.length;i++) {
-                storage.removeItem(toRemove[i]);
-            }
-        }
         return result;
     }
-    
-    
+
     chan.bind("install", function(t, args) {
         // indicate that response will occur asynchronously, later.
         t.delayReturn(true);
@@ -209,39 +195,39 @@
 
                 // Save - blow away any existing value
                 storage.setItem(key, JSON.stringify(installation));
-                    
+
                 // Send Response Object
                 t.complete(true);
             } else {
                 t.error("denied", "User denied installation request");
             }
-        });  
+        });
     });
 
     chan.bind('verify', function(t, args) {
         // We will look for manifests whose app_urls filter matches the origin.
         // If we find one, we will initiate verification of the user
         // by contacting the authorizationURL defined in the installation record.
-        
+
         // If we find two... well, for now, we take the first one.
         // Perhaps we should find the first one that has an authorization URL.
-        
-        var result = getInstallsForOrigin(t.origin, args);      
+
+        var result = getInstallsForOrigin(t.origin, args);
         if (result.length == 0) return null;
         var install = result[0];
-        
+
         // Must have authorizationURL
         if (!install.authorizationURL)
         {
             throw ['invalidArguments', 'missing authorization url' ];
         }
-            
+
         // TODO Could optionally have a returnto
         win.parent.location = install.authorizationURL;
 
         // return value isn't meaningful.  as a result of overwriting
         // the parent location, we'll be torn down.
-        return; 
+        return;
     });
 
     /** Determines which applications are installed for the origin domain */
@@ -254,10 +240,10 @@
         {
             result.push(installsResult[i].app);
         }
-        
+
         return result;
     });
-        
+
     /** Determines which applications were installed by the origin domain. */
     chan.bind('getInstalledBy', function(t, args) {
         var installsResult = getInstallsByOrigin(t.origin, args);
@@ -272,7 +258,7 @@
                 manifest: installsResult[i].app,
             });
         }
-        
+
         return result;
     });
 
@@ -295,12 +281,34 @@
     }
 
     /* Management APIs for dashboards live beneath here */ 
+
+    // A function which given an installation record, builds an object suitable
+    // to return to a dashboard.  this function may filter information which is
+    // not relevant, and also serves as a place where we can rewrite the internal
+    // JSON representation into what the client expects (allowing us to change
+    // the internal representation as neccesary)
+    function generateExternalView(intView) {
+        return {
+            installTime: intView.installTime,
+            icons: intView.app.icons,
+            // XXX: perhaps localization should happen here?  be sent as an argument
+            // to the list function?
+            name: intView.app.name,
+            description: intView.app.description,
+        };
+    }
+
     chan.bind('list', function(t, args) {
         verifyMgmtPermission(t.origin);
 
-        console.log(t.origin);
-        console.log(window.location);
-        throw 'notImplemented';
+        var installed = {};
+
+        iterateApps(function(key, item) {
+            console.log(key);
+            installed[key] = generateExternalView(item);
+        });
+
+        return installed;
     });
 
     chan.bind('remove', function(t, args) {
@@ -317,12 +325,9 @@
        help with debugging issues
        We can eventually toggle this using a debug.myapps.org store
     **/
-    function logError(requestObj, message, originHostname) {
-        if(!requestObj || (typeof requestObj.id != 'number') ) {
-            return;
-        }
+    function logError(message) {
         if(win.console && win.console.log) {
-            win.console.log(requestObj.cmd + ' Error: ' + message);
+            win.console.log('App Repo error: ' + message);
         }
     }
 
