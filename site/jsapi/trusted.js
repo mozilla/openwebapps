@@ -295,7 +295,8 @@
             // to the list function?
             name: intView.app.name,
             description: intView.app.description,
-            launchURL: intView.app.base_url + intView.app.launch_path
+            launchURL: intView.app.base_url + intView.app.launch_path,
+            developer: intView.app.developer
         };
     }
 
