@@ -258,9 +258,10 @@ if (!navigator.apps || !navigator.apps.install) {
             verify: callVerify,
             getInstalled: callGetInstalled,
             getInstalledBy: callGetInstalledBy,
-            list: callList,
-            remove: callRemove,
-            launch: callLaunch
+            mgmt: {
+                list: callList,
+                remove: callRemove
+            }
         };
     })();
 }
