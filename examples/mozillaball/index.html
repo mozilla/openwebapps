@@ -3,29 +3,45 @@
 <title>MozillaBall</title>
 <style>
 #install_button {
-  -webkit-box-shadow: #DAFFBF 0px 1px 0px inset, rgba(0, 0, 0, 0.199219) 0px -2px 0px inset, rgba(0, 0, 0, 0.0976562) 0px 2px 0px;
-  background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#86D66A), to(#4E9834));
-  border: 1px solid rgba(0, 0, 0, 0.199219);
-  border-bottom-left-radius: 1em 1em;
-  border-bottom-right-radius: 1em 1em;
-  border-top-left-radius: 1em 1em;
-  border-top-right-radius: 1em 1em;
-  color: white;
-  display: block;
-  float: right;
-  font-family: Museo;
-  font-size: 16px;
-  height: 28px;
-  letter-spacing: -0.5px;
-  line-height: 26px;
-  position: relative;
-  text-align: center;
-  text-shadow: rgba(0, 0, 0, 0.296875) 0px 1px;
-  vertical-align: middle;
-  width: 140px;
-  font-color: #fff;
-  font:bold 10pt Helvetica;
-  padding-top: 5px;
+  padding-top: 3px;
+
+position: relative;
+float: right;
+font: normal normal bold 10pt/normal Helvetica;
+font-size: 16px;
+vertical-align: middle;
+text-align: center;
+letter-spacing: -0.5px;
+color: rgb(255,255,255);
+text-shadow: 0px 1px rgba(0, 0, 0, 0.3);
+width: 140px;
+height: 28px;
+line-height: 26px;
+border: 1px solid rgba(0,0,0,0.2);
+
+-moz-border-radius: 1em;
+-webkit-border-radius: 1em;
+border-radius: 1em;
+
+-moz-box-shadow:
+inset rgba(218,255,191,1) 0 1px 0px,
+inset rgba(0,0,0,0.2) 0 -2px 0px,
+rgba(0,0,0,0.1) 0 2px 0px;
+-webkit-box-shadow:
+inset rgba(218,255,191,1) 0 1px 0px,
+inset rgba(0,0,0,0.2) 0 -2px 0px,
+rgba(0,0,0,0.1) 0 2px 0px;
+-box-shadow:
+inset rgba(218,255,191,1) 0 1px 0px,
+inset rgba(0,0,0,0.2) 0 -2px 0px,
+rgba(0,0,0,0.1) 0 2px 0px;
+
+background-color: rgb(134,214,106); /* for non-css3 browsers */
+background: -webkit-gradient(linear, left top, left bottom, from(rgba(134,214,106,1)), to(rgba(78,152,52,1))); /* for webkit browsers */
+background: -moz-linear-gradient(top,  rgba(134,214,106,1), rgba(78,152,52,1)); /* for firefox 3.6+ */
+
+
+display: block;
 }
 </style>
 <script>

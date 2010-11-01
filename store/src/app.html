@@ -38,7 +38,8 @@ $(document).ready(function () {
             $("#already_installed").show();
 {% end %}
           } else {
-            $("#already_installed_text").append("You've installed this application in this browser, but the current user hasn't purchased it.<br><br>Please check your account signin.")
+            $("#already_installed_text").append("You've installed this application in this browser, but the current user hasn't purchased it.<br><br>Please check your account signin.<br><br>")
+            $("#already_installed_text").append($("<button>").text("Buy It Again").click(function() {doPurchase();}));
             $("#already_installed").show();
             $("#uninstall_hackery").hide();
           }
@@ -54,9 +55,7 @@ $(document).ready(function () {
 
 {% if app.price > 0 %}
 
-{% if not alreadyPurchased %}
-
-$("#purchase_button").live('click', function() {
+function doPurchase() {
   // submit Ajax to serve confirming purchase authorization...
   jQuery.post("/api/buy", {appid:{{appID}}}, function(data, textStatus) {
 
@@ -70,7 +69,11 @@ $("#purchase_button").live('click', function() {
     $("#login_purchase").fadeOut(300);
 
   })
-});
+}
+
+{% if not alreadyPurchased %}
+
+$("#purchase_button").live('click', function() {doPurchase()});
 
 $("#install_button").live('click', function() {
   $("#dimmer").fadeIn(300);
