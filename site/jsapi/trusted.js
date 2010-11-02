@@ -58,8 +58,7 @@
     var chan = Channel.build({
         window: window.parent,
         origin: "*",
-        scope: "openwebapps",
-        debugOutput: true
+        scope: "openwebapps"
     });
 
     // Reference shortcut so minifier can save on characters
@@ -95,7 +94,7 @@
                 cb(key, item);
             } catch (e) {
                 logError("invalid application detected: " + e);
-                toRemove.append(key);
+                toRemove.push(key);
             }
         }
 

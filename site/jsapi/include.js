@@ -47,7 +47,6 @@
 // inject into navigator.apps if it doesn't exist
 if (!navigator) navigator = {};
 if (!navigator.apps) navigator.apps = {};
-if (!navigator.apps.mgmt) navigator.apps.mgmt = {};
 
 // only inject if navigator.apps.install isn't defined
 if (!navigator.apps || !navigator.apps.install) {
@@ -123,8 +122,7 @@ if (!navigator.apps || !navigator.apps.install) {
             chan = Channel.build({
                 window: iframe.contentWindow,
                 origin: "*",
-                scope: "openwebapps",
-                debugOutput: true
+                scope: "openwebapps"
             });
 
             // occasionally the application repository will request that we show/hide
