@@ -306,7 +306,6 @@
         var installed = {};
 
         iterateApps(function(key, item) {
-            console.log(key);
             installed[key] = generateExternalView(item);
         });
 
