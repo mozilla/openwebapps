@@ -43,13 +43,14 @@
   -Lloyd Hilaiel. Mozilla   
 **/
 
-
 // inject into navigator.apps if it doesn't exist
-if (!navigator) navigator = {};
 if (!navigator.apps) navigator.apps = {};
 
-// only inject if navigator.apps.install isn't defined
-if (!navigator.apps || !navigator.apps.install) {
+// inject if navigator.apps.install isn't defined or if
+// navigator.apps.html5Implementation is true  (this latter check
+// works around bad firefox behavior which doesn't properly
+// restoring navigator.XXX to a pristine state upon reload)
+if (!navigator.apps.install || navigator.apps.html5Implementation) {
     navigator.apps = (function() {
         // Reference shortcut so minifier can save on characters
         var win = window;
@@ -111,7 +112,7 @@ if (!navigator.apps || !navigator.apps.install) {
             iframe.style.MozBorderRadius = "0px 0px 8px 8px";
             iframe.style.WebkitBorderRadius = "0px 0px 8px 8px";
             iframe.style.borderRadius = "0px 0px 8px 8px";
-            
+
             // the "hidden" part
             iframe.style.display = "none";
 
@@ -160,7 +161,7 @@ if (!navigator.apps || !navigator.apps.install) {
                 }
             });
         }
-        
+
         function callVerify(args) {
             chan.call({
                 method: "verify",
@@ -259,7 +260,8 @@ if (!navigator.apps || !navigator.apps.install) {
             mgmt: {
                 list: callList,
                 remove: callRemove
-            }
+            },
+            html5Implementation: true
         };
     })();
 }
