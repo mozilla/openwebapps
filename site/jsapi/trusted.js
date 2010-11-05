@@ -287,11 +287,13 @@
     // JSON representation into what the client expects (allowing us to change
     // the internal representation as neccesary)
     function generateExternalView(intView) {
-        return {
-            installTime: intView.installTime,
-            icons: intView.app.icons,
             // XXX: perhaps localization should happen here?  be sent as an argument
             // to the list function?
+
+        return {
+            installURL: intView.installURL,
+            installTime: intView.installTime,
+            icons: intView.app.icons,
             name: intView.app.name,
             description: intView.app.description,
             launchURL: intView.app.base_url + intView.app.launch_path,

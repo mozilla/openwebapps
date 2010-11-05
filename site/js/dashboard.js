@@ -35,7 +35,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 
-APP_STORAGE_DOMAIN = "http://myapps.mozillalabs.com";
+//APP_STORAGE_DOMAIN = "http://myapps.mozillalabs.com";
 
 // Singleton instance of the Apps object:
 var gApps = null;
@@ -44,39 +44,52 @@ var gApps = null;
 var gSelectedInstall = null;
 
 // Display mode:
-/* const */ ROOT = 1;
-/* const */ APP_INFO = 2;
+var ROOT = 1;
+var APP_INFO = 2;
 var gDisplayMode = ROOT;
 
 // Various display settings
 var gIconSize = 48;// get from pref
 
-$(document).ready(function() {
-    // can this user use myapps?
-    var w = window;
-    if (w.JSON && w.postMessage && w.localStorage) {
-        $("#container").fadeIn(500);
-        try {
-            // Construct our Apps handle
-            gApps = new Apps();
 
-            // Draw it
-            gDisplayMode = ROOT;
-            try {
-            } catch (e) {
-                gApps.logError("Error while initializing apps: " + e);
-            }
-            render();
-        } catch (e) {
-            alert(e);
-        }
-    } else {
-        $("#unsupportedBrowser").fadeIn(500);
-    }
+function retrieveInstalledApps() 
+{
+  var listOfApps;
+  navigator.apps.mgmt.list(function (listOfInstalledApps) {
+    (function () {
+      gApps = listOfInstalledApps;
+      gDisplayMode = ROOT;
+      render();
+    })();
+  });
+  
+  
+}
+
+
+$(document).ready(function() {                      
+  // can this user use myapps?
+   var w = window;
+   if (w.JSON && w.postMessage && w.localStorage) {
+       $("#container").fadeIn(500);
+       try {
+           // Construct our Apps handle
+            retrieveInstalledApps();
+           } catch (e) {
+           alert(e);
+       }
+   } else {
+       $("#unsupportedBrowser").fadeIn(500);
+   }
 });
 
+
+
+
+
+
 function elem(type, clazz) {
-	var e = document.createElement(type);
+ var e = document.createElement(type);
   if (clazz) e.setAttribute("class", clazz);
   return e;
 }
@@ -110,10 +123,10 @@ function render()
   box.empty();
 
   var selectedBox = null;
-  for (var i=0;i<gApps.installs.length;i++)
+  for ( aKey in gApps)
   {
     try {
-      var install = gApps.installs[i];
+      var install = gApps[aKey];
 
       var icon = createAppIcon(install);
 
@@ -123,7 +136,7 @@ function render()
       box.append(icon);
     } catch (e) {
 
-      gApps.logError("Error while creating application icon for app " + i + ": " + e);
+      alert("Error while creating application icon for app " + i + ": " + e);
     }
   }
 
@@ -176,14 +189,14 @@ function renderAppInfo(selectedBox)
 
     var badge = elem("div", "appBadge");
     var appIcon = elem("div", "app_icon");
-    var icon = gApps.getIcon(gSelectedInstall.app, "96");
+    var icon = gSelectedInstall.icons[96];
     if (icon) {
         appIcon.setAttribute("style", 
                              "background:url(\"" + icon + "\") no-repeat; background-size:100%");
     }
     
     var label = elem("div", "appBadgeName");
-    label.appendChild(document.createTextNode(gSelectedInstall.app.name));
+    label.appendChild(document.createTextNode(gSelectedInstall.name));
 
     badge.appendChild(appIcon);
     badge.appendChild(label);
@@ -211,26 +224,26 @@ function renderAppInfo(selectedBox)
             return boxDiv;
         }
         var dev = elem("div", "developerName");
-        if (gSelectedInstall.app.developer) {
-          if (gSelectedInstall.app.developer.url) {
+        if (gSelectedInstall.developer) {
+          if (gSelectedInstall.developer.url) {
             var a = elem("a");
-            a.setAttribute("href", gSelectedInstall.app.developer.url);
+            a.setAttribute("href", gSelectedInstall.developer.url);
             a.setAttribute("target", "_blank");
-            a.appendChild(document.createTextNode(gSelectedInstall.app.developer.name));
+            a.appendChild(document.createTextNode(gSelectedInstall.developer.name));
             dev.appendChild(a);
             data.appendChild(dev);
 
             var linkbox = elem("div", "developerLink");
             a = elem("a");
-            a.setAttribute("href", gSelectedInstall.app.developer.url);
+            a.setAttribute("href", gSelectedInstall.developer.url);
             a.setAttribute("target", "_blank");
-            a.appendChild(document.createTextNode(gSelectedInstall.app.developer.url));
+            a.appendChild(document.createTextNode(gSelectedInstall.developer.url));
             linkbox.appendChild(a);
             data.appendChild(linkbox);
 
           } else {
-            if (gSelectedInstall.app.developer.name) {
-                dev.appendChild(document.createTextNode(gSelectedInstall.app.developer.name));
+            if (gSelectedInstall.developer.name) {
+                dev.appendChild(document.createTextNode(gSelectedInstall.developer.name));
                 data.appendChild(dev);
             } else {
                 dev.appendChild(document.createTextNode("No developer info"));
@@ -242,7 +255,7 @@ function renderAppInfo(selectedBox)
         info.appendChild(data);
 
         var desc = elem("div", "desc");
-        desc.appendChild(document.createTextNode(gSelectedInstall.app.description));
+        desc.appendChild(document.createTextNode(gSelectedInstall.description));
         info.appendChild(desc);
 
         var props = elem("div", "appProperties");
@@ -254,7 +267,12 @@ function renderAppInfo(selectedBox)
 
         // finally, a delete link and action
         $("<div/>").text("Delete this application.").addClass("deleteText").appendTo(info).click(function() {
-            gApps.remove(gSelectedInstall.app.base_url);
+            navigator.apps.mgmt.remove(gSelectedInstall.launchURL, 
+                                        function() {
+                                                     retrieveInstalledApps();
+                                                  });
+
+            //gApps.remove(gSelectedInstall.launchURL);
             gSelectedInstall = null;
             gDisplayMode = ROOT;
             render();
@@ -284,13 +302,13 @@ function renderAppInfo(selectedBox)
 function createAppIcon(install) 
 {
     var appDiv = elem("div", "app");
-    appDiv.onclick = makeOpenAppTabFn(install.app, install.app.base_url + install.app.launch_path);
-    appDiv.setAttribute("id", "app:" + install.app.base_url);
+    appDiv.onclick = makeOpenAppTabFn(install, install.launchURL);
+    appDiv.setAttribute("id", "app:" + install.launchURL);
 
     var iconDiv = $("<div/>").addClass("icon");
     $(appDiv).append(iconDiv);
 
-    var icon = gApps.getIcon(install.app, "96");
+    var icon = install.icons[96];
     if (icon) {
         iconDiv.css({
             background: "url(\"" + icon + "\") no-repeat #FFFFFF",
@@ -300,7 +318,7 @@ function createAppIcon(install)
 
     var moreInfo = $("<div/>").addClass("moreInfo").appendTo(iconDiv);
     $("<a/>").appendTo(iconDiv);
-    $("<div/>").text(install.app.name).addClass("appName").appendTo(iconDiv);
+    //$("<div/>").text(install.name).addClass("appName").appendTo(iconDiv);
 
     // Set up the hover handler.  Only fade in after the user hovers for 
     // 500ms.
@@ -317,8 +335,8 @@ function createAppIcon(install)
 
     // bring up detail display when user clicks on info icon
     moreInfo.click(function(e) {
-        var app = install.app.base_url;
-        gSelectedInstall = gApps.getInstall(app);
+        var app = install.launchURL;
+        gSelectedInstall = gApps[app];
         if (!gSelectedInstall) return;
 
         gDisplayMode = APP_INFO;
@@ -371,7 +389,8 @@ function onMessage(event)
 function onFocus(event)
 {
   if (gApps) {
-    gApps.reload();
+    gDisplayMode = ROOT;
+    retrieveInstalledApps();
     render();
   }
 }
