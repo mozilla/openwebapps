@@ -35,7 +35,6 @@
  * ***** END LICENSE BLOCK ***** */
 
 
-//APP_STORAGE_DOMAIN = "http://myapps.mozillalabs.com";
 
 // Singleton instance of the Apps object:
 var gApps = null;
@@ -178,6 +177,19 @@ function hideDarkOverlay() {
 //  document.body.removeChild(document.getElementById(overlayId));
 }
 
+function getBiggestIcon(minifest) {
+  //see if the minifest has any icons, and if so, return the largest one
+  if (minifest.icons) {
+    var biggest = 0;
+    for (z in minifest.icons) {
+      var size = parseInt(z, 10);
+      if (z > biggest) biggest = z;
+    }
+    if (biggest !== 0) return minifest.icons[biggest];
+  }
+  return null;
+}
+
 function renderAppInfo(selectedBox)
 {
     $("#getInfo").remove();
@@ -188,25 +200,30 @@ function renderAppInfo(selectedBox)
     info.className = "getInfo";
 
     var badge = elem("div", "appBadge");
-    var appIcon = elem("div", "app_icon");
-    var icon = gSelectedInstall.icons[96];
+    var appIcon = elem("div", "icon");
+    
+    var icon = getBiggestIcon(gSelectedInstall);
+    
     if (icon) {
         appIcon.setAttribute("style", 
                              "background:url(\"" + icon + "\") no-repeat; background-size:100%");
     }
     
+    $(appIcon).css("postion", "absolute").css("top", -4).css("left", 8);
+
     var label = elem("div", "appBadgeName");
     label.appendChild(document.createTextNode(gSelectedInstall.name));
 
     badge.appendChild(appIcon);
     badge.appendChild(label);
     info.appendChild(badge);
+    
 
     var off = $(selectedBox).offset();
-    $(info).css("postion", "absolute").css("top", off.top + 6).css("left", off.left + 6);
+    $(info).css("postion", "absolute").css("top", off.top + -4).css("left", off.left + -8);
     $(info).width(110).height(128).animate({
         width: 300,
-        height: 300
+        height: 320
     }, 200, function() {
         var data = elem("div", "appData");
         function makeColumn(label, value) {
@@ -252,6 +269,7 @@ function renderAppInfo(selectedBox)
             }
           }
         }
+        
         info.appendChild(data);
 
         var desc = elem("div", "desc");
@@ -308,7 +326,7 @@ function createAppIcon(install)
     var iconDiv = $("<div/>").addClass("icon");
     $(appDiv).append(iconDiv);
 
-    var icon = install.icons[96];
+    var icon = getBiggestIcon(install);
     if (icon) {
         iconDiv.css({
             background: "url(\"" + icon + "\") no-repeat #FFFFFF",
