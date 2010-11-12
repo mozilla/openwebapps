@@ -114,14 +114,12 @@ var gManifest = {
 
 $(document).ready(function() {
     navigator.apps.getInstalledBy({
-        callback: function(result) {
+        callback: function(apps) {
             var installed = false;
-            if (result && result.installed) {
-                for (var i=0;i<result.installed.length;i++)
-                {
-                    if (result.installed[i].manifest.base_url == gManifest.base_url) {
-                        installed = true;
-                    }
+            for (var i=0;i<apps.length;i++)
+            {
+                if (apps[i].manifest.base_url == gManifest.base_url) {
+                    installed = true;
                 }
             }
 
