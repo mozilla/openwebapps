@@ -19,6 +19,7 @@
  *
  * Contributor(s):
  *  Michael Hanson <mhanson@mozilla.com>
+ *  Dan Walkowski <dwalkowski@mozilla.com>
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -46,9 +47,17 @@ var gSelectedInstall = null;
 var ROOT = 1;
 var APP_INFO = 2;
 var gDisplayMode = ROOT;
+var gAppPositions = null;
 
-// Various display settings
-var gIconSize = 48;// get from pref
+
+//simplify localStorage reading/writing
+Storage.prototype.setObject = function(key, value) {
+    this.setItem(key, JSON.stringify(value));
+}
+
+Storage.prototype.getObject = function(key) {
+    return this.getItem(key) && JSON.parse(this.getItem(key));
+}
 
 
 function retrieveInstalledApps() 
@@ -74,6 +83,10 @@ $(document).ready(function() {
        try {
            // Construct our Apps handle
             retrieveInstalledApps();
+            if (w.localStorage.dashposition) {
+              gAppPositions = w.localStorage.getObject("dashposition");   
+            }
+
            } catch (e) {
            alert(e);
        }
@@ -102,12 +115,22 @@ function makeOpenAppTabFn(app, targetURL)
   if (navigator.apps && navigator.apps.openAppTab)
   {
     return function(evt) {
+              if ($(this).hasClass("ui-draggable-dragged")) {
+              $(this).removeClass("ui-draggable-dragged");
+              return false;
+            }
+
       navigator.apps.openAppTab(app, targetURL, {background:evt.metaKey});
     }
   }
   else
   {
     return function(evt) {
+          if ($(this).hasClass("ui-draggable-dragged")) {
+              $(this).removeClass("ui-draggable-dragged");
+              return false;
+            }
+
       window.open(targetURL, "_blank");
     }
   }
@@ -209,7 +232,7 @@ function renderAppInfo(selectedBox)
                              "background:url(\"" + icon + "\") no-repeat; background-size:100%");
     }
     
-    $(appIcon).css("postion", "absolute").css("top", -4).css("left", 8);
+    $(appIcon).css("position", "absolute").css("top", -4).css("left", 8);
 
     var label = elem("div", "appBadgeName");
     label.appendChild(document.createTextNode(gSelectedInstall.name));
@@ -321,7 +344,19 @@ function createAppIcon(install)
 {
     var appDiv = elem("div", "app");
     appDiv.onclick = makeOpenAppTabFn(install, install.launchURL);
+    
+    
     appDiv.setAttribute("id", "app:" + install.launchURL);
+
+    $(appDiv).draggable({ containment: "#appList", scroll: false, stop: function(event, ui) {
+                            //store the new position in the dashboard meta-data
+                            var offset = ui.offset;
+                            if (!gAppPositions) { gAppPositions = {}; }
+                            gAppPositions[install.launchURL] = offset;
+                            window.localStorage.setObject("dashposition", gAppPositions);
+                            $(this).addClass("ui-draggable-dragged");
+                        }
+                      });
 
     var iconDiv = $("<div/>").addClass("icon");
     $(appDiv).append(iconDiv);
@@ -336,7 +371,6 @@ function createAppIcon(install)
 
     var moreInfo = $("<div/>").addClass("moreInfo").appendTo(iconDiv);
     $("<a/>").appendTo(iconDiv);
-    //$("<div/>").text(install.name).addClass("appName").appendTo(iconDiv);
 
     // Set up the hover handler.  Only fade in after the user hovers for 
     // 500ms.
@@ -362,6 +396,13 @@ function createAppIcon(install)
         return false;
     });
 
+    if (gAppPositions) {
+      var appPos = gAppPositions[install.launchURL];
+      if (appPos) {
+          $(appDiv).css("position", "absolute").css("top", appPos.top).css("left", appPos.left);
+      }
+    }
+    
     return appDiv;
 }
 
