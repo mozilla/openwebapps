@@ -10,5 +10,6 @@ if (type(opts.hostname) == str and opts.hostname.startswith("stage")):
     with open("index.html", "r") as fp:
         file_contents = fp.read()
     file_contents = file_contents.replace("//myapps.mozillalabs.com","//stage.myapps.mozillalabs.com")
+    file_contents = file_contents.replace("//mozillaball.mozillalabs.com","//stage.mozillaball.mozillalabs.com")
     with open("index.html", "w+") as fp:
         fp.write(file_contents)
