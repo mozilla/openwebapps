@@ -90,8 +90,8 @@ be wrapped up as an Open Web App.<br><br>
 </div>
 
 </body>
-<script src="jquery-1.4.2.min.js"></script> 
-<script src="https://myapps.mozillalabs.com/jsapi/include.js"></script> 
+<script src="jquery-1.4.2.min.js"></script>
+<script src="https://myapps.mozillalabs.com/jsapi/include.js"></script>
 <script>
 
 var gManifest = {
@@ -113,22 +113,20 @@ var gManifest = {
 };
 
 $(document).ready(function() {
-    AppClient.getInstalledBy({
-        callback: function(result) {
+    navigator.apps.getInstalledBy({
+        callback: function(apps) {
             var installed = false;
-            if (result && result.installed) {
-                for (var i=0;i<result.installed.length;i++)
-                {
-                    if (result.installed[i].manifest.base_url == gManifest.base_url) {
-                        installed = true;
-                    }
+            for (var i=0;i<apps.length;i++)
+            {
+                if (apps[i].manifest.base_url == gManifest.base_url) {
+                    installed = true;
                 }
             }
 
             if (!installed) {
                 $("#install_button").show();
                 $("#install_button").click(function() {
-                    AppClient.install({manifest: gManifest, callback: function() {
+                    navigator.apps.install({manifest: gManifest, callback: function() {
                         $("#install_button").text("INSTALLED!").unbind('click');
                     }});
                 });

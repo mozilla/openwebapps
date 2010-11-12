@@ -1,0 +1,15 @@
+#!/usr/bin/env python
+
+import optparse
+p = optparse.OptionParser()
+p.add_option("--server-hostname", dest="hostname", type="string")
+(opts,args) = p.parse_args()
+
+if (type(opts.hostname) == str and opts.hostname.startswith("stage")):
+    file_contents = ""
+    with open("index.html", "r") as fp:
+        file_contents = fp.read()
+    file_contents = file_contents.replace("//myapps.mozillalabs.com","//stage.myapps.mozillalabs.com")
+    file_contents = file_contents.replace("//mozillaball.mozillalabs.com","//stage.mozillaball.mozillalabs.com")
+    with open("index.html", "w+") as fp:
+        fp.write(file_contents)
