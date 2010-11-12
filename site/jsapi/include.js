@@ -55,7 +55,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
         // Reference shortcut so minifier can save on characters
         var win = window;
 
-        var AppRepositoryOrigin = "."; // "https://myapps.mozillalabs.com";
+        var AppRepositoryOrigin = "https://myapps.mozillalabs.com";
         var AppRepositoryServerURL = AppRepositoryOrigin + "/jsapi/include.html";
 
         // Cached references
