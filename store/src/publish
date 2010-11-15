@@ -1,0 +1,22 @@
+#!/usr/bin/env python
+
+import optparse
+p = optparse.OptionParser()
+p.add_option("--server-hostname", dest="hostname", type="string")
+(opts,args) = p.parse_args()
+
+replacements = {
+    "//myapps.mozillalabs.com": "//stage.myapps.mozillalabs.com",
+    "//mozillaball.mozillalabs.com": "//stage.mozillaball.mozillalabs.com",
+    "8400": "8500"
+}
+
+if (type(opts.hostname) == str and opts.hostname.startswith("stage")):
+    for path in ["server.py", "app.html", "app_iphone.html"]:
+        file_contents = ""
+        with open(path, "r") as fp:
+            file_contents = fp.read()
+        for r in replacements:
+            file_contents = file_contents.replace(r, replacements[r])
+        with open(path, "w+") as fp:
+            fp.write(file_contents)
