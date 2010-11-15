@@ -2,17 +2,39 @@
 
 The application repository is a client-side trusted collection of the manifests that the user has installed.
 
-We have implemented a prototype repository in HTML5 at `myapps.mozillalabs.com` ([wiki](http://wiki.mozilla.org/Labs/Apps/MyApps)), but future repositories could be implemented in [browser extensions](http://wiki.mozilla.org/Labs/Apps/Browser_Native_Repository) or as part of a web browser platform. <!-- FIXME: I think we have some specific reasons for a hosted repository, which we could explain?  Particularly browser-neutrality and portability -->
+We have implemented a prototype repository in HTML5 at `myapps.mozillalabs.com` ([wiki](http://wiki.mozilla.org/Labs/Apps/MyApps)), but future repositories could be implemented in [browser extensions](http://wiki.mozilla.org/Labs/Apps/Browser_Native_Repository) or as part of a web browser platform.  A pure HTML implementation allows users to try out open web apps without installing or upgrading their software, while native browser support could considerably improve user experience.
 
-The application repository provides a limited, privacy-respecting API to web content, which allows it to interact with other websites to give users a smooth experience of using web applications.  It also powers the **application dashboard**, a rich HTML5 interface to manage and launch applications from the browser.
+The application repository provides a limited, privacy-respecting API
+to web content, which allows it to interact with other websites to
+give users a smooth experience of using web applications.  It also
+powers the **application dashboard**, a rich HTML5 interface to manage
+and launch applications from the browser.
 
-If the application repository is implemented by browser makers (or in extensions), a similar API will need to be provided.
+#### Accessing the API <a name="accessing-the-api"></a> 
 
-#### Install API <a name="install-api"></a>
+The application repository API can be enabled by including a javascript
+library.  This library will detect whether native API support is enabled
+by the user's browser, if not it will shim in a pure HTML implementation.
 
-Also see the related [wiki page](http://wiki.mozilla.org/Labs/Apps/MyApps#JS_API).
+The javascript library should be included from:
 
-App stores or specific applications can interact with the repository by including the Javascript from `https://myapps.mozillalabs.com/jsapi/include.js` and use the `AppClient` object that is exposed.  In the `myapps.mozillalabs.com` case, we expose four functions:
+    https://myapps.mozillalabs.com/jsapi/include.js
+
+All APIs related to open web applications are accessed under the
+`navigator.apps` object.  There are two distinct types of functions available
+in the API:
+
+1. "Installation API" - functions related to the installation or
+   management of installed applications - Interesting to stores,
+   self-distributing applications, and app directories.
+
+2. "Management API" - functions related to the display, launch or
+   synchronization of applications.  Primarily used by dashboards
+   authored in HTML.
+
+#### Installation API <a name="install-api"></a>
+
+The installation API is exposed as properties on the `navigator.apps` object.
 
 *   `install({ manifest: <manifest object> , [  authorization_url: <url> ], [ session: <session> ], [ signature: <sig> ], callback: <function> }):`
 
@@ -34,7 +56,52 @@ App stores or specific applications can interact with the repository by includin
 
 <!-- FIXME: probably some simple example is called for here? Or link to some examples page on wiki -->
 
+#### Management API
+
+The management API is exposed as properties on the `navigator.apps.mgmt` object.
+
+*   `list( <callback> )`
+
+    XXX: should there be a locale argument to list?  where should localization occur?
+
+    List all installed applications.  The return value is an object where properties are the unique launch URL of the application, and values are objects which describe apps.  Each object has the following properties:
+    
+    `installURL`: The url from which the application was installed
+    `installTime`: The time that the application was installed (generated via Date().getTime, represented as the number of milliseconds between midnight of January 1st, 1970 and the time the app was installed).
+    `icons`: An object mapping strings representing icon size (i.e. '96' or '128') to urls of the actual icon (often data urls)
+    `name`: The human readable (localized) name of the application.
+    `description`: The human readable (localized) description of the application.
+    `launchURL`: The url that the user should be redirected to where the application can be launched.
+    `developer`: An object containing `name` and `url` properties describing the developer of the application
+
+*   `remove( <id>, <callback> )`
+
+    Remove an application from the repository.  `id` is the unique launch URL of the application, and the callback will be invoked after the operation completes.
+
+*  `saveState( <dashboard identifier>, <stateObject>, [callback] )`
+
+    Save dashboard specific state into the application repository.  This function should be used by dashboards to persist context.  This function is superior to other persistence mechanisms as it allows for the backup and synchronization of a users state, if the user so desires.  `dashboard identifier` could be a guid, or some string which is a reasonably unique dashboard implementation identifier under which the state data will be scoped.  
+
+*  `loadState( <dashboard identifier>, <callback> )`
+
+    Load state saved by `saveState`.  
+
+*  `loggedInUser()`
+
+    (TBD) query the currently logged in user
+
+*  `logout()`
+
+    (TBD) logout the currently authenticated user.
+
+*  `login()`
+
+    (TBD) trigger the login flow which will identify the user (to support application sync).
 
 #### Mobile Considerations
 
 Most mobile platforms already organize themselves around an *application launcher*.  See the <a href="mobile.html">Mobile Platforms</a> page for more discussion of these platforms.
+
+#### See Also
+
+Also see the related [wiki page](http://wiki.mozilla.org/Labs/Apps/MyApps#JS_API).
