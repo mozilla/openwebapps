@@ -6,10 +6,15 @@ p.add_option("--server-hostname", dest="hostname", type="string")
 (opts,args) = p.parse_args()
 
 if (type(opts.hostname) == str and opts.hostname.startswith("stage")):
-    for path in ["jsapi/include.js"]:
+    # The first step of setting up site/ for publishing in a staging
+    # environment is substituting staging URLs for production
+    for path in ["index.html", "jsapi/include.js"]:
         file_contents = ""
         with open(path, "r") as fp:
             file_contents = fp.read()
         file_contents = file_contents.replace("//myapps.mozillalabs.com","//stage.myapps.mozillalabs.com")
+        # We'll replace the "get demo apps" link which points to apps.mozillalabs.com in
+        # production with a pointer to a staging version of the demo appstore
+        file_contents = file_contents.replace("//apps.mozillalabs.com","//stage.appstore.mozillalabs.com")
         with open(path, "w+") as fp:
             fp.write(file_contents)
