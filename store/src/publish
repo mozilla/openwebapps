@@ -8,7 +8,8 @@ p.add_option("--server-hostname", dest="hostname", type="string")
 replacements = {
     "//myapps.mozillalabs.com": "//stage.myapps.mozillalabs.com",
     "//mozillaball.mozillalabs.com": "//stage.mozillaball.mozillalabs.com",
-    "8400": "8500"
+    "//tasktracker.mozillalabs.com": "//stage.tasktracker.mozillalabs.com",
+    "8400": "8401"
 }
 
 if (type(opts.hostname) == str and opts.hostname.startswith("stage")):
