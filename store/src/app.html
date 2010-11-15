@@ -18,12 +18,12 @@ $(document).ready(function () {
     $("#install_floater").show();
   }, 500);
 
-  AppClient.getInstalledBy({callback:function(result) {
-    if (result && result.installed)
+  navigator.apps.getInstalledBy({callback:function(installed) {
+    if (installed)
     {
-      for (var i=0;i<result.installed.length;i++)
+      for (var i=0;i<installed.length;i++)
       {
-        if (result.installed[i].manifest.base_url == gAppManifest.base_url)
+        if (installed[i].manifest.base_url == gAppManifest.base_url)
         {
           gAlreadyInstalled = true;
           $("#install_button").hide();
@@ -31,10 +31,10 @@ $(document).ready(function () {
           // Multi-user error condition craziness...
           if (gAlreadyPurchased) {
 {% if app.price > 0 %}
-            $("#already_installed_text").text("You purchased and installed this application on " + new Date(result.installed[i].installTime).toLocaleDateString() + ".")
+            $("#already_installed_text").text("You purchased and installed this application on " + new Date(installed[i].installTime).toLocaleDateString() + ".")
             $("#already_installed").show();
 {% else %}
-            $("#already_installed_text").text("You installed this application on " + new Date(result.installed[i].installTime).toLocaleDateString() + ".")
+            $("#already_installed_text").text("You installed this application on " + new Date(installed[i].installTime).toLocaleDateString() + ".")
             $("#already_installed").show();
 {% end %}
           } else {
@@ -61,7 +61,7 @@ function doPurchase() {
 
     // TODO also provide an error handler; failures will fail silently right now
     // and on success, install manifest:
-    AppClient.install({manifest: gAppManifest, authorization_url: "{{ authorizationURL }}", callback: function (arg) {
+    navigator.apps.install({manifest: gAppManifest, authorization_url: "{{ authorizationURL }}", callback: function (arg) {
       $("#install_button").text('Installed!');
       $.jGrowl(gAppManifest.name + ' installed.<br><br><a href="http://myapps.mozillalabs.com" target="_myapps">View App Dashboard</a>', {sticky:true});
     }});    
@@ -92,7 +92,7 @@ $("#login_purchase").show();
 
 {% else %}
 $("#install_button").live('click', function() {
-  AppClient.install({manifest: gAppManifest, authorization_url: "{{ authorizationURL }}", callback: function (arg) {
+  navigator.apps.install({manifest: gAppManifest, authorization_url: "{{ authorizationURL }}", callback: function (arg) {
     $("#install_button").text('Installed!');
     $.jGrowl(gAppManifest.name + ' installed.<br><br><a href="http://myapps.mozillalabs.com" target="_myapps">View App Dashboard</a>', {sticky:true});
   }});    
@@ -101,7 +101,7 @@ $("#install_button").live('click', function() {
 
 {% else %}
   $("#install_button").live('click', function() {
-    AppClient.install({manifest: gAppManifest, callback: function (arg) {
+    navigator.apps.install({manifest: gAppManifest, callback: function (arg) {
       $("#install_button").text('Installed!');
       $.jGrowl(gAppManifest.name + ' installed.<br><br><a href="http://myapps.mozillalabs.com" target="_myapps">View App Dashboard</a>', {sticky:true});
     }});    
