@@ -658,6 +658,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
         // the arguments passed in before they're sent and attach the
         // appropriate command strings to the request objects
         function callInstall(args) {
+            setupWindow();
             if (!args) { args = {}; }
             chan.call({
                 method: "install",
@@ -677,6 +678,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
         }
 
         function callVerify(args) {
+            setupWindow();
             chan.call({
                 method: "verify",
                 error: function(error, message) {
@@ -692,6 +694,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
         }
 
         function callGetInstalled(args) {
+            setupWindow();
             chan.call({
                 method: "getInstalled",
                 error: function(error, message) {
@@ -707,6 +710,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
         }
 
         function callGetInstalledBy(args) {
+            setupWindow();
             chan.call({
                 method: "getInstalledBy",
                 error: function(error, message) {
@@ -723,6 +727,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
 
         /* launch an application. */
         function callLaunch(id, func) {
+            setupWindow();
             chan.call({
                 method: "launch",
                 params: id,
@@ -737,6 +742,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
         }
 
         function callList(func) {
+            setupWindow();
             chan.call({
                 method: "list",
                 error: function(error, message) {
@@ -750,6 +756,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
         }
 
         function callRemove(id, func) {
+            setupWindow();
             chan.call({
                 method: "remove",
                 params: id,
@@ -762,8 +769,6 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
                 }
             });
         }
-
-        setupWindow();
 
         // Return AppClient object with exposed API calls
         return {
