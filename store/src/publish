@@ -7,6 +7,7 @@ p.add_option("--server-hostname", dest="hostname", type="string")
 
 replacements = {
     "//myapps.mozillalabs.com": "//stage.myapps.mozillalabs.com",
+    "//appstore.mozillalabs.com": "//stage.appstore.mozillalabs.com",
     "//mozillaball.mozillalabs.com": "//stage.mozillaball.mozillalabs.com",
     "//tasktracker.mozillalabs.com": "//stage.tasktracker.mozillalabs.com",
     "8400": "8401"
