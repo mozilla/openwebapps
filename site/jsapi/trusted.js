@@ -17,6 +17,7 @@
  *
  * Contributor(s):
  *   Michael Hanson <mhanson@mozilla.com>
+ *   Dan Walkowski <dwalkowski@mozilla.com>
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -77,6 +78,13 @@
     // Reference shortcut so minifier can save on characters
     var storage = win.localStorage;
 
+    function makeAppKey(manifest) {
+      return "app::" + manifest.base_url + manifest.launch_path;
+    }
+    
+    function isAppKey(key) {
+      return (key.indexOf("app::") === 0);
+    }
 
     // iterates over all stored applications manifests and passes them to a
     // callback function.  This function should be used instead of manual
@@ -88,6 +96,9 @@
         for (var i =0;i<storage.length;i++)
         {
             var key = storage.key(i);
+            //only operat on apps, not other data
+            if (!isAppKey(key)) continue;
+            
             try {
                 var item = JSON.parse(storage.getItem(key));
                 item.app = Manifest.validate(item.app);
@@ -179,7 +190,9 @@
         // cause the UI to display a prompt to the user
         displayInstallPrompt(t.origin, manf, function (allowed) {
             if (allowed) {
-                var key = manf.base_url;
+            
+                //NEW:  app repo keys now contain the launch url, not just the base url, for uniqueness 
+                var key = makeAppKey(manf);
 
                 // Create installation data structure
                 var installation = {
@@ -286,18 +299,19 @@
     // not relevant, and also serves as a place where we can rewrite the internal
     // JSON representation into what the client expects (allowing us to change
     // the internal representation as neccesary)
-    function generateExternalView(intView) {
+    function generateExternalView(key, item) {
             // XXX: perhaps localization should happen here?  be sent as an argument
             // to the list function?
 
         return {
-            installURL: intView.installURL,
-            installTime: intView.installTime,
-            icons: intView.app.icons,
-            name: intView.app.name,
-            description: intView.app.description,
-            launchURL: intView.app.base_url + intView.app.launch_path,
-            developer: intView.app.developer
+            appKey: key, 
+            installURL: item.installURL,
+            installTime: item.installTime,
+            icons: item.app.icons,
+            name: item.app.name,
+            description: item.app.description,
+            launchURL: item.app.base_url + item.app.launch_path,
+            developer: item.app.developer
         };
     }
 
@@ -307,7 +321,7 @@
         var installed = {};
 
         iterateApps(function(key, item) {
-            installed[key] = generateExternalView(item);
+            installed[key] = generateExternalView(key, item);
         });
 
         return installed;

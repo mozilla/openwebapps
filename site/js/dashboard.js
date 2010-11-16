@@ -308,12 +308,10 @@ function renderAppInfo(selectedBox)
 
         // finally, a delete link and action
         $("<div/>").text("Delete this application.").addClass("deleteText").appendTo(info).click(function() {
-            navigator.apps.mgmt.remove(gSelectedInstall.launchURL, 
+            navigator.apps.mgmt.remove(gSelectedInstall.appKey, 
                                         function() {
                                                      retrieveInstalledApps();
                                                   });
-
-            //gApps.remove(gSelectedInstall.launchURL);
             gSelectedInstall = null;
             gDisplayMode = ROOT;
             render();
@@ -345,14 +343,14 @@ function createAppIcon(install)
     var appDiv = elem("div", "app");
     appDiv.onclick = makeOpenAppTabFn(install, install.launchURL);
     
-    
-    appDiv.setAttribute("id", "app:" + install.launchURL);
+    //this is the new key format:  "app::<launchURL>"
+    appDiv.setAttribute("id", install.appKey);
 
     $(appDiv).draggable({ containment: "#appList", scroll: false, stop: function(event, ui) {
                             //store the new position in the dashboard meta-data
                             var offset = ui.offset;
                             if (!gAppPositions) { gAppPositions = {}; }
-                            gAppPositions[install.launchURL] = offset;
+                            gAppPositions[install.appKey] = offset;
                             window.localStorage.setObject("dashposition", gAppPositions);
                             $(this).addClass("ui-draggable-dragged");
                         }
@@ -360,6 +358,11 @@ function createAppIcon(install)
 
     var iconDiv = $("<div/>").addClass("icon");
     $(appDiv).append(iconDiv);
+
+//     var nameDiv = elem("div", "appName");
+//     nameDiv.appendChild(document.createTextNode(gSelectedInstall.name));
+// 
+//     $(appDiv).append(nameDiv);
 
     var icon = getBiggestIcon(install);
     if (icon) {
@@ -387,7 +390,7 @@ function createAppIcon(install)
 
     // bring up detail display when user clicks on info icon
     moreInfo.click(function(e) {
-        var app = install.launchURL;
+        var app = install.appKey;
         gSelectedInstall = gApps[app];
         if (!gSelectedInstall) return;
 
@@ -397,7 +400,7 @@ function createAppIcon(install)
     });
 
     if (gAppPositions) {
-      var appPos = gAppPositions[install.launchURL];
+      var appPos = gAppPositions[install.appKey];
       if (appPos) {
           $(appDiv).css("position", "absolute").css("top", appPos.top).css("left", appPos.left);
       }
