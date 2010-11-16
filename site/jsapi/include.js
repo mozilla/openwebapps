@@ -570,7 +570,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
         var win = window;
 
         var AppRepositoryOrigin = "https://myapps.mozillalabs.com";
-        var AppRepositoryServerURL = AppRepositoryOrigin + "/jsapi/include.html";
+        var AppRepositoryIncludePath = "/jsapi/include.html";
 
         // Cached references
         var iframe = null;
@@ -632,7 +632,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
 
             // Append iframe to the dom and load up myapps.mozillalabs.com inside
             doc.body.appendChild(iframe);
-            iframe.src = AppRepositoryServerURL;
+            iframe.src = AppRepositoryOrigin + AppRepositoryIncludePath;
 
             chan = Channel.build({
                 window: iframe.contentWindow,
@@ -780,7 +780,11 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
                 list: callList,
                 remove: callRemove
             },
-            html5Implementation: true
+            html5Implementation: true,
+            // a debugging routine which allows debugging or testing clients
+            // to point at a repository location other than production.
+            // this can be a relative path or a full url.
+            setRepoOrigin: function (o) { AppRepositoryOrigin = o; }
         };
     })();
 }

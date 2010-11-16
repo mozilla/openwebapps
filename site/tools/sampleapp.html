@@ -74,9 +74,9 @@ be wrapped up as an Open Web App.<br><br>
 </div>
 
 </body>
-<script src="js/jquery-1.4.2.min.js"></script> 
-<script src="js/jschannel.js"></script> 
-<script src="jsapi/include.js"></script> 
+<script src="../js/jquery-1.4.2.min.js"></script> 
+<script src="../js/jschannel.js"></script> 
+<script src="../jsapi/include.js"></script> 
 <script>
 
 var gManifest = {
@@ -98,6 +98,8 @@ var gManifest = {
 };
 
 $(document).ready(function() {
+    navigator.apps.setRepoOrigin("../");
+
     navigator.apps.getInstalledBy({
         callback: function(result) {
             var installed = false;
