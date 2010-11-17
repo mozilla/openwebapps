@@ -9,6 +9,39 @@
 // chrome provided mechanisms.
 //
 // All of this is a bit on the  yucky side.
-s = document.createElement('script');
+
+// first let's inject our script to run inside the page's evaluation
+// context
+var s = document.createElement('script');
 s.src = chrome.extension.getURL("open_web_apps_api.js");
-document.documentElement.insertBefore(s, document.documentElement.firstChilde);
+document.documentElement.insertBefore(s, document.documentElement.firstChild);
+
+// now let's inject two custom DOM nodes that will be used for communication
+// into and out of the page
+var d = document.createElement('div');
+d.id = "__openWebAppsOut";
+document.documentElement.insertBefore(d, document.documentElement.firstChild);
+d = document.createElement('div');
+d.id = "__openWebAppsIn";
+document.documentElement.insertBefore(d, document.documentElement.firstChild);
+
+// establish a connection to the extension
+var port = chrome.extension.connect();
+
+// next, let's register to receive incoming events from the page
+d.addEventListener('__openWebAppsInEvent', function() {
+    console.log("content script got event from page");
+    var data = document.getElementById('__openWebAppsIn').innerText;
+    var msg = JSON.parse(data);
+    port.postMessage(msg);
+});
+
+// a listener to receive messages from the extension 
+port.onMessage.addListener(function(msg) {
+    console.log("content script got response from extension");
+    var d = document.getElementById('__openWebAppsOut');
+    d.innerText = JSON.stringify(msg);
+    var ev = document.createEvent('Event');
+    ev.initEvent('__openWebAppsOutEvent', true, true);
+    d.dispatchEvent(ev);
+});

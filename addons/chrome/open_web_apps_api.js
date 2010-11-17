@@ -3,6 +3,41 @@
 // to expose the OpenWebApps API and relay calls into trusted
 // code.
 if (!navigator.apps) {
+    var transactions = {};
+    var cur_trans_id = 1000;
+
+    var is_array = function(v) {
+        return v && typeof v === 'object' && v.constructor === Array;
+    }
+
+    var sendToExtension = function(action, args, cb) {
+        var aObj = { action: action };
+        if (args) aObj.args = args;
+        if (cb) {
+            var i = cur_trans_id++;
+            transactions[i] = cb;
+            aObj.tid = i;
+        }
+        var div = document.getElementById("__openWebAppsIn");
+        div.innerText = JSON.stringify(aObj);
+        var ev = document.createEvent('Event');
+        ev.initEvent('__openWebAppsInEvent', true, true);
+        div.dispatchEvent(ev);
+        console.log("page sending event to content script");
+    };
+
+    // now let's register for events incoming from the extension
+    document.getElementById("__openWebAppsOut").addEventListener('__openWebAppsOutEvent', function() {
+        var data = document.getElementById('__openWebAppsOut').innerText;
+        var msg = JSON.parse(data);
+        console.log("page got response from content script");
+        if (transactions[msg.tid]) {
+            var cb = transactions[msg.tid];
+            delete transactions[msg.tid];
+            cb(msg.resp);
+        }
+    });
+
     console.log("injecting navigator.apps API");
     navigator.apps = {
         getInstalled:function () {
@@ -21,11 +56,11 @@ if (!navigator.apps) {
             console.log("verify called");
         },
         mgmt: {
-            list: function () {
-                console.log("mgmt.list called");
+            list: function (cb) {
+                sendToExtension('list', null, cb);
             },
-            remove: function () {
-                console.log("mgmt.remove called");
+            remove: function (id) {
+                sendToExtension('remove', { id: id }, (arguments.length == 2 ? arguments[1] : null));
             }
         }
     };
