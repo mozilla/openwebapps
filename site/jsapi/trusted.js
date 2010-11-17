@@ -181,7 +181,7 @@
         try {
             manf = Manifest.validate(args.manifest);
         } catch(e) {
-            throw [ "invalidManifest", "couldn't validate your mainfest" ];
+            throw [ "invalidManifest", "couldn't validate your mainfest: " + e ];
         }
 
         // cache the installOrigin
@@ -190,7 +190,6 @@
         // cause the UI to display a prompt to the user
         displayInstallPrompt(t.origin, manf, function (allowed) {
             if (allowed) {
-            
                 //NEW:  app repo keys now contain the launch url, not just the base url, for uniqueness 
                 var key = makeAppKey(manf);
 
