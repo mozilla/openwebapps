@@ -1,0 +1,91 @@
+<html>
+<head>
+  <title>Application Repository Tests</title>
+  <script type="text/javascript" src="doctestjs/doctest.js"></script>
+  <link rel="stylesheet" type="text/css" href="doctestjs/doctest.css" />
+</head>
+<body>
+<h2> AppRepo Tests </h2>
+
+<p>
+This page contains tests which can excercise most of the functions of the "application repository".
+The page may run off of the local filesystem (file://) or can be served from a webserver rooted
+at the site/ directory.
+</p>
+<p>
+<b>WARNING</b>: We'll delete all of your apps.  If you care, don't click the "Test All" button.
+</p>
+
+<div>
+  <button onclick="doctest()" type="button">Test all</button>
+  <pre id="doctestOutput"></pre>
+</div>
+
+<h3>Presence of functions</h3>
+
+Are all of the functions present that we would expect on the navigator.apps object?
+
+<pre class="doctest">
+$ var arr = [];
+> for (var f in navigator.apps) {
+>   if (typeof(navigator.apps[f]) === 'function') {
+>     arr.push("navigator.apps." + f);
+>   }
+> }
+> for (var f in navigator.apps.mgmt) {
+>   if (typeof(navigator.apps.mgmt[f]) === 'function') {
+>     arr.push("navigator.apps.mgmt." + f);
+>   }
+> }
+> arr = arr.sort();
+> for (var i = 0; i < arr.length; i++) writeln(arr[i]);
+navigator.apps.getInstalled
+navigator.apps.getInstalledBy
+navigator.apps.install
+navigator.apps.mgmt.list
+navigator.apps.mgmt.remove
+navigator.apps.setRepoOrigin
+navigator.apps.verify
+</pre>
+
+
+<h3>Clear All Apps</h3>
+
+Delete all applications and then verify that list() yields no apps.
+
+<pre class="doctest">
+$ var finished = false;
+$ navigator.apps.mgmt.list(function(l) {
+>  var total = 0;
+>  for (k in l) total++;
+>  finished = (total === 0);
+>  for (k in l) {
+>    navigator.apps.mgmt.remove(k, function(r) {
+>      finished = (--total === 0);
+>    });
+>  }
+> });
+$ wait(function() { return finished; });
+$ finished = false;
+$ navigator.apps.mgmt.list(function(l) {
+>   var total = 0;
+>   for (k in l) total++;
+>   writeln(total);
+>   finished = true;
+> });
+$ wait(function() { return finished; });
+0
+</pre>
+
+
+<h3>Application installation</h3>
+
+
+
+
+</body>
+<script type="text/javascript" src="../jsapi/include.js"></script>
+<script type="text/javascript">
+  navigator.apps.setRepoOrigin("..");
+</script>
+</html>
