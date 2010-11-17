@@ -392,7 +392,7 @@ function createAppIcon(install)
     moreInfo.click(function(e) {
         for (var i = 0; i < gApps.length; i++) {
           if (install.id == gApps[i].id) {
-            gSelectedInstall = gApps[app];
+            gSelectedInstall = gApps[i];
             break;
           }
         }
