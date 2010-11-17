@@ -44,8 +44,10 @@ if (!navigator.apps) {
         getInstalledBy:function () {
             console.log("getInstalledBy called");
         },
-        install:function () {
-            console.log("install called");
+        install:function (obj) {
+            var cb = obj.callback;
+            delete obj.callback;
+            sendToExtension('install', obj, cb);
         },
         setRepoOrigin: function () {
             console.log("WARNING: navigator.apps.setRepoOrigin is meaningless when the openwebapps extension is installed");
@@ -55,11 +57,9 @@ if (!navigator.apps) {
         },
         mgmt: {
             list: function (cb) {
-                console.log("mgmt.list called");
                 sendToExtension('list', null, cb);
             },
             remove: function (id) {
-                console.log("mgmt.remove called");
                 sendToExtension('remove', { id: id }, (arguments.length == 2 ? arguments[1] : null));
             }
         }

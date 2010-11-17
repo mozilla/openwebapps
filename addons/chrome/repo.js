@@ -88,7 +88,7 @@
                 item.app = Manifest.validate(item.app);
                 cb(key, item);
             } catch (e) {
-                logError("invalid application detected: " + e);
+                console.log("invalid application detected: " + e);
                 toRemove.push(key);
             }
         }
@@ -156,7 +156,7 @@
         return result;
     }
 
-    var installFunc = function(args, cb) {
+    var installFunc = function(origin, args, cb) {
         // Validate and clean the request
         var manf;
         try {
@@ -165,9 +165,6 @@
             cb({error: [ "invalidManifest", "couldn't validate your mainfest: " + e]});
             return;
         }
-
-        // cache the installOrigin
-        installOrigin = t.origin;
 
         // XXX: we need to display an install prompt!
 
@@ -180,9 +177,13 @@
                 // Create installation data structure
                 var installation = {
                     app: manf,
-                    installTime: new Date().getTime(),
-                    installURL: t.origin
+                    installTime: new Date().getTime()
                 };
+
+                // for installations originating from file:// urls we'll store null. 
+                // XXX: this is for symmetry with the HTML implementation.  Are we happy with
+                // that?
+                installation.installURL = ((origin.indexOf('file://') == 0) ? "null" : origin);
 
                 if (args.authorization_url) {
                     installation.authorizationURL = args.authorization_url;
@@ -285,7 +286,6 @@
     }
 
     var listFunc = function() {
-        console.log("oh!  you're here!  so nice to see you!");
         var installed = [];
         iterateApps(function(key, item) {
             installed.push(generateExternalView(key, item));
@@ -293,14 +293,13 @@
         return installed;
     };
 
-/*    
-    chan.bind('remove', function(t, key) {
-        var item = storage.getItem(key);
-        if (!item) throw [ "noSuchApplication", "no application exists with the id: " + key ]; 
-        storage.removeItem(key);
+    var removeFunc = function(id) {
+        var item = storage.getItem(id);
+        if (!item) return {error: [ "noSuchApplication", "no application exists with the id: " + id]}; 
+        storage.removeItem(id);
         return true;
-    });
-*/
+    };
+
     /* this seemed a good idea, however launching applications from inside an iframe
      * is too fragile given the abundance of popup blockers.  given that, it seems
      * wiser to return a launchurl in list.
@@ -325,8 +324,10 @@
         return true;
     });
      */
+
     return {
         list: listFunc,
-        install: installFunc
+        install: installFunc,
+        remove: removeFunc
     }
 })();

@@ -10,19 +10,26 @@ chrome.extension.onConnect.addListener(function(port) {
         if (msg.tid) port.postMessage({tid: msg.tid, resp: resp});
     }
 
-    var url = port.sender.tab.url;
+    var origin = port.sender.tab.url;
     port.onMessage.addListener(function(msg) {
         if (typeof(msg) === 'object' && msg.action) {
             switch (msg.action) {
             // start with mgmt routines
             case 'list':
-                if (mgmtAuthorized(url)) {
+                if (mgmtAuthorized(origin)) {
                     sendResponse(msg, Repo.list());
                 }
                 break;
             case 'remove':
-                if (mgmtAuthorized(url)) {
+                if (mgmtAuthorized(origin)) {
+                    sendResponse(msg, Repo.remove(msg.args.id));
                 }
+                break;
+            // now routines for stores or apps
+            case 'install':
+                Repo.install(origin, msg.args, function(r) {
+                    sendResponse(msg, r);
+                });
                 break;
             }
         }
