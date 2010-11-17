@@ -17,7 +17,7 @@ chrome.extension.onConnect.addListener(function(port) {
             // start with mgmt routines
             case 'list':
                 if (mgmtAuthorized(url)) {
-                    sendResponse(msg, [ ]);
+                    sendResponse(msg, Repo.list());
                 }
                 break;
             case 'remove':

@@ -1,0 +1,1 @@
+../../site/js/manifest.js
