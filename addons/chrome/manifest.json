@@ -5,14 +5,16 @@
     "browser_action": {
         "default_icon": "icon.png"
     },
+    "icons": {
+        "48": "icon.png"
+    },
     "background_page": "background.html",
-    "permissions": [
-        "tabs"
-    ],
+    "permissions": [ ],
     "content_scripts": [
         {
+            "run_at": "document_start",
             "matches": [ "<all_urls>" ],
-            "js": [ "api.js" ]
+            "js": [ "inject_api.js" ]
         }
     ]
 }
