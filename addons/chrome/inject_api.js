@@ -12,18 +12,24 @@
 
 // first let's inject our script to run inside the page's evaluation
 // context
+var owaContainer = document.createElement('div');
+owaContainer.style.display = "none";
+
 var s = document.createElement('script');
 s.src = chrome.extension.getURL("open_web_apps_api.js");
-document.documentElement.insertBefore(s, document.documentElement.firstChild);
+owaContainer.appendChild(s);
 
 // now let's inject two custom DOM nodes that will be used for communication
 // into and out of the page
 var d = document.createElement('div');
 d.id = "__openWebAppsOut";
-document.documentElement.insertBefore(d, document.documentElement.firstChild);
+owaContainer.appendChild(d);
+
 d = document.createElement('div');
 d.id = "__openWebAppsIn";
-document.documentElement.insertBefore(d, document.documentElement.firstChild);
+owaContainer.appendChild(d);
+
+document.documentElement.appendChild(owaContainer);
 
 // establish a connection to the extension
 var port = chrome.extension.connect();
