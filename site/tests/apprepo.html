@@ -59,7 +59,7 @@ $ navigator.apps.mgmt.list(function(l) {
 >  var total = l.length;
 >  finished = (total === 0);
 >  for (var i = 0; i < l.length; i++) {
->    navigator.apps.mgmt.remove(l[i].appKey, function(r) {
+>    navigator.apps.mgmt.remove(l[i].id, function(r) {
 >      finished = (--total === 0);
 >    });
 >  }

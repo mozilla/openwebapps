@@ -308,7 +308,7 @@ function renderAppInfo(selectedBox)
 
         // finally, a delete link and action
         $("<div/>").text("Delete this application.").addClass("deleteText").appendTo(info).click(function() {
-            navigator.apps.mgmt.remove(gSelectedInstall.appKey, 
+            navigator.apps.mgmt.remove(gSelectedInstall.id, 
                                         function() {
                                                      retrieveInstalledApps();
                                                   });
@@ -344,13 +344,13 @@ function createAppIcon(install)
     appDiv.onclick = makeOpenAppTabFn(install, install.launchURL);
     
     //this is the new key format:  "app::<launchURL>"
-    appDiv.setAttribute("id", install.appKey);
+    appDiv.setAttribute("id", install.id);
 
     $(appDiv).draggable({ containment: "#appList", scroll: false, stop: function(event, ui) {
                             //store the new position in the dashboard meta-data
                             var offset = ui.offset;
                             if (!gAppPositions) { gAppPositions = {}; }
-                            gAppPositions[install.appKey] = offset;
+                            gAppPositions[install.id] = offset;
                             window.localStorage.setObject("dashposition", gAppPositions);
                             $(this).addClass("ui-draggable-dragged");
                         }
@@ -391,7 +391,7 @@ function createAppIcon(install)
     // bring up detail display when user clicks on info icon
     moreInfo.click(function(e) {
         for (var i = 0; i < gApps.length; i++) {
-          if (install.appKey == gApps[i].appKey) {
+          if (install.id == gApps[i].id) {
             gSelectedInstall = gApps[app];
             break;
           }
@@ -404,7 +404,7 @@ function createAppIcon(install)
     });
 
     if (gAppPositions) {
-      var appPos = gAppPositions[install.appKey];
+      var appPos = gAppPositions[install.id];
       if (appPos) {
           $(appDiv).css("position", "absolute").css("top", appPos.top).css("left", appPos.left);
       }

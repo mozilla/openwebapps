@@ -66,7 +66,7 @@ The management API is exposed as properties on the `navigator.apps.mgmt` object.
 
     List all installed applications.  The return value is an an array of objects.  Each object has the following properties:
     
-    `appKey (string)`: A unique identifier for the application.
+    `id (string)`: A unique identifier for the application.
     `installURL (string)`: The url from which the application was installed
     `installTime (integer)`: The time that the application was installed (generated via Date().getTime, represented as the number of milliseconds between midnight of January 1st, 1970 and the time the app was installed).
     `icons (object)`: An object mapping strings representing icon size (i.e. '96' or '128') to urls of the actual icon (often data urls)

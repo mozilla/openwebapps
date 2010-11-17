@@ -300,11 +300,11 @@
     // JSON representation into what the client expects (allowing us to change
     // the internal representation as neccesary)
     function generateExternalView(key, item) {
-            // XXX: perhaps localization should happen here?  be sent as an argument
-            // to the list function?
+        // XXX: perhaps localization should happen here?  be sent as an argument
+        // to the list function?
 
         return {
-            appKey: key, 
+            id: key,
             installURL: item.installURL,
             installTime: item.installTime,
             icons: item.app.icons,
