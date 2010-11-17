@@ -1,15 +1,18 @@
 {
-  "name": "Appetizer",
-  "version": "0.1",
-  "description": "Provides rich browser support for open web applications.",
-  "browser_action": {
-    "default_icon": "icon.png"
-  },
-  "background_page": "background.html",
-  "permissions": [
-    "https://myapps.mozillalabs.com/",
-    "https://apptastic.mozillalabs.com/",
-    "http://localhost:8123/",
-    "tabs"
-  ]
+    "name": "OpenWebApps",
+    "version": "0.1",
+    "description": "Provides rich browser support for open web applications.",
+    "browser_action": {
+        "default_icon": "icon.png"
+    },
+    "background_page": "background.html",
+    "permissions": [
+        "tabs"
+    ],
+    "content_scripts": [
+        {
+            "matches": [ "<all_urls>" ],
+            "js": [ "api.js" ]
+        }
+    ]
 }
