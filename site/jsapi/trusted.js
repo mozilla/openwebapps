@@ -318,10 +318,10 @@
     chan.bind('list', function(t, args) {
         verifyMgmtPermission(t.origin);
 
-        var installed = {};
+        var installed = [];
 
         iterateApps(function(key, item) {
-            installed[key] = generateExternalView(key, item);
+            installed.push(generateExternalView(key, item));
         });
 
         return installed;

@@ -64,15 +64,16 @@ The management API is exposed as properties on the `navigator.apps.mgmt` object.
 
     XXX: should there be a locale argument to list?  where should localization occur?
 
-    List all installed applications.  The return value is an object where properties are the unique launch URL of the application, and values are objects which describe apps.  Each object has the following properties:
+    List all installed applications.  The return value is an an array of objects.  Each object has the following properties:
     
-    `installURL`: The url from which the application was installed
-    `installTime`: The time that the application was installed (generated via Date().getTime, represented as the number of milliseconds between midnight of January 1st, 1970 and the time the app was installed).
-    `icons`: An object mapping strings representing icon size (i.e. '96' or '128') to urls of the actual icon (often data urls)
-    `name`: The human readable (localized) name of the application.
-    `description`: The human readable (localized) description of the application.
-    `launchURL`: The url that the user should be redirected to where the application can be launched.
-    `developer`: An object containing `name` and `url` properties describing the developer of the application
+    `appKey (string)`: A unique identifier for the application.
+    `installURL (string)`: The url from which the application was installed
+    `installTime (integer)`: The time that the application was installed (generated via Date().getTime, represented as the number of milliseconds between midnight of January 1st, 1970 and the time the app was installed).
+    `icons (object)`: An object mapping strings representing icon size (i.e. '96' or '128') to urls of the actual icon (often data urls)
+    `name (string)`: The human readable (localized) name of the application.
+    `description (string)`: The human readable (localized) description of the application.
+    `launchURL (string)`: The url that the user should be redirected to where the application can be launched.
+    `developer (object)`: An object containing `name` and `url` properties describing the developer of the application
 
 *   `remove( <id>, <callback> )`
 

@@ -145,10 +145,10 @@ function render()
   box.empty();
 
   var selectedBox = null;
-  for ( aKey in gApps)
+  for ( var i = 0; i < gApps.length; i++ )
   {
     try {
-      var install = gApps[aKey];
+      var install = gApps[i];
 
       var icon = createAppIcon(install);
 
@@ -390,8 +390,12 @@ function createAppIcon(install)
 
     // bring up detail display when user clicks on info icon
     moreInfo.click(function(e) {
-        var app = install.appKey;
-        gSelectedInstall = gApps[app];
+        for (var i = 0; i < gApps.length; i++) {
+          if (install.appKey == gApps[i].appKey) {
+            gSelectedInstall = gApps[app];
+            break;
+          }
+        }
         if (!gSelectedInstall) return;
 
         gDisplayMode = APP_INFO;

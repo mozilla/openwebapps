@@ -56,11 +56,10 @@ Delete all applications and then verify that list() yields no apps.
 <pre class="doctest">
 $ var finished = false;
 $ navigator.apps.mgmt.list(function(l) {
->  var total = 0;
->  for (k in l) total++;
+>  var total = l.length;
 >  finished = (total === 0);
->  for (k in l) {
->    navigator.apps.mgmt.remove(k, function(r) {
+>  for (var i = 0; i < l.length; i++) {
+>    navigator.apps.mgmt.remove(l[i].appKey, function(r) {
 >      finished = (--total === 0);
 >    });
 >  }
@@ -68,15 +67,12 @@ $ navigator.apps.mgmt.list(function(l) {
 $ wait(function() { return finished; });
 $ finished = false;
 $ navigator.apps.mgmt.list(function(l) {
->   var total = 0;
->   for (k in l) total++;
->   writeln(total);
+>   writeln(l.length);
 >   finished = true;
 > });
 $ wait(function() { return finished; });
 0
 </pre>
-
 
 <h3>Application installation</h3>
 
