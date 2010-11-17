@@ -76,9 +76,36 @@ $ wait(function() { return finished; });
 
 <h3>Application installation</h3>
 
+Install a single application
 
-
-
+<pre class="doctest">
+$ var manifest = {
+>   "name":"FakeApp",
+>   "base_url": "http://fakea.pp/",
+>   "launch_path": "",
+>   "description":"nothing to see here, move along!.",
+>   "app_urls": [ "http://fakea.pp/" ]
+> }
+$ var finished = false;
+$ navigator.apps.install({manifest: manifest, callback: function() { finished = true; }});
+$ wait(function() { return finished; });
+$ finished = false;
+$ navigator.apps.mgmt.list(function(l) {
+>   writeln(l.length);
+>   writeln(JSON.stringify(l[0], null, 4));
+>   finished = true; 
+> });
+$ wait(function() { return finished; });
+1
+{
+    "id": "app::http://fakea.pp/",
+    "installURL": "null",
+    "installTime": ...,
+    "name": "FakeApp",
+    "description": "nothing to see here, move along!.",
+    "launchURL": "http://fakea.pp/"
+}
+</pre>
 </body>
 <script type="text/javascript" src="../jsapi/include.js"></script>
 <script type="text/javascript">
