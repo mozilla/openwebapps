@@ -23,14 +23,12 @@ if (!navigator.apps) {
         var ev = document.createEvent('Event');
         ev.initEvent('__openWebAppsInEvent', true, true);
         div.dispatchEvent(ev);
-        console.log("page sending event to content script");
     };
 
     // now let's register for events incoming from the extension
     document.getElementById("__openWebAppsOut").addEventListener('__openWebAppsOutEvent', function() {
         var data = document.getElementById('__openWebAppsOut').innerText;
         var msg = JSON.parse(data);
-        console.log("page got response from content script");
         if (transactions[msg.tid]) {
             var cb = transactions[msg.tid];
             delete transactions[msg.tid];
@@ -57,9 +55,11 @@ if (!navigator.apps) {
         },
         mgmt: {
             list: function (cb) {
+                console.log("mgmt.list called");
                 sendToExtension('list', null, cb);
             },
             remove: function (id) {
+                console.log("mgmt.remove called");
                 sendToExtension('remove', { id: id }, (arguments.length == 2 ? arguments[1] : null));
             }
         }

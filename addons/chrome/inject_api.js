@@ -30,7 +30,6 @@ var port = chrome.extension.connect();
 
 // next, let's register to receive incoming events from the page
 d.addEventListener('__openWebAppsInEvent', function() {
-    console.log("content script got event from page");
     var data = document.getElementById('__openWebAppsIn').innerText;
     var msg = JSON.parse(data);
     port.postMessage(msg);
@@ -38,7 +37,6 @@ d.addEventListener('__openWebAppsInEvent', function() {
 
 // a listener to receive messages from the extension 
 port.onMessage.addListener(function(msg) {
-    console.log("content script got response from extension");
     var d = document.getElementById('__openWebAppsOut');
     d.innerText = JSON.stringify(msg);
     var ev = document.createEvent('Event');
