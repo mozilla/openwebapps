@@ -109,7 +109,7 @@ $ wait(function() { return finished; });
 
 <h3>Checking for Application Installation</h3>
 
-getInstalled should yeild no results, as this test application is not hosted at
+getInstalled should yield no results, as this test application is not hosted at
 http://fakea.pp
 
 <pre class="doctest">
@@ -120,6 +120,18 @@ $ navigator.apps.getInstalled(function(l) {
 > });
 $ wait(function() { return finished; });
 0
+</pre>
+
+getInstalledBy should yield 1 result, as we just installed FakeApp.
+
+<pre class="doctest">
+$ var finished = false;
+$ navigator.apps.getInstalledBy(function(l) {
+>   writeln(l.length);
+>   finished = true; 
+> });
+$ wait(function() { return finished; });
+1
 </pre>
 
 
