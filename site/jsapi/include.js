@@ -693,7 +693,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
             });
         }
 
-        function callGetInstalled(args) {
+        function callGetInstalled(cb) {
             setupWindow();
             chan.call({
                 method: "getInstalled",
@@ -702,14 +702,12 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
                     alert( " couldn't begin verification: "  + error + " - " + message); 
                 },
                 success: function(v) {
-                    // XXX: what's the utility of this callback?  it depends on
-                    // verification flow
-                    if (args.callback) args.callback(v);
+                    if (cb && typeof(cb) === 'function') cb(v);
                 }
             });
         }
 
-        function callGetInstalledBy(args) {
+        function callGetInstalledBy(cb) {
             setupWindow();
             chan.call({
                 method: "getInstalledBy",
@@ -718,9 +716,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
                     alert( " couldn't begin verification: "  + error + " - " + message); 
                 },
                 success: function(v) {
-                    // XXX: what's the utility of this callback?  it depends on
-                    // verification flow
-                    if (args.callback) args.callback(v);
+                    if (cb && typeof(cb) === 'function') cb(v);
                 }
             });
         }

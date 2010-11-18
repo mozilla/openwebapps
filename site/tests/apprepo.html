@@ -74,7 +74,7 @@ $ wait(function() { return finished; });
 0
 </pre>
 
-<h3>Application installation</h3>
+<h3>Application Installation</h3>
 
 Install a single application
 
@@ -106,6 +106,23 @@ $ wait(function() { return finished; });
     "launchURL": "http://fakea.pp/"
 }
 </pre>
+
+<h3>Checking for Application Installation</h3>
+
+getInstalled should yeild no results, as this test application is not hosted at
+http://fakea.pp
+
+<pre class="doctest">
+$ var finished = false;
+$ navigator.apps.getInstalled(function(l) {
+>   writeln(l.length);
+>   finished = true; 
+> });
+$ wait(function() { return finished; });
+0
+</pre>
+
+
 </body>
 <script type="text/javascript" src="../jsapi/include.js"></script>
 <script type="text/javascript">
