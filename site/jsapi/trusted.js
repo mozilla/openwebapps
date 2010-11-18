@@ -79,11 +79,19 @@
     var storage = win.localStorage;
 
     function makeAppKey(manifest) {
-      return "app::" + manifest.base_url + manifest.launch_path;
+        return "app::" + manifest.base_url + manifest.launch_path;
     }
-    
+
     function isAppKey(key) {
-      return (key.indexOf("app::") === 0);
+        return (key.indexOf("app::") === 0);
+    }
+
+    function makeStateKey(id) {
+        return "state::" + id;
+    }
+
+    function isStateKey(key) {
+        return (key.indexOf("state::") === 0);
     }
 
     // iterates over all stored applications manifests and passes them to a
@@ -331,6 +339,23 @@
         var item = storage.getItem(key);
         if (!item) throw [ "noSuchApplication", "no application exists with the id: " + key ]; 
         storage.removeItem(key);
+        return true;
+    });
+
+    chan.bind('loadState', function(t, did) {
+        verifyMgmtPermission(t.origin);
+        var s = JSON.parse(storage.getItem(makeStateKey(did)));
+        return s;
+    });
+
+    chan.bind('saveState', function(t, args) {
+        verifyMgmtPermission(t.origin);
+        // storing null purges state
+        if (args.state === null) {
+            storage.removeItem(makeStateKey(args.did));
+        } else  {
+            storage.setItem(makeStateKey(args.did), JSON.stringify(args.state));
+        }
         return true;
     });
 

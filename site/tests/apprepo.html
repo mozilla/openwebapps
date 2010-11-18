@@ -43,7 +43,9 @@ navigator.apps.getInstalled
 navigator.apps.getInstalledBy
 navigator.apps.install
 navigator.apps.mgmt.list
+navigator.apps.mgmt.loadState
 navigator.apps.mgmt.remove
+navigator.apps.mgmt.saveState
 navigator.apps.setRepoOrigin
 navigator.apps.verify
 </pre>
@@ -132,6 +134,38 @@ $ navigator.apps.getInstalledBy(function(l) {
 > });
 $ wait(function() { return finished; });
 1
+</pre>
+
+<h3>Dashboard Storage</h3>
+
+navigator.apps.mgmt.{load|save}State() proivde an html dashboard with a mechanism to store
+state inside the application repository.  This can be useful because it allows the app
+repo to synchronize this state across sessions on different browsers. 
+
+<pre class="doctest">
+$ var finished = false;
+$ var test_id = "ABCD1234";
+$ navigator.apps.mgmt.saveState(test_id, null, function() { finished = true; });
+$ wait(function() { return finished; });
+$ finished = false;
+$ var obj = null;
+$ navigator.apps.mgmt.loadState(test_id, function(s) { obj = s; finished = true; });
+$ wait(function() { return finished; });
+$ JSON.stringify(obj,null,4);
+"null"
+$ finished = false;
+$ navigator.apps.mgmt.saveState(test_id, { open: "web", apps: [ "are", "super", "awesome" ] }, function() { });
+$ navigator.apps.mgmt.loadState(test_id, function(s) { obj = s; finished = true; });
+$ wait(function() { return finished; });
+$ writeln(JSON.stringify(obj,null,4));
+{
+    "open": "web",
+    "apps": [
+        "are",
+        "super",
+        "awesome"
+    ]
+}
 </pre>
 
 
