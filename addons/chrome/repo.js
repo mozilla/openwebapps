@@ -129,7 +129,7 @@
     }
 
     // Return all installations that belong to the given origin domain
-    function getInstallsForOrigin(origin, reqObj)
+    function getInstallsForOrigin(origin)
     {
         var result = [];
 
@@ -143,7 +143,7 @@
     }
 
     // Return all installations that were installed by the given origin domain 
-    function getInstallsByOrigin(origin, requestObj)
+    function getInstallsByOrigin(origin)
     {
         var result = [];
 
@@ -177,13 +177,9 @@
                 // Create installation data structure
                 var installation = {
                     app: manf,
-                    installTime: new Date().getTime()
+                    installTime: new Date().getTime(),
+                    installURL: origin
                 };
-
-                // for installations originating from file:// urls we'll store null. 
-                // XXX: this is for symmetry with the HTML implementation.  Are we happy with
-                // that?
-                installation.installURL = ((origin.indexOf('file://') == 0) ? "null" : origin);
 
                 if (args.authorization_url) {
                     installation.authorizationURL = args.authorization_url;
@@ -199,6 +195,40 @@
             }
         }, 0);
     };
+
+
+    /** Determines which applications are installed for the origin domain */
+    var getInstalledFunc = function(origin) {
+        var installsResult = getInstallsForOrigin(origin);
+
+        // Caller doesn't get to see installs, just apps:
+        var result = [];
+        for (var i=0;i<installsResult.length;i++)
+        {
+            result.push(installsResult[i].app);
+        }
+
+        return result;
+    };
+
+    /** Determines which applications were installed by the origin domain. */
+    var getInstalledByFunc = function(origin) {
+        var installsResult = getInstallsByOrigin(origin);
+        // Caller gets to see installURL, installTime, and manifest
+        var result = [];
+        for (var i=0;i<installsResult.length;i++)
+        {
+            result.push({
+                installURL: installsResult[i].installURL,
+                installTime: installsResult[i].installTime,
+                manifest: installsResult[i].app,
+            });
+        }
+
+        return result;
+    };
+
+
 /*
 
     chan.bind('verify', function(t, args) {
@@ -228,39 +258,7 @@
     });
 */
 
-    /** Determines which applications are installed for the origin domain */
-/*
-    chan.bind('getInstalled', function(t, args) {
-        var installsResult = getInstallsForOrigin(t.origin, args);
 
-        // Caller doesn't get to see installs, just apps:
-        var result = [];
-        for (var i=0;i<installsResult.length;i++)
-        {
-            result.push(installsResult[i].app);
-        }
-
-        return result;
-    });
-*/
-    /** Determines which applications were installed by the origin domain. */
-/*
-    chan.bind('getInstalledBy', function(t, args) {
-        var installsResult = getInstallsByOrigin(t.origin, args);
-        // Caller gets to see installURL, installTime, and manifest
-        var result = [];
-        for (var i=0;i<installsResult.length;i++)
-        {
-            result.push({
-                installURL: installsResult[i].installURL,
-                installTime: installsResult[i].installTime,
-                manifest: installsResult[i].app,
-            });
-        }
-
-        return result;
-    });
-*/
 
     /* Management APIs for dashboards live beneath here */ 
 
@@ -328,6 +326,8 @@
     return {
         list: listFunc,
         install: installFunc,
-        remove: removeFunc
+        remove: removeFunc,
+        getInstalled: getInstalledFunc,
+        getInstalledBy: getInstalledByFunc
     }
 })();

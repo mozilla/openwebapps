@@ -11,6 +11,12 @@ chrome.extension.onConnect.addListener(function(port) {
     }
 
     var origin = port.sender.tab.url;
+
+    // for clients from file:// urls we'll store the string "null".
+    // XXX: this is for symmetry with the HTML implementation.  Are we
+    // happy with this?
+    origin = ((origin.indexOf('file://') == 0) ? "null" : origin);
+
     port.onMessage.addListener(function(msg) {
         if (typeof(msg) === 'object' && msg.action) {
             switch (msg.action) {
@@ -30,6 +36,12 @@ chrome.extension.onConnect.addListener(function(port) {
                 Repo.install(origin, msg.args, function(r) {
                     sendResponse(msg, r);
                 });
+                break;
+            case 'getInstalled':
+                sendResponse(msg, Repo.getInstalled(origin));
+                break;
+            case 'getInstalledBy':
+                sendResponse(msg, Repo.getInstalledBy(origin));
                 break;
             }
         }

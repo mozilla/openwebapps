@@ -38,11 +38,11 @@ if (!navigator.apps) {
 
     console.log("injecting navigator.apps API");
     navigator.apps = {
-        getInstalled:function () {
-            console.log("getInstalled called");
+        getInstalled:function (cb) {
+            sendToExtension('getInstalled', null, cb);
         },
-        getInstalledBy:function () {
-            console.log("getInstalledBy called");
+        getInstalledBy:function (cb) {
+            sendToExtension('getInstalledBy', null, cb);
         },
         install:function (obj) {
             var cb = obj.callback;
