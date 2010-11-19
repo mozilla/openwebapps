@@ -2,7 +2,7 @@
 
 The application repository is a client-side trusted collection of the manifests that the user has installed.
 
-We have implemented a prototype repository in HTML5 at `myapps.mozillalabs.com` ([wiki](http://wiki.mozilla.org/Labs/Apps/MyApps)), but future repositories could be implemented in [browser extensions](http://wiki.mozilla.org/Labs/Apps/Browser_Native_Repository) or as part of a web browser platform.  A pure HTML implementation allows users to try out open web apps without installing or upgrading their software, while native browser support could considerably improve user experience.
+We have implemented a prototype repository in HTML5 at `myapps.mozillalabs.com` ([wiki](http://wiki.mozilla.org/Labs/Apps/MyApps)), but future repositories could be implemented in [browser extensions](http://wiki.mozilla.org/Labs/Apps/Browser_Native_Repository) or as part of a web browser platform.  A pure HTML implementation allows users to try out open web apps without installing or upgrading their software, while native browser support could considerably improve security, and user experience.
 
 The application repository provides a limited, privacy-respecting API
 to web content, which allows it to interact with other websites to
@@ -32,7 +32,7 @@ in the API:
    synchronization of applications.  Primarily used by dashboards
    authored in HTML.
 
-#### Installation API <a name="install-api"></a>
+#### Installation API (`navigator.apps.*`) <a name="install-api"></a>
 
 The installation API is exposed as properties on the `navigator.apps` object.
 
@@ -56,16 +56,21 @@ The installation API is exposed as properties on the `navigator.apps` object.
 
 <!-- FIXME: probably some simple example is called for here? Or link to some examples page on wiki -->
 
-#### Management API
+#### Management API (`navigator.apps.mgmt.*`)  <a name="mgmt-api"></a>
 
-The management API is exposed as properties on the `navigator.apps.mgmt` object.
+The Management API is part of the application repository's API which is priviledged,
+intended to grant access to trusted pages, or "Dashboards".  The API exposes calls
+which let dashboards manage and launch applications on a users behalf.  Additionally
+the API exposes functions to fuel application sync, which lets the dashboard display
+the logged-in state of the user and allows the user to sign up or register for an
+account to sync their applications.
 
 *   `list( <callback> )`
 
     XXX: should there be a locale argument to list?  where should localization occur?
 
     List all installed applications.  The return value is an an array of objects.  Each object has the following properties:
-    
+
     `id (string)`: A unique identifier for the application.
     `installURL (string)`: The url from which the application was installed
     `installTime (integer)`: The time that the application was installed (generated via Date().getTime, represented as the number of milliseconds between midnight of January 1st, 1970 and the time the app was installed).
@@ -87,17 +92,21 @@ The management API is exposed as properties on the `navigator.apps.mgmt` object.
 
     Load state saved by `saveState`.  
 
-*  `loggedInUser()`
+*  `getLoggedInUser( <callback> )`
 
-    (TBD) query the currently logged in user
+    Determine whether a user is currently authenticated to the application repository for the purposes of application synchronization.  The callback takes a single argument which is `null` when no user is logged in, otherwise the argument is a javascript object containing the following properties:
 
-*  `logout()`
+    `userName (string)`: a unique identifier which is meaningful to both the system and the user (i.e. email address). 
+    `displayName (string)`: a human readable identifier which identifies a user (not neccesarily unique, i.e. first name).
 
-    (TBD) logout the currently authenticated user.
+*  `login( <callback> )`
 
-*  `login()`
+    Cause the application repository to display login UI to the user.  A callback will be invoked when the process of user authentication is complete and will be provided the same arguments as the callback to `getLoggedInUser()`.
 
-    (TBD) trigger the login flow which will identify the user (to support application sync).
+*  `logout( <callback> )`
+
+    Logout the currently authenticated user.  A noop if no user is currently authenticated.  The callback argument will be invoked when the operation is complete and takes no arguments.
+
 
 #### Mobile Considerations
 
