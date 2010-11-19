@@ -306,6 +306,14 @@
         return true;
     };
 
+    var launchFunc = function(id) {
+        var i = JSON.parse(storage.getItem(id));
+        if (!i || !i.app.base_url) return false;
+        chrome.tabs.create({url: (i.app.base_url + i.app.launch_path)});
+        return true;
+    }
+
+
     var loadStateFunc = function(id) {
         return JSON.parse(storage.getItem(makeStateKey(id)));
     };
@@ -319,6 +327,7 @@
         }
         return true;
     };
+
 
     /* this seemed a good idea, however launching applications from inside an iframe
      * is too fragile given the abundance of popup blockers.  given that, it seems
@@ -352,6 +361,7 @@
         getInstalled: getInstalledFunc,
         getInstalledBy: getInstalledByFunc,
         loadState: loadStateFunc,
-        saveState: saveStateFunc
+        saveState: saveStateFunc,
+        launch: launchFunc
     }
 })();

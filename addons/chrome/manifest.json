@@ -3,13 +3,15 @@
     "version": "0.1",
     "description": "Provides rich browser support for open web applications.",
     "browser_action": {
-        "default_icon": "icon.png"
+        "default_icon": "icon.png",
+        "default_title": "Open Web Apps",
+        "default_popup": "launcher.html"
     },
     "icons": {
         "48": "icon.png"
     },
     "background_page": "background.html",
-    "permissions": [ ],
+    "permissions": [ "tabs" ],
     "content_scripts": [
         {
             "run_at": "document_start",
