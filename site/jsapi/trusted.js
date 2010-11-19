@@ -106,7 +106,7 @@
             var key = storage.key(i);
             //only operat on apps, not other data
             if (!isAppKey(key)) continue;
-            
+
             try {
                 var item = JSON.parse(storage.getItem(key));
                 item.app = Manifest.validate(item.app);
@@ -133,7 +133,7 @@
                 parsedDomain.host.toLowerCase() == parsedURL.host.toLowerCase())
             {
                 var inputPort = parsedDomain.port ? parsedDomain.port : (parsedDomain.protocol.toLowerCase() == "https" ? 443 : 80);
-                var testPort = parsedURL.port ? parsedURL.port : (parsedURL.protocol.toLowerCase() == "https" ? 443 : 80);        
+                var testPort = parsedURL.port ? parsedURL.port : (parsedURL.protocol.toLowerCase() == "https" ? 443 : 80);
                 if (inputPort == testPort) return true;
             }
         } catch (e) {
@@ -344,8 +344,7 @@
 
     chan.bind('loadState', function(t, did) {
         verifyMgmtPermission(t.origin);
-        var s = JSON.parse(storage.getItem(makeStateKey(did)));
-        return s;
+        return JSON.parse(storage.getItem(makeStateKey(did)));
     });
 
     chan.bind('saveState', function(t, args) {

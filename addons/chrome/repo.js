@@ -63,11 +63,19 @@
     var storage = win.localStorage;
 
     function makeAppKey(manifest) {
-      return "app::" + manifest.base_url + manifest.launch_path;
+        return "app::" + manifest.base_url + manifest.launch_path;
     }
 
     function isAppKey(key) {
-      return (key.indexOf("app::") === 0);
+        return (key.indexOf("app::") === 0);
+    }
+
+    function makeStateKey(id) {
+        return "state::" + id;
+    }
+
+    function isStateKey(key) {
+        return (key.indexOf("state::") === 0);
     }
 
     // iterates over all stored applications manifests and passes them to a
@@ -298,6 +306,20 @@
         return true;
     };
 
+    var loadStateFunc = function(id) {
+        return JSON.parse(storage.getItem(makeStateKey(id)));
+    };
+
+    var saveStateFunc = function(id, state) {
+        // storing null purges state
+        if (state === null) {
+            storage.removeItem(makeStateKey(id));
+        } else  {
+            storage.setItem(makeStateKey(id), JSON.stringify(state));
+        }
+        return true;
+    };
+
     /* this seemed a good idea, however launching applications from inside an iframe
      * is too fragile given the abundance of popup blockers.  given that, it seems
      * wiser to return a launchurl in list.
@@ -328,6 +350,8 @@
         install: installFunc,
         remove: removeFunc,
         getInstalled: getInstalledFunc,
-        getInstalledBy: getInstalledByFunc
+        getInstalledBy: getInstalledByFunc,
+        loadState: loadStateFunc,
+        saveState: saveStateFunc
     }
 })();

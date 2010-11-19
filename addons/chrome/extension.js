@@ -31,6 +31,16 @@ chrome.extension.onConnect.addListener(function(port) {
                     sendResponse(msg, Repo.remove(msg.args.id));
                 }
                 break;
+            case 'loadState':
+                if (mgmtAuthorized(origin)) {
+                    sendResponse(msg, Repo.loadState(msg.args));
+                }
+                break;
+            case 'saveState':
+                if (mgmtAuthorized(origin)) {
+                    sendResponse(msg, Repo.saveState(msg.args.did, msg.args.state));
+                }
+                break;
             // now routines for stores or apps
             case 'install':
                 Repo.install(origin, msg.args, function(r) {

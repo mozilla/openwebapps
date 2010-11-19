@@ -61,6 +61,12 @@ if (!navigator.apps) {
             },
             remove: function (id) {
                 sendToExtension('remove', { id: id }, (arguments.length == 2 ? arguments[1] : null));
+            },
+            loadState: function (id, cb) {
+                sendToExtension('loadState', id, cb);
+            },
+            saveState: function (id, obj, cb) {
+                sendToExtension('saveState', {did:id,state:obj}, cb);
             }
         }
     };
