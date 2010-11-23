@@ -49,6 +49,9 @@ var APP_INFO = 2;
 var gDisplayMode = ROOT;
 var gAppPositions = null;
 
+var minAppListHeight = 0;
+var minAppListWidth = 0;
+
 
 //simplify localStorage reading/writing
 Storage.prototype.setObject = function(key, value) {
@@ -75,7 +78,12 @@ function retrieveInstalledApps()
 }
 
 
-$(document).ready(function() {                      
+$(document).ready(function() {    
+    //temporarily set the repository origin to localhost
+    //navigator.apps.setRepoOrigin("../");
+
+$('#maincontent').resizable({ alsoResize: '.appList' });
+
   // can this user use myapps?
    var w = window;
    if (w.JSON && w.postMessage && w.localStorage) {
@@ -96,7 +104,18 @@ $(document).ready(function() {
 });
 
 
+function updateAppBoundaries()
+{
+  minAppListHeight = 0;
+  minAppListWidth = 0;
+  
+  $(".app").each(function(index, elem) {
+      var ePos = $(elem).position();
+      if (ePos.top > minAppListHeight)  minAppListHeight = ePos.top;
+      if (ePos.top > minAppListWidth)  minAppListWidth = ePos.left;
 
+    });
+}
 
 
 
@@ -112,6 +131,7 @@ function elem(type, clazz) {
 // launch the app into it.
 function makeOpenAppTabFn(app, targetURL)
 {
+
   if (navigator.apps && navigator.apps.openAppTab)
   {
     return function(evt) {
@@ -145,13 +165,17 @@ function render()
   box.empty();
 
   var selectedBox = null;
-  for ( var i = 0; i < gApps.length; i++ )
-  {
+  for ( var i = 0; i < gApps.length; i++ ) {
     try {
       var install = gApps[i];
 
       var icon = createAppIcon(install);
-
+      //check for no icon here, and supply a default one
+      if (!icon) {
+      
+      }
+      
+      
       if (install === gSelectedInstall) {
         selectedBox = icon;
       }
@@ -161,6 +185,18 @@ function render()
       alert("Error while creating application icon for app " + i + ": " + e);
     }
   }
+
+  updateAppBoundaries();
+  
+  $('#maincontent').resizable( "option", "minHeight", minAppListHeight + 140 );
+  $('#maincontent').resizable( "option", "minWidth", minAppListWidth + 113 );
+
+   $('#appList').height(minAppListHeight + 100);
+   $('#maincontent').height(minAppListHeight + 133);
+   
+   $('#appList').width(minAppListWidth + 80);
+   $('#maincontent').width(minAppListWidth + 113);
+
 
     if (gDisplayMode == APP_INFO) {
         // kick back to "ROOT" display mode if there's no
@@ -348,21 +384,25 @@ function createAppIcon(install)
 
     $(appDiv).draggable({ containment: "#appList", scroll: false, stop: function(event, ui) {
                             //store the new position in the dashboard meta-data
-                            var offset = ui.offset;
+                            var newPos = ui.position;
                             if (!gAppPositions) { gAppPositions = {}; }
-                            gAppPositions[install.id] = offset;
+                            gAppPositions[install.id] = newPos;
                             window.localStorage.setObject("dashposition", gAppPositions);
                             $(this).addClass("ui-draggable-dragged");
+                                      
+                            updateAppBoundaries();                            
+                            $('#maincontent').resizable( "option", "minHeight", minAppListHeight + 140 );
+                            $('#maincontent').resizable( "option", "minWidth", minAppListWidth + 113 );
                         }
                       });
 
     var iconDiv = $("<div/>").addClass("icon");
     $(appDiv).append(iconDiv);
 
-//     var nameDiv = elem("div", "appName");
-//     nameDiv.appendChild(document.createTextNode(gSelectedInstall.name));
-// 
-//     $(appDiv).append(nameDiv);
+     var nameDiv = elem("div", "appName");
+     nameDiv.appendChild(document.createTextNode(install.name));
+ 
+     $(appDiv).append(nameDiv);
 
     var icon = getBiggestIcon(install);
     if (icon) {
@@ -407,7 +447,7 @@ function createAppIcon(install)
       var appPos = gAppPositions[install.id];
       if (appPos) {
           $(appDiv).css("position", "absolute").css("top", appPos.top).css("left", appPos.left);
-      }
+          }
     }
     
     return appDiv;
