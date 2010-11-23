@@ -102,7 +102,7 @@
         }
 
         for (var j = 0; j < toRemove.length; j++) {
-            storage.removeItem(toRemove[i]);
+            storage.removeItem(toRemove[j]);
         }
     }
 
