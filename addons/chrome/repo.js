@@ -55,25 +55,9 @@
 *
 */
 
-;ClientBridge = (function() {
-    var chan = Channel.build({
-        window: window.parent,
-        origin: "*",
-        scope: "openwebapps"
-    });
-
+;Repo = (function() {
     // Reference shortcut so minifier can save on characters
     var win = window;
-
-    // when we recieve an install message we'll cache the origin
-    // so we can instruct the client on how to handle visibility
-    var installOrigin;
-
-    // We're the top window, don't do anything
-    if(win.top == win) return;
-
-    // unsupported browser
-    if(!win.postMessage || !win.localStorage || !win.JSON) return;
 
     // Reference shortcut so minifier can save on characters
     var storage = win.localStorage;
@@ -112,7 +96,7 @@
                 item.app = Manifest.validate(item.app);
                 cb(key, item);
             } catch (e) {
-                logError("invalid application detected: " + e);
+                console.log("invalid application detected: " + e);
                 toRemove.push(key);
             }
         }
@@ -133,7 +117,7 @@
                 parsedDomain.host.toLowerCase() == parsedURL.host.toLowerCase())
             {
                 var inputPort = parsedDomain.port ? parsedDomain.port : (parsedDomain.protocol.toLowerCase() == "https" ? 443 : 80);
-                var testPort = parsedURL.port ? parsedURL.port : (parsedURL.protocol.toLowerCase() == "https" ? 443 : 80);
+                var testPort = parsedURL.port ? parsedURL.port : (parsedURL.protocol.toLowerCase() == "https" ? 443 : 80);        
                 if (inputPort == testPort) return true;
             }
         } catch (e) {
@@ -153,7 +137,7 @@
     }
 
     // Return all installations that belong to the given origin domain
-    function getInstallsForOrigin(origin, reqObj)
+    function getInstallsForOrigin(origin)
     {
         var result = [];
 
@@ -167,7 +151,7 @@
     }
 
     // Return all installations that were installed by the given origin domain 
-    function getInstallsByOrigin(origin, requestObj)
+    function getInstallsByOrigin(origin)
     {
         var result = [];
 
@@ -180,32 +164,29 @@
         return result;
     }
 
-    chan.bind("install", function(t, args) {
-        // indicate that response will occur asynchronously, later.
-        t.delayReturn(true);
-
+    var installFunc = function(origin, args, cb) {
         // Validate and clean the request
         var manf;
         try {
             manf = Manifest.validate(args.manifest);
         } catch(e) {
-            throw [ "invalidManifest", "couldn't validate your mainfest: " + e ];
+            cb({error: [ "invalidManifest", "couldn't validate your mainfest: " + e]});
+            return;
         }
 
-        // cache the installOrigin
-        installOrigin = t.origin;
+        // XXX: we need to display an install prompt!
 
-        // cause the UI to display a prompt to the user
-        displayInstallPrompt(t.origin, manf, function (allowed) {
+        setTimeout(function() {
+            var allowed = true; // XXX: this would be determined from user interaction
+
             if (allowed) {
-                //NEW:  app repo keys now contain the launch url, not just the base url, for uniqueness 
                 var key = makeAppKey(manf);
 
                 // Create installation data structure
                 var installation = {
                     app: manf,
                     installTime: new Date().getTime(),
-                    installURL: t.origin
+                    installURL: origin
                 };
 
                 if (args.authorization_url) {
@@ -216,12 +197,47 @@
                 storage.setItem(key, JSON.stringify(installation));
 
                 // Send Response Object
-                t.complete(true);
+                cb(true);
             } else {
-                t.error("denied", "User denied installation request");
+                cb({error: ["denied", "User denied installation request"]});
             }
-        });
-    });
+        }, 0);
+    };
+
+
+    /** Determines which applications are installed for the origin domain */
+    var getInstalledFunc = function(origin) {
+        var installsResult = getInstallsForOrigin(origin);
+
+        // Caller doesn't get to see installs, just apps:
+        var result = [];
+        for (var i=0;i<installsResult.length;i++)
+        {
+            result.push(installsResult[i].app);
+        }
+
+        return result;
+    };
+
+    /** Determines which applications were installed by the origin domain. */
+    var getInstalledByFunc = function(origin) {
+        var installsResult = getInstallsByOrigin(origin);
+        // Caller gets to see installURL, installTime, and manifest
+        var result = [];
+        for (var i=0;i<installsResult.length;i++)
+        {
+            result.push({
+                installURL: installsResult[i].installURL,
+                installTime: installsResult[i].installTime,
+                manifest: installsResult[i].app,
+            });
+        }
+
+        return result;
+    };
+
+
+/*
 
     chan.bind('verify', function(t, args) {
         // We will look for manifests whose app_urls filter matches the origin.
@@ -248,56 +264,9 @@
         // the parent location, we'll be torn down.
         return;
     });
-
-    /** Determines which applications are installed for the origin domain */
-    chan.bind('getInstalled', function(t, args) {
-        var installsResult = getInstallsForOrigin(t.origin, args);
-
-        // Caller doesn't get to see installs, just apps:
-        var result = [];
-        for (var i=0;i<installsResult.length;i++)
-        {
-            result.push(installsResult[i].app);
-        }
-
-        return result;
-    });
-
-    /** Determines which applications were installed by the origin domain. */
-    chan.bind('getInstalledBy', function(t, args) {
-        var installsResult = getInstallsByOrigin(t.origin, args);
-
-        // Caller gets to see installURL, installTime, and manifest
-        var result = [];
-        for (var i=0;i<installsResult.length;i++)
-        {
-            result.push({
-                installURL: installsResult[i].installURL,
-                installTime: installsResult[i].installTime,
-                manifest: installsResult[i].app,
-            });
-        }
-
-        return result;
-    });
+*/
 
 
-    /* a function to check that an invoking page has "management" permission
-     * all this means today is that the invoking page (dashboard) is served
-     * from the same domain as the application repository. */
-    function verifyMgmtPermission(origin) {
-        var loc = win.location;
-        // make an exception for local testing, who via postmessage events
-        // have an origin of "null"
-        if ((origin === 'null' && window.location.protocol === 'file:') ||
-            ((loc.protocol + "//" + loc.host) === origin))
-        {
-            return;
-        }
-        throw [ 'permissionDenied',
-                "to access open web apps management apis, you must be on the same domain " +
-                "as the application repostiory" ];
-    }
 
     /* Management APIs for dashboards live beneath here */ 
 
@@ -322,41 +291,43 @@
         };
     }
 
-    chan.bind('list', function(t, args) {
-        verifyMgmtPermission(t.origin);
-
+    var listFunc = function() {
         var installed = [];
-
         iterateApps(function(key, item) {
             installed.push(generateExternalView(key, item));
         });
-
         return installed;
-    });
+    };
 
-    chan.bind('remove', function(t, key) {
-        verifyMgmtPermission(t.origin);
-        var item = storage.getItem(key);
-        if (!item) throw [ "noSuchApplication", "no application exists with the id: " + key ]; 
-        storage.removeItem(key);
+    var removeFunc = function(id) {
+        var item = storage.getItem(id);
+        if (!item) return {error: [ "noSuchApplication", "no application exists with the id: " + id]}; 
+        storage.removeItem(id);
         return true;
-    });
+    };
 
-    chan.bind('loadState', function(t, did) {
-        verifyMgmtPermission(t.origin);
-        return JSON.parse(storage.getItem(makeStateKey(did)));
-    });
+    var launchFunc = function(id) {
+        var i = JSON.parse(storage.getItem(id));
+        if (!i || !i.app.base_url) return false;
+        chrome.tabs.create({url: (i.app.base_url + i.app.launch_path)});
+        return true;
+    }
 
-    chan.bind('saveState', function(t, args) {
-        verifyMgmtPermission(t.origin);
+
+    var loadStateFunc = function(id) {
+        return JSON.parse(storage.getItem(makeStateKey(id)));
+    };
+
+    var saveStateFunc = function(id, state) {
         // storing null purges state
-        if (args.state === null) {
-            storage.removeItem(makeStateKey(args.did));
+        if (state === null) {
+            storage.removeItem(makeStateKey(id));
         } else  {
-            storage.setItem(makeStateKey(args.did), JSON.stringify(args.state));
+            storage.setItem(makeStateKey(id), JSON.stringify(state));
         }
         return true;
-    });
+    };
+
 
     /* this seemed a good idea, however launching applications from inside an iframe
      * is too fragile given the abundance of popup blockers.  given that, it seems
@@ -383,18 +354,14 @@
     });
      */
 
-    /**
-       help with debugging issues
-       We can eventually toggle this using a debug.myapps.org store
-    **/
-    function logError(message) {
-        if(win.console && win.console.log) {
-            win.console.log('App Repo error: ' + message);
-        }
-    }
-
     return {
-        showDialog: function() { chan.notify({ method: "showme" }); },
-        hideDialog: function() { chan.notify({ method: "hideme" }); }
+        list: listFunc,
+        install: installFunc,
+        remove: removeFunc,
+        getInstalled: getInstalledFunc,
+        getInstalledBy: getInstalledByFunc,
+        loadState: loadStateFunc,
+        saveState: saveStateFunc,
+        launch: launchFunc
     }
 })();

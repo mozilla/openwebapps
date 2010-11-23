@@ -654,9 +654,6 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
             });
         }
 
-        // Following three functions are just API wrappers that clean up the
-        // the arguments passed in before they're sent and attach the
-        // appropriate command strings to the request objects
         function callInstall(args) {
             setupWindow();
             if (!args) { args = {}; }
@@ -693,7 +690,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
             });
         }
 
-        function callGetInstalled(args) {
+        function callGetInstalled(cb) {
             setupWindow();
             chan.call({
                 method: "getInstalled",
@@ -702,14 +699,12 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
                     alert( " couldn't begin verification: "  + error + " - " + message); 
                 },
                 success: function(v) {
-                    // XXX: what's the utility of this callback?  it depends on
-                    // verification flow
-                    if (args.callback) args.callback(v);
+                    if (cb && typeof(cb) === 'function') cb(v);
                 }
             });
         }
 
-        function callGetInstalledBy(args) {
+        function callGetInstalledBy(cb) {
             setupWindow();
             chan.call({
                 method: "getInstalledBy",
@@ -718,9 +713,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
                     alert( " couldn't begin verification: "  + error + " - " + message); 
                 },
                 success: function(v) {
-                    // XXX: what's the utility of this callback?  it depends on
-                    // verification flow
-                    if (args.callback) args.callback(v);
+                    if (cb && typeof(cb) === 'function') cb(v);
                 }
             });
         }
@@ -770,6 +763,36 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
             });
         }
 
+        function callLoadState(did, func) {
+            setupWindow();
+            chan.call({
+                method: "loadState",
+                params: did,
+                error: function(error, message) {
+                    // XXX we need to relay this to the client
+                    alert("couldn't loadState: "  + error + " - " + message); 
+                },
+                success: function(v) {
+                    if (func) func(v);
+                }
+            });
+        }
+
+        function callSaveState(did, obj, func) {
+            setupWindow();
+            chan.call({
+                method: "saveState",
+                params: {"did":did, "state": obj},
+                error: function(error, message) {
+                    // XXX we need to relay this to the client
+                    alert("couldn't savetate: "  + error + " - " + message); 
+                },
+                success: function(v) {
+                    if (func) func(v);
+                }
+            });
+        }
+
         // Return AppClient object with exposed API calls
         return {
             install: callInstall,
@@ -778,7 +801,9 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
             getInstalledBy: callGetInstalledBy,
             mgmt: {
                 list: callList,
-                remove: callRemove
+                remove: callRemove,
+                loadState: callLoadState,
+                saveState: callSaveState
             },
             html5Implementation: true,
             // a debugging routine which allows debugging or testing clients

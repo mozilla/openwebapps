@@ -18,7 +18,7 @@ $(document).ready(function () {
     $("#install_floater").show();
   }, 500);
 
-  navigator.apps.getInstalledBy({callback:function(installed) {
+  navigator.apps.getInstalledBy(function(installed) {
     if (installed)
     {
       for (var i=0;i<installed.length;i++)
@@ -51,7 +51,7 @@ $(document).ready(function () {
       $("#install_button").text("INSTALL");
       $("#install_kicker").text("You've already purchased this app.  Click to install it in this browser.").show();
     }
-  }});
+  });
 
 {% if app.price > 0 %}
 

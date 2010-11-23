@@ -43,7 +43,9 @@ navigator.apps.getInstalled
 navigator.apps.getInstalledBy
 navigator.apps.install
 navigator.apps.mgmt.list
+navigator.apps.mgmt.loadState
 navigator.apps.mgmt.remove
+navigator.apps.mgmt.saveState
 navigator.apps.setRepoOrigin
 navigator.apps.verify
 </pre>
@@ -74,9 +76,97 @@ $ wait(function() { return finished; });
 0
 </pre>
 
-<h3>Application installation</h3>
+<h3>Application Installation</h3>
 
+Install a single application
 
+<pre class="doctest">
+$ var manifest = {
+>   "name":"FakeApp",
+>   "base_url": "http://fakea.pp/",
+>   "launch_path": "",
+>   "description":"nothing to see here, move along!.",
+>   "app_urls": [ "http://fakea.pp/" ]
+> }
+$ var finished = false;
+$ navigator.apps.install({manifest: manifest, callback: function() { finished = true; }});
+$ wait(function() { return finished; });
+$ finished = false;
+$ navigator.apps.mgmt.list(function(l) {
+>   writeln(l.length);
+>   writeln(JSON.stringify(l[0], null, 4));
+>   finished = true; 
+> });
+$ wait(function() { return finished; });
+1
+{
+    "id": "app::http://fakea.pp/",
+    "installURL": "null",
+    "installTime": ...,
+    "name": "FakeApp",
+    "description": "nothing to see here, move along!.",
+    "launchURL": "http://fakea.pp/"
+}
+</pre>
+
+<h3>Checking for Application Installation</h3>
+
+getInstalled should yield no results, as this test application is not hosted at
+http://fakea.pp
+
+<pre class="doctest">
+$ var finished = false;
+$ navigator.apps.getInstalled(function(l) {
+>   writeln(l.length);
+>   finished = true; 
+> });
+$ wait(function() { return finished; });
+0
+</pre>
+
+getInstalledBy should yield 1 result, as we just installed FakeApp.
+
+<pre class="doctest">
+$ var finished = false;
+$ navigator.apps.getInstalledBy(function(l) {
+>   writeln(l.length);
+>   finished = true; 
+> });
+$ wait(function() { return finished; });
+1
+</pre>
+
+<h3>Dashboard Storage</h3>
+
+navigator.apps.mgmt.{load|save}State() proivde an html dashboard with a mechanism to store
+state inside the application repository.  This can be useful because it allows the app
+repo to synchronize this state across sessions on different browsers. 
+
+<pre class="doctest">
+$ var finished = false;
+$ var test_id = "ABCD1234";
+$ navigator.apps.mgmt.saveState(test_id, null, function() { finished = true; });
+$ wait(function() { return finished; });
+$ finished = false;
+$ var obj = null;
+$ navigator.apps.mgmt.loadState(test_id, function(s) { obj = s; finished = true; });
+$ wait(function() { return finished; });
+$ JSON.stringify(obj,null,4);
+"null"
+$ finished = false;
+$ navigator.apps.mgmt.saveState(test_id, { open: "web", apps: [ "are", "super", "awesome" ] }, function() { });
+$ navigator.apps.mgmt.loadState(test_id, function(s) { obj = s; finished = true; });
+$ wait(function() { return finished; });
+$ writeln(JSON.stringify(obj,null,4));
+{
+    "open": "web",
+    "apps": [
+        "are",
+        "super",
+        "awesome"
+    ]
+}
+</pre>
 
 
 </body>

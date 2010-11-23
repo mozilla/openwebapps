@@ -23,14 +23,12 @@ if (!navigator.apps) {
         var ev = document.createEvent('Event');
         ev.initEvent('__openWebAppsInEvent', true, true);
         div.dispatchEvent(ev);
-        console.log("page sending event to content script");
     };
 
     // now let's register for events incoming from the extension
     document.getElementById("__openWebAppsOut").addEventListener('__openWebAppsOutEvent', function() {
         var data = document.getElementById('__openWebAppsOut').innerText;
         var msg = JSON.parse(data);
-        console.log("page got response from content script");
         if (transactions[msg.tid]) {
             var cb = transactions[msg.tid];
             delete transactions[msg.tid];
@@ -40,14 +38,16 @@ if (!navigator.apps) {
 
     console.log("injecting navigator.apps API");
     navigator.apps = {
-        getInstalled:function () {
-            console.log("getInstalled called");
+        getInstalled:function (cb) {
+            sendToExtension('getInstalled', null, cb);
         },
-        getInstalledBy:function () {
-            console.log("getInstalledBy called");
+        getInstalledBy:function (cb) {
+            sendToExtension('getInstalledBy', null, cb);
         },
-        install:function () {
-            console.log("install called");
+        install:function (obj) {
+            var cb = obj.callback;
+            delete obj.callback;
+            sendToExtension('install', obj, cb);
         },
         setRepoOrigin: function () {
             console.log("WARNING: navigator.apps.setRepoOrigin is meaningless when the openwebapps extension is installed");
@@ -61,6 +61,12 @@ if (!navigator.apps) {
             },
             remove: function (id) {
                 sendToExtension('remove', { id: id }, (arguments.length == 2 ? arguments[1] : null));
+            },
+            loadState: function (id, cb) {
+                sendToExtension('loadState', id, cb);
+            },
+            saveState: function (id, obj, cb) {
+                sendToExtension('saveState', {did:id,state:obj}, cb);
             }
         }
     };
