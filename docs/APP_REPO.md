@@ -36,7 +36,7 @@ in the API:
 
 The installation API is exposed as properties on the `navigator.apps` object.
 
-*   `install({ manifest: <manifest object> , [  authorization_url: <url> ], [ session: <session> ], [ signature: <sig> ], callback: <function> }):`
+*   `install({ manifest: <manifest object> , [  authorization_url: <url> ], [ signature: <sig> ], callback: <function> }):`
 
     Prompts the user for confirmation of the manifest, possibly checking the installation and application domains against a registry of known malware sites.  If the user consents, the manifest is installed into the repository, along with the hostname of the installing site and a timestamp.  If the installing site does not use SSL, the user will be strongly discouraged from installing the application.   When the installation flow is completed with success or failure, the installing website is notified through the callback.
 
