@@ -4,7 +4,7 @@ See also the [wiki page on Application Manifests](http://wiki.mozilla.org/Labs/A
 
 The Manifest is a complete description of what the web browser needs to interact with the application.  It provides both human-readable elements (a name, a set of icons, and a description; possibly in multiple languages) and machine-readable elements (URLs, lists of capabilities), which allow the application repository and dashboard to display and launch applications.
 
-The Manifest is encoded as a JSON data structure, and is provided to the browser when the application is installed.  The manifest is persisted in local storage and is used by the dashboard and repository for subsequent interactions with the user.
+The Manifest is encoded as a JSON data structure, and is provided to the browser when the application is installed.  The manifest is persisted in the application repository and is used by the dashboard and browser in subsequent interactions with the user.
 
 When an application is self-published the application developer provides the manifest directly.  When a store or curated directory publishes the application, the store or directory provides the manifest, and is free to inspect it prior to publication. <!-- FIXME: is the store free to modify it as well?  What is the authority of a manifest?  This could be answered/discussed with a wiki link. -->
 
@@ -18,25 +18,32 @@ For a discussion of the security and privacy considerations around the applicati
       "name": "MozillaBall",
       "description": "Exciting Open Web development action!",
 
-      "base_url": "https://mozillaball.mozillalabs.com",
-      "launch_path": "",
-
-      "app_urls": [
-        "https://mozillaball.mozillalabs.com/"
-      ],
+      // the url under which the application resides.
+      "base_url": "https://mozillaball.mozillalabs.com/",
 
       "capabilities": [
-        "geolocation"
+        "geolocation",
+        "navigation_consolidation"
       ],
+
+      // informational, for display to the end user
       "icons": {
         "16": "icon-16.png",
         "48": "icon-48.png",
         "128": "icon-128.png"
       },
+
       "developer": {
         "name": "Mozilla Labs",
         "url": "http://mozillalabs.com"
-      }
+      },
+
+      // what directories or stores may directly install this application?
+      "installs_allowed_from": [
+        "https://appstore.mozillalabs.com"
+      ],
+
+      // l10n.  inside the locales
       "locales": {
         "es": {
           "description": "¡Acción abierta emocionante del desarrollo del Web!",
@@ -51,6 +58,9 @@ For a discussion of the security and privacy considerations around the applicati
           }
         }
       },
+
+      "defaut_locale": "en",
+
       "release": "2010-10-05T09:12:51Z"
     }
 
