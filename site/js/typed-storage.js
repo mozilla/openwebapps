@@ -45,14 +45,14 @@ Storage.prototype.getObject = function(key) {
 }
 
 //////////////
-// let's be explicit, and pass in some object that conforms to the Storage interface,
-// like window.localStorage or globalStorage.  I'll be using the above tacked-on 
-// functions, so we'll get an exception if you don't pass in a Storage
+// the assumption here is that window.localStorage is used.
+// this obviously conflicts with whatever addon implementation we decide on,
+// so revisit this later
 
-function TypedStorage(storage, objType) {
+function TypedStorage(objType) {
   var self = {};
   self.open = function () {
-    return TypedStorage.ObjectStore(storage, objType);
+    return TypedStorage.ObjectStore(window.localStorage, objType);
   };
   return self;
 }

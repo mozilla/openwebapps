@@ -76,49 +76,41 @@
     if(!win.postMessage || !win.localStorage || !win.JSON) return;
 
     // Reference shortcut so minifier can save on characters
-    var storage = win.localStorage;
+    var appStorage = TypedStorage("app").open();
+    var stateStorage = TypedStorage("state").open();
 
+    //we compose the full launch url as the unique key for an application.
     function makeAppKey(manifest) {
-        return "app::" + manifest.base_url + manifest.launch_path;
+        return manifest.base_url + manifest.launch_path;
     }
 
-    function isAppKey(key) {
-        return (key.indexOf("app::") === 0);
-    }
-
-    function makeStateKey(id) {
-        return "state::" + id;
-    }
-
-    function isStateKey(key) {
-        return (key.indexOf("state::") === 0);
-    }
 
     // iterates over all stored applications manifests and passes them to a
     // callback function.  This function should be used instead of manual
     // iteration as it will parse manifests and purge any that are invalid.
-    function iterateApps(cb) {
+    function iterateApps(callback) {
         // we'll automatically clean up malformed installation records as we go
         var toRemove = [];
-
-        for (var i =0;i<storage.length;i++)
+        
+        var appKeys = appStorage.keys();
+        if (appKeys.length == 0) return;
+        
+        for (var i=0; i<appKeys.length; i++)
         {
-            var key = storage.key(i);
-            //only operat on apps, not other data
-            if (!isAppKey(key)) continue;
+            var aKey = appKeys[i];
 
             try {
-                var item = JSON.parse(storage.getItem(key));
-                item.app = Manifest.validate(item.app);
-                cb(key, item);
+                var install = appStorage.get(aKey);
+                install.app = Manifest.validate(install.app);
+                callback(aKey, install);
             } catch (e) {
                 logError("invalid application detected: " + e);
-                toRemove.push(key);
+                toRemove.push(aKey);
             }
         }
 
         for (var j = 0; j < toRemove.length; j++) {
-            storage.removeItem(toRemove[i]);
+            appStorage.remove(toRemove[i]);
         }
     }
 
@@ -213,7 +205,7 @@
                 }
 
                 // Save - blow away any existing value
-                storage.setItem(key, JSON.stringify(installation));
+                appStorage.put(key, installation);
 
                 // Send Response Object
                 t.complete(true);
@@ -336,24 +328,24 @@
 
     chan.bind('remove', function(t, key) {
         verifyMgmtPermission(t.origin);
-        var item = storage.getItem(key);
+        var item = appStorage.get(key);
         if (!item) throw [ "noSuchApplication", "no application exists with the id: " + key ]; 
-        storage.removeItem(key);
+        appStorage.remove(key);
         return true;
     });
 
     chan.bind('loadState', function(t, did) {
         verifyMgmtPermission(t.origin);
-        return JSON.parse(storage.getItem(makeStateKey(did)));
+        return stateStorage.get(makeStateKey(did));
     });
 
     chan.bind('saveState', function(t, args) {
         verifyMgmtPermission(t.origin);
         // storing null purges state
         if (args.state === null) {
-            storage.removeItem(makeStateKey(args.did));
+            stateStorage.remove(makeStateKey(args.did));
         } else  {
-            storage.setItem(makeStateKey(args.did), JSON.stringify(args.state));
+            stateStorage.put(makeStateKey(args.did), args.state);
         }
         return true;
     });
@@ -364,14 +356,14 @@
     chan.bind('launch', function(t, key) {
         verifyMgmtPermission(t.origin);
 
-        var item = storage.getItem(key);
+        var item = appStorage.get(key);
         if (item) {
             try {
                 item = JSON.parse(item);
                 item.app = Manifest.validate(item.app);
             } catch (e) {
                 logError("invalid application removed: " + e);
-                storage.removeItem(key);
+                appStorage.remove(key);
                 item = null;
             }
         }

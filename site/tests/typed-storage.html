@@ -21,7 +21,7 @@
 
 <h3>Clear</h3>
 <pre class="doctest">
-$ var testRepo = TypedStorage(window.localStorage, "testObjectType").open();
+$ var testRepo = TypedStorage("testObjectType").open();
 > testRepo.clear();
 > writeln(testRepo.keys().length);
 0
@@ -44,7 +44,7 @@ $ testRepo.clear();
 
 <h3>Add/Check/Remove</h3>
 <pre class="doctest">
-$ var testRepo = TypedStorage(window.localStorage, "testObjectType").open();
+$ var testRepo = TypedStorage("testObjectType").open();
 > testRepo.clear();
 >
 > var thing1 = { "foo":"bar", "baz":"flam", 'plink':4.7};
@@ -89,14 +89,14 @@ null
 <h3>Multiple TypedStorages in same localStorage</h3>
 <pre class="doctest">
 $ for ( i = 0; i < window.localStorage.length ; i++) { window.localStorage.removeItem(window.localStorage.key(i)); }
-$ var testRepo1 = TypedStorage(window.localStorage, "fakeType").open();
+$ var testRepo1 = TypedStorage("fakeType").open();
 > testRepo1.clear();
 >
 > var thing1 = { "foo":"bar", "baz":"flam", 'plink':4.7};
 > testRepo1.put("thing1", thing1);
 > writeln(testRepo1.keys().length);
 1
-$ var testRepo2 = TypedStorage(window.localStorage, "bogusType").open();
+$ var testRepo2 = TypedStorage("bogusType").open();
 > testRepo2.clear();
 >
 > testRepo2.put("thing1", thing1);
