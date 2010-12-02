@@ -11,11 +11,13 @@
 
 <h1>TypedStorage Tests</h1>
 
+
+<p><b>WARNING</b>: This test will clear local storage for the domain it's run on.</p>
+
 <div>
   <button onclick="doctest()" type="button">Test all</button>
   <pre id="doctestOutput"></pre>
 </div>
-
 
 <h3>Clear</h3>
 <pre class="doctest">
@@ -86,6 +88,7 @@ null
 
 <h3>Multiple TypedStorages in same localStorage</h3>
 <pre class="doctest">
+$ for ( i = 0; i < window.localStorage.length ; i++) { window.localStorage.removeItem(window.localStorage.key(i)); }
 $ var testRepo1 = TypedStorage(window.localStorage, "fakeType").open();
 > testRepo1.clear();
 >
@@ -114,7 +117,6 @@ $ testRepo1.clear();
 > for ( i = 0; i < window.localStorage.length; i++) {
 >   writeln(window.localStorage.key(i));
 > }
-
 </pre>
 
 </body> </html>
