@@ -100,12 +100,12 @@ $ navigator.apps.mgmt.list(function(l) {
 $ wait(function() { return finished; });
 1
 {
-    "id": "...",
-    "installURL": "...",
-    "installTime": ...,
-    "name": "FakeApp",
-    "description": "nothing to see here, move along!.",
-    "launchURL": "http://fakea.pp/"
+    "id":"...",
+    "installURL":"...",
+    "installTime":...,
+    "name":"FakeApp",
+    "description":"nothing to see here, move along!.",
+    "launchURL":"http://fakea.pp/"
 }
 </pre>
 
@@ -159,9 +159,8 @@ $ navigator.apps.mgmt.loadState(test_id, function(s) { obj = s; finished = true;
 $ wait(function() { return finished; });
 $ writeln(JSON.stringify(obj,null,4));
 {
-    "open": "web",
-    "apps": [
-        "are",
+    "open":"web",
+    "apps":["are",
         "super",
         "awesome"
     ]
