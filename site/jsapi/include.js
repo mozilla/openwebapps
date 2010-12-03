@@ -766,11 +766,11 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
             });
         }
 
-        function callLoadState(did, func) {
+        function callLoadState(func) {
             setupWindow();
             chan.call({
                 method: "loadState",
-                params: did,
+                params: null,
                 error: function(error, message) {
                     // XXX we need to relay this to the client
                     alert("couldn't loadState: "  + error + " - " + message); 
@@ -781,11 +781,11 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
             });
         }
 
-        function callSaveState(did, obj, func) {
+        function callSaveState(obj, func) {
             setupWindow();
             chan.call({
                 method: "saveState",
-                params: {"did":did, "state": obj},
+                params: {"state": obj},
                 error: function(error, message) {
                     // XXX we need to relay this to the client
                     alert("couldn't savetate: "  + error + " - " + message); 

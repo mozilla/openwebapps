@@ -145,18 +145,17 @@ repo to synchronize this state across sessions on different browsers.
 
 <pre class="doctest">
 $ var finished = false;
-$ var test_id = "ABCD1234";
-$ navigator.apps.mgmt.saveState(test_id, null, function() { finished = true; });
+$ navigator.apps.mgmt.saveState(null, function() { finished = true; });
 $ wait(function() { return finished; });
 $ finished = false;
 $ var obj = null;
-$ navigator.apps.mgmt.loadState(test_id, function(s) { obj = s; finished = true; });
+$ navigator.apps.mgmt.loadState( ( function(s) { obj = s; finished = true; } ) );
 $ wait(function() { return finished; });
 $ writeln(doctest.repr(obj));
 null
 $ finished = false;
-$ navigator.apps.mgmt.saveState(test_id, { open: "web", apps: [ "are", "super", "awesome" ] }, function() { });
-$ navigator.apps.mgmt.loadState(test_id, function(s) { obj = s; finished = true; });
+$ navigator.apps.mgmt.saveState({ open: "web", apps: [ "are", "super", "awesome" ] }, function() { });
+$ navigator.apps.mgmt.loadState( ( function(s) { obj = s; finished = true; } ) );
 $ wait(function() { return finished; });
 $ writeln(doctest.repr(obj));
 {apps: ["are", "super", "awesome"], open: "web"}

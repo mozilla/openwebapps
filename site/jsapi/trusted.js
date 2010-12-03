@@ -326,18 +326,18 @@
         return true;
     });
 
-    chan.bind('loadState', function(t, did) {
+    chan.bind('loadState', function(t) {
         verifyMgmtPermission(t.origin);
-        return stateStorage.get(did);
+        return stateStorage.get(t.origin);
     });
 
     chan.bind('saveState', function(t, args) {
         verifyMgmtPermission(t.origin);
         // storing null purges state
         if (args.state === null) {
-            stateStorage.remove(args.did);
+            stateStorage.remove(t.origin);
         } else  {
-            stateStorage.put(args.did, args.state);
+            stateStorage.put(t.origin, args.state);
         }
         return true;
     });
