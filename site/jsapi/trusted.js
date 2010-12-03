@@ -75,15 +75,8 @@
     // unsupported browser
     if(!win.postMessage || !win.localStorage || !win.JSON) return;
 
-    // Reference shortcut so minifier can save on characters
     var appStorage = TypedStorage("app").open();
     var stateStorage = TypedStorage("state").open();
-
-    //we compose the full launch url as the unique key for an application.
-    function makeAppKey(manifest) {
-        return manifest.base_url + manifest.launch_path;
-    }
-
 
     // iterates over all stored applications manifests and passes them to a
     // callback function.  This function should be used instead of manual
@@ -91,10 +84,10 @@
     function iterateApps(callback) {
         // we'll automatically clean up malformed installation records as we go
         var toRemove = [];
-        
+
         var appKeys = appStorage.keys();
         if (appKeys.length == 0) return;
-        
+
         for (var i=0; i<appKeys.length; i++)
         {
             var aKey = appKeys[i];
@@ -190,8 +183,7 @@
         // cause the UI to display a prompt to the user
         displayInstallPrompt(t.origin, manf, function (allowed) {
             if (allowed) {
-                //NEW:  app repo keys now contain the launch url, not just the base url, for uniqueness 
-                var key = makeAppKey(manf);
+                var key = manf.base_url + manf.launch_path;
 
                 // Create installation data structure
                 var installation = {
@@ -336,16 +328,16 @@
 
     chan.bind('loadState', function(t, did) {
         verifyMgmtPermission(t.origin);
-        return stateStorage.get(makeStateKey(did));
+        return stateStorage.get(did);
     });
 
     chan.bind('saveState', function(t, args) {
         verifyMgmtPermission(t.origin);
         // storing null purges state
         if (args.state === null) {
-            stateStorage.remove(makeStateKey(args.did));
+            stateStorage.remove(args.did);
         } else  {
-            stateStorage.put(makeStateKey(args.did), args.state);
+            stateStorage.put(args.did, args.state);
         }
         return true;
     });
