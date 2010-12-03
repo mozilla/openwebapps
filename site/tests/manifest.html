@@ -29,6 +29,38 @@ $ writeln(null !== Manifest.parse({
 true
 </pre>
 
+<h3>Missing Required Properties</h3>
+
+<pre class="doctest">
+$ writeln(null !== Manifest.parse({
+> }));
+Error: Invalid manifest: missing "manifest_version" property
+</pre>
+
+<pre class="doctest">
+$ writeln(null !== Manifest.parse({
+>   manifest_version: "1.0"
+> }));
+Error: Invalid manifest: missing "name" property
+</pre>
+
+<pre class="doctest">
+$ writeln(null !== Manifest.parse({
+>   manifest_version: "1.0",
+>   name: "SimplestPossibleManifest"
+> }));
+Error: Invalid manifest: missing "base_url" property
+</pre>
+
+<pre class="doctest">
+$ writeln(null !== Manifest.parse({
+>   manifest_version: "1.0",
+>   name: "SimplestPossibleManifest",
+>   base_url: "http://simple.mozillalabs.com/"
+> }));
+Error: Invalid manifest: missing "default_locale" property
+</pre>
+
 </body>
 <script type="text/javascript" src="../js/manifest.js"></script>
 </html>

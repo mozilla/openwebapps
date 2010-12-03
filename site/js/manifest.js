@@ -58,8 +58,29 @@
             errorThrow('null');
         }
 
-        for (var prop in [ "manifest_version", "name", "base_url", "default_locale" ]) {
-            if (!prop in manf) {
+        // a table that specifies manfiest properties, and validation functions
+        var manfProps = {
+            manifest_version: {
+                required: true,
+                check: function (x) {
+                    return ((typeof x === 'string') && /^\d+.\d+$/.match(x));
+                }
+            },
+            name: {
+                required: true
+            },
+            base_url: {
+                required: true
+            },
+            default_locale: {
+                required: true
+            }
+        };
+
+        // first validate that all required properties are present
+        for (var prop in manfProps) {
+            if (!manfProps.hasOwnProperty(prop) || !manfProps[prop].required) continue;
+            if (!(prop in manf)) {
                 errorThrow('missing "' + prop + '" property');
             }
         }
