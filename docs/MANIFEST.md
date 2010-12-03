@@ -66,7 +66,7 @@ For a discussion of the security and privacy considerations around the applicati
 
 For detailed technical discussion of the manifest, please visit [the wiki](http://wiki.mozilla.org/Labs/Apps/Manifest).  Informally, the meanings of the fields are:
 
-* [**manifest_version**](http://wiki.mozilla.org/Labs/Apps/Manifest#name): The version of the manifest specification that a manifest conforms to.
+* [**manifest_version**](http://wiki.mozilla.org/Labs/Apps/Manifest#name): The version of this specification that a manifest conforms to.
 
 * [**name**](http://wiki.mozilla.org/Labs/Apps/Manifest#name): A UTF8 encoded human-readable name for the application.
 
@@ -76,7 +76,7 @@ For detailed technical discussion of the manifest, please visit [the wiki](http:
 
 * [**launch_path**](http://wiki.mozilla.org/Labs/Apps/Manifest#launch_path): (optional) The path that is appended to base_url to create the *launch URL* for the application, which is the page that is loaded when the application starts.  If empty or not provided, the base_url will be treated as the *launch URL*.
 
-* [**capabilities**](http://wiki.mozilla.org/Labs/Apps/Manifest#capabilities): (optional) a list of string tokens describing advanced web browser capabilities that the application requests.  Browser-native application repositories should prompt the user for permission to use these capabilities at installation time; the user is free to deny access to any or all of these permission requests, but this may cause the application to behave incorrectly.
+* [**capabilities**](http://wiki.mozilla.org/Labs/Apps/Manifest#capabilities): (optional) a list of strings describing advanced web browser capabilities that the application requests.  Browser-native application repositories should prompt the user for permission to use these capabilities at installation time; the user is free to deny access to any or all of these permission requests, but this may cause the application to behave incorrectly.
 
 * [**icons**](http://wiki.mozilla.org/Labs/Apps/Manifest#icons): (optional) a map of icon sizes to URLs, which are interpreted relative to the base_url, which should contain square images suitable for use as application icons.  data URLs are legal in this field.
 
@@ -90,7 +90,7 @@ For detailed technical discussion of the manifest, please visit [the wiki](http:
 
 * [**default_locale**](http://wiki.mozilla.org/Labs/Apps/Manifest#default.locale): The locale tag for the "default" translation of manifest properties.  That is, the locale of values outside of the locales map.  The presence of this key makes it possible to enumerate the locales supported by a manifest.
 
-* [**installs_allowed_from**](http://wiki.mozilla.org/Labs/Apps/Manifest#installs.allowed.from): (optional) An array of origins (scheme + host + port) that should be allowed to trigger installation of this application.  This field gives the host of an application control over who may offer the application for installation, and must be respected by the application repository (eventually, the user agent).
+* [**installs_allowed_from**](http://wiki.mozilla.org/Labs/Apps/Manifest#installs.allowed.from): (optional) An array of origins (scheme + host + port) that should be allowed to trigger installation of this application.  This field gives the host of an application control over who may offer the application for installation, and must be respected by the application repository (eventually, the user agent).  If omitted, installation may only be triggered from the origin where the application is hosted (extracted from base_url).
 
 * [**manifest_name**](http://wiki.mozilla.org/Labs/Apps/Manifest#manifest.name): (optional) The filename under which the manifest is stored, such that concatenation of base_url + manifest_name produces an absolute url to where the manifest is hosted.  Valid values will conform to the 'segment' production from [rfc 3986](http://tools.ietf.org/html/rfc3986#section-3.5).  If not provided, the default for manifest_name is `manifest.webapp`
 
@@ -98,7 +98,7 @@ For detailed technical discussion of the manifest, please visit [the wiki](http:
 
 #### Serving Manifests
 
-Proper web applications should serve manifests as separate resources under urls which have `base_url` as a prefix.  By convention, manifests should be contained in files with an extension of `.webapp`.  Finally, web application manifests should be served over HTTP with a `Content-Type` header of `application/x-web-app-manifest+json`.
+Proper web applications should serve manifests as separate resources under urls which have `base_url` as a prefix.  By convention, manifests should be contained in files with an extension of `.webapp`.  Web application manifests should be served with a `Content-Type` header of `application/x-web-app-manifest+json`.  Both manifests and applications should be provided over SSL.
 
 #### On Updating
 
@@ -114,7 +114,7 @@ It is expected that adoption of web applications will occur gradually: that site
 
 Given these somewhat conflicting goals, there are two different types of web applications:
 
-**published** web applications are apps where the manifest is available at the url which results from concatenating base_url and manifest_name, that is the manifest is hosted by the same server as the application.  This implies that the host of the site has explicit support for web applications.  *published* web applications may include a `capabilities` property in the manifest to request advanced capabilities that are not available to normal web pages.  In addition to the hosting requirement, in order to be considered a *published* app manifests must be served with a `Content-Type` header having a value of `application/x-web-app-manifest+json`.  See the security considerations section below for further discussion of these requirements.
+**published** web applications are apps where the manifest is available at the url which results from concatenating base_url and manifest_name, that is the manifest is hosted by the same server as the application.  This implies that the host of the site has explicit support for web applications.  *published* web applications may include a `capabilities` property in the manifest to request advanced capabilities that are not available to normal web pages.  In addition to the hosting requirement, in order to be considered a *published* app, manifests must be served with a `Content-Type` header having a value of `application/x-web-app-manifest+json`.  See the security considerations section below for further discussion of these requirements.
 
 **anonymous** applications are those applications which do not satisfy the requirements of a *published* app, and may not request extra capabilities.
 
