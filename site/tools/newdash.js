@@ -4,7 +4,7 @@ function updateApps() {
     navigator.apps.mgmt.list(function(l) {
         for (key in l) {
             (function() {
-                var id = key;
+                var id = l[key].id;
 
                 var app = $("<div/>");
                 app.append($('<span class="appname"/>').text(l[key].name + ": "));

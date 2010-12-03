@@ -36,7 +36,7 @@ in the API:
 
 The installation API is exposed as properties on the `navigator.apps` object.
 
-*   `install({ manifest: <manifest object> , [  authorization_url: <url> ], [ session: <session> ], [ signature: <sig> ], callback: <function> }):`
+*   `install({ manifest: <manifest object> , [  authorization_url: <url> ], [ signature: <sig> ], callback: <function> }):`
 
     Prompts the user for confirmation of the manifest, possibly checking the installation and application domains against a registry of known malware sites.  If the user consents, the manifest is installed into the repository, along with the hostname of the installing site and a timestamp.  If the installing site does not use SSL, the user will be strongly discouraged from installing the application.   When the installation flow is completed with success or failure, the installing website is notified through the callback.
 
@@ -71,14 +71,14 @@ account to sync their applications.
 
     List all installed applications.  The return value is an an array of objects.  Each object has the following properties:
 
-    `id (string)`: A unique identifier for the application.
-    `installURL (string)`: The url from which the application was installed
-    `installTime (integer)`: The time that the application was installed (generated via Date().getTime, represented as the number of milliseconds between midnight of January 1st, 1970 and the time the app was installed).
-    `icons (object)`: An object mapping strings representing icon size (i.e. '96' or '128') to urls of the actual icon (often data urls)
-    `name (string)`: The human readable (localized) name of the application.
-    `description (string)`: The human readable (localized) description of the application.
-    `launchURL (string)`: The url that the user should be redirected to where the application can be launched.
-    `developer (object)`: An object containing `name` and `url` properties describing the developer of the application
+    `id (string)`: A unique identifier for the application.  
+    `installURL (string)`: The url from which the application was installed  
+    `installTime (integer)`: The time that the application was installed (generated via Date().getTime, represented as the number of milliseconds between midnight of January 1st, 1970 and the time the app was installed).  
+    `icons (object)`: An object mapping strings representing icon size (i.e. '96' or '128') to urls of the actual icon (often data urls)  
+    `name (string)`: The human readable (localized) name of the application.  
+    `description (string)`: The human readable (localized) description of the application.  
+    `launchURL (string)`: The url that the user should be redirected to where the application can be launched.  
+    `developer (object)`: An object containing `name` and `url` properties describing the developer of the application  
 
 *   `remove( <id>, <callback> )`
 

@@ -174,11 +174,8 @@
             return;
         }
 
-        // XXX: we need to display an install prompt!
-
-        setTimeout(function() {
-            var allowed = true; // XXX: this would be determined from user interaction
-
+        // display an install prompt
+        Prompt.show(function(allowed) {
             if (allowed) {
                 var key = makeAppKey(manf);
 
@@ -201,7 +198,7 @@
             } else {
                 cb({error: ["denied", "User denied installation request"]});
             }
-        }, 0);
+        });
     };
 
 
