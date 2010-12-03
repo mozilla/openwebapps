@@ -98,7 +98,7 @@ For detailed technical discussion of the manifest, please visit [the wiki](http:
 
 #### Serving Manifests
 
-Proper web applications should serve manifests as separate resources under urls which have `base_url` as a prefix.  By convention, manifests should be contained in files which contain a file extension of `.webapp`.  Finally, web application manifests should be served with a `Content-Type` of `application/x-web-app-manifest+json`.
+Proper web applications should serve manifests as separate resources under urls which have `base_url` as a prefix.  By convention, manifests should be contained in files with an extension of `.webapp`.  Finally, web application manifests should be served over HTTP with a `Content-Type` header of `application/x-web-app-manifest+json`.
 
 #### On Updating
 
