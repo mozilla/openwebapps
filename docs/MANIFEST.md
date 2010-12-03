@@ -15,6 +15,8 @@ For a discussion of the security and privacy considerations around the applicati
 #### An Example Manifest
 
     {
+      "manifest_version": "1.0",
+
       "name": "MozillaBall",
       "description": "Exciting Open Web development action!",
 
@@ -66,6 +68,8 @@ For a discussion of the security and privacy considerations around the applicati
 
 For detailed technical discussion of the manifest, please visit [the wiki](http://wiki.mozilla.org/Labs/Apps/Manifest).  Informally, the meanings of the fields are:
 
+* [**manifest_version**](http://wiki.mozilla.org/Labs/Apps/Manifest#name): The version of the manifest specification that a manifest conforms to.
+
 * [**name**](http://wiki.mozilla.org/Labs/Apps/Manifest#name): A UTF8 encoded human-readable name for the application.
 
 * [**description**](http://wiki.mozilla.org/Labs/Apps/Manifest#description): (optional) A UTF8 encoded human-readable description of the application.
@@ -84,9 +88,9 @@ For detailed technical discussion of the manifest, please visit [the wiki](http:
 
     * [**url**](http://wiki.mozilla.org/Labs/Apps/Manifest#developer.url): the URL of an information site for the developer; the developer is free to place a URL that provides more detailed information about this app in this field
 
-* [**locales**](http://wiki.mozilla.org/Labs/Apps/Manifest#locales): (optional) a map of local-specific overrides on the data contained in the manifest, which UIs should use to provide localized views.  Each locale entry is keyed on a locale tag (see http://www.ietf.org/rfc/rfc4646.txt), and contains a sparse representation of the manifest; any field that is present in the locale value should override the matching field in the manifest.   Certain fields may not be overridden, including capabilities, default_locale, locales itself, and installs_allowed_from; a manifest that overrides any of these fields is invalid.
+* [**locales**](http://wiki.mozilla.org/Labs/Apps/Manifest#locales): (optional) a map of local-specific overrides on the data contained in the manifest, which UIs should use to provide localized views.  Each locale entry is keyed on a [locale tag](http://www.ietf.org/rfc/rfc4646.txt), and contains a sparse representation of the manifest; any field that is present in the locale value should override the matching field in the manifest.   Certain fields may not be overridden, including capabilities, default_locale, locales itself, and installs_allowed_from; a manifest that overrides any of these fields is invalid.
 
-* [**default_locale**](http://wiki.mozilla.org/Labs/Apps/Manifest#default.locale): The locale tag for the "default" translation of manifest properties.  That is, the locale of values outside of the locales map.  The presence of this key makes it possible to enumerate the available translations, given a manifest.
+* [**default_locale**](http://wiki.mozilla.org/Labs/Apps/Manifest#default.locale): The locale tag for the "default" translation of manifest properties.  That is, the locale of values outside of the locales map.  The presence of this key makes it possible to enumerate the locales supported by a manifest.
 
 * [**installs_allowed_from**](http://wiki.mozilla.org/Labs/Apps/Manifest#installs.allowed.from): (optional) An array of origins (scheme + host + port) that should be allowed to trigger installation of this application.  This field gives the host of an application control over who may offer the application for installation, and must be respected by the application repository (eventually, the user agent).
 
