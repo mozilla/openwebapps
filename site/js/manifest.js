@@ -45,112 +45,29 @@
 
 ;var Manifest = (function() {
 
-  // parseUri 1.2.2
-  // (c) Steven Levithan <stevenlevithan.com>
-  // MIT License
-  function parseUri (str) {
-    var	o   = parseUri.options,
-      m   = o.parser[o.strictMode ? "strict" : "loose"].exec(str),
-      uri = {},
-      i   = 14;
-    while (i--) uri[o.key[i]] = m[i] || "";
-    uri[o.q.name] = {};
-    uri[o.key[12]].replace(o.q.parser, function ($0, $1, $2) {
-      if ($1) uri[o.q.name][$1] = $2;
-    });
-    return uri;
-  };
-
-  parseUri.options = {
-    strictMode: false,
-    key: ["source","protocol","authority","userInfo","user","password","host","port","relative","path","directory","file","query","anchor"],
-    q:   {
-      name:   "queryKey",
-      parser: /(?:^|&)([^&=]*)=?([^&]*)/g
-    },
-    parser: {
-      strict: /^(?:([^:\/?#]+):)?(?:\/\/((?:(([^:@]*)(?::([^:@]*))?)?@)?([^:\/?#]*)(?::(\d*))?))?((((?:[^?#\/]*\/)*)([^?#]*))(?:\?([^#]*))?(?:#(.*))?)/,
-      loose:  /^(?:(?![^:@]+:[^:@\/]*@)([^:\/?#.]+):)?(?:\/\/)?((?:(([^:@]*)(?::([^:@]*))?)?@)?([^:\/?#]*)(?::(\d*))?)(((\/(?:[^?#](?![^?#\/]*\.[^?#\/.]+(?:[?#]|$)))*\/?)?([^?#\/]*))(?:\?([^#]*))?(?:#(.*))?)/
-    }
-  };
-  // end parseUri
-
-  function applicationMatchesURL(application, url)
-  {
-    if (application.app_urls)
-    {
-      var inputURL = parseUri(url);
-      for (var i=0;i<application.app_urls.length;i++)
-      {
-        var testURL = application.app_urls[i];
-        if (url.indexOf(testURL) == 0) {
-          // prefix matched: now make sure the domain is an exact match
-          var testParse = parseUri(testURL);
-          if (testParse.protocol == inputURL.protocol &&
-            testParse.host == inputURL.host)
-          {
-            var requiredPort = inputURL.port ? inputURL.port : (inputURL.scheme == "https" ? 443 : 80);
-            var testPort = testParse.port ? testParse.port : (testParse.scheme == "https" ? 443 : 80);
-            if (requiredPort == testPort) return true;
-          }
+    // initialize a manifest object from a javascript manifest representation,
+    // validating as we go.
+    // throws a developer readable string upon discovery of an invalid manifest.
+    function parse(manf) {
+        var errorThrow = function(errstr) {
+            throw('Invalid manifest: ' + errstr);
         }
-      }
-    }
-    return false;
-  }
 
-  // initialize a manifest object from a javascript manifest representation,
-  // validating as we go.
-  // throws a developer readable string upon discovery of an invalid manifest.
-  function validate(manf) {
-    // Validate and clean the request
-    if(!manf) {
-      throw('Invalid manifest: null');
-    }
+        // Validate and clean the request
+        if(!manf) {
+            errorThrow('null');
+        }
 
-    if (!manf.name) {
-      throw('Invalid manifest: missing application name');
-    }
-    if (!manf.base_url) {
-      throw('Invalid manifest: missing "base_url" property');
-    }
-    if (!manf.app_urls) {
-      throw('Invalid request: missing "app_urls" property');
-    }
-    if (manf.app_urls.length == 0) {
-      throw('Invalid request: "app_urls" property must not be empty');
-    }
-    if (manf.launch_path == undefined) { // empty string is legal
-      throw('Invalid request: missing "launch_path" property');
+        for (var prop in [ "manifest_version", "name", "base_url", "default_locale" ]) {
+            if (!prop in manf) {
+                errorThrow('missing "' + prop + '" property');
+            }
+        }
+
+        return manf;
     }
 
-    // '..' is forbidden in all paths
-    if (manf.launch_path.indexOf("..") >= 0)
-      throw('Invalid request: ".." is forbidden in launch_path');
-    if (manf.update_path && manf.update_path.indexOf("..") >= 0)
-      throw('Invalid request: ".." is forbidden in update_path');
-    if (manf.icons) 
-    {
-      for (var size in manf.icons) 
-      {
-        if (manf.icons[size].indexOf("..") >= 0)
-          throw('Invalid request: ".." is forbidden in icons');
-      }
+    return {
+        parse: parse
     }
-
-    // Base URL must be part of the set of app_urls
-    if (!applicationMatchesURL(manf, manf.base_url)) 
-      throw('Invalid request: base_url property must be a subset of app_urls.');
-
-    // Launch URL must be part of the set of app_urls
-    if (!applicationMatchesURL(manf, manf.base_url + manf.launch_path)) {
-      throw('Invalid request: base_url + launch_path property must be a subset of app_urls.');
-    } 
-    return manf;
-  }
-
-  return {
-    validate: validate,
-    parseUri: parseUri
-  }
 })();

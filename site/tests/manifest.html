@@ -1,0 +1,34 @@
+<html>
+<head>
+  <title>Manifest Tests</title>
+  <script type="text/javascript" src="doctestjs/doctest.js"></script>
+  <link rel="stylesheet" type="text/css" href="doctestjs/doctest.css" />
+</head>
+<body>
+<h2> Manifest Tests </h2>
+
+<p>
+`manifest.js` is a small javascript library responsible for parsing and 
+normalization of manifests.  This page tests and demonstrates its functioning.
+</p>
+
+<div>
+  <button onclick="doctest()" type="button">Test all</button>
+  <pre id="doctestOutput"></pre>
+</div>
+
+<h3>Simplest Possible Manifest</h3>
+
+<pre class="doctest">
+$ writeln(null !== Manifest.parse({
+>   manifest_version: "1.0",
+>   name: "SimplestPossibleManifest",
+>   base_url: "http://simple.mozillalabs.com/",
+>   default_locale: "en",
+> }));
+true
+</pre>
+
+</body>
+<script type="text/javascript" src="../js/manifest.js"></script>
+</html>
