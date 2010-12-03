@@ -98,7 +98,7 @@ var gManifest = {
 };
 
 $(document).ready(function() {
-    navigator.apps.setRepoOrigin("../");
+    navigator.apps.setRepoOrigin("..");
 
     navigator.apps.getInstalledBy(function(result) {
         var installed = false;

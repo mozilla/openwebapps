@@ -44,10 +44,10 @@ var widgets = require("widget");
 var windows = require("windows").browserWindows;
 var panels = require("panel");
 var Manifest = require("manifest").Manifest;
+var widgets = require("widget");
 
 const APP_DOMAIN = "https://myapps.mozillalabs.com/"
-
-console.log("hello apps text")
+const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
 /** Register a PageMod for all pages that adds the new .apps methods */
 var pageMod = require("page-mod");
@@ -89,10 +89,32 @@ exports.init = function()
         {
           worker.postMessage({id:request.id, result:saveStateFunc(request.stateID, request.stateValue)});
         }
+        else if (request.cmd == "launch")
+        {
+          launchFunc(request.appID);
+        }
       });
     }
   });
 }
+
+// A widget that changes display on mouseover.
+widgets.Widget({
+  label: "Applications Widget",
+  contentURL: "http://www.yahoo.com/favicon.ico",
+  onClick: function() {
+    console.log("Widget got onClick");
+    let panel = panels.Panel({
+      height:150,
+      width:640,
+      contentURL: data.url("dock.html"),
+      contentScriptFile: data.url("dock.js"), 
+      contentScript: "let gApplications = " + JSON.stringify(listFunc()),
+      onMessage: function(req) {}
+    });
+    openPanelOnLocationBar(panel);
+  }
+});
 
 exports.unload = function() {
   // TODO: make certain we've cleaned everything up
@@ -109,46 +131,51 @@ exports.unload = function() {
 */
 function openAppURL(aWindow, app, url, inBackground)
 {
-  // TODO: Replace this with the new Jetpack windows API!
-  var wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
-  var browserEnumerator = wm.getEnumerator("navigator:browser");
-
-  // Do we already have this app running in a tab?  If so, target it.
-  var found = false;
-  while (!found && browserEnumerator.hasMoreElements()) {
-    var browserWin = browserEnumerator.getNext();
-    var tabbrowser = browserWin.gBrowser;
-
-    var numTabs = tabbrowser.browsers.length;
-    for (var index = 0; index < numTabs; index++) {
+  try {
     
-      var currentBrowser = tabbrowser.getBrowserAtIndex(index);
-      if (applicationMatchesURL(app, currentBrowser.currentURI.spec))
-      {
-        // The app is running in this tab; select it and retarget.
-        tabbrowser.selectedTab = tabbrowser.tabContainer.childNodes[index];
+    // TODO: Replace this with the new Jetpack windows API!
+    var wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
+    var browserEnumerator = wm.getEnumerator("navigator:browser");
 
-        // Focus *this* browser-window
-        browserWin.focus();
-        tabbrowser.selectedBrowser.loadURI(url, null // TODO don't break referrer!
-          , null);
-        
-        found = true;
+    // Do we already have this app running in a tab?  If so, target it.
+    var found = false;
+    while (!found && browserEnumerator.hasMoreElements()) {
+      var browserWin = browserEnumerator.getNext();
+      var tabbrowser = browserWin.gBrowser;
+
+      var numTabs = tabbrowser.browsers.length;
+      for (var index = 0; index < numTabs; index++) {
+      
+        var currentBrowser = tabbrowser.getBrowserAtIndex(index);
+        if (applicationMatchesURL(app, currentBrowser.currentURI.spec))
+        {
+          // The app is running in this tab; select it and retarget.
+          tabbrowser.selectedTab = tabbrowser.tabContainer.childNodes[index];
+
+          // Focus *this* browser-window
+          browserWin.focus();
+          tabbrowser.selectedBrowser.loadURI(url, null // TODO don't break referrer!
+            , null);
+          
+          found = true;
+        }
       }
     }
-  }
 
-  // Our URL does not belong to a currently running app.  Create a new
-  // tab for that app and load our URL into it.
-  if (!found) {
-    var recentWindow = wm.getMostRecentWindow("navigator:browser");
-    if (recentWindow) {
-      openAppTabOnWindow(recentWindow, url, inBackground);
-    } else {
-      // This is a very odd case: no browser windows are open, so open a new one.
-      aWindow.open(url);
-      // TODO: convert to app tab somehow
+    // Our URL does not belong to a currently running app.  Create a new
+    // tab for that app and load our URL into it.
+    if (!found) {
+      var recentWindow = wm.getMostRecentWindow("navigator:browser");
+      if (recentWindow) {
+        openAppTabOnWindow(recentWindow, url, inBackground);
+      } else {
+        // This is a very odd case: no browser windows are open, so open a new one.
+        aWindow.open(url);
+        // TODO: convert to app tab somehow
+      }
     }
+  } catch (e) {
+    console.log(e);
   }
 }
 
@@ -177,9 +204,9 @@ function openAppTabOnWindow(window, targetURL, inBackground)
 function applicationMatchesURL(manifest, url)
 {
   var parsedURL = new URL(url);
-  for (var i=0;i<manifest.app.urls.length;i++)
+  for (var i=0;i<manifest.app_urls.length;i++)
   {
-    var testURL = manifest.app.urls[i];
+    var testURL = manifest.app_urls[i];
     if (url.indexOf(testURL) == 0) {
       // Second pass check: make sure the domain is an exact match
       // and not just a prefix match.
@@ -223,7 +250,7 @@ function installApp(manifest, authorization_url, signature, origin, worker, requ
     appWarnings.push("Application is not using secure communication");
   }
 
-  let panel = panels.add(panels.Panel({
+  let panel = panels.Panel({
     height:290,
     width:500,
     contentURL: data.url("install.html"),
@@ -239,7 +266,7 @@ function installApp(manifest, authorization_url, signature, origin, worker, requ
       console.log("installPanel.onMessage: " + JSON.stringify(req));
       if (req.cmd == "confirm")
       {
-        panels.remove(panel);
+        panel.destroy();
         console.log("Confirmed installation");      
         
         let key = makeAppKey(manf);
@@ -254,41 +281,33 @@ function installApp(manifest, authorization_url, signature, origin, worker, requ
         simpleStorage.storage[key] = installation;
         console.log("Saved application with key " + key);
 
-        let confirmPanel = panels.add(panels.Panel({
+        let confirmPanel = panels.Panel({
           height:290,
           width:500,
           contentURL: data.url("confirm.html"),
           contentScriptFile: data.url("confirm.js"),
           contentScript: "let gApplicationToInstall = " + JSON.stringify(manifest),
-        }));
+        });
         openPanelOnLocationBar(confirmPanel);
         worker.postMessage({id:requestID, result:1});
       }
       else if (req.cmd == "cancel")
       {
-        panels.remove(panel);
+        panel.destroy();
         console.log("Cancelled installation");      
         worker.postMessage({id:requestID, result:0});// TODO what's the callback API?
       }
     }
     
-  }));
+  });
 
   openPanelOnLocationBar(panel);
-
-  /*
-  var popups = mainWindow.document.getElementById("mainPopupSet");
-  for (var i=0;i<popups.length;i++) {
-    console.log("popups[i] is " + popups[i]);
-    popups[i].style = "background-color:red";//backgroundColor = "transparent";
-  }
-  */
-  
 }
 
 function openPanelOnLocationBar(panel)
 {
   var panelAnchor;
+  var mainWindow;
   try{
     var wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
     var mainWindow = wm.getMostRecentWindow("navigator:browser");
@@ -328,13 +347,11 @@ var storage = {
     return null;  
   },
   getItem: function(key) { 
-    console.log("storage.getItem(" + key + ") = " + simpleStorage.storage[key]);
     var val = simpleStorage.storage[key]; 
     if (!val) return null;
     return val;
   },
   setItem: function(key, value) { 
-    console.log("storage.setItem(" + key + ") = " + value);
     simpleStorage.storage[key] = value; 
   },
   removeItem: function(key) { 
@@ -546,13 +563,16 @@ var removeFunc = function(id) {
     return true;
 };
 
-var launchFunc = function(id) {
-    var i = JSON.parse(storage.getItem(id));
-    if (!i || !i.app.base_url) return false;
-    chrome.tabs.create({url: (i.app.base_url + i.app.launch_path)});
-    return true;
-}
 
+var launchFunc = function(id) {
+  var theInstall = storage.getItem(id);
+  if (theInstall && theInstall.app && theInstall.app.base_url)
+  {
+    console.log("Launching app " + theInstall.app.name);
+    openAppURL(null, theInstall.app, theInstall.app.base_url + theInstall.app.launch_path, false);
+  }
+  return true;
+}
 
 var loadStateFunc = function(id) {
   var val = storage.getItem(makeStateKey(id));

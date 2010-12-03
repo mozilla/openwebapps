@@ -1,6 +1,4 @@
-console.log("hello world");
 window.onload = function() {
-  console.log("Setting up prompt");
   try {
     window.document.getElementById("prompt").innerHTML = "<div class='headline'>Installing <span class='appName'>" + gApplicationToInstall.name + "</span></div>" + 
       "<div class='body'>Install this application from " + gInstallingOrigin + "?<br><br>This application runs at " + gAppOrigin + ".</div>";
