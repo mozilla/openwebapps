@@ -719,17 +719,13 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
         }
 
         /* launch an application. */
-        function callLaunch(id, func) {
-            setupWindow();
-            chan.call({
-                method: "launch",
-                params: id,
-                error: function(error, message) {
-                    // XXX we need to relay this to the client
-                    alert("couldn't launch: "  + error + " - " + message); 
-                },
-                success: function(v) {
-                    if (func) func(v);
+        function callLaunch(id) {
+            callList(function(l) {
+                for (var i = 0; i < l.length; i++) {
+                    if (l[i].id === id) {
+                        window.open(l[i].launchURL, "openwebapp_" + id);
+                        break;
+                    }
                 }
             });
         }
@@ -800,6 +796,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
             getInstalled: callGetInstalled,
             getInstalledBy: callGetInstalledBy,
             mgmt: {
+                launch: callLaunch,
                 list: callList,
                 remove: callRemove,
                 loadState: callLoadState,

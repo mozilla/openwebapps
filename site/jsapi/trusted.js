@@ -342,31 +342,6 @@
         return true;
     });
 
-    /* this seemed a good idea, however launching applications from inside an iframe
-     * is too fragile given the abundance of popup blockers.  given that, it seems
-     * wiser to return a launchurl in list.
-    chan.bind('launch', function(t, key) {
-        verifyMgmtPermission(t.origin);
-
-        var item = appStorage.get(key);
-        if (item) {
-            try {
-                item = JSON.parse(item);
-                item.app = Manifest.validate(item.app);
-            } catch (e) {
-                logError("invalid application removed: " + e);
-                appStorage.remove(key);
-                item = null;
-            }
-        }
-        if (!item) throw [ "noSuchApplication", "no application exists with the id: " + key ]; 
-
-        win.open(item.app.base_url + item.app.launch_path, "__" + key);
-
-        return true;
-    });
-     */
-
     /**
        help with debugging issues
        We can eventually toggle this using a debug.myapps.org store
