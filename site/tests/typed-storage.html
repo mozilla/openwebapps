@@ -1,27 +1,26 @@
 <html>
 <head>
 <title>TypedStorage Tests</title>
+<script type="text/javascript" src="../js/eventmixin.js"></script>
 <script type="text/javascript" src="../js/typed-storage.js"></script>
 <script type="text/javascript" src="underscore-min.js"></script>
 <script type="text/javascript" src="doctestjs/doctest.js"></script>
 <link rel="stylesheet" type="text/css" href="doctestjs/doctest.css" />
 </head>
 
-<body>
+<body class="autodoctest">
 
 <h1>TypedStorage Tests</h1>
 
 
 <p><b>WARNING</b>: This test will clear local storage for the domain it's run on.</p>
 
-<div>
-  <button onclick="doctest()" type="button">Test all</button>
-  <pre id="doctestOutput"></pre>
-</div>
-
 <h3>Clear</h3>
+
+<div class="test">
+
 <pre class="doctest">
-$ var testRepo = TypedStorage("testObjectType").open();
+$ var testRepo = TypedStorage().open("testObjectType");
 > testRepo.clear();
 > writeln(testRepo.keys().length);
 0
@@ -42,9 +41,13 @@ $ testRepo.clear();
 0
 </pre>
 
+</div>
+
 <h3>Add/Check/Remove</h3>
-<pre class="doctest">
-$ var testRepo = TypedStorage("testObjectType").open();
+
+<div class="test">
+<pre class="doctest setup">
+$ var testRepo = TypedStorage().open("testObjectType");
 > testRepo.clear();
 >
 > var thing1 = { "foo":"bar", "baz":"flam", 'plink':4.7};
@@ -72,51 +75,59 @@ $ testRepo.remove("thing1");
 > writeln(testRepo.keys().length);
 2
 $ writeln(testRepo.get("thing1"));
-null
+undefined
 $ testRepo.remove("thing2");
 > writeln(testRepo.keys().length);
 1
 $ writeln(testRepo.get("thing2"));
-null
+undefined
 $ testRepo.remove("thing3");
 > writeln(testRepo.keys().length);
 0
 $ writeln(testRepo.get("thing3"));
-null
+undefined
 
 </pre>
 
+</div>
+
 <h3>Multiple TypedStorages in same localStorage</h3>
+
+<div class="test">
 <pre class="doctest">
-$ for ( i = 0; i < window.localStorage.length ; i++) { window.localStorage.removeItem(window.localStorage.key(i)); }
-$ var testRepo1 = TypedStorage("fakeType").open();
+$ for ( i = 0; i &lt; window.localStorage.length ; i++) {
+>   window.localStorage.removeItem(window.localStorage.key(i));
+> }
+$ var testRepo1 = TypedStorage().open("fakeType");
 > testRepo1.clear();
 >
 > var thing1 = { "foo":"bar", "baz":"flam", 'plink':4.7};
 > testRepo1.put("thing1", thing1);
 > writeln(testRepo1.keys().length);
 1
-$ var testRepo2 = TypedStorage("bogusType").open();
+$ var testRepo2 = TypedStorage().open("bogusType");
 > testRepo2.clear();
 >
 > testRepo2.put("thing1", thing1);
 > writeln(testRepo2.keys().length);
 1
 $ var i=0;
-$ for ( i = 0; i < window.localStorage.length; i++) {
+$ for ( i = 0; i &lt; window.localStorage.length; i++) {
 >   writeln(window.localStorage.key(i));
 > }
 bogusType#thing1
 fakeType#thing1
 $ testRepo2.clear();
-> for ( i = 0; i < window.localStorage.length; i++) {
+> for ( i = 0; i &lt; window.localStorage.length; i++) {
 >   writeln(window.localStorage.key(i));
 > }
 fakeType#thing1
 $ testRepo1.clear();
-> for ( i = 0; i < window.localStorage.length; i++) {
+> for ( i = 0; i &lt; window.localStorage.length; i++) {
 >   writeln(window.localStorage.key(i));
 > }
 </pre>
+
+</div>
 
 </body> </html>
