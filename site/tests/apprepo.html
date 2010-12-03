@@ -95,18 +95,18 @@ $ wait(function() { return finished; });
 $ finished = false;
 $ navigator.apps.mgmt.list(function(l) {
 >   writeln(l.length);
->   writeln(JSON.stringify(l[0], null, 4));
+>   writeln(doctest.repr(l[0]));
 >   finished = true; 
 > });
 $ wait(function() { return finished; });
 1
 {
-    "id":"...",
-    "installURL":"...",
-    "installTime":...,
-    "name":"FakeApp",
-    "description":"nothing to see here, move along!.",
-    "launchURL":"http://fakea.pp/"
+  description: "nothing to see here, move along!.",
+  id: "...",
+  installTime: ...,
+  installURL: "...",
+  launchURL: "http://fakea.pp/",
+  name: "FakeApp"
 }
 </pre>
 
@@ -152,20 +152,14 @@ $ finished = false;
 $ var obj = null;
 $ navigator.apps.mgmt.loadState(test_id, function(s) { obj = s; finished = true; });
 $ wait(function() { return finished; });
-$ JSON.stringify(obj,null,4);
-"null"
+$ writeln(doctest.repr(obj));
+null
 $ finished = false;
 $ navigator.apps.mgmt.saveState(test_id, { open: "web", apps: [ "are", "super", "awesome" ] }, function() { });
 $ navigator.apps.mgmt.loadState(test_id, function(s) { obj = s; finished = true; });
 $ wait(function() { return finished; });
-$ writeln(JSON.stringify(obj,null,4));
-{
-    "open":"web",
-    "apps":["are",
-        "super",
-        "awesome"
-    ]
-}
+$ writeln(doctest.repr(obj));
+{apps: ["are", "super", "awesome"], open: "web"}
 </pre>
 
 
