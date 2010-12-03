@@ -33,8 +33,6 @@ For a discussion of the security and privacy considerations around the applicati
         "128": "icon-128.png"
       },
 
-      "manifest_name": "manifest.json",
-
       "developer": {
         "name": "Mozilla Labs",
         "url": "http://mozillalabs.com"
