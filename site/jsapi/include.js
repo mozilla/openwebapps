@@ -122,7 +122,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
                 var s = null;
                 var i = null;
                 var meth = null;
-                
+
                 if (typeof m.method === 'string') {
                     var ar = m.method.split('::');
                     if (ar.length == 2) {
@@ -718,20 +718,22 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
             });
         }
 
-        /* launch an application. */
-        function callLaunch(id, func) {
-            setupWindow();
-            chan.call({
-                method: "launch",
-                params: id,
-                error: function(error, message) {
-                    // XXX we need to relay this to the client
-                    alert("couldn't launch: "  + error + " - " + message); 
-                },
-                success: function(v) {
-                    if (func) func(v);
+        // specifically to avoid popup blockers, launch must be called in an event handler
+        // (like, from a mouse click) because it calls window open.  Further, we must turn
+        // an id into a launch url, however we cannot call the asynchronous list function
+        // to do so.  This is problematic, as launch will only work if list has been called
+        // recently.  For now, upon every list invocation we cache the results and use them
+        // in launch to determine launch url.
+        var _lastListResults = [];
+
+        function callLaunch(id) {
+            for (var i = 0; i < _lastListResults.length; i++) {
+                if (_lastListResults[i].id === id) {
+                    window.open(_lastListResults[i].launchURL, "openwebapp_" + id);
+                    return;
                 }
-            });
+            }
+            throw "couldn't find application with id: " + id;
         }
 
         function callList(func) {
@@ -743,6 +745,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
                     alert("couldn't list apps: "  + error + " - " + message); 
                 },
                 success: function(v) {
+                    _lastListResults = v;
                     if (func) func(v);
                 }
             });
@@ -800,6 +803,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
             getInstalled: callGetInstalled,
             getInstalledBy: callGetInstalledBy,
             mgmt: {
+                launch: callLaunch,
                 list: callList,
                 remove: callRemove,
                 loadState: callLoadState,

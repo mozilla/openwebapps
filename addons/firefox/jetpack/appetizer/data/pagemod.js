@@ -46,6 +46,14 @@ window.navigator.apps = {
   verify: function() {
   },
   mgmt: {
+    launch: function(appID) {
+      postMessage({
+        id:gCallbackIndex++,
+        cmd:'launch',
+        appID:appID,
+        origin:document.URL}
+      );
+    },
     list: function(callback) {
       gCallbacks[gCallbackIndex] = callback;
       postMessage({
