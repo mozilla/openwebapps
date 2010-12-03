@@ -129,32 +129,16 @@ function elem(type, clazz) {
 // applies - if the app is already running, we switch to it.
 // If the app is not running, we create a new app tab and
 // launch the app into it.
-function makeOpenAppTabFn(app, targetURL)
+function makeOpenAppTabFn(app, id)
 {
-
-  if (navigator.apps && navigator.apps.openAppTab)
-  {
     return function(evt) {
-              if ($(this).hasClass("ui-draggable-dragged")) {
-              $(this).removeClass("ui-draggable-dragged");
-              return false;
-            }
+        if ($(this).hasClass("ui-draggable-dragged")) {
+            $(this).removeClass("ui-draggable-dragged");
+            return false;
+        }
 
-      navigator.apps.openAppTab(app, targetURL, {background:evt.metaKey});
+        navigator.apps.mgmt.launch(id);
     }
-  }
-  else
-  {
-    return function(evt) {
-          if ($(this).hasClass("ui-draggable-dragged")) {
-              $(this).removeClass("ui-draggable-dragged");
-              return false;
-            }
-
-      window.open(targetURL, "_blank");
-    }
-  }
-  return null;
 }
 
 // Render the contents of the "apps" element by creating canvases
@@ -377,8 +361,8 @@ function renderAppInfo(selectedBox)
 function createAppIcon(install) 
 {
     var appDiv = elem("div", "app");
-    appDiv.onclick = makeOpenAppTabFn(install, install.launchURL);
-    
+    appDiv.onclick = makeOpenAppTabFn(install, install.id);
+
     //this is the new key format:  "app::<launchURL>"
     appDiv.setAttribute("id", install.id);
 
