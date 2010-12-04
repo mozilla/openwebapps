@@ -58,6 +58,11 @@
             errorThrow('null');
         }
 
+        // commonly used check functions
+        var nonEmptyStringCheck = function(x) {
+            return ((typeof x === 'string') && x.length > 0);
+        };
+
         // a table that specifies manfiest properties, and validation functions
         var manfProps = {
             manifest_version: {
@@ -68,10 +73,7 @@
             },
             name: {
                 required: true,
-                check: function (x) {
-                    // XXX: shall we constrain the allowable chars in a manifest name?
-                    return ((typeof x === 'string') && x.length > 0);
-                }
+                check: nonEmptyStringCheck
             },
             base_url: {
                 required: true,
@@ -92,7 +94,8 @@
                 }
             },
             default_locale: {
-                required: true
+                required: true,
+                check: nonEmptyStringCheck
             }
         };
 
