@@ -83,6 +83,15 @@
                     return URLParse(x).normalize().toString();
                 }
             },
+            capabilities: {
+                check: function(x) {
+                    if (!x || typeof x !== 'object' || x.constructor !== Array) return false;
+                    for (var i = 0; i < x.length; i++) {
+                        if (typeof x[i] !== 'string') return false;
+                    }
+                    return true;
+                }
+            },
             default_locale: {
                 required: true,
                 check: nonEmptyStringCheck

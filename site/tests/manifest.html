@@ -246,6 +246,29 @@ $ m.base_url = "http://www.google.com/"
 true
 </pre>
 
+<h3>Property: capabilities</h3>
+
+<pre class="doctest">
+$ var m = {
+>   manifest_version: "1.00",
+>   name: "SimplestPossibleManifest",
+>   capabilities: ["a", "b", "c", "d" ],
+>   base_url: "http://mozillalabs.com/simple/",
+>   default_locale: "en",
+> };
+> writeln(null !== Manifest.parse(m));
+true
+$ m.capabilities.push(42);
+> Manifest.parse(m);
+Error: Invalid manifest: invalid value for "capabilities": a,b,c,d,42
+$ m.capabilities = [ null ];
+> Manifest.parse(m);
+Error: Invalid manifest: invalid value for "capabilities": 
+$ m.capabilities = [ ];
+> writeln(null !== Manifest.parse(m));
+true
+</pre>
+
 <h3>A Bogus Property</h3>
 
 <pre class="doctest">
