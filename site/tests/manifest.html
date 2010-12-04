@@ -269,7 +269,37 @@ $ m.capabilities = [ ];
 true
 </pre>
 
-<h3>A Bogus Property</h3>
+<h3>Property: icons</h3>
+
+<pre class="doctest">
+$ var m = {
+>   manifest_version: "1.00",
+>   name: "SimplestPossibleManifest",
+>   icons: {
+>     16:  "images/icon_16.png",
+>     48:  "images/icon_48.png",
+>     128: "images/icon_128.png"
+>   },
+>   base_url: "http://mozillalabs.com/simple/",
+>   default_locale: "en",
+> };
+> writeln(null !== Manifest.parse(m));
+true
+$ m.icons["256"] = "realbig.png";
+> Manifest.parse(m);
+Error: Invalid manifest: invalid value for "icons": [object Object]
+$ m.icons = { 16: "foo/../../outta_my_scope.png" };
+> Manifest.parse(m);
+Error: Invalid manifest: invalid value for "icons": [object Object]
+$ m.icons = { };
+> writeln(null !== Manifest.parse(m));
+true
+$ m.icons["16"] = [ ];
+> Manifest.parse(m);
+Error: Invalid manifest: invalid value for "icons": [object Object]
+</pre>
+
+<h3>Bogus properties</h3>
 
 <pre class="doctest">
 $ var m = {

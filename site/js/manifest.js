@@ -99,6 +99,18 @@
             description: {
                 check: nonEmptyStringCheck
             },
+            icons: {
+                check: function (x) {
+                    if (typeof x !== 'object') return false;
+                    for (var k in x) {
+                        if (!x.hasOwnProperty(k)) continue;
+                        if (!(k in { 16:null, 48:null, 128:null })) return false;
+                        if (typeof x[k] !== 'string') return false;
+                        if (x[k].indexOf('..') != -1) return false;
+                    }
+                    return true;
+                }
+            },
             launch_path: {
                 check: function (x) {
                     return (typeof x === 'string' && x.indexOf("..") == -1);
