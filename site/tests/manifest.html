@@ -95,6 +95,8 @@ Error: Invalid manifest: invalid value for "name": null
 $ m.name = "";
 > Manifest.parse(m);
 Error: Invalid manifest: invalid value for "name": 
+$ m
+...
 $ m.name = "X";
 > writeln(null !== Manifest.parse(m));
 true
@@ -103,7 +105,39 @@ $ m.name = "@#%(@$*^)!#*^@$&*@$(%^*@#$&*@$*&";
 true
 </pre>
 
+<h3>Property: base_url</h3>
+<pre class="doctest">
+$ var m = {
+>   manifest_version: "1.00",
+>   name: "SimplestPossibleManifest",
+>   base_url: "http://simple.mozillalabs.com/",
+>   default_locale: "en",
+> };
+> writeln(null !== Manifest.parse(m));
+true
+$ m.base_url = null;
+> var m2 = Manifest.parse(m);
+Error: Invalid manifest: invalid value for "base_url": null
+$ m.base_url = "file:///Users/yourhome/yourdir/";
+> var m2 = Manifest.parse(m);
+Error: Invalid manifest: invalid value for "base_url": file:///Users/yourhome/yourdir/
+$ m.base_url = "httpx://bogus.scheme/";
+> var m2 = Manifest.parse(m);
+Error: Invalid manifest: invalid value for "base_url": httpx://bogus.scheme/
+$ m.base_url = "https://just.fine.url:64000/foo/bar/path/.../ungh/";
+> null !== Manifest.parse(m);
+true
+$ m.base_url = "https://just.fine.url:64000/foo/../bar/";
+> writeln(Manifest.parse(m).base_url);
+https://just.fine.url:64000/bar/
+$ m.base_url = "http://needs.trailing.slash/oops";
+> writeln(Manifest.parse(m).base_url);
+Error: Invalid manifest: invalid value for "base_url": http://needs.trailing.slash/oops
+
+</pre>
+
 
 </body>
+<script type="text/javascript" src="../js/urlmatch.js"></script>
 <script type="text/javascript" src="../js/manifest.js"></script>
 </html>

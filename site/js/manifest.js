@@ -74,7 +74,22 @@
                 }
             },
             base_url: {
-                required: true
+                required: true,
+                check: function (x) {
+                    if (typeof x !== 'string') return false;
+                    try {
+                        // will throw if the url is invalid
+                        var p = URLParse(x).validate().normalize().path;
+                        // urls must end with a slash
+                        if (!p.length || p[p.length - 1] != '/') return false;
+                    } catch(e) {
+                        return false
+                    }
+                    return true;
+                },
+                normalize: function(x) {
+                    return URLParse(x).normalize().toString();
+                }
             },
             default_locale: {
                 required: true
