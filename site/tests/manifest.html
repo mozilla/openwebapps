@@ -219,6 +219,33 @@ $ delete m.description;
 true
 </pre>
 
+<h3>Property: launch_path</h3>
+
+<pre class="doctest">
+$ var m = {
+>   manifest_version: "1.00",
+>   name: "SimplestPossibleManifest",
+>   description: "Well, not the simplest *possible*, really",
+>   base_url: "http://mozillalabs.com/simple/",
+>   launch_path: "index.html",
+>   default_locale: "en",
+> };
+> writeln(null !== Manifest.parse(m));
+true
+$ m.launch_path = "../index.html"; // not allowed!
+> Manifest.parse(m);
+Error: Invalid manifest: invalid value for "launch_path": ../index.html
+$ m.launch_path = "/"; // meaningless?  normalization will handle this.
+> null !== Manifest.parse(m);
+true
+$ m.launch_path = ""; // will be removed
+> undefined === Manifest.parse(m).launch_path;
+$ m.launch_path = "foo/bar/index.html";
+$ m.base_url = "http://www.google.com/"
+> Manifest.parse(m) !== null;
+true
+</pre>
+
 <h3>A Bogus Property</h3>
 
 <pre class="doctest">

@@ -90,6 +90,15 @@
             description: {
                 check: nonEmptyStringCheck
             },
+            launch_path: {
+                check: function (x) {
+                    return (typeof x === 'string' && x.indexOf("..") == -1);
+                },
+                normalize: function(x) {
+                    // XXX: can/should we do better normalization than this??
+                    return ((x.length > 0) ? x : undefined);
+                }
+            },
             manifest_version: {
                 required: true,
                 check: function (x) {
@@ -121,6 +130,9 @@
             }
             if (typeof pSpec.normalize === 'function') {
                 normalizedManf[prop] = pSpec.normalize(manf[prop]);
+                // special case.  a normalization function can remove properties by
+                // returning undefined.
+                if (normalizedManf[prop] === undefined) delete normalizedManf[prop];
             } else {
                 normalizedManf[prop] = manf[prop];
             }
