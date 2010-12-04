@@ -3,6 +3,7 @@
   <title>Manifest Tests</title>
   <script type="text/javascript" src="doctestjs/doctest.js"></script>
   <link rel="stylesheet" type="text/css" href="doctestjs/doctest.css" />
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
 </head>
 <body>
 <h2> Manifest Tests </h2>
@@ -34,14 +35,14 @@ true
 <pre class="doctest">
 $ writeln(null !== Manifest.parse({
 > }));
-Error: Invalid manifest: missing "base_url" property
+Error: missing "base_url" property
 </pre>
 
 <pre class="doctest">
 $ writeln(null !== Manifest.parse({
 >   base_url: "http://simple.mozillalabs.com/"
 > }));
-Error: Invalid manifest: missing "default_locale" property
+Error: missing "default_locale" property
 </pre>
 
 <pre class="doctest">
@@ -49,7 +50,7 @@ $ writeln(null !== Manifest.parse({
 >   base_url: "http://simple.mozillalabs.com/",
 >   default_locale: "en"
 > }));
-Error: Invalid manifest: missing "manifest_version" property
+Error: missing "manifest_version" property
 </pre>
 
 <pre class="doctest">
@@ -58,7 +59,7 @@ $ writeln(null !== Manifest.parse({
 >   default_locale: "en",
 >   manifest_version: "1.0"
 > }));
-Error: Invalid manifest: missing "name" property
+Error: missing "name" property
 </pre>
 
 <pre class="doctest">
@@ -83,10 +84,10 @@ $ var m = {
 true
 $ m.manifest_version = "1"
 > Manifest.parse(m);
-Error: Invalid manifest: invalid value for "manifest_version": 1
+Error: (manifest_version) invalid value: 1
 $ m.manifest_version = ".1"
 > Manifest.parse(m);
-Error: Invalid manifest: invalid value for "manifest_version": .1
+Error: (manifest_version) invalid value: .1
 </pre>
 
 <h3>Property: name</h3>
@@ -101,10 +102,10 @@ $ var m = {
 true
 $ m.name = null;
 > Manifest.parse(m);
-Error: Invalid manifest: invalid value for "name": null
+Error: (name) invalid value: null
 $ m.name = "";
 > Manifest.parse(m);
-Error: Invalid manifest: invalid value for "name": 
+Error: (name) invalid value: 
 $ m.name = "X";
 > writeln(null !== Manifest.parse(m));
 true
@@ -125,13 +126,13 @@ $ var m = {
 true
 $ m.base_url = null;
 > var m2 = Manifest.parse(m);
-Error: Invalid manifest: invalid value for "base_url": null
+Error: (base_url) invalid value: null
 $ m.base_url = "file:///Users/yourhome/yourdir/";
 > var m2 = Manifest.parse(m);
-Error: Invalid manifest: invalid value for "base_url": file:///Users/yourhome/yourdir/
+Error: (base_url) invalid value: file:///Users/yourhome/yourdir/
 $ m.base_url = "httpx://bogus.scheme/";
 > var m2 = Manifest.parse(m);
-Error: Invalid manifest: invalid value for "base_url": httpx://bogus.scheme/
+Error: (base_url) invalid value: httpx://bogus.scheme/
 $ m.base_url = "https://just.fine.url:64000/foo/bar/path/.../ungh/";
 > null !== Manifest.parse(m);
 true
@@ -140,37 +141,7 @@ $ m.base_url = "https://just.fine.url:64000/foo/../bar/";
 https://just.fine.url:64000/bar/
 $ m.base_url = "http://needs.trailing.slash/oops";
 > writeln(Manifest.parse(m).base_url);
-Error: Invalid manifest: invalid value for "base_url": http://needs.trailing.slash/oops
-</pre>
-
-<h3>Property: base_url</h3>
-<pre class="doctest">
-$ var m = {
->   manifest_version: "1.00",
->   name: "SimplestPossibleManifest",
->   base_url: "http://simple.mozillalabs.com/",
->   default_locale: "en",
-> };
-> writeln(null !== Manifest.parse(m));
-true
-$ m.base_url = null;
-> var m2 = Manifest.parse(m);
-Error: Invalid manifest: invalid value for "base_url": null
-$ m.base_url = "file:///Users/yourhome/yourdir/";
-> var m2 = Manifest.parse(m);
-Error: Invalid manifest: invalid value for "base_url": file:///Users/yourhome/yourdir/
-$ m.base_url = "httpx://bogus.scheme/";
-> var m2 = Manifest.parse(m);
-Error: Invalid manifest: invalid value for "base_url": httpx://bogus.scheme/
-$ m.base_url = "https://just.fine.url:64000/foo/bar/path/.../ungh/";
-> null !== Manifest.parse(m);
-true
-$ m.base_url = "https://just.fine.url:64000/foo/../bar/";
-> writeln(Manifest.parse(m).base_url);
-https://just.fine.url:64000/bar/
-$ m.base_url = "http://needs.trailing.slash/oops";
-> writeln(Manifest.parse(m).base_url);
-Error: Invalid manifest: invalid value for "base_url": http://needs.trailing.slash/oops
+Error: (base_url) invalid value: http://needs.trailing.slash/oops
 </pre>
 
 <h3>Property: default_locale</h3>
@@ -188,10 +159,10 @@ $ var m = {
 true
 $ m.default_locale = "";
 > Manifest.parse(m);
-Error: Invalid manifest: invalid value for "default_locale": 
+Error: (default_locale) invalid value: 
 $ m.default_locale = null;
 > Manifest.parse(m);
-Error: Invalid manifest: invalid value for "default_locale": null
+Error: (default_locale) invalid value: null
 $ true
 true
 </pre>
@@ -210,10 +181,10 @@ $ var m = {
 true
 $ m.description = [ ];
 > Manifest.parse(m);
-Error: Invalid manifest: invalid value for "description": 
+Error: (description) invalid value: 
 $ m.description = "";
 > Manifest.parse(m);
-Error: Invalid manifest: invalid value for "description": 
+Error: (description) invalid value: 
 $ delete m.description;
 > Manifest.parse(m) !== null;
 true
@@ -234,7 +205,7 @@ $ var m = {
 true
 $ m.launch_path = "../index.html"; // not allowed!
 > Manifest.parse(m);
-Error: Invalid manifest: invalid value for "launch_path": ../index.html
+Error: (launch_path) invalid value: ../index.html
 $ m.launch_path = "/"; // meaningless?  normalization will handle this.
 > null !== Manifest.parse(m);
 true
@@ -260,10 +231,10 @@ $ var m = {
 true
 $ m.capabilities.push(42);
 > Manifest.parse(m);
-Error: Invalid manifest: invalid value for "capabilities": a,b,c,d,42
+Error: (capabilities/4) invalid value: 42
 $ m.capabilities = [ null ];
 > Manifest.parse(m);
-Error: Invalid manifest: invalid value for "capabilities": 
+Error: (capabilities/0) invalid value: null
 $ m.capabilities = [ ];
 > writeln(null !== Manifest.parse(m));
 true
@@ -287,16 +258,16 @@ $ var m = {
 true
 $ m.icons["256"] = "realbig.png";
 > Manifest.parse(m);
-Error: Invalid manifest: invalid value for "icons": [object Object]
+Error: (icons/256) invalid key, expected 16, 48, or 128
 $ m.icons = { 16: "foo/../../outta_my_scope.png" };
 > Manifest.parse(m);
-Error: Invalid manifest: invalid value for "icons": [object Object]
+Error: (icons/16) invalid value: foo/../../outta_my_scope.png
 $ m.icons = { };
 > writeln(null !== Manifest.parse(m));
 true
 $ m.icons["16"] = [ ];
 > Manifest.parse(m);
-Error: Invalid manifest: invalid value for "icons": [object Object]
+Error: (icons/16) invalid value: 
 </pre>
 
 <h3>Property: developer</h3>
@@ -315,11 +286,39 @@ $ var m = {
 > writeln(null !== Manifest.parse(m));
 true
 $ m.developer.age = 7;
-> Manifest.parse(m);x
-Error: Invalid manifest: invalid value for "developer": [object Object]
+> Manifest.parse(m);
+Error: (developer/age) under developer, only "name" and "url" properties are allowed
 $ m.developer = { url: null };
 > Manifest.parse(m);
-Error: Invalid manifest: invalid value for "developer": [object Object]
+Error: (developer/url) invalid value: null
+</pre>
+
+<h3>Property: locales</h3>
+
+<pre class="doctest">
+$ var m = {
+>   manifest_version: "1.00",
+>   name: "SimplestPossibleManifest",
+>   developer: {
+>     name: "Mozilla Labs, yay!",
+>     url:  "http://mozillalabs.com"
+>   },
+>   base_url: "http://mozillalabs.com/simple/",
+>   default_locale: "en",
+>   locales: {
+>     es: { developer: { name: "Mozilla Labs, guay!" } },
+>     bg: { developer: { name: "Mozilla Labs, екстра!"} }
+>   }
+> };
+> writeln(null !== Manifest.parse(m));
+true
+$ m.locales.bg.developer.age = 7;
+> Manifest.parse(m);
+Error: (locales/bg/developer/age) under developer, only "name" and "url" properties are allowed
+$ delete m.locales.bg.developer.age;
+> m.locales.es.capabilities = [ "something_awesome" ];
+> Manifest.parse(m);
+Error: (locales/es/capabilities) may not be overridded per-locale
 </pre>
 
 <h3>Bogus properties</h3>
@@ -333,7 +332,7 @@ $ var m = {
 >   bogus: "si"
 > };
 > Manifest.parse(m);
-Error: Invalid manifest: unsupported property: bogus
+Error: unsupported property: bogus
 </pre>
 
   <button onclick="doctest()" type="button">Test all</button>

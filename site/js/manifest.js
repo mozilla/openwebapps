@@ -40,8 +40,10 @@
 
   2010-08-27
   Manifest validation code broken out into a separate file.
-**/
 
+  2010-12-04
+  Manifest validation re-written for updated specification
+**/
 
 ;var Manifest = (function() {
 
@@ -49,9 +51,17 @@
     // validating as we go.
     // throws a developer readable string upon discovery of an invalid manifest.
     function parse(manf) {
-        var errorThrow = function(errstr) {
-            throw('Invalid manifest: ' + errstr);
-        }
+        var errorThrow = function(msg, path) {
+            if (path && typeof path != 'object') path = [ path ];
+            throw {
+                msg: msg,
+                path: (path ? path : [ ]),
+                toString: function () {
+                    if (this.path && this.path.length > 0) return ("(" + this.path.join("/") + ") " + this.msg); 
+                    return this.msg;
+                }
+            };
+        };
 
         // Validate and clean the request
         if(!manf) {
@@ -60,24 +70,37 @@
 
         // commonly used check functions
         var nonEmptyStringCheck = function(x) {
-            return ((typeof x === 'string') && x.length > 0);
+            if ((typeof x !== 'string') || x.length === 0) errorThrow();
         };
 
         // a table that specifies manfiest properties, and validation functions
+        // each key is the name of a valid top level property.
+        // each value is an object with four optional properties:
+        //  required: if present and has a truey value, then the prop is required
+        //  check: if present and a function for a value, then is passed a value present in manifest for validation
+        //  normalize: if present and has a function for a value, then accepts current value
+        //             in manifest as argument, and outputs a value to replace it.
+        //  may_overlay: if present and hase a truey value, then this property may be overlaid by
+        //               content in the locales map. 
+        //
+        // returning errors:
+        //   validation functions throw objects with two fields:
+        //     msg: an english, developer readable error message
+        //     path: an array of properties that describes which field has the error
+        //
         var manfProps = {
             base_url: {
                 required: true,
                 check: function (x) {
-                    if (typeof x !== 'string') return false;
+                    if (typeof x !== 'string') errorThrow();
                     try {
                         // will throw if the url is invalid
                         var p = URLParse(x).validate().normalize().path;
                         // urls must end with a slash
-                        if (!p.length || p[p.length - 1] != '/') return false;
+                        if (!p.length || p[p.length - 1] != '/') errorThrow();
                     } catch(e) {
-                        return false
+                        errorThrow()
                     }
-                    return true;
                 },
                 normalize: function(x) {
                     return URLParse(x).normalize().toString();
@@ -85,11 +108,10 @@
             },
             capabilities: {
                 check: function(x) {
-                    if (!x || typeof x !== 'object' || x.constructor !== Array) return false;
+                    if (!x || typeof x !== 'object' || x.constructor !== Array) errorThrow();
                     for (var i = 0; i < x.length; i++) {
-                        if (typeof x[i] !== 'string') return false;
+                        if (typeof x[i] !== 'string') errorThrow(undefined, [i]);
                     }
-                    return true;
                 }
             },
             default_locale: {
@@ -97,51 +119,119 @@
                 check: nonEmptyStringCheck
             },
             description: {
+                may_overlay: true,
                 check: nonEmptyStringCheck
             },
             developer: {
+                may_overlay: true,
                 check: function(x) {
-                    if (typeof x !== 'object') return false;
+                    if (typeof x !== 'object') errorThrow();
                     for (var k in x) {
                         if (!x.hasOwnProperty(k)) continue;
-                        if (!(k in { name:null, url:null})) return false;
-                        if (typeof x[k] !== 'string') return false;
+                        if (!(k in { name:null, url:null})) errorThrow('under developer, only "name" and "url" properties are allowed', k);
+                        if (typeof x[k] !== 'string') errorThrow(undefined, k);
                     }
-                    return true;
                 }
             },
             icons: {
+                may_overlay: true,
                 check: function (x) {
-                    if (typeof x !== 'object') return false;
+                    if (typeof x !== 'object') errorThrow();
                     for (var k in x) {
                         if (!x.hasOwnProperty(k)) continue;
-                        if (!(k in { 16:null, 48:null, 128:null })) return false;
-                        if (typeof x[k] !== 'string') return false;
-                        if (x[k].indexOf('..') != -1) return false;
+                        if (!(k in { 16:null, 48:null, 128:null })) errorThrow('invalid key, expected 16, 48, or 128', k);
+                        if (typeof x[k] !== 'string') errorThrow(undefined, k);
+                        if (x[k].indexOf('..') != -1) errorThrow(undefined, k);
                     }
-                    return true;
                 }
             },
             launch_path: {
+                may_overlay: true,
                 check: function (x) {
-                    return (typeof x === 'string' && x.indexOf("..") == -1);
+                    if (typeof x !== 'string' || x.indexOf("..") !== -1) errorThrow();
                 },
                 normalize: function(x) {
                     // XXX: can/should we do better normalization than this??
                     return ((x.length > 0) ? x : undefined);
                 }
             },
+            locales: {
+                check: function (l) {
+                    // XXX: we really need a robust parser for language tags
+                    // to do this correctly:
+                    // http://www.rfc-editor.org/rfc/bcp/bcp47.txt
+                    if (typeof l !== 'object') errorThrow();
+                    for (var tag in l) {
+                        if (!l.hasOwnProperty(tag)) continue;
+                        // XXX: parse and validate language tag (for real)
+                        if (typeof tag !== 'string' || tag.length == 0) errorThrow();
+                        if (typeof l[tag] !== 'object') errorThrow();
+
+                        // now l[tag] is a locale specific overlay, which is basically
+                        // a manifest in its own right.  We'll go validate that.  By passing
+                        // true as the second arg ot validateManifestProperties we restrict
+                        // allowed manifest fields to only those which may be overlaid. 
+                        try {
+                            validateManifestProperties(l[tag], true);
+                        } catch (e) {
+                            e.path.unshift(tag);
+                            throw e;
+                        }
+                    }
+                }
+            },
             manifest_version: {
                 required: true,
                 check: function (x) {
-                    return ((typeof x === 'string') && /^\d+.\d+$/.test(x));
+                    if (!((typeof x === 'string') && /^\d+.\d+$/.test(x))) errorThrow();
                 }
             },
             name: {
+                may_overlay: true,
                 required: true,
                 check: nonEmptyStringCheck
             }
         };
+
+        // a function to extract nested values given an object and array of property names
+        function extractValue(obj, props) {
+            return ((props.length === 0) ? obj : extractValue(obj[props[0]], props.slice(1)));
+        }
+
+        // a function that will validate properties of a manfiest using the
+        // manfProps data structure above.
+        // returns a normalized version of the manifest, throws upon
+        // detection of invalid properties
+        function validateManifestProperties(manf, onlyOverlaidFields) {
+            var normalizedManf = {};
+            for (var prop in manf) {
+                if (!manf.hasOwnProperty(prop)) continue;
+                if (!(prop in manfProps)) errorThrow('unsupported property: ' + prop);
+                var pSpec = manfProps[prop];
+                if (onlyOverlaidFields && !pSpec.may_overlay) {
+                    errorThrow('may not be overridded per-locale', prop);
+                }
+                if (typeof pSpec.check === 'function') {
+                    try {
+                        pSpec.check(manf[prop]);
+                    } catch (e) {
+                        e.path.unshift(prop);
+                        if (!e.msg) e.msg = 'invalid value: ' + extractValue(manf, e.path);
+                        console.log(e);
+                        throw e;
+                    }
+                }
+                if (typeof pSpec.normalize === 'function') {
+                    normalizedManf[prop] = pSpec.normalize(manf[prop]);
+                    // special case.  a normalization function can remove properties by
+                    // returning undefined.
+                    if (normalizedManf[prop] === undefined) delete normalizedManf[prop];
+                } else {
+                    normalizedManf[prop] = manf[prop];
+                }
+            }
+            return normalizedManf;
+        }
 
         // iterate through required properties, and verify they're present
         for (var prop in manfProps) {
@@ -151,26 +241,7 @@
             }
         }
 
-        var normalizedManf = {};
-
-        // now verify that each included property is valid
-        for (var prop in manf) {
-            if (!(prop in manfProps)) errorThrow('unsupported property: ' + prop);
-            var pSpec = manfProps[prop];
-            if (typeof pSpec.check === 'function' && !(pSpec.check(manf[prop]))) {
-                errorThrow('invalid value for "' + prop + '": ' + manf[prop]);
-            }
-            if (typeof pSpec.normalize === 'function') {
-                normalizedManf[prop] = pSpec.normalize(manf[prop]);
-                // special case.  a normalization function can remove properties by
-                // returning undefined.
-                if (normalizedManf[prop] === undefined) delete normalizedManf[prop];
-            } else {
-                normalizedManf[prop] = manf[prop];
-            }
-        }
-
-        return normalizedManf;
+        return validateManifestProperties(manf, false);
     }
 
     return {
