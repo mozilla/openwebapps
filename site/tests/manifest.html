@@ -61,6 +61,25 @@ $ writeln(null !== Manifest.parse({
 Error: Invalid manifest: missing "default_locale" property
 </pre>
 
+<h3>Property: version</h3>
+<pre class="doctest">
+$ var m = {
+>   manifest_version: "1.00",
+>   name: "SimplestPossibleManifest",
+>   base_url: "http://simple.mozillalabs.com/",
+>   default_locale: "en",
+> };
+> writeln(null !== Manifest.parse(m));
+true
+$ m.manifest_version = "1"
+> Manifest.parse(m);
+Error: Invalid manifest: invalid value for "manifest_version": 1
+$ m.manifest_version = ".1"
+> Manifest.parse(m);
+Error: Invalid manifest: invalid value for "manifest_version": .1
+</pre>
+
+
 </body>
 <script type="text/javascript" src="../js/manifest.js"></script>
 </html>

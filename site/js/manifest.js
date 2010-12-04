@@ -63,7 +63,7 @@
             manifest_version: {
                 required: true,
                 check: function (x) {
-                    return ((typeof x === 'string') && /^\d+.\d+$/.match(x));
+                    return ((typeof x === 'string') && /^\d+.\d+$/.test(x));
                 }
             },
             name: {
@@ -77,11 +77,23 @@
             }
         };
 
-        // first validate that all required properties are present
+        // iterate through required properties, and verify they're present
         for (var prop in manfProps) {
             if (!manfProps.hasOwnProperty(prop) || !manfProps[prop].required) continue;
             if (!(prop in manf)) {
                 errorThrow('missing "' + prop + '" property');
+            }
+        }
+
+        // now verify each included property and verify they're valid
+        for (var prop in manf) {
+            if (!(prop in manfProps)) errorThrow('unsupported property: ' + prop);
+            var pSpec = manfProps[prop];
+            if (typeof pSpec.check === 'function' && !(pSpec.check(manf[prop]))) {
+                errorThrow('invalid value for "' + prop + '": ' + manf[prop].toString());
+            }
+            if (typeof pSpec.normalize === 'function') {
+                manf[prop] = pSpec.normalize(manf[prop]);
             }
         }
 
