@@ -34,11 +34,28 @@ true
 <pre class="doctest">
 $ writeln(null !== Manifest.parse({
 > }));
+Error: Invalid manifest: missing "base_url" property
+</pre>
+
+<pre class="doctest">
+$ writeln(null !== Manifest.parse({
+>   base_url: "http://simple.mozillalabs.com/"
+> }));
+Error: Invalid manifest: missing "default_locale" property
+</pre>
+
+<pre class="doctest">
+$ writeln(null !== Manifest.parse({
+>   base_url: "http://simple.mozillalabs.com/",
+>   default_locale: "en"
+> }));
 Error: Invalid manifest: missing "manifest_version" property
 </pre>
 
 <pre class="doctest">
 $ writeln(null !== Manifest.parse({
+>   base_url: "http://simple.mozillalabs.com/",
+>   default_locale: "en",
 >   manifest_version: "1.0"
 > }));
 Error: Invalid manifest: missing "name" property
@@ -46,19 +63,12 @@ Error: Invalid manifest: missing "name" property
 
 <pre class="doctest">
 $ writeln(null !== Manifest.parse({
+>   base_url: "http://simple.mozillalabs.com/",
+>   default_locale: "en",
 >   manifest_version: "1.0",
->   name: "SimplestPossibleManifest"
+>   name: "AManifestBooYah"
 > }));
-Error: Invalid manifest: missing "base_url" property
-</pre>
-
-<pre class="doctest">
-$ writeln(null !== Manifest.parse({
->   manifest_version: "1.0",
->   name: "SimplestPossibleManifest",
->   base_url: "http://simple.mozillalabs.com/"
-> }));
-Error: Invalid manifest: missing "default_locale" property
+true
 </pre>
 
 <h3>Property: version</h3>
@@ -182,6 +192,31 @@ Error: Invalid manifest: invalid value for "default_locale":
 $ m.default_locale = null;
 > Manifest.parse(m);
 Error: Invalid manifest: invalid value for "default_locale": null
+$ true
+true
+</pre>
+
+<h3>Property: description</h3>
+
+<pre class="doctest">
+$ var m = {
+>   manifest_version: "1.00",
+>   name: "SimplestPossibleManifest",
+>   description: "Well, not the simplest *possible*, really",
+>   base_url: "http://simple.mozillalabs.com/",
+>   default_locale: "en",
+> };
+> writeln(null !== Manifest.parse(m));
+true
+$ m.description = [ ];
+> Manifest.parse(m);
+Error: Invalid manifest: invalid value for "description": 
+$ m.description = "";
+> Manifest.parse(m);
+Error: Invalid manifest: invalid value for "description": 
+$ delete m.description;
+> Manifest.parse(m) !== null;
+true
 </pre>
 
 <h3>A Bogus Property</h3>
@@ -198,6 +233,7 @@ $ var m = {
 Error: Invalid manifest: unsupported property: bogus
 </pre>
 
+  <button onclick="doctest()" type="button">Test all</button>
 
 </body>
 <script type="text/javascript" src="../js/urlmatch.js"></script>

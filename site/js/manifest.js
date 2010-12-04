@@ -65,16 +65,6 @@
 
         // a table that specifies manfiest properties, and validation functions
         var manfProps = {
-            manifest_version: {
-                required: true,
-                check: function (x) {
-                    return ((typeof x === 'string') && /^\d+.\d+$/.test(x));
-                }
-            },
-            name: {
-                required: true,
-                check: nonEmptyStringCheck
-            },
             base_url: {
                 required: true,
                 check: function (x) {
@@ -94,6 +84,19 @@
                 }
             },
             default_locale: {
+                required: true,
+                check: nonEmptyStringCheck
+            },
+            description: {
+                check: nonEmptyStringCheck
+            },
+            manifest_version: {
+                required: true,
+                check: function (x) {
+                    return ((typeof x === 'string') && /^\d+.\d+$/.test(x));
+                }
+            },
+            name: {
                 required: true,
                 check: nonEmptyStringCheck
             }
