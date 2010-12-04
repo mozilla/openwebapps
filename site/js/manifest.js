@@ -97,9 +97,9 @@
                         // will throw if the url is invalid
                         var p = URLParse(x).validate().normalize().path;
                         // urls must end with a slash
-                        if (!p.length || p[p.length - 1] != '/') errorThrow();
+                        if (!p.length || p[p.length - 1] != '/') throw "trailing slash required";
                     } catch(e) {
-                        errorThrow()
+                        errorThrow(e);
                     }
                 },
                 normalize: function(x) {

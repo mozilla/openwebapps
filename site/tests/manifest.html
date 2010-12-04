@@ -129,10 +129,10 @@ $ m.base_url = null;
 Error: (base_url) invalid value: null
 $ m.base_url = "file:///Users/yourhome/yourdir/";
 > var m2 = Manifest.parse(m);
-Error: (base_url) invalid value: file:///Users/yourhome/yourdir/
+Error: (base_url) invalid url: unsupported scheme: file
 $ m.base_url = "httpx://bogus.scheme/";
 > var m2 = Manifest.parse(m);
-Error: (base_url) invalid value: httpx://bogus.scheme/
+Error: (base_url) invalid url: unsupported scheme: httpx
 $ m.base_url = "https://just.fine.url:64000/foo/bar/path/.../ungh/";
 > null !== Manifest.parse(m);
 true
@@ -141,7 +141,7 @@ $ m.base_url = "https://just.fine.url:64000/foo/../bar/";
 https://just.fine.url:64000/bar/
 $ m.base_url = "http://needs.trailing.slash/oops";
 > writeln(Manifest.parse(m).base_url);
-Error: (base_url) invalid value: http://needs.trailing.slash/oops
+Error: (base_url) trailing slash required
 </pre>
 
 <h3>Property: default_locale</h3>
