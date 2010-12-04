@@ -67,7 +67,11 @@
                 }
             },
             name: {
-                required: true
+                required: true,
+                check: function (x) {
+                    // XXX: shall we constrain the allowable chars in a manifest name?
+                    return ((typeof x === 'string') && x.length > 0);
+                }
             },
             base_url: {
                 required: true
@@ -90,7 +94,7 @@
             if (!(prop in manfProps)) errorThrow('unsupported property: ' + prop);
             var pSpec = manfProps[prop];
             if (typeof pSpec.check === 'function' && !(pSpec.check(manf[prop]))) {
-                errorThrow('invalid value for "' + prop + '": ' + manf[prop].toString());
+                errorThrow('invalid value for "' + prop + '": ' + manf[prop]);
             }
             if (typeof pSpec.normalize === 'function') {
                 manf[prop] = pSpec.normalize(manf[prop]);
