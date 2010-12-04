@@ -99,6 +99,17 @@
             description: {
                 check: nonEmptyStringCheck
             },
+            developer: {
+                check: function(x) {
+                    if (typeof x !== 'object') return false;
+                    for (var k in x) {
+                        if (!x.hasOwnProperty(k)) continue;
+                        if (!(k in { name:null, url:null})) return false;
+                        if (typeof x[k] !== 'string') return false;
+                    }
+                    return true;
+                }
+            },
             icons: {
                 check: function (x) {
                     if (typeof x !== 'object') return false;

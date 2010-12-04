@@ -299,6 +299,29 @@ $ m.icons["16"] = [ ];
 Error: Invalid manifest: invalid value for "icons": [object Object]
 </pre>
 
+<h3>Property: developer</h3>
+
+<pre class="doctest">
+$ var m = {
+>   manifest_version: "1.00",
+>   name: "SimplestPossibleManifest",
+>   developer: {
+>     name: "Mozilla Labs, yay!",
+>     url:  "http://mozillalabs.com"
+>   },
+>   base_url: "http://mozillalabs.com/simple/",
+>   default_locale: "en",
+> };
+> writeln(null !== Manifest.parse(m));
+true
+$ m.developer.age = 7;
+> Manifest.parse(m);x
+Error: Invalid manifest: invalid value for "developer": [object Object]
+$ m.developer = { url: null };
+> Manifest.parse(m);
+Error: Invalid manifest: invalid value for "developer": [object Object]
+</pre>
+
 <h3>Bogus properties</h3>
 
 <pre class="doctest">
