@@ -104,7 +104,9 @@
             }
         }
 
-        // now verify each included property and verify they're valid
+        var normalizedManf = {};
+
+        // now verify that each included property is valid
         for (var prop in manf) {
             if (!(prop in manfProps)) errorThrow('unsupported property: ' + prop);
             var pSpec = manfProps[prop];
@@ -112,11 +114,13 @@
                 errorThrow('invalid value for "' + prop + '": ' + manf[prop]);
             }
             if (typeof pSpec.normalize === 'function') {
-                manf[prop] = pSpec.normalize(manf[prop]);
+                normalizedManf[prop] = pSpec.normalize(manf[prop]);
+            } else {
+                normalizedManf[prop] = manf[prop];
             }
         }
 
-        return manf;
+        return normalizedManf;
     }
 
     return {
