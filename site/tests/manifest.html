@@ -95,8 +95,6 @@ Error: Invalid manifest: invalid value for "name": null
 $ m.name = "";
 > Manifest.parse(m);
 Error: Invalid manifest: invalid value for "name": 
-$ m
-...
 $ m.name = "X";
 > writeln(null !== Manifest.parse(m));
 true
