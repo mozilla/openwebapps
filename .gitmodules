@@ -1,0 +1,3 @@
+[submodule "site/tests/doctestjs"]
+	path = site/tests/doctestjs
+	url = http://github.com/ianb/doctestjs.git

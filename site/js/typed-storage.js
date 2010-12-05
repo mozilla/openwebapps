@@ -35,64 +35,51 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-//simplify reading/writing objects into localStorage, since it only supports strings
-Storage.prototype.setObject = function(key, value) {
-    this.setItem(key, JSON.stringify(value));
-}
-
-Storage.prototype.getObject = function(key) {
-    return this.getItem(key) && JSON.parse(this.getItem(key));
-}
-
-//////////////
-// the assumption here is that window.localStorage is used.
-// this obviously conflicts with whatever addon implementation we decide on,
-// so revisit this later
-
-function TypedStorage(objType) {
+function TypedStorage(browserStorage) {
   var self = {};
-  self.open = function () {
-    return TypedStorage.ObjectStore(window.localStorage, objType);
+  browserStorage = browserStorage || window.localStorage;
+  self.open = function (objType) {
+    return TypedStorage.ObjectStore(browserStorage, objType, self);
   };
+  EventMixin(self);
   return self;
 }
 
-TypedStorage.ObjectStore = function (storage, objType) {
+TypedStorage.ObjectStore = function (storage, objType, typedStorage) {
   var self = {};
   self._storage = storage;
-  self._listeners = {};
+  self._typedStorage = typedStorage;
   self._objType = objType;
 
   //for a given user-supplied keystring, create a unique storage key "objType#keystring"
   self.makeKey = function (rawKey) {
     return (objType + "#" + rawKey);
   };
-  
+
   //break the objType off of the front of the storage key, returning the user-supplied
   // keystring, or null if the objType doesn't match
   self.breakKey = function (madeKey) {
     if (madeKey.indexOf(objType + "#") == 0) {
       return madeKey.substring(madeKey.indexOf("#") + 1);
-    }
-    else {
+    } else {
       return null;
     }
   };
 
   //retrieve the object or null stored with a specified key
   self.get = function (key) {
-    return self._storage.getObject(self.makeKey(key));
+    return getObject(self._storage, self.makeKey(key));
   };
 
   //store and object under a specified key
   self.put = function (key, value) {
-    var canceled = ! self.dispatchEvent('change', {target: key});
-    self._storage.setObject(self.makeKey(key), value);
+    var canceled = ! self._typedStorage.dispatchEvent('change', {target: key});
+    setObject(self._storage, self.makeKey(key), value);
   };
 
   //remove the object at a specified key
   self.remove = function (key) {
-    var canceled = ! self.dispatchEvent('delete', {target: key});
+    var canceled = ! self._typedStorage.dispatchEvent('delete', {target: key});
     if (! canceled) {
       delete self._storage.removeItem(self.makeKey(key));
     }
@@ -102,9 +89,11 @@ TypedStorage.ObjectStore = function (storage, objType) {
   self.clear = function () {
     //possibly slow, but code reuse for the win
     var allKeys = self.keys();
-    allKeys.forEach(self.remove);
-  }
-  
+    for (var i=0; i<allKeys.length; i++) {
+      self.remove(allKeys[i]);
+    }
+  };
+
   //do we have an object stored with key?
   self.has = function (key) {
     return (self.get(key) !== null);
@@ -117,7 +106,7 @@ TypedStorage.ObjectStore = function (storage, objType) {
     for (i=0; i < self._storage.length; i++) {
       var nextKey = self.breakKey(self._storage.key(i));
       if (nextKey) {
-        resultKeys.push(self.breakKey(self._storage.key(i)));
+        resultKeys.push(nextKey);
       }
     }
     return resultKeys;
@@ -137,38 +126,20 @@ TypedStorage.ObjectStore = function (storage, objType) {
     }
   };
 
-  self.addEventListener = function (event, callback) {
-    if (! event in self._listeners) {
-      self._listeners[event] = [];
-    }
-    self._listeners.push(callback);
-  };
+  function setObject(storage, key, value) {
+    storage.setItem(key, JSON.stringify(value));
+  }
 
-  self.removeEventListener = function (event, callback) {
-    if (! event in self._listeners) {
-      return;
+  function getObject(storage, key) {
+    var value = storage.getItem(key);
+    if (value) {
+      // FIXME: should this ignore parse errors?
+      return JSON.parse(value);
+    } else {
+      // FIXME: or normalize to null or undefined?
+      return undefined;
     }
-    for (var i=0; i<self._listeners[event].length; i++) {
-      if (self._listeners[event][i] === callback) {
-        self._listeners.splice(i, 1);
-        return;
-      }
-    }
-  };
-
-  self.dispatchEvent = function (name, event) {
-    // FIXME: This isn't quite right...
-    if (! name in self._listeners) {
-      return true;
-    }
-    var result = true;
-    for (var i=0; i<self._listeners.length; i++) {
-      if (self._listeners[i](event) === false) {
-        result = false;
-      }
-    }
-    return result;
-  };
+  }
 
   return self;
 };
