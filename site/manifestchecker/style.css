@@ -48,7 +48,7 @@ body {
 #output {
     margin-top: 30px;
     width: 780px;
-    height: 200px;
+    height: 100px;
     border: 10px solid #bbb;
     -moz-border-radius: 10px;
     -webkit-border-radius: 10px;

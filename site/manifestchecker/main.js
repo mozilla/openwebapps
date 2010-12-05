@@ -1,4 +1,5 @@
 function validate() {
+    $("#output").css('color', 'red');
     var editor = document.getElementById("editor").bespin.editor;
     var manifest = null;
 
@@ -22,6 +23,7 @@ function validate() {
 
     // XXX: in-place normalization?  how can I do this without re-ordering keys,
     //      cause it would be, like, awesome.
+    $("#output").css('color', 'green');
     $("#output").text("that manifest is valid, woo!");
 }
 
