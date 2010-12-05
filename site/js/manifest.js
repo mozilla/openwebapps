@@ -244,7 +244,7 @@
             var normalizedManf = {};
             for (var prop in manf) {
                 if (!manf.hasOwnProperty(prop)) continue;
-                if (!(prop in manfProps)) errorThrow('unsupported property: ' + prop);
+                if (!(prop in manfProps)) errorThrow('unsupported property', prop);
                 var pSpec = manfProps[prop];
                 if (onlyOverlaidFields && !pSpec.may_overlay) {
                     errorThrow('may not be overridded per-locale', prop);

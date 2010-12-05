@@ -380,7 +380,11 @@ $ var m = {
 >   bogus: "si"
 > };
 > Manifest.parse(m);
-Error: unsupported property: bogus
+Error: (bogus) unsupported property
+$ delete m.bogus;
+> m.locales = { "en": { "bogus": "Да" } };
+> Manifest.parse(m);
+Error: (locales/en/bogus) unsupported property
 </pre>
 
   <button onclick="doctest()" type="button">Test all</button>
