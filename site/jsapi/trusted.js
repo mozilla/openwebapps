@@ -94,7 +94,7 @@
 
             try {
                 var install = appStorage.get(aKey);
-                install.app = Manifest.validate(install.app);
+                install.app = Manifest.parse(install.app);
                 callback(aKey, install);
             } catch (e) {
                 logError("invalid application detected: " + e);
@@ -111,19 +111,12 @@
     function urlMatchesDomain(url, domain)
     {
         try {
-            var parsedDomain = Manifest.parseUri(domain);
-            var parsedURL = Manifest.parseUri(url);
-
-            if (parsedDomain.protocol.toLowerCase() == parsedURL.protocol.toLowerCase() &&
-                parsedDomain.host.toLowerCase() == parsedURL.host.toLowerCase())
-            {
-                var inputPort = parsedDomain.port ? parsedDomain.port : (parsedDomain.protocol.toLowerCase() == "https" ? 443 : 80);
-                var testPort = parsedURL.port ? parsedURL.port : (parsedURL.protocol.toLowerCase() == "https" ? 443 : 80);
-                if (inputPort == testPort) return true;
-            }
+            var parsedDomain = URLParse(domain).normalize();
+            var parsedURL = URLParse(url).normalize();
+            return parsedDomain.contains(parsedURL);
         } catch (e) {
+            return false;
         }
-        return false;
     }
 
     // Returns whether this application runs in the specified domain (scheme://hostname[:nonStandardPort])
@@ -172,7 +165,7 @@
         // Validate and clean the request
         var manf;
         try {
-            manf = Manifest.validate(args.manifest);
+            manf = Manifest.parse(args.manifest);
         } catch(e) {
             throw [ "invalidManifest", "couldn't validate your mainfest: " + e ];
         }
@@ -183,7 +176,8 @@
         // cause the UI to display a prompt to the user
         displayInstallPrompt(t.origin, manf, function (allowed) {
             if (allowed) {
-                var key = manf.base_url + manf.launch_path;
+                var key = manf.base_url;
+                if (manf.launch_path) key += manf.launch_path;
 
                 // Create installation data structure
                 var installation = {
@@ -301,7 +295,7 @@
             icons: item.app.icons,
             name: item.app.name,
             description: item.app.description,
-            launchURL: item.app.base_url + item.app.launch_path,
+            launchURL: item.app.base_url + (item.app.launch_path ? item.app.launch_path : ""),
             developer: item.app.developer
         };
     }

@@ -83,11 +83,11 @@ Install a single application
 
 <pre class="doctest">
 $ var manifest = {
+>   "manifest_version": "1.0",
 >   "name":"FakeApp",
 >   "base_url": "http://fakea.pp/",
 >   "launch_path": "",
->   "description":"nothing to see here, move along!.",
->   "app_urls": [ "http://fakea.pp/" ]
+>   "default_locale":"en"
 > }
 $ var finished = false;
 $ navigator.apps.install({manifest: manifest, callback: function() { finished = true; }});
@@ -101,7 +101,6 @@ $ navigator.apps.mgmt.list(function(l) {
 $ wait(function() { return finished; });
 1
 {
-  description: "nothing to see here, move along!.",
   id: "...",
   installTime: ...,
   installURL: "...",
