@@ -52,7 +52,7 @@
     // throws a developer readable string upon discovery of an invalid manifest.
     function parse(manf) {
         var errorThrow = function(msg, path) {
-            if (path && typeof path != 'object') path = [ path ];
+            if (path != undefined && typeof path != 'object') path = [ path ];
             throw {
                 msg: msg,
                 path: (path ? path : [ ]),
@@ -143,6 +143,31 @@
                         if (typeof x[k] !== 'string') errorThrow(undefined, k);
                         if (x[k].indexOf('..') != -1) errorThrow(undefined, k);
                     }
+                }
+            },
+            installs_allowed_from: {
+                check: function(x) {
+                    if (!x || typeof x !== 'object' || x.constructor !== Array) errorThrow("expected array of urls");
+                    for (var i = 0; i < x.length; i++) {
+                        var path;
+                        try {
+                            path = URLParse(x[i]).validate().path;
+                        } catch (e) {
+                            errorThrow(e, i)
+                        }
+                        // XXX: should this be a warning?  (in other news, should we invent a way to
+                        // convey warnings to client code?)
+                        if (path && path.length > 1) {
+                            errorThrow("path on url is meaningless here", i);
+                        }
+                    }
+                },
+                normalize: function(o) {
+                    var n = [];
+                    for (var i = 0; i < o.length; i++) {
+                        n.push(URLParse(o[i]).normalize().toString());
+                    }
+                    return n;
                 }
             },
             launch_path: {

@@ -321,6 +321,32 @@ $ delete m.locales.bg.developer.age;
 Error: (locales/es/capabilities) may not be overridded per-locale
 </pre>
 
+<h3>Property: installs_allowed_from</h3>
+
+<pre class="doctest">
+$ var m = {
+>   manifest_version: "1.00",
+>   name: "SimplestPossibleManifest",
+>   base_url: "http://mozillalabs.com/simple/",
+>   default_locale: "en",
+>   installs_allowed_from: [
+>     "https://appstore.mozillalabs.com",
+>     "http://radap.ps:8080/"
+>   ]
+> };
+> writeln(null !== Manifest.parse(m));
+true
+$ m.installs_allowed_from.unshift("http://too/long");
+> Manifest.parse(m);
+Error: (installs_allowed_from/0) path on url is meaningless here
+$ m.installs_allowed_from[0] = "sucky_http://this_url_sucks:8080/";
+> Manifest.parse(m);
+Error: (installs_allowed_from/0) invalid url: unsupported scheme: sucky_http
+$ m.installs_allowed_from = "http://store.sellling.apps.for.confused.devs.com";
+> Manifest.parse(m);
+Error: (installs_allowed_from) expected array of urls
+</pre>
+
 <h3>Bogus properties</h3>
 
 <pre class="doctest">
