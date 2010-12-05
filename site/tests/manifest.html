@@ -345,6 +345,28 @@ Error: (installs_allowed_from/0) invalid url: unsupported scheme: sucky_http
 $ m.installs_allowed_from = "http://store.sellling.apps.for.confused.devs.com";
 > Manifest.parse(m);
 Error: (installs_allowed_from) expected array of urls
+$ // normalization test
+> m.installs_allowed_from = [ "http://no_port.eu:80/", "http://no_slash.ch:8080" ];
+> Manifest.parse(m).installs_allowed_from;
+["http://no_port.eu/", "http://no_slash.ch:8080/"]
+</pre>
+
+<pre class="doctest">
+$ var m = {
+>   manifest_version: "1.00",
+>   name: "SimplestPossibleManifest",
+>   base_url: "http://mozillalabs.com/simple/",
+>   default_locale: "en",
+>   manifest_name: "manifest.webapp"
+> };
+> writeln(null !== Manifest.parse(m));
+true
+$ m.manifest_name = "foo/bar/baz/manifest.webapp";
+> Manifest.parse(m);
+Error: (manifest_name) invalid characters present
+$ m.manifest_name = "";
+> Manifest.parse(m);
+Error: (manifest_name) blank value not allowed
 </pre>
 
 <h3>Bogus properties</h3>

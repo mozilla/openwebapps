@@ -205,6 +205,19 @@
                     }
                 }
             },
+            manifest_name: {
+                check: function (x) {
+                    if (typeof x === 'string') {
+                        // See RFC 3986 'segment' production for discussion of allowed chars in manfest_name
+                        if (x.length === 0) errorThrow("blank value not allowed");
+                        else if (!/^[A-Za-z0-9\-\._~!\$&\'\(\)\*\+\,\;\=\:\@\%]+$/.test(x))
+                            errorThrow("invalid characters present");
+                    } else {
+                        // non-strings not allowed
+                        errorThrow();
+                    }
+                }
+            },
             manifest_version: {
                 required: true,
                 check: function (x) {
