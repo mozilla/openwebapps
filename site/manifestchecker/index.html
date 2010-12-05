@@ -24,35 +24,28 @@
     </div>
     <div id="content">
       <div id="main">
-<div id="editor" class="bespin" data-bespinoptions='{ "settings": { "tabstop": 4 }, "syntax": "js", "stealFocus": true }'>
-{
+<div id="editor" class="bespin" data-bespinoptions='{ "settings": { "tabstop": 4 }, "syntax": "js", "stealFocus": true }'>{
   "manifest_version": "1.0",
-
   "name": "MozillaBall",
   "description": "Exciting Open Web development action!",
-
-  "base_url": "https://mozillaball.mozillalabs.com/",
-
+  "base_url": "https://mozillaball.mozillalabs.com:443/",
+  "launch_path": "",
   "capabilities": [
     "geolocation",
     "navigation_consolidation"
   ],
-
   "icons": {
     "16": "icon-16.png",
     "48": "icon-48.png",
     "128": "icon-128.png"
   },
-
   "developer": {
     "name": "Mozilla Labs",
     "url": "http://mozillalabs.com"
   },
-
   "installs_allowed_from": [
     "https://appstore.mozillalabs.com"
   ],
-
   "locales": {
     "es": {
       "description": "¡Acción abierta emocionante del desarrollo del Web!",
@@ -67,12 +60,10 @@
       }
     }
   },
+  "default_locale": "en"
+}</div>
 
-  "default_locale": "en",
-
-  "release": "2010-10-05T09:12:51Z"
-}
-</div>
+<p>And if you dare, try to <input type="button" id="normalize" value="normalize"> this manifest.</p>
 
 <div id="output">
 </div>

@@ -20,9 +20,21 @@ function validate() {
         return;
     }
 
-    // XXX: in-place normalization?  how can I do this without re-ordering keys :(
-
+    // XXX: in-place normalization?  how can I do this without re-ordering keys,
+    //      cause it would be, like, awesome.
     $("#output").text("that manifest is valid, woo!");
+}
+
+function normalize() {
+    var editor = document.getElementById("editor").bespin.editor;
+    try {
+        var pos = editor.selection.start;
+        editor.value = JSON.stringify(Manifest.parse(JSON.parse(editor.value)), null, 2);
+        editor.setCursor(pos);
+    } catch(e) {
+        $("#output").text("Can't normalize: " + e);
+        return;
+    }
 }
 
 window.onBespinLoad = function() {
@@ -38,6 +50,8 @@ window.onBespinLoad = function() {
         waitForIt = setTimeout(validate, 700);
         console.log("yeah, it changed...");
     });
+
+    $("#normalize").click(normalize);
 
     validate();
 };
