@@ -53,16 +53,6 @@ var minAppListHeight = 0;
 var minAppListWidth = 0;
 
 
-//simplify localStorage reading/writing
-Storage.prototype.setObject = function(key, value) {
-    this.setItem(key, JSON.stringify(value));
-}
-
-Storage.prototype.getObject = function(key) {
-    return this.getItem(key) && JSON.parse(this.getItem(key));
-}
-
-
 function retrieveInstalledApps() 
 {
   var listOfApps;
@@ -80,21 +70,18 @@ function retrieveInstalledApps()
 
 $(document).ready(function() {    
     //temporarily set the repository origin to localhost
-    //navigator.apps.setRepoOrigin("../");
+    navigator.apps.setRepoOrigin("../");
 
 $('#maincontent').resizable({ alsoResize: '.appList' });
 
   // can this user use myapps?
    var w = window;
-   if (w.JSON && w.postMessage && w.localStorage) {
+   if (w.JSON && w.postMessage) {
        $("#container").fadeIn(500);
        try {
            // Construct our Apps handle
             retrieveInstalledApps();
-            if (w.localStorage.dashposition) {
-              gAppPositions = w.localStorage.getObject("dashposition");   
-            }
-
+            gAppPositions = navigator.apps.mgmt.loadState();   
            } catch (e) {
            alert(e);
        }
@@ -371,7 +358,7 @@ function createAppIcon(install)
                             var newPos = ui.position;
                             if (!gAppPositions) { gAppPositions = {}; }
                             gAppPositions[install.id] = newPos;
-                            window.localStorage.setObject("dashposition", gAppPositions);
+                            navigator.apps.mgmt.saveState(gAppPositions);   
                             $(this).addClass("ui-draggable-dragged");
                                       
                             updateAppBoundaries();                            
