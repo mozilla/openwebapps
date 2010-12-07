@@ -75,8 +75,8 @@
     // unsupported browser
     if(!win.postMessage || !win.localStorage || !win.JSON) return;
 
-    var appStorage = TypedStorage("app").open();
-    var stateStorage = TypedStorage("state").open();
+    var appStorage = TypedStorage().open("app");
+    var stateStorage = TypedStorage().open("state");
 
     // iterates over all stored applications manifests and passes them to a
     // callback function.  This function should be used instead of manual
@@ -144,7 +144,7 @@
         return result;
     }
 
-    // Return all installations that were installed by the given origin domain 
+    // Return all installations that were installed by the given origin domain
     function getInstallsByOrigin(origin, requestObj)
     {
         var result = [];
@@ -277,7 +277,7 @@
                 "as the application repostiory" ];
     }
 
-    /* Management APIs for dashboards live beneath here */ 
+    /* Management APIs for dashboards live beneath here */
 
     // A function which given an installation record, builds an object suitable
     // to return to a dashboard.  this function may filter information which is
@@ -315,7 +315,7 @@
     chan.bind('remove', function(t, key) {
         verifyMgmtPermission(t.origin);
         var item = appStorage.get(key);
-        if (!item) throw [ "noSuchApplication", "no application exists with the id: " + key ]; 
+        if (!item) throw [ "noSuchApplication", "no application exists with the id: " + key ];
         appStorage.remove(key);
         return true;
     });

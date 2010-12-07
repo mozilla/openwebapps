@@ -4,7 +4,7 @@
   <script type="text/javascript" src="doctestjs/doctest.js"></script>
   <link rel="stylesheet" type="text/css" href="doctestjs/doctest.css" />
 </head>
-<body>
+<body class="autodoctest">
 <h2> AppRepo Tests </h2>
 
 <p>
@@ -16,17 +16,13 @@ at the site/ directory.
 <b>WARNING</b>: We'll delete all of your apps.  If you care, don't click the "Test All" button.
 </p>
 
-<div>
-  <button onclick="doctest()" type="button">Test all</button>
-  <pre id="doctestOutput"></pre>
-</div>
-
 <h3>Presence of functions</h3>
 
 Are all of the functions present that we would expect on the navigator.apps object?
 
 <pre class="doctest">
-$ var arr = [];
+$ // We'll show all the methods we're testing
+> var arr = [];
 > for (var f in navigator.apps) {
 >   if (typeof(navigator.apps[f]) === 'function') {
 >     arr.push("navigator.apps." + f);
@@ -69,12 +65,8 @@ $ navigator.apps.mgmt.list(function(l) {
 > });
 $ wait(function() { return finished; });
 $ finished = false;
-$ navigator.apps.mgmt.list(function(l) {
->   writeln(l.length);
->   finished = true;
-> });
-$ wait(function() { return finished; });
-0
+$ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true}));
+apps.mgmt.list([])
 </pre>
 
 <h3>Application Installation</h3>
@@ -89,24 +81,21 @@ $ var manifest = {
 >   "launch_path": "",
 >   "default_locale":"en"
 > }
-$ var finished = false;
-$ navigator.apps.install({manifest: manifest, callback: function() { finished = true; }});
-$ wait(function() { return finished; });
-$ finished = false;
-$ navigator.apps.mgmt.list(function(l) {
->   writeln(l.length);
->   writeln(doctest.repr(l[0]));
->   finished = true; 
-> });
-$ wait(function() { return finished; });
-1
-{
-  id: "...",
-  installTime: ...,
-  installURL: "...",
-  launchURL: "http://fakea.pp/",
-  name: "FakeApp"
-}
+$ navigator.apps.install(
+>   {manifest: manifest,
+>    callback: Spy('apps.install', {wait: true, ignoreThis: true})
+>   });
+apps.install(true)
+$ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true, wrapArgs: true}));
+apps.mgmt.list([
+  {
+    id: "...",
+    installTime: ...,
+    installURL: "...",
+    launchURL: "http://fakea.pp/",
+    name: "FakeApp"
+  }
+])
 </pre>
 
 <h3>Checking for Application Installation</h3>
@@ -116,48 +105,34 @@ http://fakea.pp
 
 <pre class="doctest">
 $ var finished = false;
-$ navigator.apps.getInstalled(function(l) {
->   writeln(l.length);
->   finished = true; 
-> });
-$ wait(function() { return finished; });
-0
+$ navigator.apps.getInstalled(Spy('apps.getInstalled', {wait: true}));
+apps.getInstalled([])
 </pre>
 
 getInstalledBy should yield 1 result, as we just installed FakeApp.
 
 <pre class="doctest">
 $ var finished = false;
-$ navigator.apps.getInstalledBy(function(l) {
->   writeln(l.length);
->   finished = true; 
-> });
-$ wait(function() { return finished; });
-1
+$ navigator.apps.getInstalledBy(Spy('apps.getInstalledBy', {wait: true}));
+apps.getInstalledBy([])
 </pre>
 
 <h3>Dashboard Storage</h3>
 
 navigator.apps.mgmt.{load|save}State() proivde an html dashboard with a mechanism to store
 state inside the application repository.  This can be useful because it allows the app
-repo to synchronize this state across sessions on different browsers. 
+repo to synchronize this state across sessions on different browsers.
 
 <pre class="doctest">
-$ var finished = false;
-$ navigator.apps.mgmt.saveState(null, function() { finished = true; });
-$ wait(function() { return finished; });
-$ finished = false;
+$ navigator.apps.mgmt.saveState(null, Spy('apps.mgmt.saveState', {wait: true}));
+apps.mgmt.saveState(true)
 $ var obj = null;
-$ navigator.apps.mgmt.loadState( ( function(s) { obj = s; finished = true; } ) );
-$ wait(function() { return finished; });
-$ writeln(doctest.repr(obj));
-null
-$ finished = false;
+$ navigator.apps.mgmt.loadState(Spy('apps.mgmt.loadState', {wait: true}));
+apps.mgmt.loadState(null)
 $ navigator.apps.mgmt.saveState({ open: "web", apps: [ "are", "super", "awesome" ] }, function() { });
-$ navigator.apps.mgmt.loadState( ( function(s) { obj = s; finished = true; } ) );
-$ wait(function() { return finished; });
-$ writeln(doctest.repr(obj));
-{apps: ["are", "super", "awesome"], open: "web"}
+$ wait();
+$ navigator.apps.mgmt.loadState(Spy('apps.mgmt.loadState', {wait: true}));
+apps.mgmt.loadState({apps: ["are", "super", "awesome"], open: "web"})
 </pre>
 
 
