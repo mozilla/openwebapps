@@ -788,7 +788,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
                 params: {"state": obj},
                 error: function(error, message) {
                     // XXX we need to relay this to the client
-                    alert("couldn't savetate: "  + error + " - " + message); 
+                    alert("couldn't saveState: "  + error + " - " + message); 
                 },
                 success: function(v) {
                     if (func) func(v);
