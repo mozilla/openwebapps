@@ -1,4 +1,4 @@
-### The Application Manifest
+### The Application Manifest v0.2
 
 See also the [wiki page on Application Manifests](http://wiki.mozilla.org/Labs/Apps/Manifest).
 
@@ -15,7 +15,7 @@ For a discussion of the security and privacy considerations around the applicati
 #### An Example Manifest
 
     {
-      "manifest_version": "1.0",
+      "manifest_version": "0.2",
 
       "name": "MozillaBall",
       "description": "Exciting Open Web development action!",
