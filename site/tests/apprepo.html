@@ -114,7 +114,7 @@ getInstalledBy should yield 1 result, as we just installed FakeApp.
 <pre class="doctest">
 $ var finished = false;
 $ navigator.apps.getInstalledBy(Spy('apps.getInstalledBy', {wait: true}));
-apps.getInstalledBy([])
+apps.getInstalledBy([...{...}...])
 </pre>
 
 <h3>Dashboard Storage</h3>

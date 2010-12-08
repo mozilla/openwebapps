@@ -179,14 +179,11 @@ TypedStorage.ObjectStore = function (storage, objType, typedStorage) {
 
   //iterate through our objects, applying a callback
   self.iterate = function (callback) {
-    var i;
-    for (i=0; i < self._storage.length; i++) {
-      var nextKey = self.breakKey(self._storage.key(i));
-      if (nextKey) {
-        var result = callback(nextKey, self.get(nextKey));
-        if (result === false) {
-          return;
-        }
+    var keys = self.keys();
+    for (var i=0; i < keys.length; i++) {
+      var result = callback(keys[i], self.get(keys[i]));
+      if (result === false) {
+        return;
       }
     }
   };

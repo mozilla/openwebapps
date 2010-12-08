@@ -95,9 +95,11 @@ undefined
 
 <div class="test">
 <pre class="doctest">
-$ for ( i = 0; i &lt; window.localStorage.length ; i++) {
->   window.localStorage.removeItem(window.localStorage.key(i));
+$ while (window.localStorage.length) {
+>   writeln('deleting ', window.localStorage.key(0));
+>   window.localStorage.removeItem(window.localStorage.key(0));
 > }
+...
 $ var testRepo1 = TypedStorage().open("fakeType");
 > testRepo1.clear();
 >
@@ -116,16 +118,19 @@ $ for ( i = 0; i &lt; window.localStorage.length; i++) {
 >   writeln(window.localStorage.key(i));
 > }
 bogusType#thing1
+typed-storage#last_modified
 fakeType#thing1
 $ testRepo2.clear();
 > for ( i = 0; i &lt; window.localStorage.length; i++) {
 >   writeln(window.localStorage.key(i));
 > }
+typed-storage#last_modified
 fakeType#thing1
 $ testRepo1.clear();
 > for ( i = 0; i &lt; window.localStorage.length; i++) {
 >   writeln(window.localStorage.key(i));
 > }
+typed-storage#last_modified
 </pre>
 
 </div>
