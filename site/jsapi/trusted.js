@@ -327,8 +327,8 @@
 
     chan.bind('saveState', function(t, args) {
         verifyMgmtPermission(t.origin);
-        // storing null purges state
-        if (args.state === null) {
+        // storing undefined purges state
+        if (args.state === undefined) {
             stateStorage.remove(t.origin);
         } else  {
             stateStorage.put(t.origin, args.state);

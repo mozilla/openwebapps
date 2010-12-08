@@ -177,9 +177,6 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
              *   cfg.debugOutput - A boolean value.  If true and window.console.log is
              *                a function, then debug strings will be emitted to that
              *                function.
-             *   cfg.debugOutput - A boolean value.  If true and window.console.log is
-             *                a function, then debug strings will be emitted to that
-             *                function.
              *   cfg.postMessageObserver - A function that will be passed two arguments,
              *                an origin and a message.  It will be passed these immediately
              *                before messages are posted.
@@ -392,7 +389,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
                                 // XXX: what if client code raises an exception here?
                                 outTbl[m.id].callbacks[m.callback](m.params);
                             }
-                        } else if (m.id && ((typeof m.result !== 'undefined') || m.error)) {
+                        } else if (m.id) {
                             if (!outTbl[m.id]) {
                                 debug("ignoring invalid response: " + m.id);
                             } else {

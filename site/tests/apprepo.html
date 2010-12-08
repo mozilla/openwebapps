@@ -127,8 +127,13 @@ repo to synchronize this state across sessions on different browsers.
 $ navigator.apps.mgmt.saveState(null, Spy('apps.mgmt.saveState', {wait: true}));
 apps.mgmt.saveState(true)
 $ var obj = null;
-$ navigator.apps.mgmt.loadState(Spy('apps.mgmt.loadState', {wait: true}));
+> navigator.apps.mgmt.loadState(Spy('apps.mgmt.loadState', {wait: true}));
 apps.mgmt.loadState(null)
+$ navigator.apps.mgmt.saveState(undefined, Spy('apps.mgmt.saveState', {wait: true}));
+apps.mgmt.saveState(true)
+$ var obj = null;
+> navigator.apps.mgmt.loadState(Spy('apps.mgmt.loadState', {wait: true}));
+apps.mgmt.loadState(undefined)
 $ navigator.apps.mgmt.saveState({ open: "web", apps: [ "are", "super", "awesome" ] }, function() { });
 $ wait();
 $ navigator.apps.mgmt.loadState(Spy('apps.mgmt.loadState', {wait: true}));
