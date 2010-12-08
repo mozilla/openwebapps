@@ -222,6 +222,7 @@
                 required: true,
                 check: function (x) {
                     if (!((typeof x === 'string') && /^\d+.\d+$/.test(x))) errorThrow();
+                    if (x !== '0.2') errorThrow("unsupported manifest version: " + x + " (expected 0.2)");
                 }
             },
             name: {
