@@ -1,10 +1,12 @@
 <html>
 <head>
 <title>Dashboard Sync Test</title>
-<script type="text/javascript" src="doctestjs/doctest.js"></script>
-<link rel="stylesheet" type="text/css" href="doctestjs/doctest.css" />
-<script type="text/javascript" src="/static/sync.js"></script>
-<script type="text/javascript" src="/static/mockstorage.js"></script>
+<script type="text/javascript" src="../doctestjs/doctest.js"></script>
+<link rel="stylesheet" type="text/css" href="../doctestjs/doctest.css"
+/>
+<script type="text/javascript" src="../../js/eventmixin.js"></script>
+<script type="text/javascript" src="../../js/sync.js"></script>
+<script type="text/javascript" src="mockstorage.js"></script>
 <!-- FIXME: jQuery should be removed: -->
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.4.4/jquery.js"></script>
 <style type="text/css">
@@ -90,7 +92,10 @@ $ function successor() {
 > }
 $ $.ajax({
 >   url: '/.reset-time',
->   success: Spy('success', {writes: false, wait: true})
+>   success: Spy('success', {writes: false, wait: true}),
+>   error: function () {
+>     throw Abort('Server is not here!');
+>   }
 > });
 </pre>
 
@@ -128,7 +133,7 @@ $ // As you'll see, there's nothing to pull yet, though we did update the syncer
 > sync1.pull(successor());
 1::sync::sync add
   {lastPull: ?}
-$ // Only the date will be updated 
+$ // Only the date will be updated
 > sync1.pull(successor());
 1::sync::sync change
   lastPull: ? -> ?
@@ -204,10 +209,8 @@ $ // Next sync2 will push its change, which will include the new app
 2::sync::sync change
   lastPush: ? -> ?
 $ sync1.pull(successor());
-1::app::http://foo.com add
-  {base_url: "http://foo.com", lastPull: ?, lastPush: ?} 
 1::app::http://bar.com add
-  {base_url: "http://bar.com", lastPull: ?, lastPush: ?} 
+  {base_url: "http://bar.com", lastPull: ?, lastPush: ?}
 1::sync::sync change
   lastPull: ? -> ?
 
