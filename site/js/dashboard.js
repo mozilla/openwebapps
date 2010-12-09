@@ -94,10 +94,10 @@ function retrieveInstalledApps()
 
 
 function addonIsInstalled() {
-  if(navigator.apps && (navigator.apps.nativeImplementation != undefined)) {
-    return true;
+  if(navigator.apps.html5Implementation) {
+    return false;
   }
-  return false;
+  return true;
 }
 
 function shouldBotherUser()
@@ -126,7 +126,7 @@ function recommendAddon() {
 
 $(document).ready(function() {    
     //temporarily set the repository origin to localhost
-    //navigator.apps.setRepoOrigin("../");
+    navigator.apps.setRepoOrigin("../");
 
 $('#maincontent').resizable({ alsoResize: '.appList' });
 
