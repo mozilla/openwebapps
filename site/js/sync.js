@@ -196,6 +196,7 @@ function Sync(options) {
     }
   }
 
+  // FIXME: I don't think we need this
   self.isLoggedIn = function (options) {
     ajax({
       url: self.url + '/login-status',
@@ -208,6 +209,7 @@ function Sync(options) {
     });
   };
 
+  // FIXME: I don't think we need this (cookie is sufficient):
   self.loginStatus = function (options) {
     ajax({
       url: self.url + '/login-status',
@@ -218,6 +220,36 @@ function Sync(options) {
       error: options.error
     });
   };
+
+  var pollTimerId = null;
+  var pollTime = 5000;
+  var pollPull = true;
+
+  self.pollSyncServer = function (setPollTime) {
+    if (setPollTime) {
+      pollTime = setPollTime;
+    }
+    self.cancelSyncServerPoll();
+    runPoll();
+  };
+
+  self.cancelSyncServerPoll = function () {
+    if (pollTimerId) {
+      clearTimeout(pollTimerId);
+      pollTimerId = null;
+    }
+  };
+
+  function runPoll() {
+    // Flip each time between pulling and pushing:
+    if (pollPull) {
+      self.pull();
+    } else {
+      self.push();
+    }
+    pollPull = ! pullPull;
+    pollTimerId = setTimeout(runPoll, pollTime);
+  }
 
   var ajax = function (options) {
     options.error = options.error || self.defaultError;
@@ -260,7 +292,7 @@ function Sync(options) {
     if (! value) {
       return null;
     }
-    value = value.split(/\|/)[0];
+    value = decodeURIComponent(value.split(/\|/)[0]);
     value = JSON.parse(value);
     return value;
   };
@@ -282,6 +314,7 @@ function Sync(options) {
 }
 
 
+// From quirksmode:
 function readCookie(name) {
   var nameEQ = name + "=";
   var ca = document.cookie.split(';');
