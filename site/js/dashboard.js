@@ -70,7 +70,7 @@ function retrieveInstalledApps()
 
 $(function() {
     //temporarily set the repository origin to localhost
-    navigator.apps.setRepoOrigin("../");
+    navigator.apps.setRepoOrigin("..");
 
 $('#maincontent').resizable({ alsoResize: '.appList' });
 
@@ -88,6 +88,8 @@ $('#maincontent').resizable({ alsoResize: '.appList' });
    } else {
        $("#unsupportedBrowser").fadeIn(500);
    }
+
+   updateLoginStatus();
 });
 
 
@@ -472,6 +474,19 @@ function onFocus(event) {
     retrieveInstalledApps();
     render();
   }
+}
+
+function updateLoginStatus() {
+  navigator.apps.mgmt.loginStatus(function (userInfo, loginInfo) {
+    if (! userInfo) {
+      $('#login-link a').attr('href', loginInfo.loginLink);
+      $('#login-link').show();
+    } else {
+      $('#username').text(userInfo.displayName);
+      $('#signed-in a').attr('href', loginInfo.logoutLink);
+      $('#signed-in').show();
+    }
+  });
 }
 
 

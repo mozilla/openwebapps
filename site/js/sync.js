@@ -96,6 +96,21 @@ function Sync(options) {
     });
   };
 
+  self.trackPushNeeded = function () {
+    if (self._needPush !== undefined) {
+      // Already tracking
+      return;
+    }
+    function needPush(event) {
+      if (event.objType == 'app' || event.objType == 'deletedapp') {
+        self._needPush = true;
+      }
+    }
+    self.storage.addEventListener('change', needPush);
+    self.storage.addEventListener('add', needPush);
+    self._needPush = false;
+  };
+
   function collectManifests(timestamp) {
     var result = {
       installed: {},
@@ -115,7 +130,6 @@ function Sync(options) {
       }
       result.deleted[key] = tombstone;
     });
-    console.log('push manifests', result);
     return result;
   };
 
@@ -230,6 +244,7 @@ function Sync(options) {
       pollTime = setPollTime;
     }
     self.cancelSyncServerPoll();
+    self.trackPushNeeded();
     runPoll();
   };
 
@@ -242,38 +257,105 @@ function Sync(options) {
 
   function runPoll() {
     // Flip each time between pulling and pushing:
-    if (pollPull) {
-      self.pull();
-    } else {
-      self.push();
+    function rerun() {
+      pollTimerId = setTimeout(runPoll, pollTime);
     }
-    pollPull = ! pullPull;
-    pollTimerId = setTimeout(runPoll, pollTime);
+    function cancelIfNeeded(req) {
+      if (req.status === 0) {
+        // Means the server isn't there
+        // FIXME: log?
+        pollTimerId = null;
+        return;
+      } else {
+        rerun();
+      }
+    }
+    var options = {
+      success: function () {
+        pollTimerId = setTimeout(runPoll, pollTime);
+        self._needPush = false;
+      },
+      error: function (req) {
+        if (req.status === 0) {
+          // Means the server isn't there
+          // FIXME: Log this?
+          pollTimerId = null;
+          return;
+        }
+      }
+    };
+    if (pollPull) {
+      self.pull({
+        success: rerun,
+        error: cancelIfNeeded
+      });
+    } else {
+      if (self._needPush) {
+        self.push({
+          success: function () {
+            rerun();
+            self._needPush = false;
+          },
+          error: cancelIfNeeded
+        });
+      } else {
+        rerun();
+      }
+    }
+    pollPull = ! pollPull;
   }
 
-  var ajax = function (options) {
+  function ajax(options) {
     options.error = options.error || self.defaultError;
     if (options.addHeaders) {
       var headers = mergeObjects(options.addHeaders, self.addHeaders);
     } else {
       var headers = self.addHeaders;
     }
-    var oldBeforeSend = options.beforeSend || self.defaultBeforeSend;
-    options.beforeSend = function (req) {
-      req.url = options.url;
-      req.method = options.type || 'GET';
-      for (var header in headers) {
-        req.setRequestHeader(header, headers[header]);
+    options.beforeSend = options.beforeSend || self.defaultBeforeSend;
+    options.type = options.type || 'GET';
+    var req = new XMLHttpRequest();
+    req.open(options.type, options.url, true);
+    if (options.beforeSend) {
+      options.beforeSend(req);
+    }
+    if (headers) {
+      for (var i in headers) {
+        req.setRequestHeader(i, headers[i]);
       }
-      if (oldBeforeSend) {
-        oldBeforeSend(req);
+    }
+    if (options.contentType) {
+      req.setRequestHeader('Content-Type', options.contentType);
+    }
+    req.onreadystatechange = function (event) {
+      if (req.readyState != 4) {
+        return;
+      }
+      if (req.status == 200) {
+        var body = req.responseText;
+        if (options.dataType == 'json') {
+          body = JSON.parse(body);
+        }
+        // FIXME: statusText might be boring?
+        options.success(body, req.statusText, req);
+      } else if (req.status > 200 && req.status < 400) {
+        // Success, but no body
+        options.success(null, req.statusText, req);
+      } else {
+        // Failure of some sort
+        // FIXME: not a good status, doesn't handle callback errors, etc.
+        if (options.error) {
+          options.error(req, req.statusText, null);
+        }
       }
     };
-    $.ajax(options);
-  };
+    // FIXME: no timeout implemented here
+    req.send(options.data || null);
+    return req;
+  }
 
   var userUrl = function () {
-    return self.url + '/data/{' + self.user + '}';
+    return self.url + '/data/{' + encodeURIComponent(encodeURIComponent(self.user)) + '}/apps';
   };
 
   var mergeObjects = function (ob1, ob2) {
