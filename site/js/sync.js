@@ -255,9 +255,44 @@ function Sync(options) {
     return newObject;
   };
 
+  self.readProfile = function () {
+    var value = readCookie('user_info');
+    if (! value) {
+      return null;
+    }
+    value = value.split(/\|/)[0];
+    value = JSON.parse(value);
+    return value;
+  };
+
   // FIXME: read a cookie or something
-  self.user = options.forceUser || 'test';
+  if (options.forceUser) {
+    self.user = options.forceUser;
+  } else {
+    var profile = self.readProfile();
+    if (profile) {
+      self.user = profile.identifier;
+    } else {
+      self.user = null;
+    }
+  }
 
   EventMixin(self);
   return self;
+}
+
+
+function readCookie(name) {
+  var nameEQ = name + "=";
+  var ca = document.cookie.split(';');
+  for (var i=0; i < ca.length; i++) {
+    var c = ca[i];
+    while (c.charAt(0) == ' ') {
+      c = c.substring(1,c.length);
+    }
+    if (c.indexOf(nameEQ) == 0) {
+      return c.substring(nameEQ.length, c.length);
+    }
+  }
+  return null;
 }
