@@ -126,7 +126,7 @@ function recommendAddon() {
 
 $(document).ready(function() {    
     //temporarily set the repository origin to localhost
-    //navigator.apps.setRepoOrigin("../");
+    navigator.apps.setRepoOrigin("../");
 
 $('#maincontent').resizable({ alsoResize: '.appList' });
 

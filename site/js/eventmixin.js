@@ -1,11 +1,22 @@
 function EventMixin(self) {
   self._listeners = {};
 
+  self._freezeDispatch = false;
+
   self.addEventListener = function (event, callback) {
     if (! (event in self._listeners)) {
       self._listeners[event] = [];
     }
     self._listeners[event].push(callback);
+    if (! self._freezeDispatch) {
+      self._freezeDispatch = true;
+      try {
+        self.dispatchEvent('addEventListener',
+            {eventName: event, callback: callback});
+      } finally {
+        self._freezeDispatch = false;
+      }
+    }
   };
 
   self.removeEventListener = function (event, callback) {
@@ -18,9 +29,19 @@ function EventMixin(self) {
         return;
       }
     }
+    if (! self._freezeDispatch) {
+      self._freezeDispatch = true;
+      try {
+        self.dispatchEvent('removeEventListener',
+            {eventName: event, callback: callback});
+      } finally {
+        self._freezeDispatch = false;
+      }
+    }
   };
 
   self.dispatchEvent = function (name, event) {
+    event.eventType = name;
     if (! (name in self._listeners)) {
       return true;
     }

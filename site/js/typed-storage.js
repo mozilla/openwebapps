@@ -42,6 +42,66 @@ function TypedStorage(browserStorage) {
     return TypedStorage.ObjectStore(browserStorage, objType, self);
   };
   EventMixin(self);
+
+  var lastModified = null;
+  var pollPeriod = 1000;
+  var timeoutId = null;
+
+  function changePoller() {
+    try {
+      var storeLastModified = browserStorage.getItem('typed-storage#last_modified');
+      if (storeLastModified) {
+        try {
+          storeLastModified = parseInt(storeLastModified);
+        } catch (e) {
+          storeLastModified = null;
+        }
+      } else {
+        storeLastModified = null;
+      }
+      if (storeLastModified && storeLastModified > lastModified) {
+        lastModified = storeLastModified;
+        self.dispatchEvent('multiplechange', {});
+      }
+    } finally {
+      timeoutId = setTimeout(changePoller, pollPeriod);
+    };
+  }
+
+  self.pollForChanges = function (period, types) {
+    if (lastModified === null) {
+      lastModified = (new Date()).getTime();
+    }
+    if (period) {
+      pollPeriod = period;
+    }
+    self.cancelPoll();
+    timeoutId = setTimeout(changePoller, 0);
+  };
+
+  self.cancelPoll = function () {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+  };
+
+  self.setLastModified = function () {
+    // Danger of clobbering a change here?
+    lastModified = (new Date()).getTime();
+    browserStorage.setItem('typed-storage#last_modified', lastModified);
+  };
+
+  self.addEventListener('addEventListener', function (event) {
+    // Automatically start polling for changes if multichange is
+    // being listened for
+    if (event.eventName == 'multiplechange' && ! timeoutId) {
+      self.pollForChanges();
+      // Technically the poll could be cancelled...
+      self.removeEventListener('addEventListener', arguments.callee);
+    }
+  });
+
   return self;
 }
 
@@ -73,16 +133,20 @@ TypedStorage.ObjectStore = function (storage, objType, typedStorage) {
 
   //store and object under a specified key
   self.put = function (key, value) {
-    var canceled = ! self._typedStorage.dispatchEvent('change', {target: key});
+    var canceled = ! self._typedStorage.dispatchEvent('change',
+      {target: key, storageType: self, eventType: 'change', value: value});
     setObject(self._storage, self.makeKey(key), value);
+    self._typedStorage.setLastModified();
   };
 
   //remove the object at a specified key
   self.remove = function (key) {
-    var canceled = ! self._typedStorage.dispatchEvent('delete', {target: key});
+    var canceled = ! self._typedStorage.dispatchEvent('delete',
+        {target: key, eventType: 'delete', storageType: self});
     if (! canceled) {
       delete self._storage.removeItem(self.makeKey(key));
     }
+    self._typedStorage.setLastModified();
   };
 
   //remove all objects with our objType from the storage
@@ -92,11 +156,12 @@ TypedStorage.ObjectStore = function (storage, objType, typedStorage) {
     for (var i=0; i<allKeys.length; i++) {
       self.remove(allKeys[i]);
     }
+    self._typedStorage.setLastModified();
   };
 
   //do we have an object stored with key?
   self.has = function (key) {
-    return (self.get(key) !== null);
+    return (self.get(key) !== undefined);
   };
 
   //returns an array of all the keys with our objType
@@ -114,14 +179,11 @@ TypedStorage.ObjectStore = function (storage, objType, typedStorage) {
 
   //iterate through our objects, applying a callback
   self.iterate = function (callback) {
-    var i;
-    for (i=0; i < self._storage.length; i++) {
-      var nextKey = self.breakKey(self._storage.key(i));
-      if (nextKey) {
-        var result = callback(nextKey, self.get(nextKey));
-        if (result === false) {
-          return;
-        }
+    var keys = self.keys();
+    for (var i=0; i < keys.length; i++) {
+      var result = callback(keys[i], self.get(keys[i]));
+      if (result === false) {
+        return;
       }
     }
   };

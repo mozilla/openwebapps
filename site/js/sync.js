@@ -1,46 +1,8 @@
-function EventMixin(self) {
-  self._listeners = {};
-
-  self.addEventListener = function (event, callback) {
-    if (! (event in self._listeners)) {
-      self._listeners[event] = [];
-    }
-    self._listeners[event].push(callback);
-  };
-
-  self.removeEventListener = function (event, callback) {
-    if (! (event in self._listeners)) {
-      return;
-    }
-    for (var i=0; i<self._listeners[event].length; i++) {
-      if (self._listeners[event][i] === callback) {
-        self._listeners[event].splice(i, 1);
-        return;
-      }
-    }
-  };
-  
-  self.dispatchEvent = function (name, event) {
-    if (! (name in self._listeners)) {
-      return true;
-    }
-    var result = true;
-    for (var i=0; i<self._listeners[name].length; i++) {
-      // FIXME: This isn't quite right...
-      if (self._listeners[name][i](event) === false) {
-        result = false;
-      }
-    }
-    return result;
-  };
-  return self;
-}
-
 function Sync(options) {
   var self = {};
   // FIXME: default?
   self.url = options.url;
-  self.storage = options.storage || Storage;
+  self.storage = options.storage;
 
   if (self.url.search(/\/$/) != -1) {
     self.url = self.url.substr(0, self.url.length-1);
@@ -48,6 +10,7 @@ function Sync(options) {
   self.addHeaders = options.addHeaders;
   self.defaultError = options.error;
   self.defautBeforeSend = options.beforeSend;
+  self.timestampOffset = 0;
 
   function getSyncer() {
     var s = self.storage.open('sync').get('sync');
@@ -94,10 +57,12 @@ function Sync(options) {
       addHeaders: addHeaders,
       success: function (result, statusTest, req) {
         if (! result) {
-          result = {installed: {}, deleted: {}}
+          result = {installed: {}, deleted: {}};
         }
         // FIXME: I should check for Not Modified
         s.lastPull = parseFloat(req.getResponseHeader('X-Server-Timestamp'));
+        var myTime = (new Date()).getTime();
+        self.timestampOffset = s.lastPull - myTime;
         mergeManifests(result, s.lastPull);
         saveSyncer(s);
         if (options.success) {
@@ -110,10 +75,11 @@ function Sync(options) {
 
   self.push = function (options) {
     options = options || {};
+    var pushTimestamp = (new Date()).getTime() + self.timestampOffset;
     ajax({
       url: userUrl(),
       addHeaders: {'Content-Type': 'application/json'},
-      data: JSON.stringify(collectManifests()),
+      data: JSON.stringify(collectManifests(pushTimestamp)),
       type: 'POST',
       success: function (result, status, req) {
         var s = getSyncer();
@@ -130,19 +96,26 @@ function Sync(options) {
     });
   };
 
-  function collectManifests() {
+  function collectManifests(timestamp) {
     var result = {
       installed: {},
       deleted: {}
     };
     var apps = self.storage.open('app');
     apps.iterate(function (key, app) {
+      if (! app.lastPush) {
+        app.lastPush = timestamp;
+      }
       result.installed[key] = app;
     });
     var deleted = self.storage.open('deletedapp');
     deleted.iterate(function (key, tombstone) {
+      if (! tombstone.lastPush) {
+        tombstone.lastPush = timestamp;
+      }
       result.deleted[key] = tombstone;
     });
+    console.log('push manifests', result);
     return result;
   };
 
@@ -151,32 +124,62 @@ function Sync(options) {
     // Should the server set these values itself?  Or... the client?
     var apps = self.storage.open('app');
     var deleted = self.storage.open('deletedapp');
+    var appChanged = false;
+    var deletedappChanged = false;
     if (retrieved.deleted) {
       for (var i in retrieved.deleted) {
         retrieved.deleted[i].lastPull = retrieved.deleted[i].lastPush = timestamp;
         var app = apps.get(i);
         if (app === undefined) {
           deleted.put(i, retrieved.deleted[i]);
+          deletedappChanged = true;
         } else {
           if (app.lastPushed &&
               retrieved.deleted[i].lastPushed > app.lastPushed) {
             apps.remove(i);
             deleted.put(i, retrieved.deleted[i]);
+            deletedappChanged = true;
           } // If not true, we just avoid copying the deletion
         }
       }
     }
     for (i in retrieved.installed) {
+      var deletedapp = deleted.get(i);
+      var oldLastPush = retrieved.installed[i].lastPush;
       retrieved.installed[i].lastPull = retrieved.installed[i].lastPush = timestamp;
+      if (deletedapp) {
+        if (! deletedapp.lastPushed
+            || deletedapp.lastPushed > oldLastPush) {
+          // This app has been deleted locally, ignore this record
+          continue;
+        } else {
+          // This app has been re-installed remotely
+          apps.put(i, retrieved.installed[i]);
+          deleted.remove(i);
+          continue;
+        }
+      }
       var app = apps.get(i);
       if (app === undefined) {
         apps.put(i, retrieved.installed[i]);
+        appChanged = true;
       } else {
         if (app.lastPushed &&
             retrieved.installed[i].lastPushed > app.lastPushed) {
           apps.put(i, retrieved.installed[i]);
+          appChanged = true;
         } // Otherwise the existing manifest wins
       }
+    }
+    if (appChanged || deletedappChanged) {
+      var types = [];
+      if (appChanged) {
+        types.push('app');
+      }
+      if (deletedappChanged) {
+        types.push('deletedapp');
+      }
+      self.storage.dispatchEvent('multiplechange', {types: types});
     }
   }
 
@@ -227,7 +230,6 @@ function Sync(options) {
     options.beforeSend = function (req) {
       req.url = options.url;
       req.method = options.type || 'GET';
-      console.log(req, req.url);
       for (var header in headers) {
         req.setRequestHeader(header, headers[header]);
       }
@@ -253,9 +255,44 @@ function Sync(options) {
     return newObject;
   };
 
+  self.readProfile = function () {
+    var value = readCookie('user_info');
+    if (! value) {
+      return null;
+    }
+    value = value.split(/\|/)[0];
+    value = JSON.parse(value);
+    return value;
+  };
+
   // FIXME: read a cookie or something
-  self.user = options.forceUser || 'test';
+  if (options.forceUser) {
+    self.user = options.forceUser;
+  } else {
+    var profile = self.readProfile();
+    if (profile) {
+      self.user = profile.identifier;
+    } else {
+      self.user = null;
+    }
+  }
 
   EventMixin(self);
   return self;
+}
+
+
+function readCookie(name) {
+  var nameEQ = name + "=";
+  var ca = document.cookie.split(';');
+  for (var i=0; i < ca.length; i++) {
+    var c = ca[i];
+    while (c.charAt(0) == ' ') {
+      c = c.substring(1,c.length);
+    }
+    if (c.indexOf(nameEQ) == 0) {
+      return c.substring(nameEQ.length, c.length);
+    }
+  }
+  return null;
 }
