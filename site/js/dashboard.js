@@ -53,7 +53,7 @@ var minAppListHeight = 0;
 var minAppListWidth = 0;
 
 
-function retrieveInstalledApps() 
+function retrieveInstalledApps()
 {
   var listOfApps;
   navigator.apps.mgmt.list(function (listOfInstalledApps) {
@@ -63,12 +63,12 @@ function retrieveInstalledApps()
       render();
     })();
   });
-  
-  
+
+
 }
 
 
-$(document).ready(function() {    
+$(function() {
     //temporarily set the repository origin to localhost
     navigator.apps.setRepoOrigin("../");
 
@@ -81,7 +81,7 @@ $('#maincontent').resizable({ alsoResize: '.appList' });
        try {
            // Construct our Apps handle
             retrieveInstalledApps();
-            gAppPositions = navigator.apps.mgmt.loadState();   
+            gAppPositions = navigator.apps.mgmt.loadState();
            } catch (e) {
            alert(e);
        }
@@ -91,11 +91,10 @@ $('#maincontent').resizable({ alsoResize: '.appList' });
 });
 
 
-function updateAppBoundaries()
-{
+function updateAppBoundaries() {
   minAppListHeight = 0;
   minAppListWidth = 0;
-  
+
   $(".app").each(function(index, elem) {
       var ePos = $(elem).position();
       if (ePos.top > minAppListHeight)  minAppListHeight = ePos.top;
@@ -107,8 +106,10 @@ function updateAppBoundaries()
 
 
 function elem(type, clazz) {
- var e = document.createElement(type);
-  if (clazz) e.setAttribute("class", clazz);
+  var e = document.createElement(type);
+  if (clazz) {
+    e.setAttribute("class", clazz);
+  }
   return e;
 }
 
@@ -116,8 +117,7 @@ function elem(type, clazz) {
 // applies - if the app is already running, we switch to it.
 // If the app is not running, we create a new app tab and
 // launch the app into it.
-function makeOpenAppTabFn(app, id)
-{
+function makeOpenAppTabFn(app, id) {
     return function(evt) {
         if ($(this).hasClass("ui-draggable-dragged")) {
             $(this).removeClass("ui-draggable-dragged");
@@ -125,13 +125,12 @@ function makeOpenAppTabFn(app, id)
         }
 
         navigator.apps.mgmt.launch(id);
-    }
+    };
 }
 
 // Render the contents of the "apps" element by creating canvases
 // and labels for all apps.
-function render()
-{
+function render() {
   var box = $("#appList");
   box.empty();
 
@@ -143,10 +142,10 @@ function render()
       var icon = createAppIcon(install);
       //check for no icon here, and supply a default one
       if (!icon) {
-      
+        // FIXME: do something?
       }
-      
-      
+
+
       if (install === gSelectedInstall) {
         selectedBox = icon;
       }
@@ -158,33 +157,35 @@ function render()
   }
 
   updateAppBoundaries();
-  
+
   $('#maincontent').resizable( "option", "minHeight", minAppListHeight + 140 );
   $('#maincontent').resizable( "option", "minWidth", minAppListWidth + 113 );
 
-   $('#appList').height(minAppListHeight + 100);
-   $('#maincontent').height(minAppListHeight + 133);
-   
-   $('#appList').width(minAppListWidth + 80);
-   $('#maincontent').width(minAppListWidth + 113);
+  $('#appList').height(minAppListHeight + 100);
+  $('#maincontent').height(minAppListHeight + 133);
+
+  $('#appList').width(minAppListWidth + 80);
+  $('#maincontent').width(minAppListWidth + 113);
 
 
-    if (gDisplayMode == APP_INFO) {
-        // kick back to "ROOT" display mode if there's no
-        // selected application for which to display an info pane
-        if (selectedBox) {
-            renderAppInfo(selectedBox);
-        } else {
-            gDisplayMode == ROOT;
-        }
+  if (gDisplayMode == APP_INFO) {
+    // kick back to "ROOT" display mode if there's no
+    // selected application for which to display an info pane
+    if (selectedBox) {
+      renderAppInfo(selectedBox);
+    } else {
+      gDisplayMode = ROOT;
     }
+  }
 }
 
 var overlayId = "myAppsDialogOverlay";
 var getInfoId = "getInfo";
 
 function showDarkOverlay() {
-  try { hideDarkOverlay() } catch(e) { };
+  try {
+    hideDarkOverlay();
+  } catch(e) { };
   // create a opacity overlay to focus the users attention
   var od = document.createElement("div");
   od.id = overlayId;
@@ -208,7 +209,7 @@ function hideDarkOverlay() {
 }
 
 function getBiggestIcon(minifest) {
-  //see if the minifest has any icons, and if so, return the largest one
+  // see if the manifest has any icons, and if so, return the largest one
   if (minifest.icons) {
     var biggest = 0;
     for (z in minifest.icons) {
@@ -231,14 +232,14 @@ function renderAppInfo(selectedBox)
 
     var badge = elem("div", "appBadge");
     var appIcon = elem("div", "icon");
-    
+
     var icon = getBiggestIcon(gSelectedInstall);
-    
+
     if (icon) {
-        appIcon.setAttribute("style", 
+        appIcon.setAttribute("style",
                              "background:url(\"" + icon + "\") no-repeat; background-size:100%");
     }
-    
+
     $(appIcon).css("position", "absolute").css("top", -4).css("left", 8);
 
     var label = elem("div", "appBadgeName");
@@ -247,7 +248,7 @@ function renderAppInfo(selectedBox)
     badge.appendChild(appIcon);
     badge.appendChild(label);
     info.appendChild(badge);
-    
+
 
     var off = $(selectedBox).offset();
     $(info).css("postion", "absolute").css("top", off.top + -4).css("left", off.left + -8);
@@ -299,7 +300,7 @@ function renderAppInfo(selectedBox)
             }
           }
         }
-        
+
         info.appendChild(data);
 
         var desc = elem("div", "desc");
@@ -315,7 +316,7 @@ function renderAppInfo(selectedBox)
 
         // finally, a delete link and action
         $("<div/>").text("Delete this application.").addClass("deleteText").appendTo(info).click(function() {
-            navigator.apps.mgmt.remove(gSelectedInstall.id, 
+            navigator.apps.mgmt.remove(gSelectedInstall.id,
                                         function() {
                                                      retrieveInstalledApps();
                                                   });
@@ -345,7 +346,7 @@ function renderAppInfo(selectedBox)
     }, 0);
 }
 
-function createAppIcon(install) 
+function createAppIcon(install)
 {
     var appDiv = elem("div", "app");
     appDiv.onclick = makeOpenAppTabFn(install, install.id);
@@ -358,10 +359,10 @@ function createAppIcon(install)
                             var newPos = ui.position;
                             if (!gAppPositions) { gAppPositions = {}; }
                             gAppPositions[install.id] = newPos;
-                            navigator.apps.mgmt.saveState(gAppPositions);   
+                            navigator.apps.mgmt.saveState(gAppPositions);
                             $(this).addClass("ui-draggable-dragged");
-                                      
-                            updateAppBoundaries();                            
+
+                            updateAppBoundaries();
                             $('#maincontent').resizable( "option", "minHeight", minAppListHeight + 140 );
                             $('#maincontent').resizable( "option", "minWidth", minAppListWidth + 113 );
                         }
@@ -372,7 +373,7 @@ function createAppIcon(install)
 
      var nameDiv = elem("div", "appName");
      nameDiv.appendChild(document.createTextNode(install.name));
- 
+
      $(appDiv).append(nameDiv);
 
     var icon = getBiggestIcon(install);
@@ -386,7 +387,7 @@ function createAppIcon(install)
     var moreInfo = $("<div/>").addClass("moreInfo").appendTo(iconDiv);
     $("<a/>").appendTo(iconDiv);
 
-    // Set up the hover handler.  Only fade in after the user hovers for 
+    // Set up the hover handler.  Only fade in after the user hovers for
     // 500ms.
     var tHandle;
     $(iconDiv).hover(function() {
@@ -420,7 +421,7 @@ function createAppIcon(install)
           $(appDiv).css("position", "absolute").css("top", appPos.top).css("left", appPos.left);
           }
     }
-    
+
     return appDiv;
 }
 
@@ -436,7 +437,8 @@ function formatDate(dateStr)
   }
   else if (then.getMonth() != now.getMonth() ||  then.getDate() != now.getDate())
   {
-     var dayDelta = (new Date().getTime() - then.getTime() ) / 1000 / 60 / 60 / 24 // hours
+     var str;
+     var dayDelta = (new Date().getTime() - then.getTime() ) / 1000 / 60 / 60 / 24; // hours
      if (dayDelta < 2) str = "yesterday";
      else if (dayDelta < 7) str = Math.floor(dayDelta) + " days ago";
      else if (dayDelta < 14) str = "last week";
@@ -449,22 +451,22 @@ function formatDate(dateStr)
 
       var hr = Math.floor(Math.floor(hrs) % 12);
       if (hr == 0) hr =12;
-      var mins = Math.floor(mins);
+      mins = Math.floor(mins);
       str = hr + ":" + (mins < 10 ? "0" : "") + Math.floor(mins) + " " + (hrs >= 12 ? "P.M." : "A.M.") + " today";
   }
   return str;
 }
 
-function onMessage(event)
-{
+function onMessage(event) {
   // unfreeze request message into object
   var msg = JSON.parse(event.data);
-  if(!msg) {
+  if (!msg) {
     return;
   }
+  // FIXME: can this possibly do anything?
 }
-function onFocus(event)
-{
+
+function onFocus(event) {
   if (gApps) {
     gDisplayMode = ROOT;
     retrieveInstalledApps();
@@ -481,10 +483,6 @@ if (window.addEventListener) {
 
 if (window.addEventListener) {
     window.addEventListener('focus', onFocus, false);
-} else if(window.attachEvent) {
+} else if (window.attachEvent) {
     window.attachEvent('onfocus', onFocus);
 }
-
-$(function(){
-
-});
