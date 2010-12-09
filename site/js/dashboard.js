@@ -52,6 +52,31 @@ var gAppPositions = null;
 var minAppListHeight = 0;
 var minAppListWidth = 0;
 
+var getInfoId = "getInfo";
+
+
+function showInstallDialog(browserType, installFunc) {
+		// a workaround for a flaw in the demo system (http://dev.jqueryui.com/ticket/4375), ignore!
+		$( "#dialog:ui-dialog" ).dialog( "destroy" );
+	
+		$( "#dialog-confirm" ).dialog( {
+		  title: "Install " + browserType + " Add-On",
+			resizable: false,
+			modal: true,
+			width: 400,
+			position: [100, 100],
+			buttons: {
+				"Install": function() {
+					$( this ).dialog( "close" );
+					installFunc();
+				},
+				"No Thank You": function() {
+					$( this ).dialog( "close" );
+				}
+			}
+		} );
+	}
+
 
 function retrieveInstalledApps() 
 {
@@ -68,9 +93,40 @@ function retrieveInstalledApps()
 }
 
 
+function addonIsInstalled() {
+  if(navigator.apps && (navigator.apps.nativeImplementation != undefined)) {
+    return true;
+  }
+  return false;
+}
+
+function shouldBotherUser()
+{
+  //check to see if we should bother the user about installing the addon this time
+  //question, where do we keep this setting?  localStorage?  for what domain?
+  return true;  //for now
+}
+
+function recommendAddon() {
+  if (!addonIsInstalled() && shouldBotherUser()) {
+      var agent = navigator.userAgent.toLowerCase();
+      if (agent.indexOf("firefox") != -1) {
+          //present UI asking the user if they want to install the firefox plugin
+          showInstallDialog("Firefox", ( function () { document.location = "installFFX-addon.html"; } ));
+          
+      } else if (agent.indexOf("chrome") != -1) {
+          //present UI asking the user if they want to install the chrome plugin
+          showInstallDialog("Chrome", ( function () { document.location = "installCHRM-addon.html"; } ));
+
+      }
+    }
+  }
+
+
+
 $(document).ready(function() {    
     //temporarily set the repository origin to localhost
-    navigator.apps.setRepoOrigin("../");
+    //navigator.apps.setRepoOrigin("../");
 
 $('#maincontent').resizable({ alsoResize: '.appList' });
 
@@ -85,6 +141,10 @@ $('#maincontent').resizable({ alsoResize: '.appList' });
            } catch (e) {
            alert(e);
        }
+       
+       // figure out which browser we are on, and whether the addon has been installed and enabled, and whether we should pester them if not.
+      self.recommendAddon();       
+       
    } else {
        $("#unsupportedBrowser").fadeIn(500);
    }
@@ -162,11 +222,15 @@ function render()
   $('#maincontent').resizable( "option", "minHeight", minAppListHeight + 140 );
   $('#maincontent').resizable( "option", "minWidth", minAppListWidth + 113 );
 
-   $('#appList').height(minAppListHeight + 100);
-   $('#maincontent').height(minAppListHeight + 133);
+  if ($('#appList').height() < (minAppListHeight +100)) {
+     $('#appList').height(minAppListHeight + 100);
+     $('#maincontent').height(minAppListHeight + 133);
+   }
    
-   $('#appList').width(minAppListWidth + 80);
-   $('#maincontent').width(minAppListWidth + 113);
+   if ($('#appList').width() < (minAppListWidth + 80)) {
+     $('#appList').width(minAppListWidth + 80);
+     $('#maincontent').width(minAppListWidth + 113);
+   }
 
 
     if (gDisplayMode == APP_INFO) {
@@ -180,32 +244,6 @@ function render()
     }
 }
 
-var overlayId = "myAppsDialogOverlay";
-var getInfoId = "getInfo";
-
-function showDarkOverlay() {
-  try { hideDarkOverlay() } catch(e) { };
-  // create a opacity overlay to focus the users attention
-  var od = document.createElement("div");
-  od.id = overlayId;
-  od.style.background = "#000";
-  od.style.opacity = ".10";
-  od.style.filter = "alpha(opacity=10)";
-  od.style.position = "fixed";
-  od.style.top = "0";
-  od.style.left = "0";
-  od.style.height = "100%";
-  od.style.width = "100%";
-  od.style.zIndex ="998";
-  document.body.appendChild(od);
-//  document.getElementById(dialogId).style.display = "inline";
-  return od;
-}
-
-function hideDarkOverlay() {
-//  document.getElementById(dialogId).style.display = "none";
-//  document.body.removeChild(document.getElementById(overlayId));
-}
 
 function getBiggestIcon(minifest) {
   //see if the minifest has any icons, and if so, return the largest one
@@ -222,12 +260,12 @@ function getBiggestIcon(minifest) {
 
 function renderAppInfo(selectedBox)
 {
-    $("#getInfo").remove();
+    $( "#" + getInfoId ).remove();
 
     // Set up Info starting location
     var info = document.createElement("div");
     info.id = getInfoId;
-    info.className = "getInfo";
+    info.className = getInfoId;
 
     var badge = elem("div", "appBadge");
     var appIcon = elem("div", "icon");
