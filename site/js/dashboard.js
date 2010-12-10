@@ -58,7 +58,7 @@ var getInfoId = "getInfo";
 function showInstallDialog(browserType, installFunc) {
 		// a workaround for a flaw in the demo system (http://dev.jqueryui.com/ticket/4375), ignore!
 		$( "#dialog:ui-dialog" ).dialog( "destroy" );
-	
+
 		$( "#dialog-confirm" ).dialog( {
 		  title: "Install " + browserType + " Add-On",
 			resizable: false,
@@ -78,7 +78,7 @@ function showInstallDialog(browserType, installFunc) {
 	}
 
 
-function retrieveInstalledApps() 
+function retrieveInstalledApps()
 {
   var listOfApps;
   navigator.apps.mgmt.list(function (listOfInstalledApps) {
@@ -88,8 +88,8 @@ function retrieveInstalledApps()
       render();
     })();
   });
-  
-  
+
+
 }
 
 
@@ -133,7 +133,7 @@ function recommendAddon() {
       if (agent.indexOf("firefox") != -1) {
           //present UI asking the user if they want to install the firefox plugin
           showInstallDialog("Firefox", ( function () { document.location = "installFFX-addon.html"; } ));
-          
+
       } else if (agent.indexOf("chrome") != -1) {
           //present UI asking the user if they want to install the chrome plugin
           showInstallDialog("Chrome", ( function () { document.location = "installCHRM-addon.html"; } ));
@@ -144,9 +144,9 @@ function recommendAddon() {
 
 
 
-$(document).ready(function() {    
+$(document).ready(function() {
     //temporarily set the repository origin to localhost
-    //navigator.apps.setRepoOrigin("../");
+    navigator.apps.setRepoOrigin("..");
 
 $('#maincontent').resizable({ alsoResize: '.appList' });
 
@@ -157,17 +157,19 @@ $('#maincontent').resizable({ alsoResize: '.appList' });
        try {
            // Construct our Apps handle
             retrieveInstalledApps();
-            gAppPositions = navigator.apps.mgmt.loadState();   
+            gAppPositions = navigator.apps.mgmt.loadState();
            } catch (e) {
            alert(e);
        }
-       
+
        // figure out which browser we are on, and whether the addon has been installed and enabled, and whether we should pester them if not.
-      self.recommendAddon();       
-       
+      self.recommendAddon();
+
    } else {
        $("#unsupportedBrowser").fadeIn(500);
    }
+
+   updateLoginStatus();
 });
 
 
@@ -175,7 +177,7 @@ function updateAppBoundaries()
 {
   minAppListHeight = 0;
   minAppListWidth = 0;
-  
+
   $(".app").each(function(index, elem) {
       var ePos = $(elem).position();
       if (ePos.top > minAppListHeight)  minAppListHeight = ePos.top;
@@ -223,10 +225,10 @@ function render()
       var icon = createAppIcon(install);
       //check for no icon here, and supply a default one
       if (!icon) {
-      
+
       }
-      
-      
+
+
       if (install === gSelectedInstall) {
         selectedBox = icon;
       }
@@ -238,7 +240,7 @@ function render()
   }
 
   updateAppBoundaries();
-  
+
   $('#maincontent').resizable( "option", "minHeight", minAppListHeight + 140 );
   $('#maincontent').resizable( "option", "minWidth", minAppListWidth + 113 );
 
@@ -246,7 +248,7 @@ function render()
      $('#appList').height(minAppListHeight + 100);
      $('#maincontent').height(minAppListHeight + 133);
    }
-   
+
    if ($('#appList').width() < (minAppListWidth + 80)) {
      $('#appList').width(minAppListWidth + 80);
      $('#maincontent').width(minAppListWidth + 113);
@@ -289,14 +291,14 @@ function renderAppInfo(selectedBox)
 
     var badge = elem("div", "appBadge");
     var appIcon = elem("div", "icon");
-    
+
     var icon = getBiggestIcon(gSelectedInstall);
-    
+
     if (icon) {
-        appIcon.setAttribute("style", 
+        appIcon.setAttribute("style",
                              "background:url(\"" + icon + "\") no-repeat; background-size:100%");
     }
-    
+
     $(appIcon).css("position", "absolute").css("top", -4).css("left", 8);
 
     var label = elem("div", "appBadgeName");
@@ -305,7 +307,7 @@ function renderAppInfo(selectedBox)
     badge.appendChild(appIcon);
     badge.appendChild(label);
     info.appendChild(badge);
-    
+
 
     var off = $(selectedBox).offset();
     $(info).css("postion", "absolute").css("top", off.top + -4).css("left", off.left + -8);
@@ -357,7 +359,7 @@ function renderAppInfo(selectedBox)
             }
           }
         }
-        
+
         info.appendChild(data);
 
         var desc = elem("div", "desc");
@@ -373,7 +375,7 @@ function renderAppInfo(selectedBox)
 
         // finally, a delete link and action
         $("<div/>").text("Delete this application.").addClass("deleteText").appendTo(info).click(function() {
-            navigator.apps.mgmt.remove(gSelectedInstall.id, 
+            navigator.apps.mgmt.remove(gSelectedInstall.id,
                                         function() {
                                                      retrieveInstalledApps();
                                                   });
@@ -403,7 +405,7 @@ function renderAppInfo(selectedBox)
     }, 0);
 }
 
-function createAppIcon(install) 
+function createAppIcon(install)
 {
     var appDiv = elem("div", "app");
     appDiv.onclick = makeOpenAppTabFn(install, install.id);
@@ -416,10 +418,10 @@ function createAppIcon(install)
                             var newPos = ui.position;
                             if (!gAppPositions) { gAppPositions = {}; }
                             gAppPositions[install.id] = newPos;
-                            navigator.apps.mgmt.saveState(gAppPositions);   
+                            navigator.apps.mgmt.saveState(gAppPositions);
                             $(this).addClass("ui-draggable-dragged");
-                                      
-                            updateAppBoundaries();                            
+
+                            updateAppBoundaries();
                             $('#maincontent').resizable( "option", "minHeight", minAppListHeight + 140 );
                             $('#maincontent').resizable( "option", "minWidth", minAppListWidth + 113 );
                         }
@@ -430,7 +432,7 @@ function createAppIcon(install)
 
      var nameDiv = elem("div", "appName");
      nameDiv.appendChild(document.createTextNode(install.name));
- 
+
      $(appDiv).append(nameDiv);
 
     var icon = getBiggestIcon(install);
@@ -444,7 +446,7 @@ function createAppIcon(install)
     var moreInfo = $("<div/>").addClass("moreInfo").appendTo(iconDiv);
     $("<a/>").appendTo(iconDiv);
 
-    // Set up the hover handler.  Only fade in after the user hovers for 
+    // Set up the hover handler.  Only fade in after the user hovers for
     // 500ms.
     var tHandle;
     $(iconDiv).hover(function() {
@@ -478,7 +480,7 @@ function createAppIcon(install)
           $(appDiv).css("position", "absolute").css("top", appPos.top).css("left", appPos.left);
           }
     }
-    
+
     return appDiv;
 }
 
@@ -528,6 +530,19 @@ function onFocus(event)
     retrieveInstalledApps();
     render();
   }
+}
+
+function updateLoginStatus() {
+  navigator.apps.mgmt.loginStatus(function (userInfo, loginInfo) {
+    if (! userInfo) {
+      $('#login-link a').attr('href', loginInfo.loginLink);
+      $('#login-link').show();
+    } else {
+      $('#username').text(userInfo.displayName);
+      $('#signed-in a').attr('href', loginInfo.logoutLink);
+      $('#signed-in').show();
+    }
+  });
 }
 
 

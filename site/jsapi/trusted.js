@@ -62,6 +62,11 @@
         scope: "openwebapps"
     });
 
+    var sync = Sync({
+      url: '/',
+      storage: TypedStorage()
+    });
+
     // Reference shortcut so minifier can save on characters
     var win = window;
 
@@ -336,6 +341,16 @@
         return true;
     });
 
+    chan.bind('loginStatus', function (t) {
+        verifyMgmtPermission(t.origin);
+        var loginInfo = {
+            loginLink: location.protocol + '//' + location.host + '/login/',
+            logoutLink: location.protocol + '//' + location.host + '/logout'
+        };
+        var userInfo = sync.readProfile();
+        return [userInfo, loginInfo];
+    });
+
     /**
        help with debugging issues
        We can eventually toggle this using a debug.myapps.org store
@@ -346,8 +361,12 @@
         }
     }
 
+    if (sync.user) {
+      sync.pollSyncServer();
+    }
+
     return {
         showDialog: function() { chan.notify({ method: "showme" }); },
         hideDialog: function() { chan.notify({ method: "hideme" }); }
-    }
+    };
 })();

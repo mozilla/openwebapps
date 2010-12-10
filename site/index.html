@@ -1,18 +1,18 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
-  <meta http-equiv="X-UA-Compatible" content="IE=8"/> 
+  <meta http-equiv="X-UA-Compatible" content="IE=8"/>
   <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
   <title>Application Dashboard</title>
   <link rel="shortcut icon" href="favicon.png" type="image/png">
   <link rel="stylesheet" href="dashboard.css" type="text/css" title="screen">
   <link rel="stylesheet" href="details.css" type="text/css" title="screen">
-  
-  
+
+
   <link rel="stylesheet" type="text/css" href="js/jquery-ui.css"/>
   <script type="text/javascript" src="js/jquery-1.4.2.min.js"></script>
-  <script type="text/javascript" src="js/jquery-ui-1.8.6.custom.min.js"></script> 
-  
+  <script type="text/javascript" src="js/jquery-ui-1.8.6.custom.min.js"></script>
+
   <script type="text/javascript" src="js/compat.js"></script>
   <script type="text/javascript" src="js/jschannel.js"></script>
   <script type="text/javascript" src="jsapi/include.js"></script>
@@ -24,6 +24,10 @@
 
 <div id="container">
   <div id="header"><img src="img/logo.png"><span class="headerText">App Dashboard</span></div>
+  <div id="login">
+    <span id="login-link" style="display: none"><a href="/login/">sign in</a></span>
+    <span id="signed-in" style="display: none"><span id="username"></span> <a href="/logout">sign out</a></span>
+  </div>
   <div id="content">
     <div id="maincontentmenu">
       <div class="maincontentmenuItemOn"><a href="">Applications</a></div>
@@ -40,7 +44,7 @@
   <div id="unsupportedBrowserContent">
     <div><img src="img/logo-192.png"></div>
     <p>
-      This Mozilla Labs technology demo requires features that are not present in your browser.  Please consider upgrading 
+      This Mozilla Labs technology demo requires features that are not present in your browser.  Please consider upgrading
       to a modern browser!  There are <a href="http://www.whatbrowser.org/en/browser/">many free browsers to choose from</a>.
     </p>
   </div>
@@ -55,4 +59,3 @@
 </body>
 
 </html>
-
