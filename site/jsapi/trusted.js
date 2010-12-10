@@ -344,7 +344,7 @@
     chan.bind('loginStatus', function (t) {
         verifyMgmtPermission(t.origin);
         var loginInfo = {
-            loginLink: location.protocol + '//' + location.host + '/login/',
+            loginLink: location.protocol + '//' + location.host + '/login.html',
             logoutLink: location.protocol + '//' + location.host + '/logout'
         };
         var userInfo = sync.readProfile();
