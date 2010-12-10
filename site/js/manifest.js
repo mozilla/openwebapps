@@ -139,7 +139,6 @@
                     if (typeof x !== 'object') errorThrow();
                     for (var k in x) {
                         if (!x.hasOwnProperty(k)) continue;
-                        if (!(k in { 16:null, 48:null, 128:null })) errorThrow('invalid key, expected 16, 48, or 128', k);
                         if (typeof x[k] !== 'string') errorThrow(undefined, k);
                         if (x[k].indexOf('..') != -1) errorThrow(undefined, k);
                     }
