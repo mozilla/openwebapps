@@ -100,11 +100,31 @@ function addonIsInstalled() {
   return true;
 }
 
+var one_hour = 1000 * 60 * 60;
+var three_days = 72 * one_hour;
+
 function shouldBotherUser()
 {
   //check to see if we should bother the user about installing the addon this time
   //question, where do we keep this setting?  localStorage?  for what domain?
-  return true;  //for now
+  var now = Date.now();
+  var nextBother = window.localStorage.getItem("addon-bother-timestamp");
+  
+  if (nextBother) {
+    if (nextBother == -1) return false;       //never bother them again.
+    
+    if (nextBother < now) {
+      nextBother = now + three_days;
+      window.localStorage.setItem("addon-bother-timestamp", nextBother);
+      return true;
+    }
+    else return false;
+    
+  } else {  //first time
+      nextBother = now;
+      window.localStorage.setItem("addon-bother-timestamp", nextBother);
+      return false;
+  }
 }
 
 function recommendAddon() {
