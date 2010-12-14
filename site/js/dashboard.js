@@ -157,7 +157,7 @@ $('#maincontent').resizable({ alsoResize: '.appList' });
        try {
            // Construct our Apps handle
             retrieveInstalledApps();
-            gAppPositions = navigator.apps.mgmt.loadState();
+            navigator.apps.mgmt.loadState( ( function (s) { gAppPositions = s;} ) );
            } catch (e) {
            alert(e);
        }
