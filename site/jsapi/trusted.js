@@ -205,7 +205,8 @@
           // Validate and clean the request
           try {
               manifestToInstall = Manifest.parse(args.manifest);
-              displayInstallPrompt(installOrigin, manifestToInstall, installConfirmationFinish);
+              displayInstallPrompt(installOrigin, manifestToInstall, installConfirmationFinish,
+                                   { isExternalServer: true });
               
           } catch(e) {
               throw [ "invalidManifest", "couldn't validate your manifest: " + e ];
