@@ -68,6 +68,9 @@ if (!navigator.apps) {
             loadState: function (cb) {
                 sendToExtension('loadState', null, cb);
             },
+            loginStatus: function (cb) {
+                sendToExtension('loginStatus', null, cb);
+            },
             saveState: function (obj, cb) {
                 sendToExtension('saveState', obj, cb);
             }

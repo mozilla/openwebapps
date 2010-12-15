@@ -36,6 +36,12 @@ chrome.extension.onConnect.addListener(function(port) {
                     sendResponse(msg, Repo.loadState(origin));
                 }
                 break;
+            case 'loginStatus':
+                if (mgmtAuthorized(origin)) {
+                    console.log("XXX: implement login status for sync");
+                    sendResponse(msg, null);
+                }
+                break;
             case 'saveState':
                 if (mgmtAuthorized(origin)) {
                     sendResponse(msg, Repo.saveState(origin, msg.args));
