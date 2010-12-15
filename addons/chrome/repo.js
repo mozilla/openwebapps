@@ -296,9 +296,14 @@
     };
 
     var launchFunc = function(id) {
+        console.log("launching app: " + id);
         var i = JSON.parse(storage.getItem(id));
         if (!i || !i.app.base_url) return false;
-        chrome.tabs.create({url: (i.app.base_url + i.app.launch_path)});
+        var baseURL = i.app.base_url;
+        var launchURL = baseURL + (i.app.launch_path ? i.app.launch_path : "");
+        
+        // no tab found with a containing url was found, let's, create one.
+        chrome.tabs.create({url: launchURL});
         return true;
     }
 
