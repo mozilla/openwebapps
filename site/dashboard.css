@@ -17,25 +17,25 @@
 /* ------- HTML ELEMENTS ------- */
 
 html {
-	padding-bottom: 0px; 
+	padding-bottom: 0px;
 	padding-top: 40px;
 	padding-left: 20px;
 	padding-right: 20px;
-	
+
 }
 
-body { 
+body {
 	font-family: Tahoma, sans-serif !important;
-	
+
 	background-color: rgb(230,230,230);
 	background: rgba(0,0,0,0.1) url('img/grain.png') repeat top center;
-	
+
 	color: rgb(180,180,180);
-	font-size:13px;	
+	font-size:13px;
 }
 
 @font-face{
-font-family: 'Museo'; 
+font-family: 'Museo';
 src: url('fonts/MuseoSans_500.otf') format('opentype');
 }
 
@@ -52,27 +52,27 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
 	min-width: 600px;
 	height: 60px;
 	margin-bottom: 50px;
-	
+
 	-moz-border-radius: 1em;
 		-webkit-border-radius: 1em;
 			border-radius: 1em;
-	
+
 	border: 1px solid rgba(0,0,0,0.3);
 	background: #fff repeat-x top center;background: transparent -moz-linear-gradient(top, rgba(255,255,255,0.6), rgba(255,255,255,1));
-	
-	-moz-box-shadow: 
+
+	-moz-box-shadow:
 		inset rgba(255, 255, 255, 0.5) 0 1px 0px,
 		inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
 		rgba(0, 0, 0, 0.1) 0px 2px 0px;
-	-webkit-box-shadow: 
+	-webkit-box-shadow:
 		inset rgba(255, 255, 255, 0.5) 0 1px 0px,
 		inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
 		rgba(0, 0, 0, 0.1) 0px 2px 0px;
-	box-shadow: 
+	box-shadow:
 		inset rgba(255, 255, 255, 0.5) 0 1px 0px,
 		inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
-		rgba(0, 0, 0, 0.1) 0px 2px 0px;	
-		
+		rgba(0, 0, 0, 0.1) 0px 2px 0px;
+
 }
 
 #header img {
@@ -83,11 +83,11 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
 
 .headerText {
 	position: absolute;
-	font-family: 'Museo'; 
+	font-family: 'Museo';
 	color: rgb(80,80,80);
-	font-size: 42px; 
-	font-weight: normal; 
-	letter-spacing: -2px; 
+	font-size: 42px;
+	font-weight: normal;
+	letter-spacing: -2px;
 	margin-left: 20px;
 	margin-top: 2px;
 }
@@ -112,14 +112,14 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
 	height: 18px;
 	margin-left: 12px;
 	padding: 5px 12px 10px 12px;
-	
+
 	-webkit-border-top-left-radius: 0.5em;
 	-webkit-border-top-right-radius: 0.5em;
 	-moz-border-radius-topleft: 0.5em;
 	-moz-border-radius-topright: 0.5em;
 	border-top-left-radius: 0.5em;
-	border-top-right-radius: 0.5em;	
-	
+	border-top-right-radius: 0.5em;
+
 	color: rgb(50,50,50);
 	border-left: 1px solid rgba(0,0,0,0.3);
 	border-right: 1px solid rgba(0,0,0,0.3);
@@ -140,27 +140,27 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
 	height: 18px;
 	margin-left: 12px;
 	padding: 5px 12px 10px 12px;
-	
+
 	-webkit-border-top-left-radius: 0.5em;
 	-webkit-border-top-right-radius: 0.5em;
 	-moz-border-radius-topleft: 0.5em;
 	-moz-border-radius-topright: 0.5em;
 	border-top-left-radius: 0.5em;
 	border-top-right-radius: 0.5em;
-	
+
 	color: rgb(50,50,50);
 	border: 1px solid rgba(0,0,0,0.2);
-	
-	-moz-box-shadow: 
+
+	-moz-box-shadow:
 		inset rgba(255, 255, 255, 1) 0 1px 0px,
 		inset rgba(0,0,0,0.05) 0 -3px 0px;
-	-webkit-box-shadow: 
+	-webkit-box-shadow:
 		inset rgba(255, 255, 255, 1) 0 1px 0px,
 		inset rgba(0,0,0,0.05) 0 -3px 0px;
-	box-shadow: 
+	box-shadow:
 		inset rgba(255, 255, 255, 1) 0 1px 0px,
 		inset rgba(0,0,0,0.05) 0 -3px 0px;
-		
+
 	background-color: rgba(255,255,255,0.5);
 	display: block;
 }
@@ -186,24 +186,24 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
 	top: -16px;
 	height: 36px;
 	width: 36px;
-	
+
 	-moz-border-radius: 1.2em;
 		-webkit-border-radius: 1.2em;
 			border-radius: 1.2em;
-			
+
 	background-color: rgb(134,214,106); /* for non-css3 browsers */
 	background: -webkit-gradient(linear, left top, left bottom, from(rgba(134,214,106,1)), to(rgba(78,152,52,1))); /* for webkit browsers */
 	background: -moz-linear-gradient(top,  rgba(134,214,106,1), rgba(78,152,52,1)); /* for firefox 3.6+ */
-	
-	-moz-box-shadow: 
+
+	-moz-box-shadow:
 		inset rgba(218,255,191,1) 0 1px 0px,
 		inset rgba(0,0,0,0.2) 0 -2px 0px,
 		rgba(0,0,0,0.1) 0 3px 0px;
-	-webkit-box-shadow: 
+	-webkit-box-shadow:
 		inset rgba(218,255,191,1) 0 1px 0px,
 		inset rgba(0,0,0,0.2) 0 -2px 0px,
 		rgba(0,0,0,0.1) 0 3px 0px;
-	box-shadow: 
+	box-shadow:
 		inset rgba(218,255,191,1) 0 1px 0px,
 		inset rgba(0,0,0,0.2) 0 -2px 0px,
 		rgba(0,0,0,0.1) 0 3px 0px;
@@ -227,27 +227,27 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
 	min-height: 149px;
 	padding: 20px;
 	padding-top: 10px;
-	
+
 	-moz-border-radius: 1em;
 		-webkit-border-radius: 1em;
 			border-radius: 1em;
-	
+
 	border: 1px solid rgba(0,0,0,0.3);
-	
-	-moz-box-shadow: 
+
+	-moz-box-shadow:
 		inset rgba(255, 255, 255, 0.5) 0 1px 0px,
 		inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
 		rgba(0, 0, 0, 0.1) 0px 2px 0px;
-	-webkit-box-shadow: 
+	-webkit-box-shadow:
 		inset rgba(255, 255, 255, 0.5) 0 1px 0px,
 		inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
 		rgba(0, 0, 0, 0.1) 0px 2px 0px;
-	box-shadow: 
+	box-shadow:
 		inset rgba(255, 255, 255, 0.5) 0 1px 0px,
 		inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
-		rgba(0, 0, 0, 0.1) 0px 2px 0px;	
-	
-	
+		rgba(0, 0, 0, 0.1) 0px 2px 0px;
+
+
 	background-color: rgb(255,255,255);
 }
 
@@ -265,29 +265,29 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
 	height: 28px;
 	line-height: 26px;
 	border: 1px solid rgba(0,0,0,0.2);
-	
+
 	-moz-border-radius: 1em;
 		-webkit-border-radius: 1em;
 			border-radius: 1em;
-			
-	-moz-box-shadow: 
+
+	-moz-box-shadow:
 		inset rgba(218,255,191,1) 0 1px 0px,
 		inset rgba(0,0,0,0.2) 0 -2px 0px,
 		rgba(0,0,0,0.1) 0 2px 0px;
-	-webkit-box-shadow: 
+	-webkit-box-shadow:
 		inset rgba(218,255,191,1) 0 1px 0px,
 		inset rgba(0,0,0,0.2) 0 -2px 0px,
 		rgba(0,0,0,0.1) 0 2px 0px;
-	-box-shadow: 
+	-box-shadow:
 		inset rgba(218,255,191,1) 0 1px 0px,
 		inset rgba(0,0,0,0.2) 0 -2px 0px,
 		rgba(0,0,0,0.1) 0 2px 0px;
-		
+
 	background-color: rgb(134,214,106); /* for non-css3 browsers */
 	background: -webkit-gradient(linear, left top, left bottom, from(rgba(134,214,106,1)), to(rgba(78,152,52,1))); /* for webkit browsers */
 	background: -moz-linear-gradient(top,  rgba(134,214,106,1), rgba(78,152,52,1)); /* for firefox 3.6+ */
-	
-	
+
+
 	display: block;
 }
 
@@ -299,67 +299,73 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
 	width: 140px;
 	height: 28px;
 	text-decoration: none;
-	
+
 	-moz-border-radius: 1em;
 		-webkit-border-radius: 1em;
 			border-radius: 1em;
-	
-	 -moz-box-shadow: 
+
+	 -moz-box-shadow:
 	 	inset rgba(255, 255, 255, 0.8) 0 1px 1px,
 		inset rgba(0, 0, 0, 0.1) 0 -2px 0px,
-		inset rgba(0, 156, 237, 0.2) 0 0px 12px, 
-		rgba(0, 156, 237, 0.6) 0 0px 12px, 
+		inset rgba(0, 156, 237, 0.2) 0 0px 12px,
+		rgba(0, 156, 237, 0.6) 0 0px 12px,
 		rgba(0, 156, 237, 1) 0 0px 4px;
-	-webkit-box-shadow: 
-		inset rgba(255, 255, 255, 0.8) 
+	-webkit-box-shadow:
+		inset rgba(255, 255, 255, 0.8)
 		inset rgba(0, 0, 0, 0.1) 0 -2px 0px,
-		inset rgba(0, 156, 237, 0.2) 0 0px 12px, 
-		rgba(0, 156, 237, 0.6) 0 0px 12px, 
+		inset rgba(0, 156, 237, 0.2) 0 0px 12px,
+		rgba(0, 156, 237, 0.6) 0 0px 12px,
 		rgba(0, 156, 237, 1) 0 0px 4px;
-	box-shadow: 
+	box-shadow:
 		inset rgba(255, 255, 255, 0.8) 0 1px 1px,
 		inset rgba(0, 0, 0, 0.1) 0 -2px 0px,
-		inset rgba(0, 156, 237, 0.2) 0 0px 12px, 
-		rgba(0, 156, 237, 0.6) 0 0px 12px, 
+		inset rgba(0, 156, 237, 0.2) 0 0px 12px,
+		rgba(0, 156, 237, 0.6) 0 0px 12px,
 		rgba(0, 156, 237, 1) 0 0px 4px;
-    
+
     -moz-transition: all 1s ease-out;  /* FF3.7+ */
     -o-transition: all 1s ease-out;  /* Opera 10.5 */
   	-webkit-transition: all 1s ease-out;  /* Saf3.2+, Chrome */
-  
+
  	opacity: 0;
 }
 
 #maincontentmenu .button a:hover{
-	
+
 	-moz-border-radius: 1em;
 		-webkit-border-radius: 1em;
 			border-radius: 1em;
-			
-	 -moz-box-shadow: 
+
+	 -moz-box-shadow:
 	 	inset rgba(255, 255, 255, 0.8) 0 1px 1px,
 		inset rgba(0, 0, 0, 0.1) 0 -2px 0px,
-		inset rgba(0, 156, 237, 0.2) 0 0px 12px, 
-		rgba(0, 156, 237, 0.6) 0 0px 12px, 
+		inset rgba(0, 156, 237, 0.2) 0 0px 12px,
+		rgba(0, 156, 237, 0.6) 0 0px 12px,
 		rgba(0, 156, 237, 1) 0 0px 4px;
-	-webkit-box-shadow: 
+	-webkit-box-shadow:
 		inset rgba(255, 255, 255, 0.8) 0 1px 1px,
 		inset rgba(0, 0, 0, 0.1) 0 -2px 0px,
-		inset rgba(0, 156, 237, 0.2) 0 0px 12px, 
-		rgba(0, 156, 237, 0.6) 0 0px 12px, 
+		inset rgba(0, 156, 237, 0.2) 0 0px 12px,
+		rgba(0, 156, 237, 0.6) 0 0px 12px,
 		rgba(0, 156, 237, 1) 0 0px 4px;
-	box-shadow: 
+	box-shadow:
 		inset rgba(255, 255, 255, 0.8) 0 1px 1px,
 		inset rgba(0, 0, 0, 0.1) 0 -2px 0px,
-		inset rgba(0, 156, 237, 0.2) 0 0px 12px, 
-		rgba(0, 156, 237, 0.6) 0 0px 12px, 
+		inset rgba(0, 156, 237, 0.2) 0 0px 12px,
+		rgba(0, 156, 237, 0.6) 0 0px 12px,
 		rgba(0, 156, 237, 1) 0 0px 4px;
-	
+
 	-moz-transition: all 0.25s ease-out;  /* FF3.7+ */
     -o-transition: all 0.25s ease-out;  /* Opera 10.5 */
   	-webkit-transition: all 0.25s ease-out;  /* Saf3.2+, Chrome */
-  	
+
  	opacity: 1;
+}
+
+#login {
+  position: absolute;
+  top: 2px;
+  right: 5px;
 }
 
 /* ---------------------  */
@@ -371,29 +377,29 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
 	width: 96px;
 	height: 96px;
 	text-align: center;
-	
+
 	background-image: url('img/default-icon.png');
 
 	-moz-border-radius: 1em;
 		-webkit-border-radius: 1em;
 			border-radius: 1em;
-	
-	-moz-box-shadow: 
+
+	-moz-box-shadow:
 		inset rgba(255, 255, 255, 0.8) 0 1px 1px,
 		inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
 		rgba(0, 0, 0, 0.1) 0px 2px 12px,
 		rgba(0, 0, 0, 0.5) 0px 2px 1px;
-	-webkit-box-shadow: 
+	-webkit-box-shadow:
 		inset rgba(255, 255, 255, 0.8) 0 1px 1px,
 		inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
 		rgba(0, 0, 0, 0.1) 0px 2px 12px,
 		rgba(0, 0, 0, 0.5) 0px 2px 1px;
-	box-shadow: 
+	box-shadow:
 		inset rgba(255, 255, 255, 0.8) 0 1px 1px,
 		inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
 		rgba(0, 0, 0, 0.1) 0px 2px 12px,
 		rgba(0, 0, 0, 0.5) 0px 2px 1px;
-		
+
 	margin: 10px;
 }
 
@@ -405,37 +411,37 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
 	font-size: 1.2em;
 	color: rgb(255,255,255);
 	text-decoration: none;
-	
+
 	-moz-border-radius: 1em;
 		-webkit-border-radius: 1em;
 			border-radius: 1em;
-	
-	-moz-box-shadow: 
+
+	-moz-box-shadow:
 		inset rgba(255, 255, 255, 0.8) 0 1px 1px,
 		inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
 		rgba(0, 0, 0, 0.5) 0px 2px 1px,
-		inset rgba(0, 156, 237, 0.2) 0 0px 24px, 
-		rgba(0, 156, 237, 0.6) 0 0px 24px, 
+		inset rgba(0, 156, 237, 0.2) 0 0px 24px,
+		rgba(0, 156, 237, 0.6) 0 0px 24px,
 		rgba(0, 156, 237, 1) 0 0px 4px;
-	-webkit-box-shadow: 
+	-webkit-box-shadow:
 		inset rgba(255, 255, 255, 0.8) 0 1px 1px,
 		inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
 		rgba(0, 0, 0, 0.5) 0px 2px 1px,
-		inset rgba(0, 156, 237, 0.2) 0 0px 24px, 
-		rgba(0, 156, 237, 0.6) 0 0px 24px, 
+		inset rgba(0, 156, 237, 0.2) 0 0px 24px,
+		rgba(0, 156, 237, 0.6) 0 0px 24px,
 		rgba(0, 156, 237, 1) 0 0px 4px;
-	box-shadow: 
+	box-shadow:
 		inset rgba(255, 255, 255, 0.8) 0 1px 1px,
 		inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
 		rgba(0, 0, 0, 0.5) 0px 2px 1px,
-		inset rgba(0, 156, 237, 0.2) 0 0px 24px, 
-		rgba(0, 156, 237, 0.6) 0 0px 24px, 
+		inset rgba(0, 156, 237, 0.2) 0 0px 24px,
+		rgba(0, 156, 237, 0.6) 0 0px 24px,
 		rgba(0, 156, 237, 1) 0 0px 4px;
-		
+
 	-moz-transition: all 1s ease-out;  /* FF3.7+ */
     -o-transition: all 1s ease-out;  /* Opera 10.5 */
   	-webkit-transition: all 1s ease-out;  /* Saf3.2+, Chrome */
-  	
+
  	opacity: 0;
 
 }
@@ -455,11 +461,11 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
 
 
 .icon a:hover {
-	
+
 	-moz-transition: all 0.25s ease-out;  /* FF3.7+ */
     -o-transition: all 0.25s ease-out;  /* Opera 10.5 */
   	-webkit-transition: all 0.25s ease-out;  /* Saf3.2+, Chrome */
-  	
+
  	opacity: 1;
 
 }
@@ -490,30 +496,30 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
   min-height:116px;
   min-width:168px;
 	border: 1px solid rgba(0,0,0,0.2);
-	
+
 	background-color: rgb(230,230,230);
 	background: rgba(0,0,0,0.1) url('img/grain.png') repeat top center;
-	
+
 	-moz-border-radius: 1em;
 		-webkit-border-radius: 1em;
 			border-radius: 1em;
-	
-	-moz-box-shadow: 
+
+	-moz-box-shadow:
 		rgba(255, 255, 255, 1) 0 1px 0px,
 		rgba(255, 255, 255, 1) 0 0px 12px,
 		inset rgba(0, 0, 0, 0.1) 0 0px 6px,
-		inset rgba(0, 0, 0, 0.05) 0 3px 
-	-webkit-box-shadow: 
-		rgba(255, 255, 255, 1) 0 1px 0px,
-		rgba(255, 255, 255, 1) 0 0px 12px,
-		inset rgba(0, 0, 0, 0.1) 0 0px 6px,
-		inset rgba(0, 0, 0, 0.05) 0 3px 0px;
-	box-shadow: 
+		inset rgba(0, 0, 0, 0.05) 0 3px
+	-webkit-box-shadow:
 		rgba(255, 255, 255, 1) 0 1px 0px,
 		rgba(255, 255, 255, 1) 0 0px 12px,
 		inset rgba(0, 0, 0, 0.1) 0 0px 6px,
 		inset rgba(0, 0, 0, 0.05) 0 3px 0px;
-		
+	box-shadow:
+		rgba(255, 255, 255, 1) 0 1px 0px,
+		rgba(255, 255, 255, 1) 0 0px 12px,
+		inset rgba(0, 0, 0, 0.1) 0 0px 6px,
+		inset rgba(0, 0, 0, 0.05) 0 3px 0px;
+
 }
 
 .appList:after { content: "."; display: block; height: 0; clear: both; visibility: hidden; }
