@@ -63,7 +63,7 @@
     var storage = win.localStorage;
 
     function makeAppKey(manifest) {
-        return "app::" + manifest.base_url + manifest.launch_path;
+        return "app::" + manifest.base_url + (manifest.launch_path ? manifest.launch_path : "");
     }
 
     function isAppKey(key) {
@@ -93,7 +93,7 @@
 
             try {
                 var item = JSON.parse(storage.getItem(key));
-                item.app = Manifest.validate(item.app);
+                item.app = Manifest.parse(item.app);
                 cb(key, item);
             } catch (e) {
                 console.log("invalid application detected: " + e);
@@ -106,33 +106,24 @@
         }
     }
 
-    // Returns whether the given URL belongs to the specified domain (scheme://hostname[:nonStandardPort])
     function urlMatchesDomain(url, domain)
     {
         try {
-            var parsedDomain = Manifest.parseUri(domain);
-            var parsedURL = Manifest.parseUri(url);
-
-            if (parsedDomain.protocol.toLowerCase() == parsedURL.protocol.toLowerCase() &&
-                parsedDomain.host.toLowerCase() == parsedURL.host.toLowerCase())
-            {
-                var inputPort = parsedDomain.port ? parsedDomain.port : (parsedDomain.protocol.toLowerCase() == "https" ? 443 : 80);
-                var testPort = parsedURL.port ? parsedURL.port : (parsedURL.protocol.toLowerCase() == "https" ? 443 : 80);        
-                if (inputPort == testPort) return true;
-            }
+            // special case for local testing
+            if (url === "null" && domain === "null") return true;
+            var parsedDomain = URLParse(domain).normalize();
+            var parsedURL = URLParse(url).normalize();
+            return parsedDomain.contains(parsedURL);
         } catch (e) {
+            return false;
         }
-        return false;
     }
 
     // Returns whether this application runs in the specified domain (scheme://hostname[:nonStandardPort])
     function applicationMatchesDomain(application, domain)
     {
-        for (var i=0;i<application.app_urls.length;i++)
-        {
-            var testURL = application.app_urls[i];
-            if (urlMatchesDomain(testURL, domain)) return true;
-        }
+        var testURL = application.base_url;
+        if (urlMatchesDomain(testURL, domain)) return true;
         return false;
     }
 
@@ -156,7 +147,8 @@
         var result = [];
 
         iterateApps(function(key, item) {
-            if (urlMatchesDomain(item.installURL, origin)) {
+            if (urlMatchesDomain(item.installURL, origin))
+            {
                 result.push(item);
             }
         });
@@ -168,7 +160,7 @@
         // Validate and clean the request
         var manf;
         try {
-            manf = Manifest.validate(args.manifest);
+            manf = Manifest.parse(args.manifest);
         } catch(e) {
             cb({error: [ "invalidManifest", "couldn't validate your mainfest: " + e]});
             return;
@@ -283,7 +275,7 @@
             icons: item.app.icons,
             name: item.app.name,
             description: item.app.description,
-            launchURL: item.app.base_url + item.app.launch_path,
+            launchURL: item.app.base_url + (item.app.launch_path ? item.app.launch_path : ""),
             developer: item.app.developer
         };
     }
@@ -317,39 +309,13 @@
 
     var saveStateFunc = function(id, state) {
         // storing null purges state
-        if (state === null) {
+        if (state === undefined) {
             storage.removeItem(makeStateKey(id));
         } else  {
             storage.setItem(makeStateKey(id), JSON.stringify(state));
         }
         return true;
     };
-
-
-    /* this seemed a good idea, however launching applications from inside an iframe
-     * is too fragile given the abundance of popup blockers.  given that, it seems
-     * wiser to return a launchurl in list.
-    chan.bind('launch', function(t, key) {
-        verifyMgmtPermission(t.origin);
-
-        var item = storage.getItem(key);
-        if (item) {
-            try {
-                item = JSON.parse(item);
-                item.app = Manifest.validate(item.app);
-            } catch (e) {
-                logError("invalid application removed: " + e);
-                storage.removeItem(key);
-                item = null;
-            }
-        }
-        if (!item) throw [ "noSuchApplication", "no application exists with the id: " + key ]; 
-
-        win.open(item.app.base_url + item.app.launch_path, "__" + key);
-
-        return true;
-    });
-     */
 
     return {
         list: listFunc,
