@@ -7,7 +7,7 @@
 /* don't display anything at inital pageload, wait for page load where
  * browser feature checking will occur */
 #container {
-  display: none;
+/*  display: none; */
 }
 
 #unsupportedBrowser {
@@ -222,6 +222,7 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
 	text-align: center;
 }
 
+/*
 #maincontent {
 	min-width: 190px;
 	min-height: 149px;
@@ -250,6 +251,7 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
 	
 	background-color: rgb(255,255,255);
 }
+*/
 
 .button {
 	position: relative;
@@ -484,35 +486,21 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
 }
 
 .appList {
-	padding: 10px;
-	margin: 0px auto;
-	margin-top: 10px;
   min-height:116px;
   min-width:168px;
-	border: 1px solid rgba(0,0,0,0.2);
+	border: 12px solid rgba(255,255,255,1.0);
 	
-	background-color: rgb(230,230,230);
 	background: rgba(0,0,0,0.1) url('img/grain.png') repeat top center;
 	
 	-moz-border-radius: 1em;
-		-webkit-border-radius: 1em;
-			border-radius: 1em;
-	
-	-moz-box-shadow: 
-		rgba(255, 255, 255, 1) 0 1px 0px,
-		rgba(255, 255, 255, 1) 0 0px 12px,
-		inset rgba(0, 0, 0, 0.1) 0 0px 6px,
-		inset rgba(0, 0, 0, 0.05) 0 3px 
-	-webkit-box-shadow: 
-		rgba(255, 255, 255, 1) 0 1px 0px,
-		rgba(255, 255, 255, 1) 0 0px 12px,
-		inset rgba(0, 0, 0, 0.1) 0 0px 6px,
-		inset rgba(0, 0, 0, 0.05) 0 3px 0px;
-	box-shadow: 
-		rgba(255, 255, 255, 1) 0 1px 0px,
-		rgba(255, 255, 255, 1) 0 0px 12px,
-		inset rgba(0, 0, 0, 0.1) 0 0px 6px,
-		inset rgba(0, 0, 0, 0.05) 0 3px 0px;
+	-webkit-border-radius: 1em;
+	border-radius: 1em;
+
+	background-color: rgb(220,220,220);
+
+   -moz-box-shadow:  0 0 2px black;
+-webkit-box-shadow:  0 0 2px black;
+        box-shadow:  0 0 2px black;
 		
 }
 

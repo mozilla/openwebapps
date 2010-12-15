@@ -18,6 +18,8 @@
   <script type="text/javascript" src="jsapi/include.js"></script>
   <script type="text/javascript" src="js/dashboard.js"></script>
 
+<link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.1/themes/base/jquery-ui.css"/>
+
 </head>
 
 <body>
@@ -33,10 +35,9 @@
       <div class="maincontentmenuItemOn"><a href="">Applications</a></div>
       <div id="demobutton" class="button"><a href="https://apps.mozillalabs.com/"></a>Get Demo Apps</div>
     </div>
-    <div id="maincontent">
-      <div class="appList" id="appList">
-      </div>
-    </div>
+    
+    <div class="appList" id="page1"></div>
+    
     <div id="footer">a Mozilla Labs project - <a href="http://www.mozilla.com/en-US/privacy-policy.html">Privacy Policy</a> and <a href="http://www.mozilla.com/en-US/about/legal.html">Legal Notices</a> </div>
   </div>
 </div>
@@ -49,8 +50,6 @@
     </p>
   </div>
 </div>
-
-<!-- <span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"> -->
 
 <div id="dialog-confirm" style="display:none">
 	<p>Would you like to install the Web App Dashboard, which makes finding, installing, managing and launching your Web Applications fun?</p>

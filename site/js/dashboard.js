@@ -47,7 +47,7 @@ var gSelectedInstall = null;
 var ROOT = 1;
 var APP_INFO = 2;
 var gDisplayMode = ROOT;
-var gAppPositions = null;
+var gDashboardState = null;
 
 var minAppListHeight = 0;
 var minAppListWidth = 0;
@@ -148,16 +148,16 @@ $(document).ready(function() {
     //temporarily set the repository origin to localhost
     navigator.apps.setRepoOrigin("..");
 
-$('#maincontent').resizable({ alsoResize: '.appList' });
+  $('#page1').resizable({"handles":'s', "stop": function(event, ui) {saveDashSize();} });
 
   // can this user use myapps?
    var w = window;
    if (w.JSON && w.postMessage) {
-       $("#container").fadeIn(500);
        try {
            // Construct our Apps handle
-            retrieveInstalledApps();
-            navigator.apps.mgmt.loadState( ( function (s) { gAppPositions = s;} ) );
+             retrieveInstalledApps();
+             navigator.apps.mgmt.loadState( ( function (s) { gDashboardState = s;
+                                                             if (!gDashboardState) { gDashboardState = {}; } } ) );
            } catch (e) {
            alert(e);
        }
@@ -173,17 +173,45 @@ $('#maincontent').resizable({ alsoResize: '.appList' });
 });
 
 
-function updateAppBoundaries()
+function updateMinDashSize()
 {
   minAppListHeight = 0;
   minAppListWidth = 0;
 
-  $(".app").each(function(index, elem) {
+  $('.app').each(function(index, elem) {
       var ePos = $(elem).position();
-      if (ePos.top > minAppListHeight)  minAppListHeight = ePos.top;
-      if (ePos.top > minAppListWidth)  minAppListWidth = ePos.left;
-
+      var h = $(elem).height();
+      var w = $(elem).width();
+      if (ePos.top + h + 6 > minAppListHeight)  minAppListHeight = ePos.top + h + 6;
+      if (ePos.left + w + 6 > minAppListWidth)  minAppListWidth = ePos.left + w + 6;
     });
+    
+  $('#page1').resizable( "option", "minHeight", minAppListHeight );
+  $('#page1').resizable( "option", "minWidth", minAppListWidth );
+}
+
+
+function resizeDash(h,w)
+{
+    $('#page1').top = 0;
+    $('#page1').left = 0;
+
+    $('#page1').height(h);
+    //$('#page1').width(w);    
+}
+
+
+function loadDashSize () {
+  //load the last saved size of the dash
+  if (gDashboardState.dashSize) {
+    resizeDash(gDashboardState.dashSize.height, gDashboardState.dashSize.width);
+  }
+}
+
+function saveDashSize () {
+  //save size of the dash
+    gDashboardState.dashSize = {"height":$('#page1').height(), "width":$('#page1').width()};
+    navigator.apps.mgmt.saveState(gDashboardState);
 }
 
 
@@ -214,8 +242,11 @@ function makeOpenAppTabFn(app, id)
 // and labels for all apps.
 function render()
 {
-  var box = $("#appList");
-  box.empty();
+  var box = $("#page1");
+
+  //clear out the the app nodes.  WARNING: this kills all of them everywhere, I think,
+  // so if we had multiple pages of apps, this might cause them all to refresh.
+  $('.app').remove();
 
   var selectedBox = null;
   for ( var i = 0; i < gApps.length; i++ ) {
@@ -225,9 +256,8 @@ function render()
       var icon = createAppIcon(install);
       //check for no icon here, and supply a default one
       if (!icon) {
-
+        //use some default icon here
       }
-
 
       if (install === gSelectedInstall) {
         selectedBox = icon;
@@ -238,32 +268,38 @@ function render()
       alert("Error while creating application icon for app " + i + ": " + e);
     }
   }
+  
 
-  updateAppBoundaries();
 
-  $('#maincontent').resizable( "option", "minHeight", minAppListHeight + 140 );
-  $('#maincontent').resizable( "option", "minWidth", minAppListWidth + 113 );
 
-  if ($('#appList').height() < (minAppListHeight +100)) {
-     $('#appList').height(minAppListHeight + 100);
-     $('#maincontent').height(minAppListHeight + 133);
+  //lay out the apps
+  if (gDisplayMode == APP_INFO) {
+      // kick back to "ROOT" display mode if there's no
+      // selected application for which to display an info pane
+      if (selectedBox) {
+          renderAppInfo(selectedBox);
+      } else {
+          gDisplayMode == ROOT;
+      }
+  }
+    
+  //load the saved dash size
+  loadDashSize();
+
+  //determine smallest size that can contain the apps
+  updateMinDashSize();
+  
+  
+  //then resize it if necessary
+  if ($('#page1').height() < (minAppListHeight)) {
+     $('#page1').height(minAppListHeight);
    }
 
-   if ($('#appList').width() < (minAppListWidth + 80)) {
-     $('#appList').width(minAppListWidth + 80);
-     $('#maincontent').width(minAppListWidth + 113);
+   if ($('#page1').width() < (minAppListWidth)) {
+     $('#page1').width(minAppListWidth);
    }
 
 
-    if (gDisplayMode == APP_INFO) {
-        // kick back to "ROOT" display mode if there's no
-        // selected application for which to display an info pane
-        if (selectedBox) {
-            renderAppInfo(selectedBox);
-        } else {
-            gDisplayMode == ROOT;
-        }
-    }
 }
 
 
@@ -413,17 +449,14 @@ function createAppIcon(install)
     //this is the new key format:  "app::<launchURL>"
     appDiv.setAttribute("id", install.id);
 
-    $(appDiv).draggable({ containment: "#appList", scroll: false, stop: function(event, ui) {
+    $(appDiv).draggable({ containment: "#page1", scroll: false, stop: function(event, ui) {
                             //store the new position in the dashboard meta-data
                             var newPos = ui.position;
-                            if (!gAppPositions) { gAppPositions = {}; }
-                            gAppPositions[install.id] = newPos;
-                            navigator.apps.mgmt.saveState(gAppPositions);
+                            gDashboardState[install.id] = newPos;
+                            navigator.apps.mgmt.saveState(gDashboardState);
                             $(this).addClass("ui-draggable-dragged");
 
-                            updateAppBoundaries();
-                            $('#maincontent').resizable( "option", "minHeight", minAppListHeight + 140 );
-                            $('#maincontent').resizable( "option", "minWidth", minAppListWidth + 113 );
+                            updateMinDashSize();
                         }
                       });
 
@@ -474,8 +507,8 @@ function createAppIcon(install)
         return false;
     });
 
-    if (gAppPositions) {
-      var appPos = gAppPositions[install.id];
+    if (gDashboardState) {
+      var appPos = gDashboardState[install.id];
       if (appPos) {
           $(appDiv).css("position", "absolute").css("top", appPos.top).css("left", appPos.left);
           }
@@ -523,6 +556,7 @@ function onMessage(event)
     return;
   }
 }
+
 function onFocus(event)
 {
   if (gApps) {
@@ -557,7 +591,3 @@ if (window.addEventListener) {
 } else if(window.attachEvent) {
     window.attachEvent('onfocus', onFocus);
 }
-
-$(function(){
-
-});
