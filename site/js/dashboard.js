@@ -157,7 +157,7 @@ $('#maincontent').resizable({ alsoResize: '.appList' });
        try {
            // Construct our Apps handle
             retrieveInstalledApps();
-            gAppPositions = navigator.apps.mgmt.loadState();
+            navigator.apps.mgmt.loadState( ( function (s) { gAppPositions = s;} ) );
            } catch (e) {
            alert(e);
        }
@@ -273,7 +273,7 @@ function getBiggestIcon(minifest) {
     var biggest = 0;
     for (z in minifest.icons) {
       var size = parseInt(z, 10);
-      if (z > biggest) biggest = z;
+      if (size > biggest) biggest = size;
     }
     if (biggest !== 0) return minifest.icons[biggest];
   }

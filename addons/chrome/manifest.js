@@ -40,117 +40,248 @@
 
   2010-08-27
   Manifest validation code broken out into a separate file.
-**/
 
+  2010-12-04
+  Manifest validation re-written for updated specification
+**/
 
 ;var Manifest = (function() {
 
-  // parseUri 1.2.2
-  // (c) Steven Levithan <stevenlevithan.com>
-  // MIT License
-  function parseUri (str) {
-    var	o   = parseUri.options,
-      m   = o.parser[o.strictMode ? "strict" : "loose"].exec(str),
-      uri = {},
-      i   = 14;
-    while (i--) uri[o.key[i]] = m[i] || "";
-    uri[o.q.name] = {};
-    uri[o.key[12]].replace(o.q.parser, function ($0, $1, $2) {
-      if ($1) uri[o.q.name][$1] = $2;
-    });
-    return uri;
-  };
+    // initialize a manifest object from a javascript manifest representation,
+    // validating as we go.
+    // throws a developer readable string upon discovery of an invalid manifest.
+    function parse(manf) {
+        var errorThrow = function(msg, path) {
+            if (path != undefined && typeof path != 'object') path = [ path ];
+            throw {
+                msg: msg,
+                path: (path ? path : [ ]),
+                toString: function () {
+                    if (this.path && this.path.length > 0) return ("(" + this.path.join("/") + ") " + this.msg); 
+                    return this.msg;
+                }
+            };
+        };
 
-  parseUri.options = {
-    strictMode: false,
-    key: ["source","protocol","authority","userInfo","user","password","host","port","relative","path","directory","file","query","anchor"],
-    q:   {
-      name:   "queryKey",
-      parser: /(?:^|&)([^&=]*)=?([^&]*)/g
-    },
-    parser: {
-      strict: /^(?:([^:\/?#]+):)?(?:\/\/((?:(([^:@]*)(?::([^:@]*))?)?@)?([^:\/?#]*)(?::(\d*))?))?((((?:[^?#\/]*\/)*)([^?#]*))(?:\?([^#]*))?(?:#(.*))?)/,
-      loose:  /^(?:(?![^:@]+:[^:@\/]*@)([^:\/?#.]+):)?(?:\/\/)?((?:(([^:@]*)(?::([^:@]*))?)?@)?([^:\/?#]*)(?::(\d*))?)(((\/(?:[^?#](?![^?#\/]*\.[^?#\/.]+(?:[?#]|$)))*\/?)?([^?#\/]*))(?:\?([^#]*))?(?:#(.*))?)/
-    }
-  };
-  // end parseUri
-
-  function applicationMatchesURL(application, url)
-  {
-    if (application.app_urls)
-    {
-      var inputURL = parseUri(url);
-      for (var i=0;i<application.app_urls.length;i++)
-      {
-        var testURL = application.app_urls[i];
-        if (url.indexOf(testURL) == 0) {
-          // prefix matched: now make sure the domain is an exact match
-          var testParse = parseUri(testURL);
-          if (testParse.protocol == inputURL.protocol &&
-            testParse.host == inputURL.host)
-          {
-            var requiredPort = inputURL.port ? inputURL.port : (inputURL.scheme == "https" ? 443 : 80);
-            var testPort = testParse.port ? testParse.port : (testParse.scheme == "https" ? 443 : 80);
-            if (requiredPort == testPort) return true;
-          }
+        // Validate and clean the request
+        if(!manf) {
+            errorThrow('null');
         }
-      }
-    }
-    return false;
-  }
 
-  // initialize a manifest object from a javascript manifest representation,
-  // validating as we go.
-  // throws a developer readable string upon discovery of an invalid manifest.
-  function validate(manf) {
-    // Validate and clean the request
-    if(!manf) {
-      throw('Invalid manifest: null');
+        // commonly used check functions
+        var nonEmptyStringCheck = function(x) {
+            if ((typeof x !== 'string') || x.length === 0) errorThrow();
+        };
+
+        // a table that specifies manfiest properties, and validation functions
+        // each key is the name of a valid top level property.
+        // each value is an object with four optional properties:
+        //  required: if present and has a truey value, then the prop is required
+        //  check: if present and a function for a value, then is passed a value present in manifest for validation
+        //  normalize: if present and has a function for a value, then accepts current value
+        //             in manifest as argument, and outputs a value to replace it.
+        //  may_overlay: if present and hase a truey value, then this property may be overlaid by
+        //               content in the locales map. 
+        //
+        // returning errors:
+        //   validation functions throw objects with two fields:
+        //     msg: an english, developer readable error message
+        //     path: an array of properties that describes which field has the error
+        //
+        var manfProps = {
+            base_url: {
+                required: true,
+                check: function (x) {
+                    if (typeof x !== 'string') errorThrow();
+                    try {
+                        // will throw if the url is invalid
+                        var p = URLParse(x).validate().normalize().path;
+                        // urls must end with a slash
+                        if (!p.length || p[p.length - 1] != '/') throw "trailing slash required";
+                    } catch(e) {
+                        errorThrow(e);
+                    }
+                },
+                normalize: function(x) {
+                    return URLParse(x).normalize().toString();
+                }
+            },
+            capabilities: {
+                check: function(x) {
+                    if (!x || typeof x !== 'object' || x.constructor !== Array) errorThrow();
+                    for (var i = 0; i < x.length; i++) {
+                        if (typeof x[i] !== 'string') errorThrow(undefined, [i]);
+                    }
+                }
+            },
+            default_locale: {
+                required: true,
+                check: nonEmptyStringCheck
+            },
+            description: {
+                may_overlay: true,
+                check: nonEmptyStringCheck
+            },
+            developer: {
+                may_overlay: true,
+                check: function(x) {
+                    if (typeof x !== 'object') errorThrow();
+                    for (var k in x) {
+                        if (!x.hasOwnProperty(k)) continue;
+                        if (!(k in { name:null, url:null})) errorThrow('under developer, only "name" and "url" properties are allowed', k);
+                        if (typeof x[k] !== 'string') errorThrow(undefined, k);
+                    }
+                }
+            },
+            icons: {
+                may_overlay: true,
+                check: function (x) {
+                    if (typeof x !== 'object') errorThrow();
+                    for (var k in x) {
+                        if (!x.hasOwnProperty(k)) continue;
+                        if (typeof x[k] !== 'string') errorThrow(undefined, k);
+                        if (x[k].indexOf('..') != -1) errorThrow(undefined, k);
+                    }
+                }
+            },
+            installs_allowed_from: {
+                check: function(x) {
+                    if (!x || typeof x !== 'object' || x.constructor !== Array) errorThrow("expected array of urls");
+                    for (var i = 0; i < x.length; i++) {
+                        var path;
+                        try {
+                            path = URLParse(x[i]).validate().path;
+                        } catch (e) {
+                            errorThrow(e, i)
+                        }
+                        // XXX: should this be a warning?  (in other news, should we invent a way to
+                        // convey warnings to client code?)
+                        if (path && path.length > 1) {
+                            errorThrow("path on url is meaningless here", i);
+                        }
+                    }
+                },
+                normalize: function(o) {
+                    var n = [];
+                    for (var i = 0; i < o.length; i++) {
+                        n.push(URLParse(o[i]).normalize().toString());
+                    }
+                    return n;
+                }
+            },
+            launch_path: {
+                may_overlay: true,
+                check: function (x) {
+                    if (typeof x !== 'string' || x.indexOf("..") !== -1) errorThrow();
+                },
+                normalize: function(x) {
+                    // XXX: can/should we do better normalization than this??
+                    return ((x.length > 0) ? x : undefined);
+                }
+            },
+            locales: {
+                check: function (l) {
+                    // XXX: we really need a robust parser for language tags
+                    // to do this correctly:
+                    // http://www.rfc-editor.org/rfc/bcp/bcp47.txt
+                    if (typeof l !== 'object') errorThrow();
+                    for (var tag in l) {
+                        if (!l.hasOwnProperty(tag)) continue;
+                        // XXX: parse and validate language tag (for real)
+                        if (typeof tag !== 'string' || tag.length == 0) errorThrow();
+                        if (typeof l[tag] !== 'object') errorThrow();
+
+                        // now l[tag] is a locale specific overlay, which is basically
+                        // a manifest in its own right.  We'll go validate that.  By passing
+                        // true as the second arg ot validateManifestProperties we restrict
+                        // allowed manifest fields to only those which may be overlaid. 
+                        try {
+                            validateManifestProperties(l[tag], true);
+                        } catch (e) {
+                            e.path.unshift(tag);
+                            throw e;
+                        }
+                    }
+                }
+            },
+            manifest_name: {
+                check: function (x) {
+                    if (typeof x === 'string') {
+                        // See RFC 3986 'segment' production for discussion of allowed chars in manfest_name
+                        if (x.length === 0) errorThrow("blank value not allowed");
+                        else if (!/^[A-Za-z0-9\-\._~!\$&\'\(\)\*\+\,\;\=\:\@\%]+$/.test(x))
+                            errorThrow("invalid characters present");
+                    } else {
+                        // non-strings not allowed
+                        errorThrow();
+                    }
+                }
+            },
+            manifest_version: {
+                required: true,
+                check: function (x) {
+                    if (!((typeof x === 'string') && /^\d+.\d+$/.test(x))) errorThrow();
+                    if (x !== '0.2') errorThrow("unsupported manifest version: " + x + " (expected 0.2)");
+                }
+            },
+            name: {
+                may_overlay: true,
+                required: true,
+                check: nonEmptyStringCheck
+            }
+        };
+
+        // a function to extract nested values given an object and array of property names
+        function extractValue(obj, props) {
+            return ((props.length === 0) ? obj : extractValue(obj[props[0]], props.slice(1)));
+        }
+
+        // a function that will validate properties of a manfiest using the
+        // manfProps data structure above.
+        // returns a normalized version of the manifest, throws upon
+        // detection of invalid properties
+        function validateManifestProperties(manf, onlyOverlaidFields) {
+            var normalizedManf = {};
+            for (var prop in manf) {
+                if (!manf.hasOwnProperty(prop)) continue;
+                if (!(prop in manfProps)) errorThrow('unsupported property', prop);
+                var pSpec = manfProps[prop];
+                if (onlyOverlaidFields && !pSpec.may_overlay) {
+                    errorThrow('may not be overridded per-locale', prop);
+                }
+                if (typeof pSpec.check === 'function') {
+                    try {
+                        pSpec.check(manf[prop]);
+                    } catch (e) {
+                        e.path.unshift(prop);
+                        if (!e.msg) e.msg = 'invalid value: ' + extractValue(manf, e.path);
+                        throw e;
+                    }
+                }
+                if (typeof pSpec.normalize === 'function') {
+                    normalizedManf[prop] = pSpec.normalize(manf[prop]);
+                    // special case.  a normalization function can remove properties by
+                    // returning undefined.
+                    if (normalizedManf[prop] === undefined) delete normalizedManf[prop];
+                } else {
+                    normalizedManf[prop] = manf[prop];
+                }
+            }
+            return normalizedManf;
+        }
+
+        // iterate through required properties, and verify they're present
+        for (var prop in manfProps) {
+            if (!manfProps.hasOwnProperty(prop) || !manfProps[prop].required) continue;
+            if (!(prop in manf)) {
+                errorThrow('missing "' + prop + '" property');
+            }
+        }
+
+        return validateManifestProperties(manf, false);
     }
 
-    if (!manf.name) {
-      throw('Invalid manifest: missing application name');
+    return {
+        parse: parse
     }
-    if (!manf.base_url) {
-      throw('Invalid manifest: missing "base_url" property');
-    }
-    if (!manf.app_urls) {
-      throw('Invalid request: missing "app_urls" property');
-    }
-    if (manf.app_urls.length == 0) {
-      throw('Invalid request: "app_urls" property must not be empty');
-    }
-    if (manf.launch_path == undefined) { // empty string is legal
-      throw('Invalid request: missing "launch_path" property');
-    }
-
-    // '..' is forbidden in all paths
-    if (manf.launch_path.indexOf("..") >= 0)
-      throw('Invalid request: ".." is forbidden in launch_path');
-    if (manf.update_path && manf.update_path.indexOf("..") >= 0)
-      throw('Invalid request: ".." is forbidden in update_path');
-    if (manf.icons) 
-    {
-      for (var size in manf.icons) 
-      {
-        if (manf.icons[size].indexOf("..") >= 0)
-          throw('Invalid request: ".." is forbidden in icons');
-      }
-    }
-
-    // Base URL must be part of the set of app_urls
-    if (!applicationMatchesURL(manf, manf.base_url)) 
-      throw('Invalid request: base_url property must be a subset of app_urls.');
-
-    // Launch URL must be part of the set of app_urls
-    if (!applicationMatchesURL(manf, manf.base_url + manf.launch_path)) {
-      throw('Invalid request: base_url + launch_path property must be a subset of app_urls.');
-    } 
-    return manf;
-  }
-
-  return {
-    validate: validate,
-    parseUri: parseUri
-  }
 })();

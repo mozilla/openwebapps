@@ -56,17 +56,20 @@ if (!navigator.apps) {
             console.log("verify called");
         },
         mgmt: {
+            launch:function (id) {
+                sendToExtension('launch', id, cb);
+            },
             list: function (cb) {
                 sendToExtension('list', null, cb);
             },
             remove: function (id) {
                 sendToExtension('remove', { id: id }, (arguments.length == 2 ? arguments[1] : null));
             },
-            loadState: function (id, cb) {
-                sendToExtension('loadState', id, cb);
+            loadState: function (cb) {
+                sendToExtension('loadState', null, cb);
             },
-            saveState: function (id, obj, cb) {
-                sendToExtension('saveState', {did:id,state:obj}, cb);
+            saveState: function (obj, cb) {
+                sendToExtension('saveState', obj, cb);
             }
         }
     };

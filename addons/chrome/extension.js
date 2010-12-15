@@ -33,12 +33,12 @@ chrome.extension.onConnect.addListener(function(port) {
                 break;
             case 'loadState':
                 if (mgmtAuthorized(origin)) {
-                    sendResponse(msg, Repo.loadState(msg.args));
+                    sendResponse(msg, Repo.loadState(origin));
                 }
                 break;
             case 'saveState':
                 if (mgmtAuthorized(origin)) {
-                    sendResponse(msg, Repo.saveState(msg.args.did, msg.args.state));
+                    sendResponse(msg, Repo.saveState(origin, msg.args));
                 }
                 break;
             // now routines for stores or apps
