@@ -116,6 +116,8 @@
     function urlMatchesDomain(url, domain)
     {
         try {
+            // special case for local testing
+            if (url === "null" && domain === "null") return true;
             var parsedDomain = URLParse(domain).normalize();
             var parsedURL = URLParse(url).normalize();
             return parsedDomain.contains(parsedURL);
@@ -127,11 +129,8 @@
     // Returns whether this application runs in the specified domain (scheme://hostname[:nonStandardPort])
     function applicationMatchesDomain(application, domain)
     {
-        for (var i=0;i<application.app_urls.length;i++)
-        {
-            var testURL = application.app_urls[i];
-            if (urlMatchesDomain(testURL, domain)) return true;
-        }
+        var testURL = application.base_url;
+        if (urlMatchesDomain(testURL, domain)) return true;
         return false;
     }
 
@@ -153,7 +152,6 @@
     function getInstallsByOrigin(origin, requestObj)
     {
         var result = [];
-
         iterateApps(function(key, item) {
             if (urlMatchesDomain(item.installURL, origin)) {
                 result.push(item);
