@@ -237,8 +237,6 @@
                 } else {
                   t.error("networkError", "couldn't retrieve application manifest from network"); 
                 }
-              } else {
-                t.error("networkError", "couldn't retrieve application manifest from network");
               }
             } catch (e) {
               t.error("networkError", "couldn't retrieve application manifest from network");
