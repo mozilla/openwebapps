@@ -220,7 +220,7 @@
               if (xhr.readyState == 4) {
                 if (xhr.status == 200) {
                   try {
-                    manifestToInstall = Manifest.parse(xhr.responseText);
+                    manifestToInstall = Manifest.parse(JSON.parse(xhr.responseText));
                     
                     // Security check: Does this manifest's calculated manifest URL match where
                     // we got it from?
