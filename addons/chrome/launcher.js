@@ -5,7 +5,6 @@ $(document).ready(function() {
     for (var i = 0; i < l.length; i++) {
         var s = $("<span/>");
         s.addClass("launchIcon");
-        console.log(l[i]);
         var iurl = (l[i].icons && l[i].icons['96']) ? l[i].icons['96'] : chrome.extension.getURL("icon.png");
         s.append($("<img/>").attr("src", iurl).attr('alt', l[i]['name']).attr("width", 96));
         s.click((function() {
