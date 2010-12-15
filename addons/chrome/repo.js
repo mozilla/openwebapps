@@ -304,7 +304,8 @@
 
 
     var loadStateFunc = function(id) {
-        return JSON.parse(storage.getItem(makeStateKey(id)));
+        var v =  storage.getItem(makeStateKey(id));
+        return (v ? JSON.parse(v) : undefined); 
     };
 
     var saveStateFunc = function(id, state) {

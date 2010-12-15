@@ -12,7 +12,7 @@ if (!navigator.apps) {
 
     var sendToExtension = function(action, args, cb) {
         var aObj = { action: action };
-        if (args) aObj.args = args;
+        if (args !== undefined) aObj.args = args;
         if (cb) {
             var i = cur_trans_id++;
             transactions[i] = cb;
@@ -39,10 +39,10 @@ if (!navigator.apps) {
     console.log("injecting navigator.apps API");
     navigator.apps = {
         getInstalled:function (cb) {
-            sendToExtension('getInstalled', null, cb);
+            sendToExtension('getInstalled', undefined, cb);
         },
         getInstalledBy:function (cb) {
-            sendToExtension('getInstalledBy', null, cb);
+            sendToExtension('getInstalledBy', undefined, cb);
         },
         install:function (obj) {
             var cb = obj.callback;
@@ -60,16 +60,16 @@ if (!navigator.apps) {
                 sendToExtension('launch', id, cb);
             },
             list: function (cb) {
-                sendToExtension('list', null, cb);
+                sendToExtension('list', undefined, cb);
             },
             remove: function (id) {
                 sendToExtension('remove', { id: id }, (arguments.length == 2 ? arguments[1] : null));
             },
             loadState: function (cb) {
-                sendToExtension('loadState', null, cb);
+                sendToExtension('loadState', undefined, cb);
             },
             loginStatus: function (cb) {
-                sendToExtension('loginStatus', null, cb);
+                sendToExtension('loginStatus', undefined, cb);
             },
             saveState: function (obj, cb) {
                 sendToExtension('saveState', obj, cb);

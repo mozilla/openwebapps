@@ -33,7 +33,8 @@ chrome.extension.onConnect.addListener(function(port) {
                 break;
             case 'loadState':
                 if (mgmtAuthorized(origin)) {
-                    sendResponse(msg, Repo.loadState(origin));
+                    var state = Repo.loadState(origin);
+                    sendResponse(msg, state);
                 }
                 break;
             case 'loginStatus':
