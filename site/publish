@@ -8,7 +8,7 @@ p.add_option("--server-hostname", dest="hostname", type="string")
 if (type(opts.hostname) == str and opts.hostname.startswith("stage")):
     # The first step of setting up site/ for publishing in a staging
     # environment is substituting staging URLs for production
-    for path in ["index.html", "jsapi/include.js"]:
+    for path in ["index.html", "jsapi/include.js", "jsapi/trusted.js"]:
         file_contents = ""
         with open(path, "r") as fp:
             file_contents = fp.read()

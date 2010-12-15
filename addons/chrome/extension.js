@@ -33,12 +33,24 @@ chrome.extension.onConnect.addListener(function(port) {
                 break;
             case 'loadState':
                 if (mgmtAuthorized(origin)) {
-                    sendResponse(msg, Repo.loadState(msg.args));
+                    var state = Repo.loadState(origin);
+                    sendResponse(msg, state);
+                }
+                break;
+            case 'launch':
+                if (mgmtAuthorized(origin)) {
+                    Repo.launch(msg.args);
+                }
+                break;
+            case 'loginStatus':
+                if (mgmtAuthorized(origin)) {
+                    console.log("XXX: implement login status for sync");
+                    sendResponse(msg, null);
                 }
                 break;
             case 'saveState':
                 if (mgmtAuthorized(origin)) {
-                    sendResponse(msg, Repo.saveState(msg.args.did, msg.args.state));
+                    sendResponse(msg, Repo.saveState(origin, msg.args));
                 }
                 break;
             // now routines for stores or apps

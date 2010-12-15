@@ -189,6 +189,7 @@ body
   <img id="appicon"  width="96" height="96">
   <div id="apptitle"><span id="appname"></span></div>
   <div id="base_url"></div>
+  <div id="warnings"></div>
 </div>
 
 <div id="footer">
@@ -203,7 +204,7 @@ body
 </div>
 <script>
 
-function displayInstallPrompt(originHostname, manifest, clientCB) {
+function displayInstallPrompt(originHostname, manifest, clientCB, options) {
   // whenever client's callback is invoked, we should first cleanup (and hide the dialog)
   cb = function(r) {
     delete document.getElementById("installButton").onclick;
@@ -238,6 +239,9 @@ function displayInstallPrompt(originHostname, manifest, clientCB) {
     }
     document.getElementById("appicon").src = icon;
 
+  }
+  if (options.isExternalServer) {
+    document.getElementById("warnings").innerHTML = "This application definition is <b>not provided by the application</b>.";
   }
 
   // now that the content is setup, message untrusted javascript to display us

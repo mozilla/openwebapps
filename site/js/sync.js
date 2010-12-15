@@ -108,7 +108,10 @@ function Sync(options) {
     }
     self.storage.addEventListener('change', needPush);
     self.storage.addEventListener('add', needPush);
-    self._needPush = false;
+    // We need to start with a push, because we don't know anything about
+    // the server status
+    // FIXME: look at the lastPush to see if push is needed?
+    self._needPush = true;
   };
 
   function collectManifests(timestamp) {
@@ -210,31 +213,6 @@ function Sync(options) {
     }
   }
 
-  // FIXME: I don't think we need this
-  self.isLoggedIn = function (options) {
-    ajax({
-      url: self.url + '/login-status',
-      dataType: 'json',
-      success: function (result) {
-        // In the future, this should be replaced with a simple cookie check
-        options.success(result.displayName ? true : false);
-      },
-      error: options.error
-    });
-  };
-
-  // FIXME: I don't think we need this (cookie is sufficient):
-  self.loginStatus = function (options) {
-    ajax({
-      url: self.url + '/login-status',
-      dataType: 'json',
-      success: function (result) {
-        options.success(result);
-      },
-      error: options.error
-    });
-  };
-
   var pollTimerId = null;
   var pollTime = 5000;
   var pollPull = true;
@@ -270,20 +248,6 @@ function Sync(options) {
         rerun();
       }
     }
-    var options = {
-      success: function () {
-        pollTimerId = setTimeout(runPoll, pollTime);
-        self._needPush = false;
-      },
-      error: function (req) {
-        if (req.status === 0) {
-          // Means the server isn't there
-          // FIXME: Log this?
-          pollTimerId = null;
-          return;
-        }
-      }
-    };
     if (pollPull) {
       self.pull({
         success: rerun,

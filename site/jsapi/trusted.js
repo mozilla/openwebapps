@@ -116,6 +116,8 @@
     function urlMatchesDomain(url, domain)
     {
         try {
+            // special case for local testing
+            if (url === "null" && domain === "null") return true;
             var parsedDomain = URLParse(domain).normalize();
             var parsedURL = URLParse(url).normalize();
             return parsedDomain.contains(parsedURL);
@@ -127,11 +129,8 @@
     // Returns whether this application runs in the specified domain (scheme://hostname[:nonStandardPort])
     function applicationMatchesDomain(application, domain)
     {
-        for (var i=0;i<application.app_urls.length;i++)
-        {
-            var testURL = application.app_urls[i];
-            if (urlMatchesDomain(testURL, domain)) return true;
-        }
+        var testURL = application.base_url;
+        if (urlMatchesDomain(testURL, domain)) return true;
         return false;
     }
 
@@ -153,7 +152,6 @@
     function getInstallsByOrigin(origin, requestObj)
     {
         var result = [];
-
         iterateApps(function(key, item) {
             if (urlMatchesDomain(item.installURL, origin)) {
                 result.push(item);
@@ -167,43 +165,88 @@
         // indicate that response will occur asynchronously, later.
         t.delayReturn(true);
 
-        // Validate and clean the request
-        var manf;
-        try {
-            manf = Manifest.parse(args.manifest);
-        } catch(e) {
-            throw [ "invalidManifest", "couldn't validate your mainfest: " + e ];
+        function installConfirmationFinish(allowed)
+        {
+          if (allowed) {
+              var key = manifestToInstall.base_url;
+              if (manifestToInstall.launch_path) key += manifestToInstall.launch_path;
+
+              // Create installation data structure
+              var installation = {
+                  app: manifestToInstall,
+                  installTime: new Date().getTime(),
+                  installURL: installOrigin
+              };
+
+              if (args.authorization_url) {
+                  installation.authorizationURL = args.authorization_url;
+              }
+
+              // Save - blow away any existing value
+              appStorage.put(key, installation);
+
+              // Send Response Object
+              t.complete(true);
+          } else {
+            t.error("denied", "User denied installation request");
+          }
         }
 
-        // cache the installOrigin
-        installOrigin = t.origin;
+        var manifestToInstall;
+        var installOrigin = t.origin;
 
-        // cause the UI to display a prompt to the user
-        displayInstallPrompt(t.origin, manf, function (allowed) {
-            if (allowed) {
-                var key = manf.base_url;
-                if (manf.launch_path) key += manf.launch_path;
+        if (args.manifest) {
+          // this is a "direct install", which is currently only recommended
+          // for developers.  We display a strongly-worded warning message
+          // to scare users off.
 
-                // Create installation data structure
-                var installation = {
-                    app: manf,
-                    installTime: new Date().getTime(),
-                    installURL: t.origin
-                };
+          // Validate and clean the request
+          try {
+              manifestToInstall = Manifest.parse(args.manifest);
+              displayInstallPrompt(installOrigin, manifestToInstall, installConfirmationFinish,
+                                   { isExternalServer: true });
+              
+          } catch(e) {
+              throw [ "invalidManifest", "couldn't validate your manifest: " + e ];
+          }
+        } else if (args.url) {
+          // contact our server to retrieve the URL
+          // TODO what sort of portability library should we use?  we don't have jquery as
+          // a requirement here yet.
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", "https://myapps.mozillalabs.com/getmanifest?url=" + escape(args.url), true);
+          xhr.onreadystatechange = function(aEvt) {
+            try {
+              if (xhr.readyState == 4) {
+                if (xhr.status == 200) {
+                  try {
+                    manifestToInstall = Manifest.parse(JSON.parse(xhr.responseText));
+                    
+                    // Security check: Does this manifest's calculated manifest URL match where
+                    // we got it from?
+                    var expectedURL = manifestToInstall.base_url + (manifestToInstall.manifest_name ? manifestToInstall.manifest_name : "manifest.webapp");
+                    var isExternalServer = (expectedURL != args.url);
 
-                if (args.authorization_url) {
-                    installation.authorizationURL = args.authorization_url;
+                    displayInstallPrompt(installOrigin, manifestToInstall, installConfirmationFinish, { isExternalServer: isExternalServer });
+
+                  } catch (e) {
+                    t.error("invalidManifest", "couldn't validate your manifest: " + e );
+                  }
+                } else if (xhr.status >= 400 && xhr.status < 500)  {
+                  t.error("invalidManifest", "manifest URL did not resolve to a valid manifest");
+                } else {
+                  t.error("networkError", "couldn't retrieve application manifest from network"); 
                 }
-
-                // Save - blow away any existing value
-                appStorage.put(key, installation);
-
-                // Send Response Object
-                t.complete(true);
-            } else {
-                t.error("denied", "User denied installation request");
+              }
+            } catch (e) {
+              t.error("networkError", "couldn't retrieve application manifest from network");
             }
-        });
+          }
+          xhr.send(null);
+        } else {
+          // neither a manifest nor a URL means we cannot proceed.
+          throw [ "missingManifest", "install requires a url or manifest argument" ];
+        }
     });
 
     chan.bind('verify', function(t, args) {
