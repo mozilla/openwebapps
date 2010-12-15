@@ -657,7 +657,8 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
             chan.call({
                 method: "install",
                 params: {
-                    manifest: args.manifest || {},
+                    manifest: args.manifest, // optional
+                    url: args.url,           // optional
                     authorization_url: args.authorization_url || null,
                     session: args.session || false,
                 },
