@@ -1,6 +1,4 @@
 [submodule "site/tests/doctestjs"]
 	path = site/tests/doctestjs
 	url = http://github.com/ianb/doctestjs.git
-[submodule "sync-server"]
-	path = sync-server
-	url = http://github.com/mozilla/openwebapps-sticky-repo.git
+
