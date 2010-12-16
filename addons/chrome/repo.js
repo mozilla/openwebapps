@@ -69,7 +69,6 @@
 
         appStorage.iterate(function(key, item) {
             try {
-                var item = JSON.parse(item);
                 item.app = Manifest.parse(item.app);
                 cb(key, item);
             } catch (e) {
@@ -148,7 +147,7 @@
             if (allowed) {
                 // Create installation data structure
                 var installation = {
-                    app: manf.base_url,
+                    app: manf,
                     installTime: new Date().getTime(),
                     installURL: origin
                 };
