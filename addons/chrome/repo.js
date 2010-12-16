@@ -56,27 +56,9 @@
 */
 
 ;Repo = (function() {
-    // Reference shortcut so minifier can save on characters
-    var win = window;
+    var appStorage = TypedStorage().open("app");
+    var stateStorage = TypedStorage().open("state");
 
-    // Reference shortcut so minifier can save on characters
-    var storage = win.localStorage;
-
-    function makeAppKey(manifest) {
-        return "app::" + manifest.base_url + (manifest.launch_path ? manifest.launch_path : "");
-    }
-
-    function isAppKey(key) {
-        return (key.indexOf("app::") === 0);
-    }
-
-    function makeStateKey(id) {
-        return "state::" + id;
-    }
-
-    function isStateKey(key) {
-        return (key.indexOf("state::") === 0);
-    }
 
     // iterates over all stored applications manifests and passes them to a
     // callback function.  This function should be used instead of manual
@@ -85,24 +67,19 @@
         // we'll automatically clean up malformed installation records as we go
         var toRemove = [];
 
-        for (var i =0;i<storage.length;i++)
-        {
-            var key = storage.key(i);
-            //only operat on apps, not other data
-            if (!isAppKey(key)) continue;
-
+        appStorage.iterate(function(key, item) {
             try {
-                var item = JSON.parse(storage.getItem(key));
+                var item = JSON.parse(item);
                 item.app = Manifest.parse(item.app);
                 cb(key, item);
             } catch (e) {
                 console.log("invalid application detected: " + e);
                 toRemove.push(key);
             }
-        }
+        });
 
         for (var j = 0; j < toRemove.length; j++) {
-            storage.removeItem(toRemove[j]);
+            appStorage.remove(toRemove[j]);
         }
     }
 
@@ -169,11 +146,9 @@
         // display an install prompt
         Prompt.show(function(allowed) {
             if (allowed) {
-                var key = makeAppKey(manf);
-
                 // Create installation data structure
                 var installation = {
-                    app: manf,
+                    app: manf.base_url,
                     installTime: new Date().getTime(),
                     installURL: origin
                 };
@@ -183,7 +158,7 @@
                 }
 
                 // Save - blow away any existing value
-                storage.setItem(key, JSON.stringify(installation));
+                appStorage.put(manf.base_url, installation);
 
                 // Send Response Object
                 cb(true);
@@ -289,15 +264,15 @@
     };
 
     var removeFunc = function(id) {
-        var item = storage.getItem(id);
+        var item = appStorage.get(id);
         if (!item) return {error: [ "noSuchApplication", "no application exists with the id: " + id]}; 
-        storage.removeItem(id);
+        appStorage.remove(id);
         return true;
     };
 
     var launchFunc = function(id) {
         console.log("launching app: " + id);
-        var i = JSON.parse(storage.getItem(id));
+        var i = appStorage.get(id);
         if (!i || !i.app.base_url) return false;
         var baseURL = i.app.base_url;
         var launchURL = baseURL + (i.app.launch_path ? i.app.launch_path : "");
@@ -325,18 +300,16 @@
         return true;
     }
 
-
     var loadStateFunc = function(id) {
-        var v =  storage.getItem(makeStateKey(id));
-        return (v ? JSON.parse(v) : undefined); 
+        return stateStorage.get(id); 
     };
 
     var saveStateFunc = function(id, state) {
         // storing null purges state
         if (state === undefined) {
-            storage.removeItem(makeStateKey(id));
+            stateStorage.remove(id);
         } else  {
-            storage.setItem(makeStateKey(id), JSON.stringify(state));
+            stateStorage.put(id, state);
         }
         return true;
     };

@@ -91,12 +91,10 @@ TypedStorage.ObjectStore = function (storage, objType, typedStorage) {
 
     //remove the object at a specified key
     self.remove = function (key) {
-        var canceled = ! self._typedStorage.dispatchEvent(
+        self._typedStorage.dispatchEvent(
             'delete',
             {target: key, eventType: 'delete', storageType: self});
-        if (! canceled) {
-            delete self._storage.removeItem(self.makeKey(key));
-        }
+        self._storage.removeItem(self.makeKey(key));
         self._typedStorage.setLastModified();
     };
 
