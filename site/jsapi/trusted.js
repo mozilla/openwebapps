@@ -336,7 +336,7 @@
         // XXX: perhaps localization should happen here?  be sent as an argument
         // to the list function?
 
-        return {
+        var extRef = {
             id: key,
             installURL: item.installURL,
             installTime: item.installTime,
@@ -346,7 +346,13 @@
             launchURL: item.app.base_url + (item.app.launch_path ? item.app.launch_path : ""),
             developer: item.app.developer
         };
-    }
+        
+        //if defined, add the optional embed url
+        if (item.app.embed && (typeof item.app.embed.path == 'string')) {
+          extRef.embedURL = item.app.base_url + (item.app.embed.path ? item.app.embed.path : "");      
+        }
+        return extRef;
+    } 
 
     chan.bind('list', function(t, args) {
         verifyMgmtPermission(t.origin);

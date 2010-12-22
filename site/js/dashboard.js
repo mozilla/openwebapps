@@ -159,7 +159,7 @@ $(document).ready(function() {
              navigator.apps.mgmt.loadState( ( function (s) { gDashboardState = s;
                                                              if (!gDashboardState) { gDashboardState = {}; } } ) );
            } catch (e) {
-           alert(e);
+           if (typeof console !== "undefined") console.log(e);
        }
 
        // figure out which browser we are on, and whether the addon has been installed and enabled, and whether we should pester them if not.
@@ -265,7 +265,7 @@ function render()
       box.append(icon);
     } catch (e) {
 
-      alert("Error while creating application icon for app " + i + ": " + e);
+      if (typeof console !== "undefined") console.log("Error while creating application icon for app " + i + ": " + e);
     }
   }
   
@@ -335,7 +335,7 @@ function renderAppInfo(selectedBox)
                              "background:url(\"" + icon + "\") no-repeat; background-size:100%");
     }
 
-    $(appIcon).css("position", "absolute").css("top", -4).css("left", 8);
+    $(appIcon).css("position", "absolute").css("top", -3).css("left", 9);
 
     var label = elem("div", "appBadgeName");
     label.appendChild(document.createTextNode(gSelectedInstall.name));
@@ -441,48 +441,86 @@ function renderAppInfo(selectedBox)
     }, 0);
 }
 
+//other words for widget:
+// sketch, recap, clipping, nutshell, aperture, channel, spout,
+// beacon, buzz, meter, crux, ticker, ...
+
 function createAppIcon(install)
 {
-    var appDiv = elem("div", "app");
-    appDiv.onclick = makeOpenAppTabFn(install, install.id);
+  //we will make an 'appDiv', which contains all the parts.
+  // it will have an icon and a title, in default mode.
+  // if the app has a widget enabled, it will be larger, visible, and have an iframe
+  // next to the app icon and title.  the iframe has a default size, but can be
+  // made larger if the widget specifies it, up to some reasonable maximum
 
-    //this is the new key format:  "app::<launchURL>"
-    appDiv.setAttribute("id", install.id);
+  var appContainer = elem("div", "app");
+  appContainer.setAttribute("id", install.id);
 
-    $(appDiv).draggable({ containment: "#page1", scroll: false, stop: function(event, ui) {
-                            //store the new position in the dashboard meta-data
-                            var newPos = ui.position;
-                            gDashboardState[install.id] = newPos;
-                            navigator.apps.mgmt.saveState(gDashboardState);
-                            $(this).addClass("ui-draggable-dragged");
+  
+  var clickyIcon = $("<div/>").addClass("icon");
+  var iconImg = getBiggestIcon(install);
+  if (iconImg) {
+      clickyIcon.css({
+          background: "url(\"" + iconImg + "\") no-repeat #FFFFFF",
+          backgroundSize: "100%"
+      });
+  }
+  clickyIcon.onclick = makeOpenAppTabFn(install, install.id);
+  $(appContainer).append(clickyIcon);
 
-                            updateMinDashSize();
+  var appName = elem("div", "appName");
+  appName.appendChild(document.createTextNode(install.name));
+  
+  appName.style.left = "10px";
+  $(appContainer).append(appName);
+
+  //now set the container size depending on whether they have a widget or not.
+  // probably if there's no widget, we should  make it transparent
+   if (install.embedURL) {
+   //make the appContainer large, with rounded corners and a white background
+    var width = 300;
+    var height = 164;
+    
+    appContainer.style.width = width;
+    appContainer.style.height = height;
+    appContainer.style.background = "white";
+    appContainer.style.opacity = "1";
+    appContainer.style.border = "1px solid black";
+
+    appContainer.style.MozBorderRadius = "1em";
+    appContainer.style.WebkitBorderRadius = "1em";
+    appContainer.style.borderRadius = "1em";
+    
+    var widget = createWidget(install.embedURL, 10, ( 96 + 20), (height - 20), (width - (96 + 20 + 10)));
+    $(widget).addClass("widget");
+    
+    $(appContainer).append(widget);
+   } else {
+      //make sure it's invisible?
+   }
+
+  $(appContainer).draggable({ handle: clickyIcon, containment: "#page1", scroll: false, stop: function(event, ui) {
+                          //store the new position in the dashboard meta-data
+                          var newPos = ui.position;
+                          gDashboardState[install.id] = newPos;
+                          navigator.apps.mgmt.saveState(gDashboardState);
+                          $(this).addClass("ui-draggable-dragged");
+                          updateMinDashSize();
                         }
                       });
 
-    var iconDiv = $("<div/>").addClass("icon");
-    $(appDiv).append(iconDiv);
 
-     var nameDiv = elem("div", "appName");
-     nameDiv.appendChild(document.createTextNode(install.name));
 
-     $(appDiv).append(nameDiv);
 
-    var icon = getBiggestIcon(install);
-    if (icon) {
-        iconDiv.css({
-            background: "url(\"" + icon + "\") no-repeat #FFFFFF",
-            backgroundSize: "100%"
-        });
-    }
 
-    var moreInfo = $("<div/>").addClass("moreInfo").appendTo(iconDiv);
-    $("<a/>").appendTo(iconDiv);
+
+    var moreInfo = $("<div/>").addClass("moreInfo").appendTo(clickyIcon);
+    $("<a/>").appendTo(clickyIcon);
 
     // Set up the hover handler.  Only fade in after the user hovers for
     // 500ms.
     var tHandle;
-    $(iconDiv).hover(function() {
+    $(clickyIcon).hover(function() {
         var self = $(this);
         tHandle = setTimeout(function() {
             self.find(".moreInfo").fadeIn();
@@ -510,12 +548,39 @@ function createAppIcon(install)
     if (gDashboardState) {
       var appPos = gDashboardState[install.id];
       if (appPos) {
-          $(appDiv).css("position", "absolute").css("top", appPos.top).css("left", appPos.left);
+          $(appContainer).css("position", "absolute").css("top", appPos.top).css("left", appPos.left);
           }
     }
 
-    return appDiv;
+    return appContainer;
 }
+
+
+//create the optional iframe to hold the widget version of the app
+function createWidget(path, top, left, height, width) {
+
+    iframe = document.createElement("iframe");
+    //frame keyed on widget path
+    iframe.id = path;
+    iframe.style.position = "absolute";
+    
+    iframe.style.top = top;
+    iframe.style.left = left;
+    iframe.style.width = width;
+    iframe.style.height = height;
+
+    iframe.style.border = "0px solid white";
+
+    iframe.style.background = "white";
+    iframe.style.opacity = "1";
+    iframe.scrolling = "no";
+
+    iframe.src = path;
+    return iframe;
+}
+
+
+
 
 function formatDate(dateStr)
 {

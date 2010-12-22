@@ -179,6 +179,13 @@
                     return ((x.length > 0) ? x : undefined);
                 }
             },
+            embed: {
+                //a path to an embeddable widget for display in a small iframe
+//                 required: false,
+//                 check: function (x) {
+//                     if (typeof x.path !== 'string') errorThrow();
+//                 }
+            },
             locales: {
                 check: function (l) {
                     // XXX: we really need a robust parser for language tags
