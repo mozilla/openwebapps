@@ -1,0 +1,71 @@
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is Raindrop.
+ *
+ * The Initial Developer of the Original Code is
+ * Mozilla Messaging, Inc..
+ * Portions created by the Initial Developer are Copyright (C) 2009
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ * */
+
+.openwebapps-frame {
+  -moz-transition: height 0.2s ease-in;
+}
+
+#openwebapps-toolbar-button
+{
+  list-style-image: url("chrome://openwebapps/skin/toolbar-button.png");
+}
+#openwebapps-toolbar-button > image {
+  width: auto;
+  height: auto;
+}
+#openwebapps-popup {
+  -moz-appearance: none;
+  -moz-window-shadow: none;
+  background-color: transparent;
+  margin-top: -4px;
+  margin-left: -13px;
+  padding-right: 35px;  /* not quite 50px but looks very close */
+  min-width: 380px !important;
+  -moz-border-image: url(chrome://browser/skin/hud-panel.png) 26 18 22 50 / 26px 18px 22px 50px repeat;
+  color: lightgrey;
+}
+
+/* factory reset */
+#openwebapps-popup * {
+  border: none;
+  outline: none;
+  margin: 0;
+  padding: 0;
+  -moz-padding-start: 0px;
+  -moz-padding-end: 0px;
+  -moz-margin-start: 0px;
+  -moz-margin-end: 0px;
+  -moz-border-radius: 0px;
+  font-family: sans-serif;
+  font-weight: inherit;
+  font-style: inherit;
+  font-size: 100%;
+  vertical-align: middle;
+  -moz-box-sizing: border-box;
+  list-style-type: none;
+}
+
+#openwebapps-popup description {
+  margin: 5px 0;
+}
+

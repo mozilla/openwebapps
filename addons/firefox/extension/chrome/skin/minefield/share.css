@@ -1,0 +1,257 @@
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is Raindrop.
+ *
+ * The Initial Developer of the Original Code is
+ * Mozilla Messaging, Inc..
+ * Portions created by the Initial Developer are Copyright (C) 2009
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ * */
+
+* {
+  margin: 0;
+  padding: 0;
+  outline: none;
+  border: none;
+  border-collapse: collapse;
+  position: relative;
+
+  font-family: inherit;
+  font-weight: inherit;
+  font-style: inherit;
+  font-size: 100%;
+  vertical-align: top;
+
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  list-style-type: none;
+
+}
+
+body {
+  font-size: 14px;
+  font-family: "helvetica neue", helvetica, arial, sans-serif;
+  height: 128px;
+  max-height: 128px;
+  overflow: hidden;
+  background-color: #fff;
+  background-image: -moz-linear-gradient(bottom, #ff5959 0%, #fff 2%, #fff 100%);
+  background-position: bottom center;
+  background-repeat: no-repeat;
+}
+
+a {
+  text-decoration: none;
+  outline: none;
+}
+
+#tabs {
+  height: 128px;
+  overflow: hidden;
+  border-bottom: 1px solid #ff5959;
+}
+
+ul.nav {
+  background-color: #ff5959;
+  display: block;
+  width: 100%;
+}
+
+ul.nav li {
+  width: 36px;
+  display: inline-block;
+  list-style-type: none;
+  background-color: #ff7979;
+  border-top: 1px solid transparent;
+  border-bottom: 1px solid transparent;
+  margin: 5px 0 0 3px;
+  font-size: 12px;
+  line-height: 24px;
+  -moz-border-radius: 5px 5px 0 0;
+}
+
+ul.nav li a {
+  color: #fff;
+}
+
+ul.nav li a.icon {
+  width: 24px;
+  height: 24px;
+  margin: 0 5px;
+  background-repeat: no-repeat;
+  background-position: center center;
+  display: block;
+}
+
+ul.nav li a.icon.twitter {
+  background-image: url("http://andychung.ca/demos/share/i/twitter_w.png");
+}
+
+ul.nav li a.icon.facebook {
+  background-image: url("http://andychung.ca/demos/share/i/facebook_w.png");
+}
+
+ul.nav li a.icon.gmail {
+  background-image: url("http://andychung.ca/demos/share/i/gmail_w.png");
+}
+
+ul.nav li.settings a.icon {
+  width: auto;
+}
+
+ul.nav li.settings {
+  position: absolute;
+  right: 7px;
+  top: 0;
+  width: 60px;
+  text-align: center;
+}
+
+ul.nav li.settings span.name {
+  display: block;
+  padding: 0;
+  text-align: center;
+  font-weight: normal;
+  color: #fff;
+}
+
+ul.nav li.ui-tabs-selected {
+  background-color: #fff;
+  width: 128px;
+}
+
+ul.nav li span.name {
+  display: none;
+  font-weight: bold;
+  color: #444;
+}
+
+ul.nav li.ui-tabs-selected span.name {
+  display: block;
+  padding-left: 24px;
+}
+
+ul.nav li.ui-tabs-selected.settings {
+  width: 60px;
+}
+
+ul.nav li.ui-tabs-selected.settings span.name {
+  padding: 0;
+  color: #444;
+  font-weight: normal;
+}
+
+ul.nav li.ui-tabs-selected a.twitter {
+  background-image: url("http://andychung.ca/demos/share/i/twitter_b.png");
+}
+
+ul.nav li.ui-tabs-selected a.facebook {
+  background-image: url("http://andychung.ca/demos/share/i/facebook_b.png");
+}
+
+ul.nav li.ui-tabs-selected a.gmail {
+  background-image: url("http://andychung.ca/demos/share/i/gmail_b.png");
+}
+
+ul.nav li.ui-tabs-selected a {
+  color: #0a0a0a;
+}
+
+table {
+  width: 100%;
+}
+
+td.user {
+  width: 140px;
+  padding-right: 10px;
+  white-space: nowrap;
+}
+
+td.thumb {
+  width: 140px;
+  padding: 0 10px;
+  text-align: center;
+  vertical-align: bottom;
+  display: none;
+}
+
+#facebook td.thumb {
+  display: table-cell;
+}
+
+td.message {
+  width: 300px;
+  padding: 0 10px;
+}
+
+td.button {
+  padding: 7px 20px;
+  vertical-align: bottom;
+}
+
+.username {
+  color: #444;
+  font-size: large;
+  font-weight: bold;
+}
+
+div.thumb {
+  margin: 0 auto;
+  border: 1px dashed #aaa;
+  height: 70px;
+  width: 90px;
+}
+
+.thumbs {
+  width: 100px;
+  font-size: xx-small;
+  margin: 0 auto;
+}
+
+.thumbs .text {
+  text-align: center;
+}
+
+.entry {
+  padding: 7px;
+}
+
+button {
+  padding: 2px 15px;
+  margin: 0 1px 0 0;
+  font-family: "helvetica neue", helvetica, arial, sans-serif;
+  font-size: 12px;
+  line-height:24px;
+  background-image: -moz-linear-gradient(top,#fafafa 0%,#e6e6e6 100%);
+  border: 1px solid #fff;
+  outline: 1px solid #bebebe;
+}
+
+textarea, input[type="text"] {
+  -moz-box-shadow:0 1px 2px #CCCCCC inset;
+  background-image:-moz-linear-gradient(center top , #FFFFFF 0%, #F2F2F2 100%);
+  border:1px solid #BEBEBE;
+  font-family:"helvetica neue",helvetica,arial,sans-serif;
+  font-size:14px;
+  line-height:24px;
+  padding: 3px;
+  margin: 7px;
+  width: 100%;
+}
+
+input[type="text"] {
+  height: 28px;
+}

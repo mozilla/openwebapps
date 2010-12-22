@@ -1,0 +1,12 @@
+# Register a resource protocol alias so we can refere to the extension modules
+# via resource://openwebapps/modules/[module name] URLs.
+resource openwebapps ./
+
+content   openwebapps                 chrome/content/
+skin      openwebapps   classic/1.0   chrome/skin/minefield/
+skin      openwebapps   classic/1.0   chrome/skin/ os=Darwin appversion<=3.7
+skin      openwebapps   classic/1.0   chrome/skin/minefield-win/ os=WINNT appversion>=3.7
+locale    openwebapps   en-US         chrome/locale/en-US/
+
+overlay   chrome://browser/content/browser.xul   chrome://openwebapps/content/ff-overlay.xul
+style     chrome://global/content/customizeToolbar.xul chrome://openwebapps/skin/overlay.css
