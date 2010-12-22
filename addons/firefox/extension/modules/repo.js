@@ -33,66 +33,51 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-/**
-  2010-07-14
-  First version of server code
-  -Michael Hanson. Mozilla
-**/
+'use strict';
+/*jslint indent: 2, es5: true, plusplus: false, onevar: false */
+/*global document: false, setInterval: false, clearInterval: false,
+  Application: false, gBrowser: false, window: false, Components: false,
+  PlacesUtils: false, gContextMenu: false,
+  XPCOMUtils: false, AddonManager: false,
+  BrowserToolboxCustomizeDone: false, InjectorInit: false, injector: false,
+  Sync: false, TypedStorage: false */
 
+
+// This is a quick and dirty hack to get repo working in Firefox
+// Once it's working, use the learnings from this to refactor repo.js
+// into a cross-platform implementation and pull out the firefox
+// bits.
+
+var EXPORTED_SYMBOLS = ["Repo"];
+
+Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
+Components.utils.import("resource://openwebapps/modules/manifest.js");
+Components.utils.import("resource://openwebapps/modules/typed_storage.js");
+Components.utils.import("resource://openwebapps/modules/urlmatch.js");
+
+var console = {
+  log: function(s) {dump(s+"\n");}
+};
+
+
+function displayInstallPrompt(
+    installOrigin, 
+    manifestToInstall, 
+    installConfirmationFinishFn,
+    options)
+{
+//  window.confirm("Install something?");
+  installConfirmationFinishFn(true);
+//  { isExternalServer: isExternalServer });
+}
+
+var Repo = function(){
 /*
-* The server stores installed application metadata in local storage.
-*
-* The key for each application is the launch URL of the application;
-* installation of a second app with the same launch URL will cause
-* the first to be overwritten.
-*
-* The value of each entry is a serialized structure like this:
-* {
-*   app: { <application metadata> },
-*   installTime: <install timestamp, UTC milliseconds>,
-*   installURL: <the URL that invoked the install function>
-* }
-*
+    sync:Sync({
+      url: '/',
+      storage: TypedStorage()
+    }),
 */
-
-;ClientBridge = (function() {
-    var chan = Channel.build({
-        window: window.parent,
-        origin: "*",
-        scope: "openwebapps"
-    });
-
-    var sync = null;
-
-    var checkSync = function () {
-      if (localStorage.getItem('syncInfo')) {
-        try {
-          var info = JSON.parse(localStorage.getItem('syncInfo'));
-        } catch (e) {
-          JSON.removeItem('syncInfo');
-          return;
-        }
-        sync = Sync({
-          url: info.node,
-          username: info.username,
-          password: info.password,
-          storage: TypedStorage()
-        });
-      }
-    };
-
-    // Reference shortcut so minifier can save on characters
-    var win = window;
-
-    // when we recieve an install message we'll cache the origin
-    // so we can instruct the client on how to handle visibility
-    var installOrigin;
-
-    // We're the top window, don't do anything
-    if(win.top == win) return;
-
-    // unsupported browser
-    if(!win.postMessage || !win.localStorage || !win.JSON) return;
 
     var appStorage = TypedStorage().open("app");
     var stateStorage = TypedStorage().open("state");
@@ -105,7 +90,9 @@
         var toRemove = [];
 
         var appKeys = appStorage.keys();
-        if (appKeys.length == 0) return;
+        if (appKeys.length === 0) {
+          return;
+        }
 
         for (var i=0; i<appKeys.length; i++)
         {
@@ -114,7 +101,11 @@
             try {
                 var install = appStorage.get(aKey);
                 install.app = Manifest.parse(install.app);
-                callback(aKey, install);
+                try {
+                  callback(aKey, install);
+                } catch (e) {
+                  console.log("Error inside iterateApps callback: " + e);
+                }
             } catch (e) {
                 logError("invalid application detected: " + e);
                 toRemove.push(aKey);
@@ -124,7 +115,7 @@
         for (var j = 0; j < toRemove.length; j++) {
             appStorage.remove(toRemove[i]);
         }
-    }
+    };
 
     // Returns whether the given URL belongs to the specified domain (scheme://hostname[:nonStandardPort])
     function urlMatchesDomain(url, domain)
@@ -138,7 +129,7 @@
         } catch (e) {
             return false;
         }
-    }
+    };
 
     // Returns whether this application runs in the specified domain (scheme://hostname[:nonStandardPort])
     function applicationMatchesDomain(application, domain)
@@ -146,7 +137,7 @@
         var testURL = application.base_url;
         if (urlMatchesDomain(testURL, domain)) return true;
         return false;
-    }
+    };
 
     // Return all installations that belong to the given origin domain
     function getInstallsForOrigin(origin, reqObj)
@@ -160,7 +151,7 @@
         });
 
         return result;
-    }
+    };
 
     // Return all installations that were installed by the given origin domain
     function getInstallsByOrigin(origin, requestObj)
@@ -173,11 +164,9 @@
         });
 
         return result;
-    }
+    };
 
-    chan.bind("install", function(t, args) {
-        // indicate that response will occur asynchronously, later.
-        t.delayReturn(true);
+    function install(location, args) {
 
         function installConfirmationFinish(allowed)
         {
@@ -200,14 +189,14 @@
               appStorage.put(key, installation);
 
               // Send Response Object
-              t.complete(true);
+              if (args.callback) args.callback(true);
           } else {
             t.error("denied", "User denied installation request");
           }
         }
 
         var manifestToInstall;
-        var installOrigin = t.origin;
+        var installOrigin = location.href;
 
         if (args.manifest) {
           // this is a "direct install", which is currently only recommended
@@ -219,7 +208,7 @@
               manifestToInstall = Manifest.parse(args.manifest);
               displayInstallPrompt(installOrigin, manifestToInstall, installConfirmationFinish,
                                    { isExternalServer: true });
-
+              
           } catch(e) {
               throw [ "invalidManifest", "couldn't validate your manifest: " + e ];
           }
@@ -235,7 +224,7 @@
                 if (xhr.status == 200) {
                   try {
                     manifestToInstall = Manifest.parse(JSON.parse(xhr.responseText));
-
+                    
                     // Security check: Does this manifest's calculated manifest URL match where
                     // we got it from?
                     var expectedURL = manifestToInstall.base_url + (manifestToInstall.manifest_name ? manifestToInstall.manifest_name : "manifest.webapp");
@@ -249,7 +238,7 @@
                 } else if (xhr.status >= 400 && xhr.status < 500)  {
                   t.error("invalidManifest", "manifest URL did not resolve to a valid manifest");
                 } else {
-                  t.error("networkError", "couldn't retrieve application manifest from network");
+                  t.error("networkError", "couldn't retrieve application manifest from network"); 
                 }
               }
             } catch (e) {
@@ -261,9 +250,9 @@
           // neither a manifest nor a URL means we cannot proceed.
           throw [ "missingManifest", "install requires a url or manifest argument" ];
         }
-    });
+    };
 
-    chan.bind('verify', function(t, args) {
+    function verify(location, args) {
         // We will look for manifests whose app_urls filter matches the origin.
         // If we find one, we will initiate verification of the user
         // by contacting the authorizationURL defined in the installation record.
@@ -271,7 +260,7 @@
         // If we find two... well, for now, we take the first one.
         // Perhaps we should find the first one that has an authorization URL.
 
-        var result = getInstallsForOrigin(t.origin, args);
+        var result = getInstallsForOrigin(location.href, args);
         if (result.length == 0) return null;
         var install = result[0];
 
@@ -282,16 +271,16 @@
         }
 
         // TODO Could optionally have a returnto
-        win.parent.location = install.authorizationURL;
+        location.href = install.authorizationURL;
 
         // return value isn't meaningful.  as a result of overwriting
         // the parent location, we'll be torn down.
         return;
-    });
-
+    };
+    
     /** Determines which applications are installed for the origin domain */
-    chan.bind('getInstalled', function(t, args) {
-        var installsResult = getInstallsForOrigin(t.origin, args);
+    function getInstalled(location, args) {
+        var installsResult = getInstallsForOrigin(location.href, args);
 
         // Caller doesn't get to see installs, just apps:
         var result = [];
@@ -301,11 +290,11 @@
         }
 
         return result;
-    });
+    };
 
     /** Determines which applications were installed by the origin domain. */
-    chan.bind('getInstalledBy', function(t, args) {
-        var installsResult = getInstallsByOrigin(t.origin, args);
+    function getInstalledBy(location, args) {
+        var installsResult = getInstallsByOrigin(location.href, args);
 
         // Caller gets to see installURL, installTime, and manifest
         var result = [];
@@ -319,25 +308,30 @@
         }
 
         return result;
-    });
-
+    };
 
     /* a function to check that an invoking page has "management" permission
      * all this means today is that the invoking page (dashboard) is served
      * from the same domain as the application repository. */
     function verifyMgmtPermission(origin) {
-        var loc = win.location;
+
+
+      return true;
+      /*
+      dump("origin is " + origin + "\n");
+
+        var loc = origin;
         // make an exception for local testing, who via postmessage events
         // have an origin of "null"
-        if ((origin === 'null' && window.location.protocol === 'file:') ||
+        if ((origin === 'null' && origin.location.protocol === 'file:') ||
             ((loc.protocol + "//" + loc.host) === origin))
         {
             return;
         }
         throw [ 'permissionDenied',
                 "to access open web apps management apis, you must be on the same domain " +
-                "as the application repostiory" ];
-    }
+                "as the application repostiory" ];*/
+    };
 
     /* Management APIs for dashboards live beneath here */
 
@@ -350,94 +344,81 @@
         // XXX: perhaps localization should happen here?  be sent as an argument
         // to the list function?
 
-        var extRef = {
+        var result = {
             id: key,
             installURL: item.installURL,
             installTime: item.installTime,
-            icons: item.app.icons,
-            name: item.app.name,
-            description: item.app.description,
             launchURL: item.app.base_url + (item.app.launch_path ? item.app.launch_path : ""),
-            developer: item.app.developer
         };
-        
-        //if defined, add the optional embed url
-        if (item.app.embed && (typeof item.app.embed.path == 'string')) {
-          extRef.embedURL = item.app.base_url + (item.app.embed.path ? item.app.embed.path : "");      
-        }
-        return extRef;
-    } 
 
-    chan.bind('list', function(t, args) {
-        verifyMgmtPermission(t.origin);
+        if (item.app && item.app.icons) result.icons = item.app.icons;
+        if (item.app && item.app.name) result.name = item.app.name;
+        if (item.app && item.app.description) result.description = item.app.description;
+        if (item.app && item.app.developer) result.developer = item.app.developer;
+        return result;
+    };
+
+    function list(location) {
+        verifyMgmtPermission(location.href);
 
         var installed = [];
 
         iterateApps(function(key, item) {
             installed.push(generateExternalView(key, item));
         });
-
         return installed;
-    });
+    };
 
-    chan.bind('remove', function(t, key) {
-        verifyMgmtPermission(t.origin);
+    function remove(location, key) {
+        verifyMgmtPermission(location.href);
         var item = appStorage.get(key);
         if (!item) throw [ "noSuchApplication", "no application exists with the id: " + key ];
         appStorage.remove(key);
         return true;
-    });
+    };
 
-    chan.bind('loadState', function(t) {
-        verifyMgmtPermission(t.origin);
-        return stateStorage.get(t.origin);
-    });
+    function loadState(location) {
+        verifyMgmtPermission(location.href);
+        return stateStorage.get(location.href);
+    };
 
-    chan.bind('saveState', function(t, args) {
-        verifyMgmtPermission(t.origin);
+    function saveState(location, state) {
+        verifyMgmtPermission(location.href);
         // storing undefined purges state
-        if (args.state === undefined) {
-            stateStorage.remove(t.origin);
+        if (state === undefined) {
+            stateStorage.remove(location.href);
         } else  {
-            stateStorage.put(t.origin, args.state);
+            stateStorage.put(location.href, state);
         }
         return true;
-    });
+    };
 
-    chan.bind('loginStatus', function (t) {
-        verifyMgmtPermission(t.origin);
-        // FIXME: both these can take came_from=URL
+    function loginStatus(location, args) {
+        verifyMgmtPermission(location.href);
         var loginInfo = {
-            loginLink: location.protocol + '//' + location.host + '/login.html?return_to=' + encodeURIComponent(t.origin),
-            logoutLink: location.protocol + '//' + location.host + '/login.html?logout&return_to=' + encodeURIComponent(t.origin)
+            loginLink: location.protocol + '//' + location.host + '/login.html',
+            logoutLink: location.protocol + '//' + location.host + '/logout'
         };
-        try {
-          var info = JSON.parse(localStorage.getItem('syncInfo'));
-          var userInfo = {email: info.email};
-        } catch (e) {
-          var userInfo = null;
-        }
+        var userInfo = sync.readProfile();
         return [userInfo, loginInfo];
-    });
-
+    };
+    
     /**
        help with debugging issues
        We can eventually toggle this using a debug.myapps.org store
     **/
     function logError(message) {
-        if(win.console && win.console.log) {
-            win.console.log('App Repo error: ' + message);
-        }
+      dump("App Repo error: " + message + "\n");
     }
-
-    checkSync();
-
-    if (sync) {
-      sync.pollSyncServer();
-    }
-
+    
     return {
-        showDialog: function() { chan.notify({ method: "showme" }); },
-        hideDialog: function() { chan.notify({ method: "hideme" }); }
-    };
-})();
+      install: install,
+      getInstalled: getInstalled,
+      getInstalledBy: getInstalledBy,
+      list: list,
+      remove:remove,
+      loadState:loadState,
+      saveState:saveState,
+      loginStatus:loginStatus
+    }
+  }();

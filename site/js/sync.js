@@ -1,7 +1,8 @@
 function Sync(options) {
   var self = {};
-  // FIXME: default?
   self.url = options.url;
+  self.username = options.username;
+  self.password = options.password;
   self.storage = options.storage;
 
   if (self.url.search(/\/$/) != -1) {
@@ -46,7 +47,7 @@ function Sync(options) {
     options = options || {};
     var s = getSyncer();
     if (s.lastPull) {
-      var addHeaders = {'X-If-Modified-Since-Timestamp': s.lastPull};
+      var addHeaders = {'X-If-Modified-Since': s.lastPull};
     } else {
       var addHeaders = null;
     }
@@ -58,9 +59,11 @@ function Sync(options) {
       success: function (result, statusTest, req) {
         if (! result) {
           result = {installed: {}, deleted: {}};
+        } else {
+          result = JSON.parse(result.payload);
         }
         // FIXME: I should check for Not Modified
-        s.lastPull = parseFloat(req.getResponseHeader('X-Server-Timestamp'));
+        s.lastPull = parseFloat(req.getResponseHeader('X-Weave-Timestamp'));
         var myTime = (new Date()).getTime();
         self.timestampOffset = s.lastPull - myTime;
         mergeManifests(result, s.lastPull);
@@ -76,14 +79,15 @@ function Sync(options) {
   self.push = function (options) {
     options = options || {};
     var pushTimestamp = (new Date()).getTime() + self.timestampOffset;
+    var manifests = collectManifests(pushTimestamp);
     ajax({
       url: userUrl(),
       addHeaders: {'Content-Type': 'application/json'},
-      data: JSON.stringify(collectManifests(pushTimestamp)),
-      type: 'POST',
+      data: JSON.stringify({'id': 'apps', 'payload': JSON.stringify(manifests)}),
+      type: 'PUT',
       success: function (result, status, req) {
         var s = getSyncer();
-        var timestamp = parseFloat(req.getResponseHeader('X-Server-Timestamp'));
+        var timestamp = parseFloat(req.getResponseHeader('X-Weave-Timestamp'));
         s.lastPush = timestamp;
         updatePushTimes('app', timestamp);
         updatePushTimes('deletedapp', timestamp);
@@ -213,13 +217,13 @@ function Sync(options) {
     }
   }
 
-  var pollTimerId = null;
-  var pollTime = 5000;
+  self.pollTimerId = null;
+  self.pollTime = 5000;
   var pollPull = true;
 
   self.pollSyncServer = function (setPollTime) {
     if (setPollTime) {
-      pollTime = setPollTime;
+      self.pollTime = setPollTime;
     }
     self.cancelSyncServerPoll();
     self.trackPushNeeded();
@@ -227,22 +231,26 @@ function Sync(options) {
   };
 
   self.cancelSyncServerPoll = function () {
-    if (pollTimerId) {
-      clearTimeout(pollTimerId);
-      pollTimerId = null;
+    if (self.pollTimerId) {
+      clearTimeout(self.pollTimerId);
+      self.pollTimerId = null;
     }
   };
 
   function runPoll() {
     // Flip each time between pulling and pushing:
     function rerun() {
-      pollTimerId = setTimeout(runPoll, pollTime);
+      self.pollTimerId = setTimeout(runPoll, self.pollTime);
     }
     function cancelIfNeeded(req) {
+      if (typeof console != 'undefined') {
+        console.log('Problem with request:', req);
+      }
       if (req.status === 0) {
         // Means the server isn't there
-        // FIXME: log?
-        pollTimerId = null;
+        // FIXME: on Chrome this seems to happen with failed requests
+        // (maybe cross-origin?)
+        self.pollTimerId = null;
         return;
       } else {
         rerun();
@@ -291,6 +299,12 @@ function Sync(options) {
     if (options.contentType) {
       req.setRequestHeader('Content-Type', options.contentType);
     }
+    if (self.username) {
+      req.setRequestHeader('Authorization',
+        'Basic ' + Crypto.util.bytesToBase64(
+          Crypto.charenc.UTF8.stringToBytes(
+            self.username + ':' + self.password)));
+    }
     req.onreadystatechange = function (event) {
       if (req.readyState != 4) {
         return;
@@ -319,7 +333,8 @@ function Sync(options) {
   }
 
   var userUrl = function () {
-    return self.url + '/data/{' + encodeURIComponent(encodeURIComponent(self.user)) + '}/apps';
+    // FIXME: this should be a UUID or something like that?
+    return self.url + '/1.0/' + self.username + '/storage/openwebapps/apps';
   };
 
   var mergeObjects = function (ob1, ob2) {
@@ -333,45 +348,7 @@ function Sync(options) {
     return newObject;
   };
 
-  self.readProfile = function () {
-    var value = readCookie('user_info');
-    if (! value) {
-      return null;
-    }
-    value = decodeURIComponent(value.split(/\|/)[0]);
-    value = JSON.parse(value);
-    return value;
-  };
-
-  // FIXME: read a cookie or something
-  if (options.forceUser) {
-    self.user = options.forceUser;
-  } else {
-    var profile = self.readProfile();
-    if (profile) {
-      self.user = profile.identifier;
-    } else {
-      self.user = null;
-    }
-  }
-
   EventMixin(self);
   return self;
 }
 
-
-// From quirksmode:
-function readCookie(name) {
-  var nameEQ = name + "=";
-  var ca = document.cookie.split(';');
-  for (var i=0; i < ca.length; i++) {
-    var c = ca[i];
-    while (c.charAt(0) == ' ') {
-      c = c.substring(1,c.length);
-    }
-    if (c.indexOf(nameEQ) == 0) {
-      return c.substring(nameEQ.length, c.length);
-    }
-  }
-  return null;
-}

@@ -109,17 +109,17 @@ function shouldBotherUser()
   //question, where do we keep this setting?  localStorage?  for what domain?
   var now = Date.now();
   var nextBother = window.localStorage.getItem("addon-bother-timestamp");
-  
+
   if (nextBother) {
     if (nextBother == -1) return false;       //never bother them again.
-    
+
     if (nextBother < now) {
       nextBother = now + three_days;
       window.localStorage.setItem("addon-bother-timestamp", nextBother);
       return true;
     }
     else return false;
-    
+
   } else {  //first time
       nextBother = now;
       window.localStorage.setItem("addon-bother-timestamp", nextBother);
@@ -185,7 +185,7 @@ function updateMinDashSize()
       if (ePos.top + h + 6 > minAppListHeight)  minAppListHeight = ePos.top + h + 6;
       if (ePos.left + w + 6 > minAppListWidth)  minAppListWidth = ePos.left + w + 6;
     });
-    
+
   $('#page1').resizable( "option", "minHeight", minAppListHeight );
   $('#page1').resizable( "option", "minWidth", minAppListWidth );
 }
@@ -197,7 +197,7 @@ function resizeDash(h,w)
     $('#page1').left = 0;
 
     $('#page1').height(h);
-    //$('#page1').width(w);    
+    //$('#page1').width(w);
 }
 
 
@@ -268,7 +268,7 @@ function render()
       if (typeof console !== "undefined") console.log("Error while creating application icon for app " + i + ": " + e);
     }
   }
-  
+
 
 
 
@@ -282,14 +282,14 @@ function render()
           gDisplayMode == ROOT;
       }
   }
-    
+
   //load the saved dash size
   loadDashSize();
 
   //determine smallest size that can contain the apps
   updateMinDashSize();
-  
-  
+
+
   //then resize it if necessary
   if ($('#page1').height() < (minAppListHeight)) {
      $('#page1').height(minAppListHeight);
@@ -637,7 +637,7 @@ function updateLoginStatus() {
       $('#login-link a').attr('href', loginInfo.loginLink);
       $('#login-link').show();
     } else {
-      $('#username').text(userInfo.displayName);
+      $('#username').text(userInfo.email);
       $('#signed-in a').attr('href', loginInfo.logoutLink);
       $('#signed-in').show();
     }
