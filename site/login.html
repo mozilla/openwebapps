@@ -1,40 +1,28 @@
 <html>
 <head>
-<title>Login</title>
-<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.4.4/jquery.js"></script>
-<script type="text/javascript">
-$(function () {
-  $('input[name=end_point]').val(
-    location.protocol + '//' + location.host + '/success');
-});
-</script>
+<title>Login/Register</title>
+<script type="text/javascript" src="js/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="js/login.js"></script>
+<script type="text/javascript"
+src="http://www.google.com/recaptcha/api/js/recaptcha_ajax.js"></script>
+<script type="text/javascript"
+src="js/crypto-js/Crypto.js"></script>
+<script type="text/javascript"
+src="js/crypto-js/SHA1.js"></script>
 </head>
 
 <body>
+<h1>Login/Register</h1>
 
-<form action="/auth/facebook/auth" method="post">
-<input type="hidden" name="end_point" value="http://localhost:8080/success" />
-<input type="hidden" name="scope" value="publish_stream,create_event" />
-<button type="submit">Login with Facebook</button>
-</form>
+<div>
+  Email: <input type="text" name="email" /><br />
+  Password: <input type="password" name="password" /><br />
+  <input type="submit" value="register" id="register" />
+  <input type="submit" value="login" id="login" />
 
-<form action="/auth/yahoo/auth" method="post">
-<input type="hidden" name="end_point" value="http://localhost:8080/success" />
-<input type="hidden" name="oauth" value="true" />
-<button type="submit">Login with Yahoo</button>
-</form>
+  <div id="captcha">
+    <div id="captcha_html"></div>
+  </div>
+</div>
 
-<form action="/auth/twitter/auth" method="post">
-<input type="hidden" name="end_point" value="http://localhost:8080/success" />
-<button type="submit">Login with Twitter</button>
-</form>
-
-<form action="/auth/openid/auth" method="post">
-<input type="hidden" name="end_point" value="http://localhost:8080/success" />
-ID: <input type="text" name="openid_identifier" />
-<button type="submit">Login with OpenID</button>
-</form>
-
-
-</body>
-</html>
+</body> </html>

@@ -62,10 +62,24 @@
         scope: "openwebapps"
     });
 
-    var sync = Sync({
-      url: '/',
-      storage: TypedStorage()
-    });
+    var sync = null;
+
+    var checkSync = function () {
+      if (localStorage.getItem('syncInfo')) {
+        try {
+          var info = JSON.parse(localStorage.getItem('syncInfo'));
+        } catch (e) {
+          JSON.removeItem('syncInfo');
+          return;
+        }
+        sync = Sync({
+          url: info.node,
+          username: info.username,
+          password: info.password,
+          storage: TypedStorage()
+        });
+      }
+    };
 
     // Reference shortcut so minifier can save on characters
     var win = window;
@@ -205,7 +219,7 @@
               manifestToInstall = Manifest.parse(args.manifest);
               displayInstallPrompt(installOrigin, manifestToInstall, installConfirmationFinish,
                                    { isExternalServer: true });
-              
+
           } catch(e) {
               throw [ "invalidManifest", "couldn't validate your manifest: " + e ];
           }
@@ -221,7 +235,7 @@
                 if (xhr.status == 200) {
                   try {
                     manifestToInstall = Manifest.parse(JSON.parse(xhr.responseText));
-                    
+
                     // Security check: Does this manifest's calculated manifest URL match where
                     // we got it from?
                     var expectedURL = manifestToInstall.base_url + (manifestToInstall.manifest_name ? manifestToInstall.manifest_name : "manifest.webapp");
@@ -235,7 +249,7 @@
                 } else if (xhr.status >= 400 && xhr.status < 500)  {
                   t.error("invalidManifest", "manifest URL did not resolve to a valid manifest");
                 } else {
-                  t.error("networkError", "couldn't retrieve application manifest from network"); 
+                  t.error("networkError", "couldn't retrieve application manifest from network");
                 }
               }
             } catch (e) {
@@ -386,11 +400,17 @@
 
     chan.bind('loginStatus', function (t) {
         verifyMgmtPermission(t.origin);
+        // FIXME: both these can take came_from=URL
         var loginInfo = {
-            loginLink: location.protocol + '//' + location.host + '/login.html',
-            logoutLink: location.protocol + '//' + location.host + '/logout'
+            loginLink: location.protocol + '//' + location.host + '/login.html?return_to=' + encodeURIComponent(t.origin),
+            logoutLink: location.protocol + '//' + location.host + '/login.html?logout&return_to=' + encodeURIComponent(t.origin)
         };
-        var userInfo = sync.readProfile();
+        try {
+          var info = JSON.parse(localStorage.getItem('syncInfo'));
+          var userInfo = {email: info.email};
+        } catch (e) {
+          var userInfo = null;
+        }
         return [userInfo, loginInfo];
     });
 
@@ -404,7 +424,9 @@
         }
     }
 
-    if (sync.user) {
+    checkSync();
+
+    if (sync) {
       sync.pollSyncServer();
     }
 
