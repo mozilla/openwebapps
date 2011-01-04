@@ -4,11 +4,12 @@ var syncServer = null;
 
 $(function () {
 
-  // FIXME: should actually be a .submit event:
-  $('#register').click(function () {
-    var email = $('input[name=email]').val();
+  $('input[name=email]').focus();
+
+  $('#register-form').bind('submit', function () {
+    var email = $('input[name=email_register]').val();
     var username = emailToUsername(email);
-    var password = $('input[name=password]').val();
+    var password = $('input[name=password_register]').val();
     $.ajax({
       url: SYNC + '/user/1.0/' + encodeURIComponent(username),
       dataType: 'text',
@@ -32,24 +33,28 @@ $(function () {
             },
             error: function (req) {
               if (req.status == 400 && req.responseText == '9') {
-                alert('Password not strong enough');
+                showError('Password not strong enough');
               } else if (req.status == 400 && req.responseText == '2') {
-                alert('Bad CAPTCHA response');
+                showError('Bad CAPTCHA response');
+                // FIXME: should highlight here too
+                Recaptcha.focus_response_field();
               } else {
-                console.log('bad request', req);
+                console.log('bad request', req.responseText, req);
               }
             }
           });
         } else {
-          alert('The account with the email ' + email + ' has been taken');
+          showError('The account with the email ' + email + ' has been taken');
         }
       }
     });
+    return false;
   });
 
-  $('#login').click(function () {
-    var email = $('input[name=email]').val();
-    var password = $('input[name=password]').val();
+  $('#login-form').bind('submit', function () {
+    console.log('login');
+    var email = $('input[name=email_login]').val();
+    var password = $('input[name=password_login]').val();
     var username = emailToUsername(email);
     $.ajax({
       url: SYNC + '/user/1.0/' + encodeURIComponent(username) + '/node/weave',
@@ -81,7 +86,7 @@ $(function () {
           error: function (req, reason, err) {
             console.log('bad request', req);
             if (req.status == 401) {
-              alert('Bad password');
+              showError('Incorrect password (or email is incorrect)');
             }
           }
         });
@@ -89,15 +94,11 @@ $(function () {
 
       error: function (req, reason, err) {
         console.log('bad request', req, reason, err);
-        alert('bad request');
+        showError('Server error (reason unknown)');
       }
     });
+    return false;
   });
-
-  if (location.search.search(/logout/) != -1) {
-    localStorage.removeItem('syncInfo');
-    returnToRedirect();
-  }
 
   getCaptchaKey(function (key) {
     if (key) {
@@ -195,3 +196,13 @@ function returnToRedirect(defaultUrl) {
   }
 }
 
+function showError(errorMessage) {
+  var el = $('#messages');
+  el.html('');
+  if (typeof errorMessage == 'string') {
+    el.text(errorMessage);
+  } else {
+    el.append(errorMessage);
+  }
+  el.show();
+}

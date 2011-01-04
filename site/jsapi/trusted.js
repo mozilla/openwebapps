@@ -116,7 +116,7 @@
                 install.app = Manifest.parse(install.app);
                 callback(aKey, install);
             } catch (e) {
-                logError("invalid application detected: " + e);
+                logError("invalid application detected (" + aKey + ": " + e);
                 toRemove.push(aKey);
             }
         }
@@ -360,13 +360,13 @@
             launchURL: item.app.base_url + (item.app.launch_path ? item.app.launch_path : ""),
             developer: item.app.developer
         };
-        
+
         //if defined, add the optional embed url
         if (item.app.embed && (typeof item.app.embed.path == 'string')) {
-          extRef.embedURL = item.app.base_url + (item.app.embed.path ? item.app.embed.path : "");      
+          extRef.embedURL = item.app.base_url + (item.app.embed.path ? item.app.embed.path : "");
         }
         return extRef;
-    } 
+    }
 
     chan.bind('list', function(t, args) {
         verifyMgmtPermission(t.origin);
@@ -409,7 +409,7 @@
         // FIXME: both these can take came_from=URL
         var loginInfo = {
             loginLink: location.protocol + '//' + location.host + '/login.html?return_to=' + encodeURIComponent(t.origin),
-            logoutLink: location.protocol + '//' + location.host + '/login.html?logout&return_to=' + encodeURIComponent(t.origin)
+            logoutLink: location.protocol + '//' + location.host + '/logout.html?return_to=' + encodeURIComponent(t.origin)
         };
         try {
           var info = JSON.parse(localStorage.getItem('syncInfo'));

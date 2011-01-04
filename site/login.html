@@ -9,20 +9,50 @@ src="http://www.google.com/recaptcha/api/js/recaptcha_ajax.js"></script>
 src="js/crypto-js/Crypto.js"></script>
 <script type="text/javascript"
 src="js/crypto-js/SHA1.js"></script>
+<link rel="stylesheet" type="text/css" href="login.css" />
 </head>
 
 <body>
-<h1>Login/Register</h1>
+
+<div id="messages" style="display: none"></div>
+
+<table style="width: 100%">
+  <tr>
+    <td style="width: 50%; vertical-align: top;">
+
+<h2>Login</h2>
+
+<form action="#" id="login-form">
 
 <div>
-  Email: <input type="text" name="email" /><br />
-  Password: <input type="password" name="password" /><br />
-  <input type="submit" value="register" id="register" />
-  <input type="submit" value="login" id="login" />
+  Email: <input type="text" name="email_login" /><br />
+  Password: <input type="password" name="password_login" /><br />
+  <input type="submit" value="Login" id="login" />
+</div>
 
+</form>
+
+    </td>
+    <td style="vertical-align: top;">
+
+<h2>Register</h2>
+
+<form action="#" id="register-form">
+
+<div>
+  Email: <input type="text" name="email_register" /><br />
+  Password: <input type="password" name="password_register" /><br />
   <div id="captcha">
     <div id="captcha_html"></div>
   </div>
+
+  <input type="submit" value="Register" id="register" />
 </div>
+
+</form>
+
+    </td>
+  </tr>
+</table>
 
 </body> </html>

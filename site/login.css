@@ -1,0 +1,13 @@
+/* FIXME: should this just take from dashboard.css? */
+
+body {
+  font-family: sans-serif;
+}
+
+/* Used for error messages: */
+#messages {
+  background-color: #600;
+  color: #fff;
+  padding: 0.5em;
+  margin: 1em;
+}
