@@ -39,7 +39,7 @@ chrome.extension.onConnect.addListener(function(port) {
                 break;
             case 'launch':
                 if (mgmtAuthorized(origin)) {
-                    Repo.launch(msg.args);
+                    LaunchApp(msg.args);
                 }
                 break;
             case 'loginStatus':
@@ -55,7 +55,7 @@ chrome.extension.onConnect.addListener(function(port) {
                 break;
             // now routines for stores or apps
             case 'install':
-                Repo.install(origin, msg.args, function(r) {
+                Repo.install(origin, msg.args, ShowPrompt, FetchManifest, function(r) {
                     sendResponse(msg, r);
                 });
                 break;

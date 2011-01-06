@@ -23,7 +23,7 @@ $(document).ready(function() {
         s.click((function() {
             var id = l[i].id;
             return function() {
-                Repo.launch(id);
+                LaunchApp(id);
             };
         })());
         s.appendTo('body');

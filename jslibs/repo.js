@@ -59,29 +59,45 @@
     var appStorage = TypedStorage().open("app");
     var stateStorage = TypedStorage().open("state");
 
-
     // iterates over all stored applications manifests and passes them to a
     // callback function.  This function should be used instead of manual
     // iteration as it will parse manifests and purge any that are invalid.
-    function iterateApps(cb) {
+    function iterateApps(callback) {
         // we'll automatically clean up malformed installation records as we go
         var toRemove = [];
 
-        appStorage.iterate(function(key, item) {
+        var appKeys = appStorage.keys();
+        if (appKeys.length === 0) {
+          return;
+        }
+
+        // manually iterating the apps (rather than using appStorage.iterate() allows
+        // us to differentiate between a corrupt application (for purging), and
+        // an error inside the caller provided callback function
+        for (var i=0; i<appKeys.length; i++)
+        {
+            var aKey = appKeys[i];
+
             try {
-                item.app = Manifest.parse(item.app);
-                cb(key, item);
+                var install = appStorage.get(aKey);
+                install.app = Manifest.validate(install.app);
+                try {
+                  callback(aKey, install);
+                } catch (e) {
+                  console.log("Error inside iterateApps callback: " + e);
+                }
             } catch (e) {
-                console.log("invalid application detected: " + e);
-                toRemove.push(key);
+                logError("invalid application detected: " + e);
+                toRemove.push(aKey);
             }
-        });
+        }
 
         for (var j = 0; j < toRemove.length; j++) {
-            appStorage.remove(toRemove[j]);
+            appStorage.remove(toRemove[i]);
         }
-    }
+    };
 
+    // Returns whether the given URL belongs to the specified domain (scheme://hostname[:nonStandardPort])
     function urlMatchesDomain(url, domain)
     {
         try {
@@ -123,8 +139,7 @@
         var result = [];
 
         iterateApps(function(key, item) {
-            if (urlMatchesDomain(item.installURL, origin))
-            {
+            if (urlMatchesDomain(item.installURL, origin)) {
                 result.push(item);
             }
         });
@@ -132,24 +147,35 @@
         return result;
     }
 
-    var installFunc = function(origin, args, cb) {
-        // Validate and clean the request
-        var manf;
-        try {
-            manf = Manifest.parse(args.manifest);
-        } catch(e) {
-            cb({error: [ "invalidManifest", "couldn't validate your mainfest: " + e]});
-            return;
-        }
+    // trigger application installation.
+    //   origin -- the URL of the site requesting installation
+    //   args -- the argument object provided by the calling site upon invocation of
+    //           navigator.apps.install()
+    //   promptDisplayFunc -- is a callback function that will be invoked to display a
+    //           user prompt.  the function should accept 4 arguments which are:
+    //             installOrigin --
+    //             manifestToInstall --
+    //             installationConfirmationFinishCallback --
+    //             arguments object   
+    //   fetchManifestFunc -- a function that can can fetch a manifest from a remote url, accepts
+    //             two args, a manifesturl and a callback function that will be invoked with the
+    //             manifest JSON text or null in case of error.
+    //   cb -- is a caller provided callback that will be invoked when the installation
+    //         attempt is complete.
 
-        // display an install prompt
-        Prompt.show(function(allowed) {
+    function install(origin, args, promptDisplayFunc, fetchManifestFunc, cb) {
+
+        function installConfirmationFinish(allowed)
+        {
             if (allowed) {
+                var key = manifestToInstall.base_url;
+                if (manifestToInstall.launch_path) key += manifestToInstall.launch_path;
+
                 // Create installation data structure
                 var installation = {
-                    app: manf,
+                    app: manifestToInstall,
                     installTime: new Date().getTime(),
-                    installURL: origin
+                    installURL: installOrigin
                 };
 
                 if (args.authorization_url) {
@@ -157,19 +183,72 @@
                 }
 
                 // Save - blow away any existing value
-                appStorage.put(manf.base_url, installation);
+                appStorage.put(key, installation);
 
-                // Send Response Object
-                cb(true);
+                if (cb) cb(true);
             } else {
-                cb({error: ["denied", "User denied installation request"]});
+                if (cb) cb({error: ["denied", "User denied installation request"]});
             }
-        });
+        }
+
+        var manifestToInstall;
+        var installOrigin = origin;
+
+        if (args.manifest) {
+            // this is a "direct install", which is currently only recommended
+            // for developers.  We display a strongly-worded warning message
+            // to scare users off.
+
+            // Validate and clean the request
+            try {
+                manifestToInstall = Manifest.validate(args.manifest);
+                promptDisplayFunc(installOrigin, manifestToInstall, installConfirmationFinish,
+                                  { isExternalServer: true });
+                
+            } catch(e) {
+                cb({error: ["invalidManifest", "couldn't validate your manifest: "]});
+            }
+        } else if (args.url) {
+            // contact our server to retrieve the URL
+            fetchManifestFunc(args.url, function(fetchedManifest) {
+                if (!fetchedManifest) {
+                    cb({error: ["networkError", "couldn't retrieve application manifest from network"]});
+                } else {
+                    try {
+                        fetchedManifest = JSON.parse(fetchedManifest);
+                    } catch(e) {
+                        cb({error: ["manifestParseError", "couldn't parse manifest JSON from " + args.url]});
+                        return;
+                    }
+                    try {
+                        manifestToInstall = Manifest.validate(fetchedManifest);
+
+                        // Security check: Does this manifest's calculated manifest URL match where
+                        // we got it from?
+                        var expectedURL = manifestToInstall.base_url + (manifestToInstall.manifest_name ? manifestToInstall.manifest_name : "manifest.webapp");
+                        var isExternalServer = (expectedURL != args.url);
+
+                        promptDisplayFunc(installOrigin, manifestToInstall, installConfirmationFinish,
+                                          { isExternalServer: isExternalServer });
+                        
+                    } catch(e) {
+                        cb({error: ["invalidManifest", "couldn't validate your manifest: "]});
+                    }
+                }
+            });
+        } else {
+            // neither a manifest nor a URL means we cannot proceed.
+            cb({error: [ "missingManifest", "install requires a url or manifest argument" ]});
+        }
     };
+
+    function verify() {
+        // XXX: write me
+    }
 
 
     /** Determines which applications are installed for the origin domain */
-    var getInstalledFunc = function(origin) {
+    function getInstalled(origin) {
         var installsResult = getInstallsForOrigin(origin);
 
         // Caller doesn't get to see installs, just apps:
@@ -183,7 +262,7 @@
     };
 
     /** Determines which applications were installed by the origin domain. */
-    var getInstalledByFunc = function(origin) {
+    function getInstalledBy(origin) {
         var installsResult = getInstallsByOrigin(origin);
         // Caller gets to see installURL, installTime, and manifest
         var result = [];
@@ -199,38 +278,6 @@
         return result;
     };
 
-
-/*
-
-    chan.bind('verify', function(t, args) {
-        // We will look for manifests whose app_urls filter matches the origin.
-        // If we find one, we will initiate verification of the user
-        // by contacting the authorizationURL defined in the installation record.
-
-        // If we find two... well, for now, we take the first one.
-        // Perhaps we should find the first one that has an authorization URL.
-
-        var result = getInstallsForOrigin(t.origin, args);
-        if (result.length == 0) return null;
-        var install = result[0];
-
-        // Must have authorizationURL
-        if (!install.authorizationURL)
-        {
-            throw ['invalidArguments', 'missing authorization url' ];
-        }
-
-        // TODO Could optionally have a returnto
-        win.parent.location = install.authorizationURL;
-
-        // return value isn't meaningful.  as a result of overwriting
-        // the parent location, we'll be torn down.
-        return;
-    });
-*/
-
-
-
     /* Management APIs for dashboards live beneath here */ 
 
     // A function which given an installation record, builds an object suitable
@@ -241,20 +288,21 @@
     function generateExternalView(key, item) {
         // XXX: perhaps localization should happen here?  be sent as an argument
         // to the list function?
-
-        return {
+        var result = {
             id: key,
             installURL: item.installURL,
             installTime: item.installTime,
-            icons: item.app.icons,
-            name: item.app.name,
-            description: item.app.description,
             launchURL: item.app.base_url + (item.app.launch_path ? item.app.launch_path : ""),
-            developer: item.app.developer
         };
+
+        if (item.app && item.app.icons) result.icons = item.app.icons;
+        if (item.app && item.app.name) result.name = item.app.name;
+        if (item.app && item.app.description) result.description = item.app.description;
+        if (item.app && item.app.developer) result.developer = item.app.developer;
+        return result;
     }
 
-    var listFunc = function() {
+    function list() {
         var installed = [];
         iterateApps(function(key, item) {
             installed.push(generateExternalView(key, item));
@@ -262,48 +310,18 @@
         return installed;
     };
 
-    var removeFunc = function(id) {
-        var item = appStorage.get(id);
-        if (!item) return {error: [ "noSuchApplication", "no application exists with the id: " + id]}; 
-        appStorage.remove(id);
+    function remove(key) {
+        var item = appStorage.get(key);
+        if (!item) throw {error: [ "noSuchApplication", "no application exists with the id: " + key]}; 
+        appStorage.remove(key);
         return true;
     };
 
-    var launchFunc = function(id) {
-        console.log("launching app: " + id);
-        var i = appStorage.get(id);
-        if (!i || !i.app.base_url) return false;
-        var baseURL = i.app.base_url;
-        var launchURL = baseURL + (i.app.launch_path ? i.app.launch_path : "");
-        var appName = i.app.name;
-        var parsedBaseURL = URLParse(baseURL).normalize();
-        
-        // determine if this application is running in some tab in some window
-        chrome.windows.getAll({populate:true}, function(windows) { 
-            for (var i = 0; i < windows.length; i++) {
-                var w = windows[i];
-                for (var j = 0; j < w.tabs.length; j++) {
-                    var t = w.tabs[j];
-                    if (parsedBaseURL.contains(t.url)) {
-                        console.log("found application running (" + appName + "), focusing");
-                        chrome.windows.update(w.id, { focused: true });                        
-                        chrome.tabs.update(t.id, { selected: true });
-                        return;
-                    }
-                }
-            }
-            console.log("app not running (" + appName + "), spawning");
-            chrome.tabs.create({url: launchURL});
-        });
-
-        return true;
-    }
-
-    var loadStateFunc = function(id) {
+    function loadState(id) {
         return stateStorage.get(id); 
     };
-
-    var saveStateFunc = function(id, state) {
+    
+    function saveState(id, state) {
         // storing null purges state
         if (state === undefined) {
             stateStorage.remove(id);
@@ -314,13 +332,13 @@
     };
 
     return {
-        list: listFunc,
-        install: installFunc,
-        remove: removeFunc,
-        getInstalled: getInstalledFunc,
-        getInstalledBy: getInstalledByFunc,
-        loadState: loadStateFunc,
-        saveState: saveStateFunc,
-        launch: launchFunc
+        list: list,
+        install: install,
+        remove: remove,
+        getInstalled: getInstalled,
+        getInstalledBy: getInstalledBy,
+        loadState: loadState,
+        saveState: saveState,
+        verify: verify
     }
 })();

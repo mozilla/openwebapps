@@ -47,7 +47,7 @@ var gSelectedInstall = null;
 var ROOT = 1;
 var APP_INFO = 2;
 var gDisplayMode = ROOT;
-var gDashboardState = null;
+var gDashboardState = {};
 
 var minAppListHeight = 0;
 var minAppListWidth = 0;
@@ -156,8 +156,15 @@ $(document).ready(function() {
        try {
            // Construct our Apps handle
              retrieveInstalledApps();
-             navigator.apps.mgmt.loadState( ( function (s) { gDashboardState = s;
-                                                             if (!gDashboardState) { gDashboardState = {}; } } ) );
+             navigator.apps.mgmt.loadState( ( function (s) {
+                 gDashboardState = s;
+                 if (!gDashboardState) {
+                     gDashboardState = {};
+                 } else {
+                     // re-render dashboard now that state has been fetched
+                     render();
+                 }
+             }));
            } catch (e) {
            if (typeof console !== "undefined") console.log(e);
        }
