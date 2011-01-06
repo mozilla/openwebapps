@@ -94,6 +94,9 @@ var Repo = function(){
           return;
         }
 
+        // manually iterating the apps (rather than using appStorage.iterate() allows
+        // us to differentiate between a corrupt application (for purging), and
+        // an error inside the caller provided callback function
         for (var i=0; i<appKeys.length; i++)
         {
             var aKey = appKeys[i];
