@@ -221,7 +221,7 @@
                         return;
                     }
                     try {
-                        manifestToInstall = Manifest.validate(args.manifest);
+                        manifestToInstall = Manifest.validate(fetchedManifest);
 
                         // Security check: Does this manifest's calculated manifest URL match where
                         // we got it from?

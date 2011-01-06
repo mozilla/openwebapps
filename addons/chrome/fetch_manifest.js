@@ -1,4 +1,15 @@
 function FetchManifest(url, cb) {
-    // XXX: write me
-    setTimeout(function() { cb(null) }, 100); 
+    // contact our server to retrieve the URL
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", url, true);
+    xhr.onreadystatechange = function(aEvt) {
+        if (xhr.readyState == 4) {
+            if (xhr.status == 200) {
+                cb(xhr.responseText);
+            } else {
+                cb(null);
+            }
+        }
+    }
+    xhr.send(null);
 }
