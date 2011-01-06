@@ -50,7 +50,7 @@
     // initialize a manifest object from a javascript manifest representation,
     // validating as we go.
     // throws a developer readable string upon discovery of an invalid manifest.
-    function parse(manf) {
+    function validate(manf) {
         var errorThrow = function(msg, path) {
             if (path != undefined && typeof path != 'object') path = [ path ];
             throw {
@@ -283,6 +283,6 @@
     }
 
     return {
-        parse: parse
+        validate: validate
     }
 })();

@@ -113,7 +113,7 @@
 
             try {
                 var install = appStorage.get(aKey);
-                install.app = Manifest.parse(install.app);
+                install.app = Manifest.validate(install.app);
                 callback(aKey, install);
             } catch (e) {
                 logError("invalid application detected: " + e);
@@ -216,7 +216,7 @@
 
           // Validate and clean the request
           try {
-              manifestToInstall = Manifest.parse(args.manifest);
+              manifestToInstall = Manifest.validate(args.manifest);
               displayInstallPrompt(installOrigin, manifestToInstall, installConfirmationFinish,
                                    { isExternalServer: true });
 
@@ -234,7 +234,7 @@
               if (xhr.readyState == 4) {
                 if (xhr.status == 200) {
                   try {
-                    manifestToInstall = Manifest.parse(JSON.parse(xhr.responseText));
+                    manifestToInstall = Manifest.validate(JSON.parse(xhr.responseText));
 
                     // Security check: Does this manifest's calculated manifest URL match where
                     // we got it from?

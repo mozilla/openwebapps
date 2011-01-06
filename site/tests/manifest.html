@@ -21,7 +21,7 @@ normalization of manifests.  This page tests and demonstrates its functioning.
 <h3>Simplest Possible Manifest</h3>
 
 <pre class="doctest">
-$ writeln(null !== Manifest.parse({
+$ writeln(null !== Manifest.validate({
 >   manifest_version: "0.2",
 >   name: "SimplestPossibleManifest",
 >   base_url: "http://simple.mozillalabs.com/",
@@ -33,20 +33,20 @@ true
 <h3>Missing Required Properties</h3>
 
 <pre class="doctest">
-$ writeln(null !== Manifest.parse({
+$ writeln(null !== Manifest.validate({
 > }));
 Error: missing "base_url" property
 </pre>
 
 <pre class="doctest">
-$ writeln(null !== Manifest.parse({
+$ writeln(null !== Manifest.validate({
 >   base_url: "http://simple.mozillalabs.com/"
 > }));
 Error: missing "default_locale" property
 </pre>
 
 <pre class="doctest">
-$ writeln(null !== Manifest.parse({
+$ writeln(null !== Manifest.validate({
 >   base_url: "http://simple.mozillalabs.com/",
 >   default_locale: "en"
 > }));
@@ -54,7 +54,7 @@ Error: missing "manifest_version" property
 </pre>
 
 <pre class="doctest">
-$ writeln(null !== Manifest.parse({
+$ writeln(null !== Manifest.validate({
 >   base_url: "http://simple.mozillalabs.com/",
 >   default_locale: "en",
 >   manifest_version: "0.2"
@@ -63,7 +63,7 @@ Error: missing "name" property
 </pre>
 
 <pre class="doctest">
-$ writeln(null !== Manifest.parse({
+$ writeln(null !== Manifest.validate({
 >   base_url: "http://simple.mozillalabs.com/",
 >   default_locale: "en",
 >   manifest_version: "0.2",
@@ -80,13 +80,13 @@ $ var m = {
 >   base_url: "http://simple.mozillalabs.com/",
 >   default_locale: "en",
 > };
-> writeln(null !== Manifest.parse(m));
+> writeln(null !== Manifest.validate(m));
 true
 $ m.manifest_version = "1"
-> Manifest.parse(m);
+> Manifest.validate(m);
 Error: (manifest_version) invalid value: 1
 $ m.manifest_version = ".1"
-> Manifest.parse(m);
+> Manifest.validate(m);
 Error: (manifest_version) invalid value: .1
 </pre>
 
@@ -98,19 +98,19 @@ $ var m = {
 >   base_url: "http://simple.mozillalabs.com/",
 >   default_locale: "en",
 > };
-> writeln(null !== Manifest.parse(m));
+> writeln(null !== Manifest.validate(m));
 true
 $ m.name = null;
-> Manifest.parse(m);
+> Manifest.validate(m);
 Error: (name) invalid value: null
 $ m.name = "";
-> Manifest.parse(m);
+> Manifest.validate(m);
 Error: (name) invalid value: 
 $ m.name = "X";
-> writeln(null !== Manifest.parse(m));
+> writeln(null !== Manifest.validate(m));
 true
 $ m.name = "@#%(@$*^)!#*^@$&*@$(%^*@#$&*@$*&";
-> writeln(null !== Manifest.parse(m));
+> writeln(null !== Manifest.validate(m));
 true
 </pre>
 
@@ -122,25 +122,25 @@ $ var m = {
 >   base_url: "http://simple.mozillalabs.com/",
 >   default_locale: "en",
 > };
-> writeln(null !== Manifest.parse(m));
+> writeln(null !== Manifest.validate(m));
 true
 $ m.base_url = null;
-> var m2 = Manifest.parse(m);
+> var m2 = Manifest.validate(m);
 Error: (base_url) invalid value: null
 $ m.base_url = "file:///Users/yourhome/yourdir/";
-> var m2 = Manifest.parse(m);
+> var m2 = Manifest.validate(m);
 Error: (base_url) invalid url: unsupported scheme: file
 $ m.base_url = "httpx://bogus.scheme/";
-> var m2 = Manifest.parse(m);
+> var m2 = Manifest.validate(m);
 Error: (base_url) invalid url: unsupported scheme: httpx
 $ m.base_url = "https://just.fine.url:64000/foo/bar/path/.../ungh/";
-> null !== Manifest.parse(m);
+> null !== Manifest.validate(m);
 true
 $ m.base_url = "https://just.fine.url:64000/foo/../bar/";
-> writeln(Manifest.parse(m).base_url);
+> writeln(Manifest.validate(m).base_url);
 https://just.fine.url:64000/bar/
 $ m.base_url = "http://needs.trailing.slash/oops";
-> writeln(Manifest.parse(m).base_url);
+> writeln(Manifest.validate(m).base_url);
 Error: (base_url) trailing slash required
 </pre>
 
@@ -155,13 +155,13 @@ $ var m = {
 >   base_url: "http://simple.mozillalabs.com/",
 >   default_locale: "en",
 > };
-> writeln(null !== Manifest.parse(m));
+> writeln(null !== Manifest.validate(m));
 true
 $ m.default_locale = "";
-> Manifest.parse(m);
+> Manifest.validate(m);
 Error: (default_locale) invalid value: 
 $ m.default_locale = null;
-> Manifest.parse(m);
+> Manifest.validate(m);
 Error: (default_locale) invalid value: null
 $ true
 true
@@ -177,16 +177,16 @@ $ var m = {
 >   base_url: "http://simple.mozillalabs.com/",
 >   default_locale: "en",
 > };
-> writeln(null !== Manifest.parse(m));
+> writeln(null !== Manifest.validate(m));
 true
 $ m.description = [ ];
-> Manifest.parse(m);
+> Manifest.validate(m);
 Error: (description) invalid value: 
 $ m.description = "";
-> Manifest.parse(m);
+> Manifest.validate(m);
 Error: (description) invalid value: 
 $ delete m.description;
-> Manifest.parse(m) !== null;
+> Manifest.validate(m) !== null;
 true
 </pre>
 
@@ -201,19 +201,19 @@ $ var m = {
 >   launch_path: "index.html",
 >   default_locale: "en",
 > };
-> writeln(null !== Manifest.parse(m));
+> writeln(null !== Manifest.validate(m));
 true
 $ m.launch_path = "../index.html"; // not allowed!
-> Manifest.parse(m);
+> Manifest.validate(m);
 Error: (launch_path) invalid value: ../index.html
 $ m.launch_path = "/"; // meaningless?  normalization will handle this.
-> null !== Manifest.parse(m);
+> null !== Manifest.validate(m);
 true
 $ m.launch_path = ""; // will be removed
-> undefined === Manifest.parse(m).launch_path;
+> undefined === Manifest.validate(m).launch_path;
 $ m.launch_path = "foo/bar/index.html";
 $ m.base_url = "http://www.google.com/"
-> Manifest.parse(m) !== null;
+> Manifest.validate(m) !== null;
 true
 </pre>
 
@@ -227,16 +227,16 @@ $ var m = {
 >   base_url: "http://mozillalabs.com/simple/",
 >   default_locale: "en",
 > };
-> writeln(null !== Manifest.parse(m));
+> writeln(null !== Manifest.validate(m));
 true
 $ m.capabilities.push(42);
-> Manifest.parse(m);
+> Manifest.validate(m);
 Error: (capabilities/4) invalid value: 42
 $ m.capabilities = [ null ];
-> Manifest.parse(m);
+> Manifest.validate(m);
 Error: (capabilities/0) invalid value: null
 $ m.capabilities = [ ];
-> writeln(null !== Manifest.parse(m));
+> writeln(null !== Manifest.validate(m));
 true
 </pre>
 
@@ -254,19 +254,19 @@ $ var m = {
 >   base_url: "http://mozillalabs.com/simple/",
 >   default_locale: "en",
 > };
-> writeln(null !== Manifest.parse(m));
+> writeln(null !== Manifest.validate(m));
 true
 $ m.icons["256"] = "realbig.png";
-> Manifest.parse(m);
+> Manifest.validate(m);
 Error: (icons/256) invalid key, expected 16, 48, or 128
 $ m.icons = { 16: "foo/../../outta_my_scope.png" };
-> Manifest.parse(m);
+> Manifest.validate(m);
 Error: (icons/16) invalid value: foo/../../outta_my_scope.png
 $ m.icons = { };
-> writeln(null !== Manifest.parse(m));
+> writeln(null !== Manifest.validate(m));
 true
 $ m.icons["16"] = [ ];
-> Manifest.parse(m);
+> Manifest.validate(m);
 Error: (icons/16) invalid value: 
 </pre>
 
@@ -283,13 +283,13 @@ $ var m = {
 >   base_url: "http://mozillalabs.com/simple/",
 >   default_locale: "en",
 > };
-> writeln(null !== Manifest.parse(m));
+> writeln(null !== Manifest.validate(m));
 true
 $ m.developer.age = 7;
-> Manifest.parse(m);
+> Manifest.validate(m);
 Error: (developer/age) under developer, only "name" and "url" properties are allowed
 $ m.developer = { url: null };
-> Manifest.parse(m);
+> Manifest.validate(m);
 Error: (developer/url) invalid value: null
 </pre>
 
@@ -310,14 +310,14 @@ $ var m = {
 >     bg: { developer: { name: "Mozilla Labs, екстра!"} }
 >   }
 > };
-> writeln(null !== Manifest.parse(m));
+> writeln(null !== Manifest.validate(m));
 true
 $ m.locales.bg.developer.age = 7;
-> Manifest.parse(m);
+> Manifest.validate(m);
 Error: (locales/bg/developer/age) under developer, only "name" and "url" properties are allowed
 $ delete m.locales.bg.developer.age;
 > m.locales.es.capabilities = [ "something_awesome" ];
-> Manifest.parse(m);
+> Manifest.validate(m);
 Error: (locales/es/capabilities) may not be overridded per-locale
 </pre>
 
@@ -334,20 +334,20 @@ $ var m = {
 >     "http://radap.ps:8080/"
 >   ]
 > };
-> writeln(null !== Manifest.parse(m));
+> writeln(null !== Manifest.validate(m));
 true
 $ m.installs_allowed_from.unshift("http://too/long");
-> Manifest.parse(m);
+> Manifest.validate(m);
 Error: (installs_allowed_from/0) path on url is meaningless here
 $ m.installs_allowed_from[0] = "sucky_http://this_url_sucks:8080/";
-> Manifest.parse(m);
+> Manifest.validate(m);
 Error: (installs_allowed_from/0) invalid url: unsupported scheme: sucky_http
 $ m.installs_allowed_from = "http://store.sellling.apps.for.confused.devs.com";
-> Manifest.parse(m);
+> Manifest.validate(m);
 Error: (installs_allowed_from) expected array of urls
 $ // normalization test
 > m.installs_allowed_from = [ "http://no_port.eu:80/", "http://no_slash.ch:8080" ];
-> Manifest.parse(m).installs_allowed_from;
+> Manifest.validate(m).installs_allowed_from;
 ["http://no_port.eu/", "http://no_slash.ch:8080/"]
 </pre>
 
@@ -359,13 +359,13 @@ $ var m = {
 >   default_locale: "en",
 >   manifest_name: "manifest.webapp"
 > };
-> writeln(null !== Manifest.parse(m));
+> writeln(null !== Manifest.validate(m));
 true
 $ m.manifest_name = "foo/bar/baz/manifest.webapp";
-> Manifest.parse(m);
+> Manifest.validate(m);
 Error: (manifest_name) invalid characters present
 $ m.manifest_name = "";
-> Manifest.parse(m);
+> Manifest.validate(m);
 Error: (manifest_name) blank value not allowed
 </pre>
 
@@ -379,11 +379,11 @@ $ var m = {
 >   default_locale: "en",
 >   bogus: "si"
 > };
-> Manifest.parse(m);
+> Manifest.validate(m);
 Error: (bogus) unsupported property
 $ delete m.bogus;
 > m.locales = { "en": { "bogus": "Да" } };
-> Manifest.parse(m);
+> Manifest.validate(m);
 Error: (locales/en/bogus) unsupported property
 </pre>
 
