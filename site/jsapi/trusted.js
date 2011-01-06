@@ -98,7 +98,7 @@
         // contact our server to retrieve the URL
         var xhr = new XMLHttpRequest();
         // proxy through HTML5 repo host to support cross domain fetching
-        xhr.open("GET", "https://myapps.mozillalabs.com/getmanifest?url=" + escape(args.url), true);
+        xhr.open("GET", "https://myapps.mozillalabs.com/getmanifest?url=" + escape(url), true);
         xhr.onreadystatechange = function(aEvt) {
             if (xhr.readyState == 4) {
                 if (xhr.status == 200) {
