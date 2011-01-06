@@ -10,7 +10,7 @@ $(function () {
     var email = $('input[name=email_register]').val();
     var username = emailToUsername(email);
     var password = $('input[name=password_register]').val();
-    $.ajax({
+    getNode({
       url: SYNC + '/user/1.0/' + encodeURIComponent(username),
       dataType: 'text',
       success: function (response) {
@@ -29,17 +29,31 @@ $(function () {
             type: 'PUT',
             dataType: 'text',
             success: function () {
-              returnToRedirect();
+              getNode({
+                username: username,
+                success: function (node) {
+                  saveLogin({
+                    email: email,
+                    username: username,
+                    password: password,
+                    node: node
+                  });
+                  returnToRedirect();
+                }
+              });
             },
             error: function (req) {
               if (req.status == 400 && req.responseText == '9') {
                 showError('Password not strong enough');
               } else if (req.status == 400 && req.responseText == '2') {
+                Recaptcha.reload();
                 showError('Bad CAPTCHA response');
                 // FIXME: should highlight here too
                 Recaptcha.focus_response_field();
               } else {
-                console.log('bad request', req.responseText, req);
+                if (typeof console != 'undefined') {
+                  console.log('bad request', req.responseText, req);
+                }
               }
             }
           });
@@ -52,19 +66,13 @@ $(function () {
   });
 
   $('#login-form').bind('submit', function () {
-    console.log('login');
     var email = $('input[name=email_login]').val();
     var password = $('input[name=password_login]').val();
     var username = emailToUsername(email);
-    $.ajax({
-      url: SYNC + '/user/1.0/' + encodeURIComponent(username) + '/node/weave',
-      dataType: 'text',
-      // FIXME: apparently this isn't required, but somehow does change
-      // parts of the response (mostly absolute URL to relative):
-      //beforeSend: addUserPassword(username, password),
-
-      success: function (response) {
-        var url = response + '1.0/' + encodeURIComponent(username)
+    getNode({
+      username: username,
+      success: function (node) {
+        var url = node + '1.0/' + encodeURIComponent(username)
           + '/info/collections';
         $.ajax({
           url: url,
@@ -74,27 +82,23 @@ $(function () {
             // FIXME: there's a bunch of weird things that can get through
             // here related to cross-origin, that are failures but don't look
             // it.
-            var data = {
+            saveLogin({
               email: email,
               username: username,
               password: password,
-              node: response
-            };
-            localStorage.setItem('syncInfo', JSON.stringify(data));
+              node: node
+            });
             returnToRedirect();
           },
           error: function (req, reason, err) {
-            console.log('bad request', req);
+            if (typeof console != 'undefined') {
+              console.log('bad request', req);
+            }
             if (req.status == 401) {
               showError('Incorrect password (or email is incorrect)');
             }
           }
         });
-      },
-
-      error: function (req, reason, err) {
-        console.log('bad request', req, reason, err);
-        showError('Server error (reason unknown)');
       }
     });
     return false;
@@ -205,4 +209,25 @@ function showError(errorMessage) {
     el.append(errorMessage);
   }
   el.show();
+}
+
+function getNode(options) {
+  options.error = options.error || function (req, reason, err) {
+    showError('Server error retrieving node');
+  };
+  $.ajax({
+    url: SYNC + '/user/1.0/' + encodeURIComponent(options.username) + '/node/weave',
+    dataType: 'text',
+    // FIXME: apparently this isn't required, but somehow does change
+    // parts of the response (mostly absolute URL to relative):
+    //beforeSend: addUserPassword(username, password),
+    success: function (node) {
+      options.success(node);
+    },
+    error: options.error
+  });
+}
+
+function saveLogin(data) {
+  localStorage.setItem('syncInfo', JSON.stringify(data));
 }
