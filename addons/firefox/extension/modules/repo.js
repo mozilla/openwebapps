@@ -51,14 +51,21 @@
 var EXPORTED_SYMBOLS = ["Repo"];
 
 Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
-Components.utils.import("resource://openwebapps/modules/manifest.js");
 Components.utils.import("resource://openwebapps/modules/typed_storage.js");
-Components.utils.import("resource://openwebapps/modules/urlmatch.js");
 
 var console = {
   log: function(s) {dump(s+"\n");}
 };
 
+// Can't really use Cu.import to get manifest.js and urlmatch.js without
+// changing them as they do not define EXPORTED_SYMBOLS (and aren't really
+// js modules in the firefox sense). We're okay with using loadSubscript()
+// for them instead because they don't pollute the global namespace, and this
+// is a hack after all ;)
+var loader = Components.classes["@mozilla.org/moz/jssubscript-loader;1"].
+             getService(Components.interfaces.mozIJSSubScriptLoader);
+loader.loadSubScript("resource://openwebapps/modules/manifest.js");
+loader.loadSubScript("resource://openwebapps/modules/urlmatch.js");
 
 function displayInstallPrompt(
     installOrigin, 
@@ -103,7 +110,7 @@ var Repo = function(){
 
             try {
                 var install = appStorage.get(aKey);
-                install.app = Manifest.parse(install.app);
+                install.app = Manifest.validate(install.app);
                 try {
                   callback(aKey, install);
                 } catch (e) {
@@ -208,7 +215,7 @@ var Repo = function(){
 
           // Validate and clean the request
           try {
-              manifestToInstall = Manifest.parse(args.manifest);
+              manifestToInstall = Manifest.validate(args.manifest);
               displayInstallPrompt(installOrigin, manifestToInstall, installConfirmationFinish,
                                    { isExternalServer: true });
               
@@ -226,7 +233,7 @@ var Repo = function(){
               if (xhr.readyState == 4) {
                 if (xhr.status == 200) {
                   try {
-                    manifestToInstall = Manifest.parse(JSON.parse(xhr.responseText));
+                    manifestToInstall = Manifest.validate(JSON.parse(xhr.responseText));
                     
                     // Security check: Does this manifest's calculated manifest URL match where
                     // we got it from?
