@@ -119,9 +119,9 @@
             if (r === true) {
                 t.complete(r);
             } else if (typeof r.error === 'array' && r.error.length === 2) {
-                t.error(r.error[0], r.error[1]);
+                t.error(r.error[0], errorRepr(r.error[1]));
             } else {
-                t.error("internalError", "unknown internal error during install: " + r);
+                t.error("internalError", "unknown internal error during install: " + errorRepr(r));
             }
         });
     });
@@ -225,6 +225,33 @@
             win.console.log('App Repo error: ' + message);
         }
     }
+
+    function errorRepr(o) {
+        /* Format an object to be presented as an error message
+        [object Object] isn't very helpful ;) */
+        var s = "";
+        if (typeof o == 'object' && o.length) {
+            for (var i=0; i<o.length; i++) {
+                if (s) {
+                    s += " ";
+                }
+                s += safeRepr(o[i]);
+            }
+        } else if (typeof o == 'object') {
+            for (var i in o) {
+                if (o.hasOwnProperty(i)) {
+                    if (s) {
+                        s += ", ";
+                    }
+                    s += i + ': ' + safeRepr(o[i]);
+                }
+            }
+        } else {
+            s = o + '';
+        }
+        return s;
+    }
+
 
     checkSync();
 

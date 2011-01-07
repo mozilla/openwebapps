@@ -133,7 +133,7 @@
         return result;
     }
 
-    // Return all installations that were installed by the given origin domain 
+    // Return all installations that were installed by the given origin domain
     function getInstallsByOrigin(origin)
     {
         var result = [];
@@ -156,7 +156,7 @@
     //             installOrigin --
     //             manifestToInstall --
     //             installationConfirmationFinishCallback --
-    //             arguments object   
+    //             arguments object
     //   fetchManifestFunc -- a function that can can fetch a manifest from a remote url, accepts
     //             two args, a manifesturl and a callback function that will be invoked with the
     //             manifest JSON text or null in case of error.
@@ -204,9 +204,9 @@
                 manifestToInstall = Manifest.validate(args.manifest);
                 promptDisplayFunc(installOrigin, manifestToInstall, installConfirmationFinish,
                                   { isExternalServer: true });
-                
+
             } catch(e) {
-                cb({error: ["invalidManifest", "couldn't validate your manifest: "]});
+                cb({error: ["invalidManifest", "couldn't validate your manifest: " + e]});
             }
         } else if (args.url) {
             // contact our server to retrieve the URL
@@ -230,7 +230,7 @@
 
                         promptDisplayFunc(installOrigin, manifestToInstall, installConfirmationFinish,
                                           { isExternalServer: isExternalServer });
-                        
+
                     } catch(e) {
                         cb({error: ["invalidManifest", "couldn't validate your manifest: "]});
                     }
@@ -278,7 +278,7 @@
         return result;
     };
 
-    /* Management APIs for dashboards live beneath here */ 
+    /* Management APIs for dashboards live beneath here */
 
     // A function which given an installation record, builds an object suitable
     // to return to a dashboard.  this function may filter information which is
@@ -312,15 +312,15 @@
 
     function remove(key) {
         var item = appStorage.get(key);
-        if (!item) throw {error: [ "noSuchApplication", "no application exists with the id: " + key]}; 
+        if (!item) throw {error: [ "noSuchApplication", "no application exists with the id: " + key]};
         appStorage.remove(key);
         return true;
     };
 
     function loadState(id) {
-        return stateStorage.get(id); 
+        return stateStorage.get(id);
     };
-    
+
     function saveState(id, state) {
         // storing null purges state
         if (state === undefined) {
