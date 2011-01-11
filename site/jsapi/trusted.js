@@ -235,7 +235,7 @@
                 if (s) {
                     s += " ";
                 }
-                s += safeRepr(o[i]);
+                s += o[i]; // XX ? safeRepr(o[i]);
             }
         } else if (typeof o == 'object') {
             for (var i in o) {
@@ -243,7 +243,7 @@
                     if (s) {
                         s += ", ";
                     }
-                    s += i + ': ' + safeRepr(o[i]);
+                    s += i + ': ' + o[i]; // XX ? safeRepr(o[i]);
                 }
             }
         } else {
