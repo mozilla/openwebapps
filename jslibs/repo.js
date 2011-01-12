@@ -299,6 +299,19 @@
         if (item.app && item.app.name) result.name = item.app.name;
         if (item.app && item.app.description) result.description = item.app.description;
         if (item.app && item.app.developer) result.developer = item.app.developer;
+        
+        if (item.app && item.app.widget) {
+          result.widgetURL = item.app.base_url + (item.app.widget.path ? item.app.widget.path : "");
+          
+          if (item.app.widget.width) {
+            result.widgetWidth = parseInt(item.app.widget.width,10);
+          }
+              
+          if (item.app.widget.height) {
+            result.widgetHeight = parseInt(item.app.widget.height,10);
+          }
+        }
+
         return result;
     }
 

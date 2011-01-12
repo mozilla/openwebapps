@@ -483,13 +483,13 @@ function createAppIcon(install)
 
   //now set the container size depending on whether they have a widget or not.
   // probably if there's no widget, we should  make it transparent
-   if (install.embedURL) {
+   if (install.widgetURL) {
    //make the appContainer large, with rounded corners and a white background
-    var width = 300;
-    var height = 164;
+    var width = (install.widgetWidth ? install.widgetWidth : 300);
+    var height = (install.widgetHeight ? install.widgetHeight : 164);
     
-    appContainer.style.width = width;
-    appContainer.style.height = height;
+    appContainer.style.width = width + (96 + 20 + 10);
+    appContainer.style.height = height + 20;
     appContainer.style.background = "white";
     appContainer.style.opacity = "1";
     appContainer.style.border = "1px solid black";
@@ -498,7 +498,7 @@ function createAppIcon(install)
     appContainer.style.WebkitBorderRadius = "1em";
     appContainer.style.borderRadius = "1em";
     
-    var widget = createWidget(install.embedURL, 10, ( 96 + 20), (height - 20), (width - (96 + 20 + 10)));
+    var widget = createWidget(install.widgetURL, 10, ( 96 + 20), height, width);
     $(widget).addClass("widget");
     
     $(appContainer).append(widget);
