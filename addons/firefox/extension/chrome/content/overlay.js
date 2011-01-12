@@ -35,12 +35,16 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
 (function () {
 
   Components.utils.import("resource://openwebapps/modules/injector.js");
-  Components.utils.import("resource://openwebapps/modules/repo.js");
+  Components.utils.import("resource://openwebapps/modules/api.js");
   Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
-
   // This add-on manager is only available in Firefox 4+
   try {
     Components.utils.import("resource://gre/modules/AddonManager.jsm");
+    
+    // Also register sync engine in FF4+
+    Components.utils.import("resource://services-sync/main.js");
+    Components.utils.import("resource://openwebapps/modules/sync.js");
+    Weave.Engines.register(AppsEngine);
   } catch (e) {   
   }
 

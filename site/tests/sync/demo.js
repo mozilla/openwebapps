@@ -5,9 +5,9 @@ $(function () {
   var storage = TypedStorage();
 
   var sync = Sync({
-    url: "/",
-    addHeaders: {'X-Testing-User': 'test'},
-    forceUser: 'test',
+    url: "https://sync.myapps.mozillalabs.com",
+    username: 'me3gczbqgbqwgmjrgnqtcolehe2tgzlgmi4tcobsgbsdqnzyhbstemrwgnrdeodb',
+    password: 'testtest1',
     storage: storage
   });
 
@@ -79,6 +79,12 @@ $(function () {
   }
 
   function makeId(url) {
+    if (! url) {
+      if (typeof console != 'undefined' && console.trace) {
+        console.trace();
+      }
+      throw 'Bad url in makeId(url)';
+    }
     var id = url;
     id = id.replace(/^https?:\/\//, '');
     id = id.replace(/[\/.]/, '_');

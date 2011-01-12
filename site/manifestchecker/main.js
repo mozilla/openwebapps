@@ -11,7 +11,7 @@ function validate() {
     }
 
     try {
-        Manifest.parse(manifest);
+        Manifest.validate(manifest);
     } catch(e) {
         var path = "";
         if (e.path) {
@@ -31,7 +31,7 @@ function normalize() {
     var editor = document.getElementById("editor").bespin.editor;
     try {
         var pos = editor.selection.start;
-        editor.value = JSON.stringify(Manifest.parse(JSON.parse(editor.value)), null, 2);
+        editor.value = JSON.stringify(Manifest.validate(JSON.parse(editor.value)), null, 2);
         editor.setCursor(pos);
     } catch(e) {
         $("#output").text("Can't normalize: " + e);

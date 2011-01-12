@@ -6,6 +6,7 @@
 />
 <script type="text/javascript" src="../../js/eventmixin.js"></script>
 <script type="text/javascript" src="../../js/sync.js"></script>
+<script type="text/javascript" src="../../js/crypto-js/Crypto.js"></script>
 <script type="text/javascript" src="mockstorage.js"></script>
 <style type="text/css">
 body {
@@ -34,22 +35,36 @@ local repo.)
 </p>
 
 <pre class="doctest setup">
+$ window.requestErrors = [];
 $ function make_sync(storage) {
 > return Sync({
->   url: '/',
->   // I'm wondering if this stuff could be done with events:
->   addHeaders: {'X-Testing-User': 'test'},
->   forceUser: 'test',
+>   url: 'https://sync.myapps.mozillalabs.com/',
+>   // test@test.com:
+>   username: 'me3gczbqgbqwgmjrgnqtcolehe2tgzlgmi4tcobsgbsdqnzyhbstemrwgnrdeodb',
+>   password: 'testtest1',
 >   beforeSend: function (req) {
 >     writeln(req.method + ' ' + req.url);
 >   },
->   error: function (req) {
+>   error: function (req, text, exc) {
 >     var s = 'Request error';
 >     if (req.url) {
 >       s += ' for url '+req.url;
 >       s += ' status: ' + req.status + ' ' + req.statusText;
 >     }
+>     if (text) {
+>       s += ' ' + text;
+>     }
+>     if (exc) {
+>       s += ' exception: ' + exc;
+>     }
+>     window.requestErrors.push([req, text, exc]);
 >     writeln('Error: ', s);
+>     if (req.readyState == 4 && req.status == 0) {
+>       doctest.Abort('Server is inaccessible; aborting');
+>     }
+>     if (location.href.search(/abort/) != -1) {
+>       doctest.Abort('bad request');
+>     }
 >   },
 >   storage: storage
 > });
@@ -85,32 +100,11 @@ $ storage2.addEventListener('change', showStorageOperations);
 $ // We don't have to clear both sync servers, of course:
 > sync1.clearServer({success: Spy('clearServer', {wait: true})});
 ...clearServer()
+$ n = 0;
 $ function successor() {
->   return {success: Spy('success', {writes: false, wait: true})};
+>   var spy = Spy('success' + (++n), {writes: false, wait: true});
+>   return {success: spy};
 > }
-$ $.ajax({
->   url: '/.reset-time',
->   success: Spy('success', {writes: false, wait: true}),
->   error: function () {
->     throw Abort('Server is not here!');
->   }
-> });
-</pre>
-
-</div>
-
-<div class="test">
-<p>First we'll test authentication:</p>
-
-<pre class="doctest">
-$ // Is it weird that this uses a callback?
-> // It won't necessarily need a callback.
-> // Maybe we'll actually need synchronous access to the userid
-> // anyway, as we construct URLs based on it.
-$ sync1.isLoggedIn({success: Spy('isLoggedIn', {wait: true})});
-...isLoggedIn(true)
-$ sync1.loginStatus({success: Spy('loginStatus', {wait: true})});
-...loginStatus({displayName: "test"...})
 </pre>
 
 </div>
@@ -127,32 +121,27 @@ $ apps1.put('http://foo.com', {
   {base_url: "http://foo.com"}
 $ writeln(apps1._storage);
 {http://foo.com: {base_url: "http://foo.com"}}
-$ // As you'll see, there's nothing to pull yet, though we did update the syncer:
+$ // As you'll see, there's nothing to pull yet
 > sync1.pull(successor());
 1::sync::sync add
   {lastPull: ?}
-$ // Only the date will be updated
-> sync1.pull(successor());
-1::sync::sync change
-  lastPull: ? -> ?
 $ // a sequence of such boring polls one is unlike to see...
 > sync2.pull(successor());
 2::sync::sync add
   {lastPull: ?}
 $ writeln(storage2.open('sync').get('sync'));
 {lastPull: ?}
-
 $ // Now we will actually write something to the sync
 > // in particular, the app we added earlier:
 > sync1.push(successor())
 1::app::http://foo.com change
-  +lastPush: ?
+  +lastModified: ?
 1::sync::sync change
   +lastPush: ?
 $ // And then pull it from the server to our other store:
 > sync2.pull(successor())
 2::app::http://foo.com add
-  {base_url: "http://foo.com", lastPull: ?, lastPush: ?}
+  {base_url: "http://foo.com", lastModified: ?}
 2::sync::sync change
   lastPull: ? -> ?
 $ // Now we'll add an app to our second store:
@@ -168,10 +157,8 @@ $ // Pulling shouldn't do anything interesting:
   lastPull: ? -> ?
 $ // Now we'll push the new app:
 > sync2.push(successor())
-2::app::http://foo.com change
-  lastPush: ? -> ?
 2::app::http://bar.com change
-  +lastPush: ?
+  +lastModified: ?
 2::sync::sync change
   +lastPush: ?
 $ // Next we'll do a delete on the side of 1:
@@ -182,33 +169,30 @@ $ storage1.open('deletedapp').put('http://foo.com', {});
   {}
 $ sync1.push(successor());
 1::deletedapp::http://foo.com change
-  +lastPush: ?
+  +lastModified: ?
 1::sync::sync change
   lastPush: ? -> ?
-$ // Now we'll re-pull, which will update
-> // timestamps, but not pull bar.com (we wiped it)
+$ // Now we'll re-pull, which will not pull bar.com (we wiped it)
 > sync1.pull(successor());
-1::deletedapp::http://foo.com change
-  +lastPull: ?
-  lastPush: ? -> ?
+1::deletedapp::http://foo.com nochange
 1::sync::sync change
   lastPull: ? -> ?
 $ // Now we'll pull the delete
 > // note sync1 never pulled bar.com but that should have no effect
 > sync2.pull(successor());
+2::app::http://foo.com delete
+2::deletedapp::http://foo.com add
+  {lastModified: ?}
 2::sync::sync change
   lastPull: ? -> ?
 $ // Next sync2 will push its change, which will include the new app
 > sync2.push(successor());
-2::app::http://foo.com change
-  lastPush: ? -> ?
-2::app::http://bar.com change
-  lastPush: ? -> ?
 2::sync::sync change
   lastPush: ? -> ?
 $ sync1.pull(successor());
+1::deletedapp::http://foo.com nochange
 1::app::http://bar.com add
-  {base_url: "http://bar.com", lastPull: ?, lastPush: ?}
+  {base_url: "http://bar.com", lastModified: ?}
 1::sync::sync change
   lastPull: ? -> ?
 

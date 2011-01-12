@@ -94,173 +94,36 @@
     // unsupported browser
     if(!win.postMessage || !win.localStorage || !win.JSON) return;
 
-    var appStorage = TypedStorage().open("app");
-    var stateStorage = TypedStorage().open("state");
-
-    // iterates over all stored applications manifests and passes them to a
-    // callback function.  This function should be used instead of manual
-    // iteration as it will parse manifests and purge any that are invalid.
-    function iterateApps(callback) {
-        // we'll automatically clean up malformed installation records as we go
-        var toRemove = [];
-
-        var appKeys = appStorage.keys();
-        if (appKeys.length == 0) return;
-
-        for (var i=0; i<appKeys.length; i++)
-        {
-            var aKey = appKeys[i];
-
-            try {
-                var install = appStorage.get(aKey);
-                install.app = Manifest.parse(install.app);
-                callback(aKey, install);
-            } catch (e) {
-                logError("invalid application detected: " + e);
-                toRemove.push(aKey);
+    function fetchManifest(url, cb) {
+        // contact our server to retrieve the URL
+        var xhr = new XMLHttpRequest();
+        // proxy through HTML5 repo host to support cross domain fetching
+        xhr.open("GET", "https://myapps.mozillalabs.com/getmanifest?url=" + escape(url), true);
+        xhr.onreadystatechange = function(aEvt) {
+            if (xhr.readyState == 4) {
+                if (xhr.status == 200) {
+                    cb(xhr.responseText);
+                } else {
+                    cb(null);
+                }
             }
         }
-
-        for (var j = 0; j < toRemove.length; j++) {
-            appStorage.remove(toRemove[i]);
-        }
-    }
-
-    // Returns whether the given URL belongs to the specified domain (scheme://hostname[:nonStandardPort])
-    function urlMatchesDomain(url, domain)
-    {
-        try {
-            // special case for local testing
-            if (url === "null" && domain === "null") return true;
-            var parsedDomain = URLParse(domain).normalize();
-            var parsedURL = URLParse(url).normalize();
-            return parsedDomain.contains(parsedURL);
-        } catch (e) {
-            return false;
-        }
-    }
-
-    // Returns whether this application runs in the specified domain (scheme://hostname[:nonStandardPort])
-    function applicationMatchesDomain(application, domain)
-    {
-        var testURL = application.base_url;
-        if (urlMatchesDomain(testURL, domain)) return true;
-        return false;
-    }
-
-    // Return all installations that belong to the given origin domain
-    function getInstallsForOrigin(origin, reqObj)
-    {
-        var result = [];
-
-        iterateApps(function(key, item) {
-            if (applicationMatchesDomain(item.app, origin)) {
-                result.push(item);
-            }
-        });
-
-        return result;
-    }
-
-    // Return all installations that were installed by the given origin domain
-    function getInstallsByOrigin(origin, requestObj)
-    {
-        var result = [];
-        iterateApps(function(key, item) {
-            if (urlMatchesDomain(item.installURL, origin)) {
-                result.push(item);
-            }
-        });
-
-        return result;
+        xhr.send(null);
     }
 
     chan.bind("install", function(t, args) {
         // indicate that response will occur asynchronously, later.
         t.delayReturn(true);
 
-        function installConfirmationFinish(allowed)
-        {
-          if (allowed) {
-              var key = manifestToInstall.base_url;
-              if (manifestToInstall.launch_path) key += manifestToInstall.launch_path;
-
-              // Create installation data structure
-              var installation = {
-                  app: manifestToInstall,
-                  installTime: new Date().getTime(),
-                  installURL: installOrigin
-              };
-
-              if (args.authorization_url) {
-                  installation.authorizationURL = args.authorization_url;
-              }
-
-              // Save - blow away any existing value
-              appStorage.put(key, installation);
-
-              // Send Response Object
-              t.complete(true);
-          } else {
-            t.error("denied", "User denied installation request");
-          }
-        }
-
-        var manifestToInstall;
-        var installOrigin = t.origin;
-
-        if (args.manifest) {
-          // this is a "direct install", which is currently only recommended
-          // for developers.  We display a strongly-worded warning message
-          // to scare users off.
-
-          // Validate and clean the request
-          try {
-              manifestToInstall = Manifest.parse(args.manifest);
-              displayInstallPrompt(installOrigin, manifestToInstall, installConfirmationFinish,
-                                   { isExternalServer: true });
-
-          } catch(e) {
-              throw [ "invalidManifest", "couldn't validate your manifest: " + e ];
-          }
-        } else if (args.url) {
-          // contact our server to retrieve the URL
-          // TODO what sort of portability library should we use?  we don't have jquery as
-          // a requirement here yet.
-          var xhr = new XMLHttpRequest();
-          xhr.open("GET", "https://myapps.mozillalabs.com/getmanifest?url=" + escape(args.url), true);
-          xhr.onreadystatechange = function(aEvt) {
-            try {
-              if (xhr.readyState == 4) {
-                if (xhr.status == 200) {
-                  try {
-                    manifestToInstall = Manifest.parse(JSON.parse(xhr.responseText));
-
-                    // Security check: Does this manifest's calculated manifest URL match where
-                    // we got it from?
-                    var expectedURL = manifestToInstall.base_url + (manifestToInstall.manifest_name ? manifestToInstall.manifest_name : "manifest.webapp");
-                    var isExternalServer = (expectedURL != args.url);
-
-                    displayInstallPrompt(installOrigin, manifestToInstall, installConfirmationFinish, { isExternalServer: isExternalServer });
-
-                  } catch (e) {
-                    t.error("invalidManifest", "couldn't validate your manifest: " + e );
-                  }
-                } else if (xhr.status >= 400 && xhr.status < 500)  {
-                  t.error("invalidManifest", "manifest URL did not resolve to a valid manifest");
-                } else {
-                  t.error("networkError", "couldn't retrieve application manifest from network");
-                }
-              }
-            } catch (e) {
-              t.error("networkError", "couldn't retrieve application manifest from network");
+        Repo.install(t.origin, args, displayInstallPrompt, fetchManifest, function(r) {
+            if (r === true) {
+                t.complete(r);
+            } else if (typeof r.error === 'array' && r.error.length === 2) {
+                t.error(r.error[0], errorRepr(r.error[1]));
+            } else {
+                t.error("internalError", "unknown internal error during install: " + errorRepr(r));
             }
-          }
-          xhr.send(null);
-        } else {
-          // neither a manifest nor a URL means we cannot proceed.
-          throw [ "missingManifest", "install requires a url or manifest argument" ];
-        }
+        });
     });
 
     chan.bind('verify', function(t, args) {
@@ -271,56 +134,34 @@
         // If we find two... well, for now, we take the first one.
         // Perhaps we should find the first one that has an authorization URL.
 
-        var result = getInstallsForOrigin(t.origin, args);
+        var result = Repo.getInstalled(t.origin);
         if (result.length == 0) return null;
-        var install = result[0];
 
         // Must have authorizationURL
-        if (!install.authorizationURL)
+        if (!result[0].authorizationURL)
         {
             throw ['invalidArguments', 'missing authorization url' ];
         }
 
         // TODO Could optionally have a returnto
-        win.parent.location = install.authorizationURL;
+        win.parent.location = result[0].authorizationURL;
 
         // return value isn't meaningful.  as a result of overwriting
         // the parent location, we'll be torn down.
         return;
     });
 
-    /** Determines which applications are installed for the origin domain */
+    /** Determines which applications are installed *for* the origin domain */
     chan.bind('getInstalled', function(t, args) {
-        var installsResult = getInstallsForOrigin(t.origin, args);
-
-        // Caller doesn't get to see installs, just apps:
-        var result = [];
-        for (var i=0;i<installsResult.length;i++)
-        {
-            result.push(installsResult[i].app);
-        }
-
-        return result;
+        return Repo.getInstalled(t.origin);
     });
 
-    /** Determines which applications were installed by the origin domain. */
+    /** Determines which applications were installed *by* the origin domain. */
     chan.bind('getInstalledBy', function(t, args) {
-        var installsResult = getInstallsByOrigin(t.origin, args);
-
-        // Caller gets to see installURL, installTime, and manifest
-        var result = [];
-        for (var i=0;i<installsResult.length;i++)
-        {
-            result.push({
-                installURL: installsResult[i].installURL,
-                installTime: installsResult[i].installTime,
-                manifest: installsResult[i].app,
-            });
-        }
-
-        return result;
+        return Repo.getInstalledBy(t.origin);
     });
 
+    /* Management APIs for dashboards live beneath here */
 
     /* a function to check that an invoking page has "management" permission
      * all this means today is that the invoking page (dashboard) is served
@@ -339,63 +180,24 @@
                 "as the application repostiory" ];
     }
 
-    /* Management APIs for dashboards live beneath here */
-
-    // A function which given an installation record, builds an object suitable
-    // to return to a dashboard.  this function may filter information which is
-    // not relevant, and also serves as a place where we can rewrite the internal
-    // JSON representation into what the client expects (allowing us to change
-    // the internal representation as neccesary)
-    function generateExternalView(key, item) {
-        // XXX: perhaps localization should happen here?  be sent as an argument
-        // to the list function?
-
-        return {
-            id: key,
-            installURL: item.installURL,
-            installTime: item.installTime,
-            icons: item.app.icons,
-            name: item.app.name,
-            description: item.app.description,
-            launchURL: item.app.base_url + (item.app.launch_path ? item.app.launch_path : ""),
-            developer: item.app.developer
-        };
-    }
-
     chan.bind('list', function(t, args) {
         verifyMgmtPermission(t.origin);
-
-        var installed = [];
-
-        iterateApps(function(key, item) {
-            installed.push(generateExternalView(key, item));
-        });
-
-        return installed;
+        return Repo.list();
     });
 
     chan.bind('remove', function(t, key) {
         verifyMgmtPermission(t.origin);
-        var item = appStorage.get(key);
-        if (!item) throw [ "noSuchApplication", "no application exists with the id: " + key ];
-        appStorage.remove(key);
-        return true;
+        return Repo.remove(key);
     });
 
     chan.bind('loadState', function(t) {
         verifyMgmtPermission(t.origin);
-        return stateStorage.get(t.origin);
+        return Repo.loadState(t.origin);
     });
 
     chan.bind('saveState', function(t, args) {
         verifyMgmtPermission(t.origin);
-        // storing undefined purges state
-        if (args.state === undefined) {
-            stateStorage.remove(t.origin);
-        } else  {
-            stateStorage.put(t.origin, args.state);
-        }
-        return true;
+        return Repo.saveState(t.origin, args.state);
     });
 
     chan.bind('loginStatus', function (t) {
@@ -403,7 +205,7 @@
         // FIXME: both these can take came_from=URL
         var loginInfo = {
             loginLink: location.protocol + '//' + location.host + '/login.html?return_to=' + encodeURIComponent(t.origin),
-            logoutLink: location.protocol + '//' + location.host + '/login.html?logout&return_to=' + encodeURIComponent(t.origin)
+            logoutLink: location.protocol + '//' + location.host + '/logout.html&return_to=' + encodeURIComponent(t.origin)
         };
         try {
           var info = JSON.parse(localStorage.getItem('syncInfo'));
@@ -423,6 +225,33 @@
             win.console.log('App Repo error: ' + message);
         }
     }
+
+    function errorRepr(o) {
+        /* Format an object to be presented as an error message
+        [object Object] isn't very helpful ;) */
+        var s = "";
+        if (typeof o == 'object' && o.length) {
+            for (var i=0; i<o.length; i++) {
+                if (s) {
+                    s += " ";
+                }
+                s += o[i]; // XX ? safeRepr(o[i]);
+            }
+        } else if (typeof o == 'object') {
+            for (var i in o) {
+                if (o.hasOwnProperty(i)) {
+                    if (s) {
+                        s += ", ";
+                    }
+                    s += i + ': ' + o[i]; // XX ? safeRepr(o[i]);
+                }
+            }
+        } else {
+            s = o + '';
+        }
+        return s;
+    }
+
 
     checkSync();
 

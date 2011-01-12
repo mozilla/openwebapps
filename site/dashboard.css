@@ -472,6 +472,15 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
 
 }
 
+.widget {
+	
+   -moz-box-shadow:  inset 0 0 4px gray;
+-webkit-box-shadow:  inset 0 0 4px gray;
+        box-shadow:  inset 0 0 4px gray;
+		
+}
+
+
 .app {
 	float: left;
 	position: relative;

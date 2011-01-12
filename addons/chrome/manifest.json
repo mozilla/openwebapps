@@ -11,7 +11,11 @@
         "48": "icon.png"
     },
     "background_page": "background.html",
-    "permissions": [ "tabs", "experimental" ],
+    "permissions": [
+        "tabs",
+        "http://*/",
+        "https://*/"
+    ],
     "content_scripts": [
         {
             "run_at": "document_start",

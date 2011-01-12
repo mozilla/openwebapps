@@ -50,7 +50,7 @@
     // initialize a manifest object from a javascript manifest representation,
     // validating as we go.
     // throws a developer readable string upon discovery of an invalid manifest.
-    function parse(manf) {
+    function validate(manf) {
         var errorThrow = function(msg, path) {
             if (path != undefined && typeof path != 'object') path = [ path ];
             throw {
@@ -133,6 +133,22 @@
                     }
                 }
             },
+            //widget might become more complex, and this validation code would need to become so as well
+            widget: {
+                //a path to an embeddable widget for display in a small iframe
+                 check: function (x) {
+                     if (typeof x.path !== 'string') errorThrow('widget path not a string');
+                     if (x.width) {
+                      var w = parseInt(x.width,10);
+                      if (w < 10 || w > 1000) errorThrow('widget width outside allowed range [10 - 1000]'); 
+                     }
+                     if (x.height) {
+                      var h = parseInt(x.height,10);
+                      if (h < 10 || h > 1000) errorThrow('widget height outside allowed range [10 - 1000]'); 
+                     }
+                 }
+            },
+
             icons: {
                 may_overlay: true,
                 check: function (x) {
@@ -283,6 +299,6 @@
     }
 
     return {
-        parse: parse
+        validate: validate
     }
 })();

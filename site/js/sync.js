@@ -8,12 +8,14 @@ function Sync(options) {
   if (self.url.search(/\/$/) != -1) {
     self.url = self.url.substr(0, self.url.length-1);
   }
-  self.addHeaders = options.addHeaders;
   self.defaultError = options.error;
+  self.addHeaders = options.addHeaders;
   self.defautBeforeSend = options.beforeSend;
   self.timestampOffset = 0;
 
   function getSyncer() {
+    /* Get the object from storage, where we store information
+    about the last time we talked to the server */
     var s = self.storage.open('sync').get('sync');
     if (s === undefined || s === null) {
       s = {};
@@ -25,6 +27,18 @@ function Sync(options) {
     self.storage.open('sync').put('sync', s);
   }
 
+  self.getTimestamp = function () {
+    /* Gets the time, estimated as how as the server thinks is the
+    time.  We keep track of the local/browser timestamp's difference
+    from the server and use that to adjust.  But it's only a
+    best-effort. */
+    var timestamp = (new Date()).getTime() / 1000;
+    if (self.timestampOffset) {
+      timestamp += self.timestampOffset;
+    }
+    return timestamp;
+  };
+
   self.clearServer = function (options) {
     /* Clears *all* data for the user from the sync server.
 
@@ -32,7 +46,7 @@ function Sync(options) {
     of the logged in credentials, just the sync'd applications. */
     options = options || {};
     ajax({
-      url: userUrl(),
+      url: userUrl(true),
       type: 'DELETE',
       success: function (result) {
         if (options.success) {
@@ -44,6 +58,13 @@ function Sync(options) {
   };
 
   self.pull = function (options) {
+    /* Pull changes from the server.  This should always be performed
+    before calling sync.push().  This pulls the document from the web
+    and then merges in any changes (deletes and changes).
+
+    options.success is called in case of a success
+    options.error is called in case the request fails
+    */
     options = options || {};
     var s = getSyncer();
     if (s.lastPull) {
@@ -63,37 +84,72 @@ function Sync(options) {
           result = JSON.parse(result.payload);
         }
         // FIXME: I should check for Not Modified
-        s.lastPull = parseFloat(req.getResponseHeader('X-Weave-Timestamp'));
-        var myTime = (new Date()).getTime();
-        self.timestampOffset = s.lastPull - myTime;
-        mergeManifests(result, s.lastPull);
-        saveSyncer(s);
+        var lastPull = requestTimestamp(req);
+        if (lastPull) {
+          s.lastPull = lastPull;
+          var myTime = (new Date()).getTime() / 1000;
+          self.timestampOffset = s.lastPull - myTime;
+        }
+        mergeManifests(result);
+        if (lastPull) {
+          saveSyncer(s);
+        }
         if (options.success) {
           options.success.call(window);
         }
       },
-      error: options.error
+      /* FIXME: Maybe we should catch 404 and ignore it, as it's kind
+      of an okay failure? */
+      error: function (req) {
+        if (req.status == 404) {
+          // This is basically okay, it means there's nothing to
+          // pull
+          var lastPull = requestTimestamp(req);
+          // On 404 we don't always get a good timestamp:
+          if (lastPull) {
+            s.lastPull = lastPull;
+            saveSyncer(s);
+          }
+          options.success.call(window);
+        } else {
+          options.error.apply(window, arguments);
+        }
+      }
     });
   };
 
   self.push = function (options) {
+    /* Push the current apps to the server.  This unconditionally
+    overwrites everything on the server, the idea being that if we
+    clobbered someone else's updates then they'll pull ours, merge,
+    and overwrite ours eventually.  But it's good to always call
+    .pull() before .push() for this reason.
+
+    This collects all the apps from the storage.  It also makes
+    sure .lastModified is updated on all the apps before sending.
+
+    options.success: called if the push is successful
+    options.error: called in case of a problem
+    */
     options = options || {};
-    var pushTimestamp = (new Date()).getTime() + self.timestampOffset;
+    var pushTimestamp = self.getTimestamp();
     var manifests = collectManifests(pushTimestamp);
     ajax({
       url: userUrl(),
       addHeaders: {'Content-Type': 'application/json'},
       data: JSON.stringify({'id': 'apps', 'payload': JSON.stringify(manifests)}),
+      // FIXME: some networks might not allow PUT, only POST...
       type: 'PUT',
+      dataType: 'text',
       success: function (result, status, req) {
         var s = getSyncer();
-        var timestamp = parseFloat(req.getResponseHeader('X-Weave-Timestamp'));
-        s.lastPush = timestamp;
-        updatePushTimes('app', timestamp);
-        updatePushTimes('deletedapp', timestamp);
-        saveSyncer(s);
+        var timestamp = requestTimestamp(req, result);
+        if (timestamp) {
+          s.lastPush = timestamp;
+          saveSyncer(s);
+        }
         if (options.success) {
-          options.success.call(window);
+          options.success();
         }
       },
       error: options.error
@@ -101,6 +157,12 @@ function Sync(options) {
   };
 
   self.trackPushNeeded = function () {
+    /* Tracks if we need to push any changes, or if the server is
+    up-to-date.  This sets up event listeners to check for changes,
+    and reset self._needPush if necessary. */
+    // FIXME: in case of clobbering, maybe we should notice that the
+    // timestamp has changed?  Though we always do a push on a restart
+    // so it won't be broken forever.
     if (self._needPush !== undefined) {
       // Already tracking
       return;
@@ -119,47 +181,45 @@ function Sync(options) {
   };
 
   function collectManifests(timestamp) {
+    /* Collects all the manifests (and deleted manifests) from storage,
+    and creates a JSON document that we can push to the sync server. */
     var result = {
       installed: {},
       deleted: {}
     };
     var apps = self.storage.open('app');
     apps.iterate(function (key, app) {
-      if (! app.lastPush) {
-        app.lastPush = timestamp;
+      if (! app.lastModified) {
+        app.lastModified = timestamp;
+        apps.put(key, app);
       }
       result.installed[key] = app;
     });
     var deleted = self.storage.open('deletedapp');
     deleted.iterate(function (key, tombstone) {
-      if (! tombstone.lastPush) {
-        tombstone.lastPush = timestamp;
+      if (! tombstone.lastModified) {
+        tombstone.lastModified = timestamp;
+        deleted.put(key, tombstone);
       }
       result.deleted[key] = tombstone;
     });
     return result;
   };
 
-  function mergeManifests(retrieved, timestamp) {
-    // FIXME: I'm not sure the timestamp is the right thing to use here.
-    // Should the server set these values itself?  Or... the client?
+  function mergeManifests(retrieved) {
     var apps = self.storage.open('app');
     var deleted = self.storage.open('deletedapp');
-    var appChanged = false;
-    var deletedappChanged = false;
     if (retrieved.deleted) {
       for (var i in retrieved.deleted) {
-        retrieved.deleted[i].lastPull = retrieved.deleted[i].lastPush = timestamp;
+        // check hasOwnProperty?
         var app = apps.get(i);
         if (app === undefined) {
           deleted.put(i, retrieved.deleted[i]);
-          deletedappChanged = true;
         } else {
-          if (app.lastPushed &&
-              retrieved.deleted[i].lastPushed > app.lastPushed) {
+          if (app.lastModified &&
+              retrieved.deleted[i].lastModified > app.lastModified) {
             apps.remove(i);
             deleted.put(i, retrieved.deleted[i]);
-            deletedappChanged = true;
           } // If not true, we just avoid copying the deletion
         }
       }
@@ -167,10 +227,9 @@ function Sync(options) {
     for (i in retrieved.installed) {
       var deletedapp = deleted.get(i);
       var oldLastPush = retrieved.installed[i].lastPush;
-      retrieved.installed[i].lastPull = retrieved.installed[i].lastPush = timestamp;
       if (deletedapp) {
-        if (! deletedapp.lastPushed
-            || deletedapp.lastPushed > oldLastPush) {
+        if (! deletedapp.lastModified
+            || deletedapp.lastModified > lastModified) {
           // This app has been deleted locally, ignore this record
           continue;
         } else {
@@ -183,37 +242,12 @@ function Sync(options) {
       var app = apps.get(i);
       if (app === undefined) {
         apps.put(i, retrieved.installed[i]);
-        appChanged = true;
       } else {
-        if (app.lastPushed &&
-            retrieved.installed[i].lastPushed > app.lastPushed) {
+        if (app.lastModified &&
+            retrieved.installed[i].lastModified > app.lastModified) {
           apps.put(i, retrieved.installed[i]);
-          appChanged = true;
         } // Otherwise the existing manifest wins
       }
-    }
-    if (appChanged || deletedappChanged) {
-      var types = [];
-      if (appChanged) {
-        types.push('app');
-      }
-      if (deletedappChanged) {
-        types.push('deletedapp');
-      }
-      self.storage.dispatchEvent('multiplechange', {types: types});
-    }
-  }
-
-  function updatePushTimes(objType, time) {
-    var objs = self.storage.open(objType);
-    var keys = objs.keys();
-    for (var i=0; i<keys.length; i++) {
-      var app = objs.get(keys[i]);
-      if (! app) {
-        continue;
-      }
-      app.lastPush = time;
-      objs.put(keys[i], app);
     }
   }
 
@@ -332,9 +366,14 @@ function Sync(options) {
     return req;
   }
 
-  var userUrl = function () {
+  var userUrl = function (collection) {
     // FIXME: this should be a UUID or something like that?
-    return self.url + '/1.0/' + self.username + '/storage/openwebapps/apps';
+    // (instead of '/openwebapps/apps')
+    var url = self.url + '/1.0/' + self.username + '/storage/openwebapps/';
+    if (! collection) {
+      url += 'apps';
+    }
+    return url;
   };
 
   var mergeObjects = function (ob1, ob2) {
@@ -348,7 +387,25 @@ function Sync(options) {
     return newObject;
   };
 
+  var requestTimestamp = function (req, possibleDefault) {
+    /* Return the timestamp, using X-Weave-Timestamp if possible, Date
+    otherwise, or possibleDefault lastly. */
+    var val = req.getResponseHeader('X-Weave-Timestamp');
+    if (val) {
+      return parseFloat(val);
+    }
+    val = req.getResponseHeader('Date');
+    if (val) {
+      return (new Date(val)).getTime() / 1000;
+    }
+    if (possibleDefault) {
+      return parseFloat(possibleDefault);
+    }
+    // This gets called way too often :( -- apparently cross-domain
+    // requests maybe have all their headers filtered?  Ugh.
+    return self.getTimestamp();
+  };
+
   EventMixin(self);
   return self;
 }
-

@@ -664,7 +664,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
                 },
                 error: function(error, message) {
                     // XXX we need to relay this to the client
-                    alert( " installation failed: "  + error + " - " + message);
+                    if (typeof console !== "undefined") console.log( " installation failed: "  + error + " - " + message);
                 },
                 success: function(v) {
                     if (args.callback) args.callback(v);
@@ -678,7 +678,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
                 method: "verify",
                 error: function(error, message) {
                     // XXX we need to relay this to the client
-                    alert( " couldn't begin verification: "  + error + " - " + message);
+                    if (typeof console !== "undefined") console.log( " couldn't begin verification: "  + error + " - " + message);
                 },
                 success: function(v) {
                     // XXX: what's the utility of this callback?  it depends on
@@ -694,7 +694,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
                 method: "getInstalled",
                 error: function(error, message) {
                     // XXX we need to relay this to the client
-                    alert( " couldn't begin verification: "  + error + " - " + message);
+                    if (typeof console !== "undefined") console.log( " couldn't begin verification: "  + error + " - " + message);
                 },
                 success: function(v) {
                     if (cb && typeof(cb) === 'function') cb(v);
@@ -708,7 +708,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
                 method: "getInstalledBy",
                 error: function(error, message) {
                     // XXX we need to relay this to the client
-                    alert( " couldn't begin verification: "  + error + " - " + message);
+                    if (typeof console !== "undefined") console.log( " couldn't begin verification: "  + error + " - " + message);
                 },
                 success: function(v) {
                     if (cb && typeof(cb) === 'function') cb(v);
@@ -740,7 +740,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
                 method: "list",
                 error: function(error, message) {
                     // XXX we need to relay this to the client
-                    alert("couldn't list apps: "  + error + " - " + message);
+                    if (typeof console !== "undefined") console.log("couldn't list apps: "  + error + " - " + message);
                 },
                 success: function(v) {
                     _lastListResults = v;
@@ -756,7 +756,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
                 params: id,
                 error: function(error, message) {
                     // XXX we need to relay this to the client
-                    alert("couldn't remove: "  + error + " - " + message);
+                    if (typeof console !== "undefined") console.log("couldn't remove: "  + error + " - " + message);
                 },
                 success: function(v) {
                     if (func) func(v);
@@ -771,7 +771,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
                 params: null,
                 error: function(error, message) {
                     // XXX we need to relay this to the client
-                    alert("couldn't loadState: "  + error + " - " + message);
+                    if (typeof console !== "undefined") console.log("couldn't loadState: "  + error + " - " + message);
                 },
                 success: function(v) {
                     if (func) func(v);
@@ -786,7 +786,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
                 params: {"state": obj},
                 error: function(error, message) {
                     // XXX we need to relay this to the client
-                    alert("couldn't saveState: "  + error + " - " + message);
+                    if (typeof console !== "undefined") console.log("couldn't saveState: "  + error + " - " + message);
                 },
                 success: function(v) {
                     if (func) func(v);
@@ -801,7 +801,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
                 params: {},
                 error: function(error, message) {
                     // XXX relay to the client
-                    alert("couldn't loginStatus: " + error + " - " + message);
+                    if (typeof console !== "undefined") console.log("couldn't loginStatus: " + error + " - " + message);
                 },
                 success: function (v) {
                     if (func) {
