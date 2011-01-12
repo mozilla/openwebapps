@@ -484,11 +484,11 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
       xulPanel.appendChild(frame);
       document.getElementById("mainPopupSet").appendChild(xulPanel); //?
 
-      let button = document.getElementById("openwebapps-toolbar-button");
+      let button = document.getElementById(buttonId);
       xulPanel.sizeTo(500,280);
 
-      dump("button bounding client rect is " + button.getBoundingClientRect().left + "," + button.getBoundingClientRect().top + "-" + button.getBoundingClientRect().right + "," + button.getBoundingClientRect().bottom + "\n");
-      dump("button client rects is " + button.getClientRects() + "\n");
+      //dump("button bounding client rect is " + button.getBoundingClientRect().left + "," + button.getBoundingClientRect().top + "-" + button.getBoundingClientRect().right + "," + button.getBoundingClientRect().bottom + "\n");
+      //dump("button client rects is " + button.getClientRects() + "\n");
 
       let rect = button.getBoundingClientRect();
       let x = rect.left - 450;
