@@ -203,7 +203,7 @@ FFRepoImpl.prototype = {
     },
     
     launch: function _launch(location, id) {
-        function openAppURL(app, bg)
+        function openAppURL(app)
         {
             let wm = Cc["@mozilla.org/appshell/window-mediator;1"]
                     .getService(Ci.nsIWindowMediator);
@@ -239,11 +239,8 @@ FFRepoImpl.prototype = {
                 let recentWindow = wm.getMostRecentWindow("navigator:browser");
                 if (recentWindow) {
                     let tab = recentWindow.gBrowser.addTab(url);
-                    let idx = recentWindow.gBrowser._numPinnedTabs;
-                    tab.setAttribute("pinned", true);
-                    recentWindow.gBrowser.tabContainer._positionPinnedTabs();
-                    if (!bg)
-                        recentWindow.gBrowser.selectTabAtIndex(idx);
+                    recentWindow.gBrowser.pinTab(tab);
+                    recentWindow.gBrowser.selectedTab = tab;
                 } else {
                     // This is a very odd case: no browser windows are open, so open a new one.
                     aWindow.open(url);
@@ -258,7 +255,7 @@ FFRepoImpl.prototype = {
         let apps = Repo.list();
         for each (let app in apps) {
             if (app.id == id) {
-                openAppURL(app, false);
+                openAppURL(app);
                 return;
             }
         }
