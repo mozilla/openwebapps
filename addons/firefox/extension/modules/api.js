@@ -200,7 +200,70 @@ FFRepoImpl.prototype = {
         };
         var userInfo = sync.readProfile();
         return [userInfo, loginInfo];
-    }
+    },
     
-    // TODO: implement launch()
+    launch: function _launch(location, id) {
+        function openAppURL(app, bg)
+        {
+            let wm = Cc["@mozilla.org/appshell/window-mediator;1"]
+                    .getService(Ci.nsIWindowMediator);
+            let bEnum = wm.getEnumerator("navigator:browser");
+            let found = false;
+            let url = app.launchURL;
+            
+            // Do we already have this app running in a tab?  If so, target it.
+            while (!found && bEnum.hasMoreElements()) {
+                let browserWin = bEnum.getNext();
+                let tabbrowser = browserWin.gBrowser;
+                let numTabs = tabbrowser.browsers.length;
+                
+                for (let index = 0; index < numTabs; index++) {
+                    let cur = tabbrowser.getBrowserAtIndex(index);
+                    if (url == cur.currentURI.spec) {
+                        // The app is running in this tab; select it and retarget.
+                        tabbrowser.selectedTab = tabbrowser.tabContainer.childNodes[index];
+
+                        // Focus *this* browser-window
+                        browserWin.focus();
+                        tabbrowser.selectedBrowser.loadURI(
+                            url, null // TODO don't break referrer!
+                        , null);
+                        found = true;
+                    }
+                }
+            }
+            
+            // Our URL does not belong to a currently running app.  Create a new
+            // tab for that app and load our URL into it.
+            if (!found) {
+                let recentWindow = wm.getMostRecentWindow("navigator:browser");
+                if (recentWindow) {
+                    let tab = recentWindow.gBrowser.addTab(url);
+                    let idx = recentWindow.gBrowser._numPinnedTabs;
+                    tab.setAttribute("pinned", true);
+                    recentWindow.gBrowser.tabContainer._positionPinnedTabs();
+                    if (!bg)
+                        recentWindow.gBrowser.selectTabAtIndex(idx);
+                } else {
+                    // This is a very odd case: no browser windows are open, so open a new one.
+                    aWindow.open(url);
+                    // TODO: convert to app tab somehow
+                }
+            }
+        }
+
+        // FIXME: this is a hack, we are iterating over installed apps to
+        // find the one we want since we cannot get to the typed storage
+        // via common repo.js
+        let apps = Repo.list();
+        for each (let app in apps) {
+            if (app.id == id) {
+                openAppURL(app, false);
+                return;
+            }
+        }
+        
+        // Could not find specified app
+        throw "Invalid AppID: " + id;
+    }
 };
