@@ -35,10 +35,15 @@
  * ***** END LICENSE BLOCK ***** */
 
 'use strict';
+
+const Cu = Components.utils;
+const Cc = Components.classes;
+const Ci = Components.interfaces;
+
 var EXPORTED_SYMBOLS = ["FFRepoImpl"];
 
-Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
-Components.utils.import("resource://openwebapps/modules/typed_storage.js");
+Cu.import("resource://gre/modules/XPCOMUtils.jsm");
+Cu.import("resource://openwebapps/modules/typed_storage.js");
 
 var console = {
     log: function(s) {dump(s+"\n");}
@@ -49,7 +54,7 @@ var console = {
 // js modules in the firefox sense). We're okay with using loadSubscript()
 // for them instead because they don't pollute the global namespace, and this
 // is a hack after all ;)
-var loader = Components.classes["@mozilla.org/moz/jssubscript-loader;1"].
+var loader = Cc["@mozilla.org/moz/jssubscript-loader;1"].
              getService(Components.interfaces.mozIJSSubScriptLoader);
 loader.loadSubScript("resource://openwebapps/modules/manifest.js");
 loader.loadSubScript("resource://openwebapps/modules/urlmatch.js");
@@ -70,52 +75,47 @@ FFRepoImpl.prototype = {
         function displayPrompt(installOrigin, manifestToInstall, 
             installConfirmationFinishFn, options)
         {
-            try {
-            if (false) {
-              var chromeWindow = window.top.QueryInterface(Components.interfaces.nsIInterfaceRequestor)
-                                    .getInterface(Components.interfaces.nsIWebNavigation)
-                                    .QueryInterface(Components.interfaces.nsIDocShell)
-                                    .chromeEventHandler.ownerDocument.defaultView;
-              var browser = chromeWindow.gBrowser.getBrowserForDocument(window.top.document);
-            }
-            
             let acceptButton = new Object();
             let declineButton = new Object();
-            let message = "Install " + installOrigin + "?";
+
+            let message = "Are you sure you want to install " +
+                manifestToInstall.name + "?";
 
             acceptButton.label = "Install";
             acceptButton.accessKey = "i";
-            acceptButton.callback = function() { installConfirmationFinishFn(true); };
+            acceptButton.callback = function() {
+                installConfirmationFinishFn(true);
+            };
 
             declineButton.label = "Cancel";
             declineButton.accessKey = 'c';
-            declineButton.callback = function() { installConfirmationFinishFn(false); };
+            declineButton.callback = function() {
+                installConfirmationFinishFn(false);
+            };
 
-
-            var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"].getService(Components.interfaces.nsIWindowMediator);
-            var mainWindow = wm.getMostRecentWindow("navigator:browser");
-
-
+            /* old doorhanger deprecated in favor of new styling
             let nb = window.gBrowser.getNotificationBox();
             nb.appendNotification(
               message, "openwebapps-install-notification",
-              // "chrome://openwebapps/skin/install.png"
+              "chrome://openwebapps/skin/install.png"
               null,
               nb.PRIORITY_INFO_HIGH, [ acceptButton, declineButton ]);
-
-          
-            var ret = window.PopupNotifications.show(window.gBrowser, "openwebapps-install-notification", message, 
-              "password-notification-icon", acceptButton, [declineButton], {});//, {persistWhileVisible:true, timeout: Date.now() + 10000});
-            dump("Ret is " + ret + "\n");
-            } catch (e) {
-              dump(e + "\n" + e.stack + "\n");
-            }
+            */
+            let ret = window.PopupNotifications.show(
+                window.gBrowser.selectedBrowser,
+                "openwebapps-install-notification",
+                message, null, acceptButton, [declineButton], {
+                    "persistence": 1,
+                    "persistWhileVisible": true
+                }
+            );
         }
 
         function fetchManifest(url, cb)
         {
             // contact our server to retrieve the URL
-            var xhr = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"].createInstance(Components.interfaces.nsIXMLHttpRequest);
+            var xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"].
+                    createInstance(Ci.nsIXMLHttpRequest);
             xhr.open("GET", url, true);
             xhr.onreadystatechange = function(aEvt) {
                 if (xhr.readyState == 4) {
