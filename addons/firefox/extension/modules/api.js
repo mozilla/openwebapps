@@ -35,7 +35,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 'use strict';
-var EXPORTED_SYMBOLS = ["Repo"];
+var EXPORTED_SYMBOLS = ["FFRepoImpl"];
 
 Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
 Components.utils.import("resource://openwebapps/modules/typed_storage.js");
@@ -58,15 +58,15 @@ loader.loadSubScript("resource://openwebapps/modules/urlmatch.js");
 // as possible, but we do need to provide a manifest 'fetcher'. Thus, we
 // import repo.js into another object
 var cR = {};
-loader.loadSubScript("resource://openwebapps/modules/repo.js", cR);
+loader.loadSubScript("resource://openwebapps/modules/repo.js");
 
-function Repo() {
+function FFRepoImpl() {
     
 }
-Repo.prototype = {
-    __proto__: cR.Repo,
+FFRepoImpl.prototype = {
+    __proto__: Repo,
     
-    install: function _install(location, args) {
+    install: function _install(location, args, window) {
         function displayPrompt(installOrigin, manifestToInstall, 
             installConfirmationFinishFn, options)
         {
@@ -76,7 +76,7 @@ Repo.prototype = {
         function fetchManifest(url, cb)
         {
             // contact our server to retrieve the URL
-            var xhr = new XMLHttpRequest();
+            var xhr = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"].createInstance(Components.interfaces.nsIXMLHttpRequest);
             xhr.open("GET", url, true);
             xhr.onreadystatechange = function(aEvt) {
                 if (xhr.readyState == 4) {
@@ -90,10 +90,14 @@ Repo.prototype = {
             xhr.send(null);
         }
         
-        return cR.Repo.install(location, args, displayPrompt, fetchManifest,
+        dump("Hey, fetchManifest is " + fetchManifest + "\n");
+        
+        return Repo.install(location, args, displayPrompt, fetchManifest,
             function() {
                 // install is complete
                 // TODO: implement notifications
+                
+                args.callback(true);
             }
         );
     },

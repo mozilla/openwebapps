@@ -520,12 +520,18 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
 //         openwebapps.toggle(options);
 
   InjectorInit(window);
-  var repo = Repo;
+  var repo = new FFRepoImpl();
   injector.register({
     apibase: "navigator.apps", name: "install", script: null,
     getapi: function () {
       return function (args) {
-        repo.install(gBrowser.contentDocument.location, args);
+        try {
+          dump("repo.loginStatus is " + repo.loginStatus + "\n");
+          repo.install(gBrowser.contentDocument.location, args, window);
+        } catch (e) {
+          dump(e + "\n");
+          dump(e.stack + "\n");
+        }
       }
   }});
   injector.register({
@@ -568,8 +574,15 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
     apibase: "navigator.apps.mgmt", name: "list", script: null,
     getapi: function () {
       return function (callback) {
-        var result = repo.list(gBrowser.contentDocument.location);
-        if (callback) callback(result);
+        try {
+          dump("about to list\n");
+          var result = repo.list(gBrowser.contentDocument.location);
+          dump("got result " + result + "\n");
+          dump("callback is " + callback + "\n");
+          if (callback) callback(result);
+        }catch(e) {
+          dump(e + "\n" + e.stack + "\n");
+        }
       }
   }});
   injector.register({

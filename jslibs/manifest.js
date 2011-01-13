@@ -108,7 +108,7 @@
             },
             capabilities: {
                 check: function(x) {
-                    if (!x || typeof x !== 'object' || x.constructor !== Array) errorThrow();
+                    if (!x || typeof x !== 'object' /* || x.constructor !== Array*/) errorThrow();
                     for (var i = 0; i < x.length; i++) {
                         if (typeof x[i] !== 'string') errorThrow(undefined, [i]);
                     }
