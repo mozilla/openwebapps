@@ -70,7 +70,46 @@ FFRepoImpl.prototype = {
         function displayPrompt(installOrigin, manifestToInstall, 
             installConfirmationFinishFn, options)
         {
-            installConfirmationFinishFn(window.confirm("Install " + installOrigin + "?"));
+            try {
+            if (false) {
+              var chromeWindow = window.top.QueryInterface(Components.interfaces.nsIInterfaceRequestor)
+                                    .getInterface(Components.interfaces.nsIWebNavigation)
+                                    .QueryInterface(Components.interfaces.nsIDocShell)
+                                    .chromeEventHandler.ownerDocument.defaultView;
+              var browser = chromeWindow.gBrowser.getBrowserForDocument(window.top.document);
+            }
+            
+            let acceptButton = new Object();
+            let declineButton = new Object();
+            let message = "Install " + installOrigin + "?";
+
+            acceptButton.label = "Install";
+            acceptButton.accessKey = "i";
+            acceptButton.callback = function() { installConfirmationFinishFn(true); };
+
+            declineButton.label = "Cancel";
+            declineButton.accessKey = 'c';
+            declineButton.callback = function() { installConfirmationFinishFn(false); };
+
+
+            var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"].getService(Components.interfaces.nsIWindowMediator);
+            var mainWindow = wm.getMostRecentWindow("navigator:browser");
+
+
+            let nb = window.gBrowser.getNotificationBox();
+            nb.appendNotification(
+              message, "openwebapps-install-notification",
+              // "chrome://openwebapps/skin/install.png"
+              null,
+              nb.PRIORITY_INFO_HIGH, [ acceptButton, declineButton ]);
+
+          
+            var ret = window.PopupNotifications.show(window.gBrowser, "openwebapps-install-notification", message, 
+              "password-notification-icon", acceptButton, [declineButton], {});//, {persistWhileVisible:true, timeout: Date.now() + 10000});
+            dump("Ret is " + ret + "\n");
+            } catch (e) {
+              dump(e + "\n" + e.stack + "\n");
+            }
         }
 
         function fetchManifest(url, cb)
@@ -90,14 +129,17 @@ FFRepoImpl.prototype = {
             xhr.send(null);
         }
         
-        dump("Hey, fetchManifest is " + fetchManifest + "\n");
-        
         return Repo.install(location, args, displayPrompt, fetchManifest,
-            function() {
+            function(result) {
                 // install is complete
                 // TODO: implement notifications
                 
-                args.callback(true);
+                if (result !== true) {
+                  dump("Failed install: " + JSON.stringify(result) + "\n");
+                  args.callback(false);
+                } else {
+                  args.callback(true);
+                }
             }
         );
     },
