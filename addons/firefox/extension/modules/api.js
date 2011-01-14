@@ -205,6 +205,8 @@ FFRepoImpl.prototype = {
     launch: function _launch(location, id) {
         function openAppURL(app)
         {
+            let ss = Cc["@mozilla.org/browser/sessionstore;1"]
+                    .getService(Ci.nsISessionStore);
             let wm = Cc["@mozilla.org/appshell/window-mediator;1"]
                     .getService(Ci.nsIWindowMediator);
             let bEnum = wm.getEnumerator("navigator:browser");
@@ -217,17 +219,22 @@ FFRepoImpl.prototype = {
                 let tabbrowser = browserWin.gBrowser;
                 let numTabs = tabbrowser.browsers.length;
                 
-                for (let index = 0; index < numTabs; index++) {
-                    let cur = tabbrowser.getBrowserAtIndex(index);
-                    if (url == cur.currentURI.spec) {
+                for (let index = 0; index < tabbrowser.tabs.length; index++) {
+                    let cur = tabbrowser.tabs[index];
+                    let brs = tabbrowser.getBrowserForTab(cur);
+                    let appURL = ss.getTabValue(cur, "appURL");
+
+                    if ((appURL && appURL == url) || url == brs.currentURI.spec) {
                         // The app is running in this tab; select it and retarget.
                         tabbrowser.selectedTab = tabbrowser.tabContainer.childNodes[index];
 
                         // Focus *this* browser-window
                         browserWin.focus();
-                        tabbrowser.selectedBrowser.loadURI(
-                            url, null // TODO don't break referrer!
-                        , null);
+                        
+                        // XXX: Do we really need a reload here?
+                        //tabbrowser.selectedBrowser.loadURI(
+                        //   url, null // TODO don't break referrer!
+                        //, null);
                         found = true;
                     }
                 }
@@ -241,6 +248,7 @@ FFRepoImpl.prototype = {
                     let tab = recentWindow.gBrowser.addTab(url);
                     recentWindow.gBrowser.pinTab(tab);
                     recentWindow.gBrowser.selectedTab = tab;
+                    ss.setTabValue(tab, "appURL", url);
                 } else {
                     // This is a very odd case: no browser windows are open, so open a new one.
                     aWindow.open(url);
