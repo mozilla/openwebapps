@@ -232,6 +232,7 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
     },
 
     onLoad: function () {
+      dump("openwebapps onLoad called\n");
       //Figure out if this is a first install/upgrade case.
       if (typeof AddonManager !== 'undefined') {
         //Firefox 4
@@ -260,7 +261,6 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
                              .QueryInterface(Components.interfaces.nsIPrefBranch2);
 
       this.prefs.addObserver("", this, false);
-
     },
 
     onUnload: function () {
@@ -390,6 +390,7 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
       this.setAccelKey(this.useAccelKey);
     },
 
+
   observe: function(subject, topic, data) {
     if (topic != "nsPref:changed") {
        return;
@@ -433,23 +434,6 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
 
     },
 
-    isValidURI: function (aURI) {
-      //Only open the share frame for http/https urls, file urls for testing.
-      return (aURI && (aURI.schemeIs('http') || aURI.schemeIs('https') || aURI.schemeIs('file')));
-    },
-
-    canShareURI: function (aURI) {
-      var command = document.getElementById("cmd_openWebAppsDashboard");
-      try {
-        if (this.isValidURI(aURI))
-          command.removeAttribute("disabled");
-        else
-          command.setAttribute("disabled", "true");
-      } catch (e) {
-        throw e;
-      }
-    },
-
     onContextMenuItemShowing: function (e) {
       try {
         var hide = (gContextMenu.onTextInput || gContextMenu.onLink ||
@@ -469,17 +453,16 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
       } catch (ignore) { }
     },
 
-    onOpenShareCommand: function (e) {
-      this.toggle();
-    },
-
     onPopupWebAppPanelCommand: function(e) {
+
+      // Set up the current-app state:
+      repo.setCurrentPageAppURL(gBrowser.contentDocument.applicationManifest);
+    
       // Create the panel
       let XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
       let xulPanel = document.createElementNS(XUL_NS, 'panel');
       xulPanel.setAttribute("transparent", "transparent");
       xulPanel.setAttribute("style", "-moz-appearance: none;background-color:transparent");
-
       let frame = document.createElementNS(XUL_NS, 'iframe');
       frame.setAttribute('type', 'content');
       frame.setAttribute('flex', '1');
@@ -487,40 +470,63 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
       frame.setAttribute('src', 'chrome://openwebapps/content/app_popup.html');
       xulPanel.appendChild(frame);
       document.getElementById("mainPopupSet").appendChild(xulPanel); //?
-
       let button = document.getElementById(buttonId);
       xulPanel.sizeTo(500,280);
-
-      //dump("button bounding client rect is " + button.getBoundingClientRect().left + "," + button.getBoundingClientRect().top + "-" + button.getBoundingClientRect().right + "," + button.getBoundingClientRect().bottom + "\n");
-      //dump("button client rects is " + button.getClientRects() + "\n");
-
       let rect = button.getBoundingClientRect();
       let x = rect.left - 450;
       let y = rect.bottom;
-
       xulPanel.openPopup(null, null, x, y); //button, "before_start", 0, 0);
     },
 
-    toggle: function (options) {
-      var selectedTab = gBrowser.selectedTab,
-          tabFrame = selectedTab.openwebappsTabFrame;
-      if (!tabFrame) {
-        tabFrame = new TabFrame(selectedTab);
-        selectedTab.openwebappsTabFrame = tabFrame;
-      }
+    onLinkAdded: function onLinkAdded(aEvent) {
+      if (aEvent.target.rel == "application-manifest") {
+        try {
+          var page = aEvent.target.baseURI;
+          var href = aEvent.target.href;
 
-      if (tabFrame.visible) {
-        tabFrame.hide();
-      } else {
-        tabFrame.show(options);
-      }      
+          // Annotate the tab with the URL, so we can highlight the button
+          // and display the app when the user views this tab.
+          
+          var ios = Components.classes["@mozilla.org/network/io-service;1"].
+            getService(Components.interfaces.nsIIOService);
+
+          // XXX TODO: Should we restrict the href to be associated in a limited way with the page?
+          aEvent.target.ownerDocument.applicationManifest = 
+            ios.newURI(href, null, ios.newURI(page, null, null));
+
+          // If the current browser is this document's browser, update the highlight
+          if (gBrowser.contentDocument === aEvent.target.ownerDocument)
+          {
+            let toolbarButton = document.getElementById("openwebapps-toolbar-button");
+            if (toolbarButton) {
+              toolbarButton.classList.add("highlight");
+            }
+          }
+          
+        } catch (e) {
+          dump(e + "\n");
+        }
+      }
+    }, 
+    
+    onTabSelected: function _onTabSelected(aEvent) {
+      var browser = gBrowser.selectedBrowser;
+
+      let toolbarButton = document.getElementById("openwebapps-toolbar-button");
+      if (toolbarButton)
+      {
+        if (browser.contentDocument.applicationManifest) {
+          toolbarButton.classList.add("highlight");
+        } else {
+          toolbarButton.classList.remove("highlight");
+        }
+      }
     }
+    
   };
 
-//         openwebapps.toggle(options);
-
   InjectorInit(window);
-  var repo = new FFRepoImpl();
+  var repo = FFRepoImplService;
   injector.register({
     apibase: "navigator.apps", name: "install", script: null,
     getapi: function () {
@@ -567,7 +573,7 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
     apibase: "navigator.apps.mgmt", name: "launch", script: null,
     getapi: function () {
       return function (args) {
-        repo.launch(gBrowser.contentDocument.location, args);
+        repo.launch(window, gBrowser.contentDocument.location, args);
       }
   }});
   injector.register({
@@ -618,7 +624,18 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
         if (callback && typeof(callback) === 'function') callback(result);
       }
   }});
+  injector.registerAction(function() {
+    // Clear out the current page URL on every page load
+    let toolbarButton = document.getElementById("openwebapps-toolbar-button");
+    if (toolbarButton) {
+      toolbarButton.classList.remove("highlight");
+    } 
+    repo.setCurrentPageAppURL(null);
+  });
 
   window.addEventListener("load", fn.bind(openwebapps, "onLoad"), false);
   window.addEventListener("unload", fn.bind(openwebapps, "onUnload"), false);
+  window.addEventListener("DOMLinkAdded", fn.bind(openwebapps, "onLinkAdded"), false);
+  window.addEventListener("TabSelect", fn.bind(openwebapps, "onTabSelected"), false);
+
 }());

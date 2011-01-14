@@ -6,23 +6,23 @@ HTML {
 }
 
 BODY {
-  margin: 0 3px;
-  color:white;
-  font: message-box;
-  height:232px;
+  margin: 0 3px; color:white;
+  font: message-box; height:232px;
   background-color: transparent;
   -moz-border-image: url(chrome://openwebapps/skin/hud-panel.png) 26 50 22 18 / 26px 50px 22px 18px repeat;
 }
-.appName {
-  color:#d0e8ff;
-  font-weight:bold;
+
+
+.appList {
+	background: rgba(0,0,0,0);
+	-moz-border-radius: 1em;
+	border-radius: 1em;
+	background-color: rgb(220,220,220);
+   -moz-box-shadow:  0 0 2px black;
+        box-shadow:  0 0 2px black;
 }
-.headline {
-  font-size:1.2em;
-  margin-bottom:16px;
-}
-.body {
-}
+
+.appList:after { content: "."; display: block; height: 0; clear: both; visibility: hidden; }
 
 .app {
 	float: left;
@@ -44,21 +44,6 @@ BODY {
   cursor:default;
 }
 
-.appList {
-	background: rgba(0,0,0);
-
-	-moz-border-radius: 1em;
-	border-radius: 1em;
-
-	background-color: rgb(220,220,220);
-
-   -moz-box-shadow:  0 0 2px black;
-        box-shadow:  0 0 2px black;
-		
-}
-
-.appList:after { content: "."; display: block; height: 0; clear: both; visibility: hidden; }
-
 .icon {
 	position: relative;
 	width: 48px;
@@ -67,31 +52,140 @@ BODY {
 	background-image: url('img/default-icon.png');
 	margin: 10px;
 }
-
-.icon a {
-    display: block;
-	position: absolute;
-	width: 96px;
-	height: 96px;
-	font-size: 1.2em;
-	color: rgb(255,255,255);
-	text-decoration: none;
-	-moz-transition: all 1s ease-out;  /* FF3.7+ */
-
- 	opacity: 0;
-
+#offer_region {
+  width:100%;
+  display:none;
+	font-family:Tahoma, sans-serif !important;
+  color:white;
+}
+#offer_intro {
+  font-weight: bold;
+  margin-bottom:8px;
 }
 
+#offer_details {
+  background-color:#101010;
+  border:1px inset #202020;
+  padding:8px;
+}
+
+#offer_icon {
+  width:48px;
+  height:48px;
+  margin:10px;
+  float:left;
+}
+#offer_name {
+  display:block;
+  font-weight:bold;
+  
+}
+#offer_desc {
+  max-height:64px;
+  overflow-y:auto;
+}
+#offer_controls {
+  position: relative;
+  min-height:28px;
+}
+#offer_close {
+  float:right;
+  width:16px;
+  height:16px;
+  background-color:#303030;
+  border-radius:0.25em;
+}
+#offer_close_button {
+  width:16px;
+  height:16px;
+  background-image: -moz-image-rect(url(chrome://openwebapps/content/close.png), 0%, 25%, 100%, 0%);
+}
+#offer_close_button:hover {
+  width:16px;
+  height:16px;
+  background-image: -moz-image-rect(url(chrome://openwebapps/content/close.png), 0%, 50%, 100%, 25%);
+}
+
+#offer_install {
+  position: absolute;
+  right: 10px;
+  font: normal normal bold 8pt/normal Helvetica;
+  vertical-align: middle;
+  text-align: center;
+  letter-spacing: -0.5px;
+  color: rgb(255,255,255);
+  text-shadow: 0px 1px rgba(0, 0, 0, 0.3);
+  width: 90px;
+  height: 28px;
+  line-height: 26px;
+  border: 1px solid rgba(0,0,0,0.2);
+
+  -moz-border-radius: 0.5em;
+  border-radius: 0.5em;
+
+  -moz-box-shadow:
+    inset rgba(218,255,191,1) 0 1px 0px,
+    inset rgba(0,0,0,0.2) 0 -2px 0px,
+    rgba(0,0,0,0.1) 0 2px 0px;
+  -box-shadow:
+    inset rgba(218,255,191,1) 0 1px 0px,
+    inset rgba(0,0,0,0.2) 0 -2px 0px,
+    rgba(0,0,0,0.1) 0 2px 0px;
+  background: -moz-linear-gradient(top,  rgba(134,214,106,1), rgba(78,152,52,1)); /* for firefox 3.6+ */
+  display: block
+}
 
 
 </style>
 </head>
 <body>
+<div id="offer_region">
+<div id="offer_intro">This web site has an installable web application:</div>
+
+<div id="offer_details">
+<div id="offer_close"><div id="offer_close_button"></div></div>
+<div id="offer_icon"></div>
+<div>
+<div id="offer_name"></div>
+<div id="offer_desc"></div>
+</div>
+
+<div id="offer_controls">
+<button id="offer_install">INSTALL</button>
+</div>
+
+</div>
+
+
+</div>
+
 <div id="icon_region"></div>
 <script>
 var container = document.getElementById("icon_region");
 Components.utils.import("resource://openwebapps/modules/api.js");
-var repo = new FFRepoImpl();
+var repo = FFRepoImplService;
+
+if (repo.getCurrentPageHasApp())
+{
+  repo.getCurrentPageApp(function(currentPageApp) {
+    if (currentPageApp) {
+      var offer_region = document.getElementById("offer_region");
+      offer_region.style.display = "block";
+      var offer_name = document.getElementById("offer_name");
+      offer_name.appendChild(document.createTextNode(currentPageApp.name));
+
+      var offer_icon = document.getElementById("offer_icon");
+      var iconImg = getBiggestIcon(currentPageApp);
+      offer_icon.style.background = "url(\"" + iconImg + "\") no-repeat #000000";
+      offer_icon.style.backgroundSize = "100%";
+
+      var offer_desc = document.getElementById("offer_desc");
+      if (currentPageApp.description) {
+        offer_desc.appendChild(document.createTextNode(currentPageApp.description));
+      }
+    }
+  });
+}
 
 var appList = repo.list(); // XXX This will become asynchronous.
 var container = document.getElementById("icon_region");
@@ -110,7 +204,7 @@ function getBiggestIcon(minifest) {
   //see if the minifest has any icons, and if so, return the largest one
   if (minifest.icons) {
     var biggest = 0;
-    for (z in minifest.icons) {
+    for (var z in minifest.icons) {
       var size = parseInt(z, 10);
       if (size > biggest) biggest = size;
     }
@@ -121,13 +215,7 @@ function getBiggestIcon(minifest) {
 
 function createAppIcon(app)
 {
-  //we will make an 'appDiv', which contains all the parts.
-  // it will have an icon and a title, in default mode.
-  // if the app has a widget enabled, it will be larger, visible, and have an iframe
-  // next to the app icon and title.  the iframe has a default size, but can be
-  // made larger if the widget specifies it, up to some reasonable maximum
   var appContainer = elem("div", "app");
-  
   var clickyIcon = elem("div", "icon");
   var iconImg = getBiggestIcon(app);
   if (iconImg) {
@@ -136,10 +224,8 @@ function createAppIcon(app)
   }
   clickyIcon.onclick = function() { repo.launch(null, app.id); };
   appContainer.appendChild(clickyIcon);
-
   var appName = elem("div", "appName");
   appName.appendChild(document.createTextNode(app.name));
-  
   appName.style.left = "10px";
   appContainer.appendChild(appName);
   return appContainer;

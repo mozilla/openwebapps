@@ -40,7 +40,7 @@ const Cu = Components.utils;
 const Cc = Components.classes;
 const Ci = Components.interfaces;
 
-var EXPORTED_SYMBOLS = ["FFRepoImpl"];
+var EXPORTED_SYMBOLS = ["FFRepoImplService"];
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://openwebapps/modules/typed_storage.js");
@@ -262,5 +262,58 @@ FFRepoImpl.prototype = {
         
         // Could not find specified app
         throw "Invalid AppID: " + id;
+    },
+    
+    getCurrentPageHasApp: function _getCurrentPageHasApp() {
+      return this.currentPageAppURL != false;
+    },
+    
+    getCurrentPageApp: function _getCurrentPageApp(callback) {
+
+      dump("Fetching current page app\n");
+
+      if (this.currentPageAppURL) {
+
+        if (this.currentPageAppManifest) {
+          dump("Cached; returning immediately\n");
+          callback(this.currentPageAppManifest);
+          return;
+        }
+        try {
+          var xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"].
+                  createInstance(Ci.nsIXMLHttpRequest);
+          xhr.open("GET", this.currentPageAppURL.spec, true);
+          xhr.onreadystatechange = function(aEvt) {
+              if (xhr.readyState == 4) {
+                  if (xhr.status == 200) {
+                    try {
+                      dump("Got manifest\n");
+                      var manifest = JSON.parse(xhr.responseText);
+                      this.currentPageAppManifest = manifest;
+                      callback(manifest);
+                    } catch (e) {
+                      // TODO report this out
+                      dump("Malformed manifest for current page: "+ xhr.responseText + "\n");
+                      callback(null);
+                    }
+                  } else {
+                      callback(null);
+                  }
+              }
+          }
+          xhr.send(null);
+        } catch (e) {
+          dump(e + "\n");
+        } 
+      }
+      
+    },
+    
+    setCurrentPageAppURL: function _setCurrentPageApp(aURI) {
+      this.currentPageAppURL = aURI;
+      this.currentPageAppManifest = null;
     }
 };
+
+// Declare the singleton:
+var FFRepoImplService = new FFRepoImpl();

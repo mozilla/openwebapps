@@ -132,6 +132,7 @@ function InjectorInit(window) {
   if (window.injector) return;
   window.injector = {
     providers: [],
+    actions: [],
     onLoad: function() {
       var obs = Components.classes["@mozilla.org/observer-service;1"].
                             getService(Components.interfaces.nsIObserverService);
@@ -148,6 +149,9 @@ function InjectorInit(window) {
       //dump("registering api "+provider.name+"\n");
       this.providers.push(provider);
     },
+    registerAction: function(action) {
+      this.actions.push(action);
+    },
 
     observe: function(aSubject, aTopic, aData) {
       if (!aSubject.location.href) return;
@@ -160,6 +164,9 @@ function InjectorInit(window) {
                      .getInterface(Components.interfaces.nsIDOMWindow); 
       if (mainWindow != window) {
         return;
+      }
+      for (var i in this.actions) {
+        this.actions[i]();
       }
       for (var i in this.providers) {
         //dump("injecting api "+this.providers[i].name+"\n");
