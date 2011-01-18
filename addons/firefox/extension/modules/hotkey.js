@@ -81,11 +81,14 @@ HotkeyServiceImpl.prototype = {
                 
             for (let index = 0; index < tabbrowser.tabs.length; index++) {
                 let cur = tabbrowser.tabs[index];
-                let doc = tabbrowser.getBrowserForTab(cur).contentWindow.document;
+                let win = tabbrowser.getBrowserForTab(cur).contentWindow;
+                let doc = win.document;
                 
-                let evt = doc.createEvent("Event");
-                evt.initEvent("MozHotkey", false, false);
-                evt.data = id;
+                // Is MessageEvent the best type of DOM event for this?
+                let evt = doc.createEvent("MessageEvent");
+                evt.initMessageEvent(
+                    "MozHotkey", false, false, id, cur.contentURI, null, win
+                );
                 doc.dispatchEvent(evt);
             }
         }
