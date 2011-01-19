@@ -16,21 +16,27 @@ class GetManifestHandler(tornado.web.RequestHandler):
   def get(self):
     url = self.get_argument("url", None)
     if not url:
+      self.set_status(400)  # 400 Bad Request
       self.write("""{"status":"error", "message":"Missing required 'url' parameter"}""")
       self.finish()
       return
-    
+
     # TODO Check for cached copy (use normal web cache-control semantics)
     # Also, we could apply a blacklist here if we have known bad actors.
     http = tornado.httpclient.AsyncHTTPClient()
     http.fetch(url, callback=self.on_response)
 
   def on_response(self, response):
-    if response.error: 
-      self.write("""{"status":"error", "message":"Unable to contact remote server"}""")
+    if response.error:
+      self.set_status(502)  # 502 Bad Gateway
+      message = str(response.error)
+      url = response.request.url
+      self.write(json.dumps(dict(
+        status="error",
+        message="Unable to contact remote server (%s): %s" % (url, message))))
       self.finish()
       return
-    
+
     # Parse it and make sure it's valid
     try:
       logging.error(response.body)
@@ -41,6 +47,7 @@ class GetManifestHandler(tornado.web.RequestHandler):
       self.write(json.dumps(manifest))
     except Exception, e:
       logging.exception(e)
+      self.set_status(500)  # 500 Server Error (not quite right?)
       self.write("""{"status":"error", "message":"Application manifest is malformed."}""")
     self.finish()
 
@@ -50,7 +57,7 @@ settings = {
 }
 
 application = tornado.web.Application([
-    (r"/getmanifest", GetManifestHandler) 
+    (r"/getmanifest", GetManifestHandler)
 	], **settings)
 
 
@@ -62,5 +69,3 @@ def run():
 if __name__ == '__main__':
   logging.basicConfig(level = logging.DEBUG)
   run()
-	
-	
