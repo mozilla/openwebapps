@@ -93,3 +93,7 @@ You can call things like `sync.pull()` and `sync.push()` to trigger the GET and 
 If you simply call `sync.pollSyncServer([pollTimeMilliseconds])` it will periodically check the server (the default poll time is 5000 milliseconds).  After an initial PUT request, later PUT requests will happen when a change is detected (TypedStorage emits events which can be used to detect changes).
 
 Some errors may cause the polling to stop, most specifically if a failed request is received with a 0 status, which typically means the server is not available.  (The sync server can also respond with a server timeout with a retry-time, but this is currently not checked for.)
+
+#### Additions to sync.myapps
+
+The only addition necessary was the addition of Access-Control-\* headers to the server to allow the repo domain (e.g., myapps.mozillalabs.com) to access the sync server.  This was applied in front of the Python sync server.  The code has been uploaded to [wsgi-access-control](https://github.com/ianb/wsgi-access-control) and the documentation includes the example of how it is configured in front of the sync service.  Currently it runs with an allowed origin of `*` but this should probably be changed to a whitelist that only allows production access.  Also it currently always sends the header, but to save on bandwidth it doesn't need to send the header except when it can be determined that the header is needed (which is a simple test for the `Origin` request header).
