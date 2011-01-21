@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout android:id="@+id/loginLayout" android:orientation="vertical" android:layout_width="fill_parent" android:layout_height="fill_parent" xmlns:android="http://schemas.android.com/apk/res/android">
+	<ImageView android:id="@+id/loginImage" android:layout_width="wrap_content" android:src="@drawable/soup" android:layout_gravity="center_horizontal" android:layout_height="wrap_content"></ImageView>
+	<EditText android:text="@string/loginIDLabel" android:id="@+id/loginID" android:layout_height="wrap_content" android:layout_width="fill_parent" android:selectAllOnFocus="true" android:layout_gravity="center_horizontal" android:singleLine="true"></EditText>
+	<EditText android:text="@string/loginPasswordLabel" android:id="@+id/loginPassword" android:layout_height="wrap_content" android:layout_width="fill_parent" android:password="true" android:layout_gravity="center_horizontal" android:selectAllOnFocus="true" android:singleLine="true"></EditText>
+	<Button android:text="@string/loginButtonLabel" android:id="@+id/loginButton" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center"></Button>
+</LinearLayout>

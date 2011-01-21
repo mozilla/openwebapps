@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout android:id="@+id/mainViewLayout" android:layout_width="fill_parent" android:layout_height="fill_parent" xmlns:android="http://schemas.android.com/apk/res/android">
+	<TextView android:layout_height="wrap_content" android:id="@+id/mainViewLabel" android:text="@string/mainMsgNoApps" android:layout_width="fill_parent" android:gravity="center"></TextView>
+	<ListView android:id="@+id/appList" android:layout_width="fill_parent" android:layout_height="wrap_content"></ListView>
+</LinearLayout>
