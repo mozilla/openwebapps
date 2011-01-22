@@ -6,10 +6,14 @@ import android.app.Activity;
 import android.app.ProgressDialog;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -20,7 +24,7 @@ public class MainActivity extends Activity implements OnClickListener {
 	protected SharedPreferences prefs;
 	
     public MainActivity() {
-    	service = new SyncService();
+    	service = new SyncService(this);
     }
     
     protected void addToHomeScreen(String name, String url, Bitmap icon) {
@@ -31,7 +35,7 @@ public class MainActivity extends Activity implements OnClickListener {
         result.putExtra(Intent.EXTRA_SHORTCUT_ICON, icon);
         result.setAction("com.android.launcher.action.INSTALL_SHORTCUT");
         sendBroadcast(result);
-        Toast.makeText(this, "Installed", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Installed " + name, Toast.LENGTH_SHORT).show();
     }
     
     protected void addUser(String usr, String pwd, String node) {
@@ -44,20 +48,34 @@ public class MainActivity extends Activity implements OnClickListener {
     
     protected void showApps(AppsAdapter apd) {
     	setContentView(R.layout.main_page);
+    	ListView lv = (ListView) findViewById(R.id.appList);
+    	//TextView tv = (TextView) findViewById(R.id.mainViewLabel);
+    	//tv.setText(getString(R.string.mainMsg));
+    	lv.setAdapter(apd);
+    	lv.setOnItemClickListener(apd);
+    }
+    
+    protected void showLogin() {
+    	setContentView(R.layout.login_page);
+    	Button login = (Button)findViewById(R.id.loginButton);
+    	login.setOnClickListener(this);
     }
     
     protected void getAndShowApps(String uname, String paswd, String node) {
     	String manifest = service.getManifest(uname, paswd, node);
+
 		if (manifest.equals("")) {
 			// authentication failed
 			Toast.makeText(this, R.string.invalidPassword, Toast.LENGTH_SHORT).show();
 			setContentView(R.layout.login_page);
 		} else if (manifest.equals("{}")) {
 			// empty manifest
+			System.out.println("Uh oh the manifest was empty!");
 			addUser(uname, paswd, node);
 			setContentView(R.layout.main_page);
 		} else {
 			// non empty manifest
+			System.out.println("Got a bunch of apps but let's see if JSON is valid");
 			addUser(uname, paswd, node);
 			showApps(service.parseManifest(manifest));
 		}
@@ -75,10 +93,23 @@ public class MainActivity extends Activity implements OnClickListener {
         		prefs.getString("cluster", "")
         	);
         } else {
-        	setContentView(R.layout.login_page);
-        	Button login = (Button)findViewById(R.id.loginButton);
-        	login.setOnClickListener(this);
+        	showLogin();
         }
+    }
+    
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+    	menu.add(getString(R.string.logout));
+    	return super.onCreateOptionsMenu(menu);
+    }
+    
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+    	SharedPreferences.Editor ed = prefs.edit();
+		ed.clear();
+		ed.commit();
+		showLogin();
+    	return super.onContextItemSelected(item);
     }
     
     public void onClick(View v) {

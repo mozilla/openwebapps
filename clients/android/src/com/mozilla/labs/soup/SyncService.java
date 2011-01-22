@@ -19,10 +19,15 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.SingleClientConnManager;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpParams;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.json.JSONTokener;
 
 public class SyncService {
+	MainActivity mact;
 	
-	public SyncService() {
+	public SyncService(MainActivity ma) {
+		mact = ma;
 	}
 	
 	protected String doGet(String url, String usr, String pwd) {
@@ -46,19 +51,19 @@ public class SyncService {
 		}
 		
 		try {
-			String tmp;
+			int tmp;
 			HttpResponse resp = clnt.execute(get);
 			int code = resp.getStatusLine().getStatusCode();
 			
 			// FIXME: Somehow getContent() doesn't give us the real payload
 			// in case the return code is not 200
-			//System.out.println("Code is: " + code + " " + resp.getStatusLine().getReasonPhrase() + " for " + url);
+			System.out.println("Code is: " + code + " " + resp.getStatusLine().getReasonPhrase() + " for " + url);
 			
 			if (code == 200) {
 				HttpEntity hen = resp.getEntity();
 				BufferedReader is = new BufferedReader(new InputStreamReader(hen.getContent()));
-				while ((tmp = is.readLine()) != null) {
-					result.append(tmp);
+				while ((tmp = is.read()) != -1) {
+					result.append((char)tmp);
 				}
 			} else if (code == 401) {
 				result.append("\"Authentication failed\"");
@@ -81,7 +86,21 @@ public class SyncService {
 	}
 	
 	public AppsAdapter parseManifest(String manifest) {
-		return new AppsAdapter();
+		// TODO: perform merge with local app repository as specified in
+		// https://github.com/mozilla/openwebapps/blob/master/docs/SYNC.md
+		// for now, we simply display a list of "available" apps
+		try {
+			JSONObject top = (JSONObject) new JSONTokener(manifest).nextValue();
+			String payload = top.getString("payload");
+			JSONObject list = (JSONObject) new JSONTokener(payload).nextValue();
+			JSONObject installed = list.getJSONObject("installed");
+			System.out.println("Got " + installed.length() + " installed apps!");
+			return new AppsAdapter(installed, mact);
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return new AppsAdapter(new JSONObject(), mact);
+		}
 	}
 	
 	public String getCluster(String user) {
@@ -97,6 +116,8 @@ public class SyncService {
 	
 	public String getManifest(String user, String password, String node) {
 		String payload = doGet(node + "1.0/" + user + "/storage/openwebapps/apps", user, password);
+		System.out.println("Got payload " + payload + "\nof length:" + payload.length());
+		
 		if (payload.equals("\"Authentication failed\"")) {
 			return "";
 		} else if (payload.equals("\"record not found\"")) {

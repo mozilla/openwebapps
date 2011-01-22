@@ -14,27 +14,31 @@ public final class R {
         public static final int soup=0x7f020000;
     }
     public static final class id {
-        public static final int appList=0x7f050007;
-        public static final int loginButton=0x7f050004;
-        public static final int loginID=0x7f050002;
-        public static final int loginImage=0x7f050001;
-        public static final int loginLayout=0x7f050000;
-        public static final int loginPassword=0x7f050003;
-        public static final int mainViewLabel=0x7f050006;
-        public static final int mainViewLayout=0x7f050005;
+        public static final int appIcon=0x7f050001;
+        public static final int appList=0x7f050009;
+        public static final int appTitle=0x7f050002;
+        public static final int listItem=0x7f050000;
+        public static final int loginButton=0x7f050007;
+        public static final int loginID=0x7f050005;
+        public static final int loginImage=0x7f050004;
+        public static final int loginLayout=0x7f050003;
+        public static final int loginPassword=0x7f050006;
+        public static final int mainViewLayout=0x7f050008;
     }
     public static final class layout {
-        public static final int login_page=0x7f030000;
-        public static final int main_page=0x7f030001;
+        public static final int list_item=0x7f030000;
+        public static final int login_page=0x7f030001;
+        public static final int main_page=0x7f030002;
     }
     public static final class string {
-        public static final int invalidPassword=0x7f040005;
-        public static final int invalidUser=0x7f040004;
-        public static final int loginButtonLabel=0x7f040002;
-        public static final int loginIDLabel=0x7f040000;
-        public static final int loginMessage=0x7f040003;
-        public static final int loginPasswordLabel=0x7f040001;
-        public static final int mainMsg=0x7f040006;
-        public static final int mainMsgNoApps=0x7f040007;
+        public static final int invalidPassword=0x7f040006;
+        public static final int invalidUser=0x7f040005;
+        public static final int loginButtonLabel=0x7f040003;
+        public static final int loginIDLabel=0x7f040001;
+        public static final int loginMessage=0x7f040004;
+        public static final int loginPasswordLabel=0x7f040002;
+        public static final int logout=0x7f040000;
+        public static final int mainMsg=0x7f040007;
+        public static final int mainMsgNoApps=0x7f040008;
     }
 }

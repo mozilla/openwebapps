@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+	<string name="logout">Logout</string>
 	<string name="loginIDLabel">Username</string>
 	<string name="loginPasswordLabel">Password</string>
 	<string name="loginButtonLabel">Let\'s do this!</string>
