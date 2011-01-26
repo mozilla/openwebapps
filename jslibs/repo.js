@@ -311,6 +311,10 @@
             result.widgetHeight = parseInt(item.app.widget.height,10);
           }
         }
+        
+        if (item.app.experimental) {
+          result.experimental = item.app.experimental;
+        }
 
         return result;
     }

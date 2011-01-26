@@ -244,6 +244,9 @@
                 may_overlay: true,
                 required: true,
                 check: nonEmptyStringCheck
+            },
+            experimental: {
+              required: false
             }
         };
 

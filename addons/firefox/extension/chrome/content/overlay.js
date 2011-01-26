@@ -471,7 +471,18 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
       xulPanel.appendChild(frame);
       document.getElementById("mainPopupSet").appendChild(xulPanel); //?
       let button = document.getElementById(buttonId);
-      xulPanel.sizeTo(500,280);
+
+      // How big should we make the panel?
+      
+      // Rough estimate of total size:
+      // width is 68px per app
+      // height is about 96px?
+      let list = repo.list();
+      
+      // figure 5 icons per row?
+      let height = 100 + Math.ceil(list.length / 5.0) * 100 + (gBrowser.contentDocument.applicationManifest != null ? 180 : 0);
+      
+      xulPanel.sizeTo(500,height); // used to be 280
       let rect = button.getBoundingClientRect();
       let x = rect.left - 450;
       let y = rect.bottom;
@@ -632,7 +643,68 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
     } 
     repo.setCurrentPageAppURL(null);
   });
+  
+  // Experimental support for web-send:
+  injector.register({
+    apibase: "navigator.introducer", name: "introduce", script: null,
+    getapi: function () {
+      return function (anchor, wanted, callback) {
+        repo.websendIntroduce(gBrowser, 
+          function showPicker(potentialProviders, pickedProviderCB) {
+            // Present a consent panel:
+            var doc = gBrowser.ownerDocument;
+            let XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
+            let xulPanel = doc.createElementNS(XUL_NS, 'panel');
 
+            // Render out the picker:
+            let header = doc.createElementNS(XUL_NS, "div");
+            header.appendChild(doc.createTextNode("Select provider:"));
+            header.setAttribute("style", "padding-top:6px;padding-left:4px;font:small-caption;color:#909090");
+            xulPanel.appendChild(header);
+
+            let div = doc.createElementNS(XUL_NS, 'div');
+            div.setAttribute("style", "margin-top:6px;padding:4px;font:small-caption");
+            for each (let provider in potentialProviders)
+            {
+              let providerDiv = doc.createElementNS(XUL_NS, 'div');
+              providerDiv.setAttribute("style", "display:inline-block;cursor:pointer");
+              let icon = doc.createElementNS("http://www.w3.org/1999/xhtml", 'img');
+              icon.style.height=icon.style.width="48px";
+              icon.src = provider.icons[128];
+              providerDiv.appendChild(icon);
+              let label = doc.createElementNS(XUL_NS, 'label');
+              label.appendChild(doc.createTextNode(provider.name));
+              label.setAttribute("style", "vertical-align:top;padding-left:4px;padding-top:2px");
+              providerDiv.appendChild(label);
+              div.appendChild(providerDiv);
+              providerDiv.onclick = function() {
+                xulPanel.hidePopup();
+                pickedProviderCB(provider);
+              }
+            }
+            xulPanel.appendChild(div);
+            doc.getElementById("mainPopupSet").appendChild(xulPanel);
+            xulPanel.sizeTo(160,40 + potentialProviders.length * 40);
+            xulPanel.openPopup(anchor, "after_start", 0, 0);
+        }, 
+        function iframeCreationCallback(frameURL) {
+          var doc = gBrowser.ownerDocument;   
+          let theIframe = doc.createElementNS("http://www.w3.org/1999/xhtml", 'iframe');
+          theIframe.src = frameURL;
+          anchor.parentNode.appendChild(theIframe);
+          return theIframe;
+        }, anchor, wanted, callback);
+      }
+  }});
+  injector.register({
+    apibase: "navigator.introducer", name: "welcome", script: null,
+    getapi: function () {
+      return function (registrants, callback) {
+        repo.websendWelcome(gBrowser, registrants, callback);
+      }
+  }});
+  // End experimental support for web-send
+  
   window.addEventListener("load", fn.bind(openwebapps, "onLoad"), false);
   window.addEventListener("unload", fn.bind(openwebapps, "onUnload"), false);
   window.addEventListener("DOMLinkAdded", fn.bind(openwebapps, "onLinkAdded"), false);

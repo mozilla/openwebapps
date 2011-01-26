@@ -273,7 +273,7 @@ FFRepoImpl.prototype = {
     },
     
     getCurrentPageHasApp: function _getCurrentPageHasApp() {
-      return this.currentPageAppURL != false;
+      return this.currentPageAppURL != null;
     },
     
     getCurrentPageApp: function _getCurrentPageApp(callback) {
@@ -320,7 +320,75 @@ FFRepoImpl.prototype = {
     setCurrentPageAppURL: function _setCurrentPageApp(aURI) {
       this.currentPageAppURL = aURI;
       this.currentPageAppManifest = null;
+    },
+    
+    websendIntroduce: function _websendIntroduce(browser, pickerPresentationCallback, iframeCreationCallback, anchor, wanted, callback) {
+      try {
+      // Find whether we have some apps that implement 'wanted'
+      var potentialProviders = [];
+      var apps = Repo.list();
+      var matchArray = [];
+      for each (var app in apps) 
+      {
+        if (app.experimental && app.experimental.providers)
+        {
+          for each (var w in wanted)
+          {
+            for each (var p in app.experimental.providers)
+            {
+              if (p.supports.indexOf(w) >= 0) {
+                matchArray.push(w); // go ahead and check them all; we'll need the list later
+              }
+            }
+          }
+          if (matchArray.length > 0) {
+            potentialProviders.push(app);
+            break; 
+          }
+        }
+      }
+      
+      if (potentialProviders.length == 0)
+      {
+        callback([]); // no matches, sorry!
+      }
+      else
+      {
+        pickerPresentationCallback(potentialProviders, function(gotProvider) {
+          // instantiate the provider..
+          
+          // assuming there will be a frame for now?
+          
+          // which provider to load?  what if we matched more than one? SPEC
+          let providerElem;
+          for each (let p in gotProvider.experimental.providers) {
+            for each (let w in wanted) {
+              if (p.supports.indexOf(w) >= 0) {
+                providerElem = p;
+              }
+            }
+          }
+          let theIframe;
+          if (providerElem.frame) {
+            theIframe = iframeCreationCallback(providerElem.frame);
+          }
+          
+          // get the MessagePort
+          
+          // invoke the callback (or do we wait for welcome?)
+          // first arg is array of data types supported by selected provider
+          callback(matchArray, null, theIframe);
+        });
+      } 
+      
+      } catch (e) {
+        dump(e+"\n");
+      }
+    },
+    websendWelcome: function _websendWelcome(registrants, callback) {
+    
     }
+    
 };
 
 // Declare the singleton:

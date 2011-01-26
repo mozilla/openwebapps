@@ -7,7 +7,8 @@ HTML {
 
 BODY {
   margin: 0 3px; color:white;
-  font: message-box; height:232px;
+  font: message-box; 
+/*  height:232px; */
   background-color: transparent;
   -moz-border-image: url(chrome://openwebapps/skin/hud-panel.png) 26 50 22 18 / 26px 50px 22px 18px repeat;
 }
@@ -22,12 +23,21 @@ BODY {
         box-shadow:  0 0 2px black;
 }
 
-.appList:after { content: "."; display: block; height: 0; clear: both; visibility: hidden; }
+.appList:after { content: "."; 
+  display: block; 
+  height: 0; 
+  clear: both; 
+  visibility: hidden; 
+}
+.split {clear:both;display:inline-block;background-color:green;width:20px;height:20px}
 
 .app {
 	float: left;
 	position: relative;
-	margin: 0px 5px 30px 5px;
+	margin: 0px 5px 10px 5px;
+  height:96px;
+  overflow-y:hidden;
+  overflow-x:hidden;
 }
 
 .appName{
@@ -49,9 +59,11 @@ BODY {
 	width: 48px;
 	height: 48px;
 	text-align: center;
-	background-image: url('img/default-icon.png');
+/*	background-image: url('img/default-icon.png');*/
 	margin: 10px;
+  border:2px solid #d0d0d0 outset;
 }
+
 #offer_region {
   width:100%;
   display:none;
@@ -161,9 +173,12 @@ BODY {
 
 <div id="icon_region"></div>
 <script>
-var container = document.getElementById("icon_region");
 Components.utils.import("resource://openwebapps/modules/api.js");
 var repo = FFRepoImplService;
+var appList = repo.list(); // XXX This will become asynchronous.
+
+var height  = Math.ceil(appList.length / 5.0) * 100 + (repo.getCurrentPageHasApp() ? 180 : 0);
+document.body.style.height = height;
 
 if (repo.getCurrentPageHasApp())
 {
@@ -187,11 +202,15 @@ if (repo.getCurrentPageHasApp())
   });
 }
 
-var appList = repo.list(); // XXX This will become asynchronous.
 var container = document.getElementById("icon_region");
 for (var i=0;i<appList.length;i++) {
   
   container.appendChild(createAppIcon(appList[i]));
+  if (i && ((i % 5) == 0)) {
+    var br = elem("br");
+    br.setAttribute("clear", "left");
+    container.appendChild(br);
+  }
 }
 
 function elem(type, clazz) {
@@ -219,7 +238,7 @@ function createAppIcon(app)
   var clickyIcon = elem("div", "icon");
   var iconImg = getBiggestIcon(app);
   if (iconImg) {
-      clickyIcon.style.background = "url(\"" + iconImg + "\") no-repeat #000000";
+      clickyIcon.style.background = "url(\"" + iconImg + "\") no-repeat #404040";
       clickyIcon.style.backgroundSize = "100%";
   }
   clickyIcon.onclick = function() { repo.launch(null, app.id); };
