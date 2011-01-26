@@ -33,7 +33,7 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
- 
+
 var self = require("self");
 var windowUtils = require("window-utils");
 var tabs = require("tabs").tabs;
@@ -108,7 +108,7 @@ widgets.Widget({
       height:150,
       width:640,
       contentURL: data.url("dock.html"),
-      contentScriptFile: data.url("dock.js"), 
+      contentScriptFile: data.url("dock.js"),
       contentScript: "let gApplications = " + JSON.stringify(listFunc()),
       onMessage: function(req) {}
     });
@@ -132,7 +132,7 @@ exports.unload = function() {
 function openAppURL(aWindow, app, url, inBackground)
 {
   try {
-    
+
     // TODO: Replace this with the new Jetpack windows API!
     var wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
     var browserEnumerator = wm.getEnumerator("navigator:browser");
@@ -145,7 +145,7 @@ function openAppURL(aWindow, app, url, inBackground)
 
       var numTabs = tabbrowser.browsers.length;
       for (var index = 0; index < numTabs; index++) {
-      
+
         var currentBrowser = tabbrowser.getBrowserAtIndex(index);
         if (applicationMatchesURL(app, currentBrowser.currentURI.spec))
         {
@@ -156,7 +156,7 @@ function openAppURL(aWindow, app, url, inBackground)
           browserWin.focus();
           tabbrowser.selectedBrowser.loadURI(url, null // TODO don't break referrer!
             , null);
-          
+
           found = true;
         }
       }
@@ -179,7 +179,7 @@ function openAppURL(aWindow, app, url, inBackground)
   }
 }
 
-/** 
+/**
  * openAppTabOnWindow
  *
  * Open a given URL as an app tab in the given window, regardless of whether
@@ -235,14 +235,14 @@ function installApp(manifest, authorization_url, signature, origin, worker, requ
     manf = Manifest.validate(manifest);
   } catch(e) {
     console.log(e);
-    callback({error: [ "invalidManifest", "couldn't validate your mainfest: " + e]});
+    worker.postMessage({id: requestID, result: {error: [ "invalidManifest", "couldn't validate your mainfest: " + e]}});
     return;
   }
 
   let originURL = new URL(origin)
   let appURL = new URL(manifest.base_url);
   let originWarnings = [], appWarnings = [];
-  
+
   if (originURL.scheme != "https") {
     originWarnings.push("Installing site is not using secure communication");
   }
@@ -254,21 +254,21 @@ function installApp(manifest, authorization_url, signature, origin, worker, requ
     height:290,
     width:500,
     contentURL: data.url("install.html"),
-    contentScriptFile: data.url("install.js"), 
-    contentScript: "let gApplicationToInstall = " + JSON.stringify(manifest) + 
+    contentScriptFile: data.url("install.js"),
+    contentScript: "let gApplicationToInstall = " + JSON.stringify(manifest) +
       "; let gAppOrigin = \"" + appURL.host + "\"; let gInstallingOrigin = \"" + originURL.host + "\";" +
       "let gAppWarnings = " + JSON.stringify(originWarnings) + "; let gOriginWarnings = " + JSON.stringify(appWarnings) + ";",
 
 /*    allow: {script:true},*/
 /*    contentScriptWhen: "ready",*/
- 
+
     onMessage: function(req) {
       console.log("installPanel.onMessage: " + JSON.stringify(req));
       if (req.cmd == "confirm")
       {
         panel.destroy();
-        console.log("Confirmed installation");      
-        
+        console.log("Confirmed installation");
+
         let key = makeAppKey(manf);
         let installation = {
             app: manf,
@@ -294,11 +294,11 @@ function installApp(manifest, authorization_url, signature, origin, worker, requ
       else if (req.cmd == "cancel")
       {
         panel.destroy();
-        console.log("Cancelled installation");      
+        console.log("Cancelled installation");
         worker.postMessage({id:requestID, result:0});// TODO what's the callback API?
       }
     }
-    
+
   });
 
   openPanelOnLocationBar(panel);
@@ -344,18 +344,18 @@ var storage = {
       if (count == index) return key;
         count++;
     }
-    return null;  
+    return null;
   },
-  getItem: function(key) { 
-    var val = simpleStorage.storage[key]; 
+  getItem: function(key) {
+    var val = simpleStorage.storage[key];
     if (!val) return null;
     return val;
   },
-  setItem: function(key, value) { 
-    simpleStorage.storage[key] = value; 
+  setItem: function(key, value) {
+    simpleStorage.storage[key] = value;
   },
-  removeItem: function(key) { 
-    delete simpleStorage.storage[key]; 
+  removeItem: function(key) {
+    delete simpleStorage.storage[key];
   },
 }
 
@@ -414,7 +414,7 @@ function urlMatchesDomain(url, domain)
             parsedDomain.host.toLowerCase() == parsedURL.host.toLowerCase())
         {
             var inputPort = parsedDomain.port ? parsedDomain.port : (parsedDomain.protocol.toLowerCase() == "https" ? 443 : 80);
-            var testPort = parsedURL.port ? parsedURL.port : (parsedURL.protocol.toLowerCase() == "https" ? 443 : 80);        
+            var testPort = parsedURL.port ? parsedURL.port : (parsedURL.protocol.toLowerCase() == "https" ? 443 : 80);
             if (inputPort == testPort) return true;
         }
     } catch (e) {
@@ -447,7 +447,7 @@ function getInstallsForOrigin(origin)
     return result;
 }
 
-// Return all installations that were installed by the given origin domain 
+// Return all installations that were installed by the given origin domain
 function getInstallsByOrigin(origin)
 {
     var result = [];
@@ -525,7 +525,7 @@ var getInstalledByFunc = function(origin) {
 
 
 
-/* Management APIs for dashboards live beneath here */ 
+/* Management APIs for dashboards live beneath here */
 
 // A function which given an installation record, builds an object suitable
 // to return to a dashboard.  this function may filter information which is
@@ -558,7 +558,7 @@ var listFunc = function() {
 
 var removeFunc = function(id) {
     var item = storage.getItem(id);
-    if (!item) return {error: [ "noSuchApplication", "no application exists with the id: " + id]}; 
+    if (!item) return {error: [ "noSuchApplication", "no application exists with the id: " + id]};
     storage.removeItem(id);
     return true;
 };
@@ -608,7 +608,7 @@ var saveStateFunc = function(id, state) {
                 item = null;
             }
         }
-        if (!item) throw [ "noSuchApplication", "no application exists with the id: " + key ]; 
+        if (!item) throw [ "noSuchApplication", "no application exists with the id: " + key ];
 
         win.open(item.app.base_url + item.app.launch_path, "__" + key);
 
