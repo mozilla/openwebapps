@@ -128,7 +128,7 @@ FFRepoImpl.prototype = {
             }
             xhr.send(null);
         }
-        
+
         return Repo.install(location, args, displayPrompt, fetchManifest,
             function(result) {
                 // install is complete

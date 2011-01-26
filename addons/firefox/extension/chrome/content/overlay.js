@@ -37,15 +37,23 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
   Components.utils.import("resource://openwebapps/modules/injector.js");
   Components.utils.import("resource://openwebapps/modules/api.js");
   Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
+  
+  // Add hotkey support. Not a failure if this doesn't load
+  Components.utils.import("resource://openwebapps/modules/hotkey.js");
+  
   // This add-on manager is only available in Firefox 4+
   try {
     Components.utils.import("resource://gre/modules/AddonManager.jsm");
-    
-    // Also register sync engine in FF4+
+  } catch (e) {
+  }
+  
+  // Also register sync engine in FF4+
+  try {
     Components.utils.import("resource://services-sync/main.js");
     Components.utils.import("resource://openwebapps/modules/sync.js");
     Weave.Engines.register(AppsEngine);
-  } catch (e) {   
+  } catch (e) {
+    dump(e.stack);
   }
 
   var slice = Array.prototype.slice,

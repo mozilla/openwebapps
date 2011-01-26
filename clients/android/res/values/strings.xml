@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="logout">Logout</string>
+	<string name="loginIDLabel">Username</string>
+	<string name="loginPasswordLabel">Password</string>
+	<string name="loginButtonLabel">Let\'s do this!</string>
+	<string name="loginMessage">Logging you in...</string>
+	<string name="invalidUser">Invalid Username. Please try again!</string>
+	<string name="invalidPassword">Invalid Password. Please try again!</string>
+	<string name="mainMsg">Tap the name of an application to add it to your home screen!</string>
+	<string name="mainMsgNoApps">You currently have no applications installed!</string>
+</resources>
