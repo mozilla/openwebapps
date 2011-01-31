@@ -73,6 +73,10 @@
       if ((typeof x !== 'string') || x.length === 0) errorThrow();
     };
 
+    var stringCheck = function(x) {
+      if (typeof x !== 'string') errorThrow();
+    };
+
     // a table that specifies manfiest properties, and validation functions
     // each key is the name of a valid top level property.
     // each value is an object with four optional properties:
@@ -131,6 +135,9 @@
         required: true,
         check: nonEmptyStringCheck
       },
+      experimental: {
+        required: false
+      },
       description: {
         may_overlay: true,
         check: nonEmptyStringCheck
@@ -146,22 +153,6 @@
           }
         }
       },
-      //widget might become more complex, and this validation code would need to become so as well
-      widget: {
-        //a path to an embeddable widget for display in a small iframe
-        check: function (x) {
-          if (typeof x.path !== 'string') errorThrow('widget path not a string');
-          if (x.width) {
-            var w = parseInt(x.width,10);
-            if (w < 10 || w > 1000) errorThrow('widget width outside allowed range [10 - 1000]'); 
-          }
-          if (x.height) {
-            var h = parseInt(x.height,10);
-            if (h < 10 || h > 1000) errorThrow('widget height outside allowed range [10 - 1000]'); 
-          }
-        }
-      },
-
       icons: {
         may_overlay: true,
         check: function (x) {
@@ -258,8 +249,24 @@
         required: true,
         check: nonEmptyStringCheck
       },
-      experimental: {
-        required: false
+      version: {
+        required: false,
+        check: stringCheck
+      },
+      //widget might become more complex, and this validation code would need to become so as well
+      widget: {
+        //a path to an embeddable widget for display in a small iframe
+        check: function (x) {
+          if (typeof x.path !== 'string') errorThrow('widget path not a string');
+          if (x.width) {
+            var w = parseInt(x.width,10);
+            if (w < 10 || w > 1000) errorThrow('widget width outside allowed range [10 - 1000]'); 
+          }
+          if (x.height) {
+            var h = parseInt(x.height,10);
+            if (h < 10 || h > 1000) errorThrow('widget height outside allowed range [10 - 1000]'); 
+          }
+        }
       }
     };
 

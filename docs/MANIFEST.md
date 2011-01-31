@@ -17,6 +17,8 @@ For a discussion of the security and privacy considerations around the applicati
     {
       "manifest_version": "0.2",
 
+      "version": "1.0",
+
       "name": "MozillaBall",
       "description": "Exciting Open Web development action!",
 
@@ -57,9 +59,7 @@ For a discussion of the security and privacy considerations around the applicati
         }
       },
 
-      "default_locale": "en",
-
-      "release": "2010-10-05T09:12:51Z"
+      "default_locale": "en"
     }
 
 #### Discussion of the fields
@@ -94,7 +94,7 @@ For detailed technical discussion of the manifest, please visit [the wiki](http:
 
 * [**manifest_name**](http://wiki.mozilla.org/Labs/Apps/Manifest#manifest.name): (optional) The filename under which the manifest is stored, such that concatenation of base_url + manifest_name produces an absolute url to where the manifest is hosted.  Valid values will conform to the 'segment' production from [rfc 3986](http://tools.ietf.org/html/rfc3986#section-3.5).  If not provided, the default for manifest_name is `manifest.webapp`
 
-* [**release**](http://wiki.mozilla.org/Labs/Apps/Manifest#release): (optional) A timestamp in ISO 8601 format representing when this version of the manifest came into effect (see below)
+* [**version**](http://wiki.mozilla.org/Labs/Apps/Manifest#version): (optional) A string that represents the version of the application.  The repository doesn't use this value in any way, but developers may embed this string into the manifest and extract it to help deal with various update dcases.  See the section on updating, below.
 
 #### Serving Manifests
 
@@ -104,11 +104,9 @@ The document is expected to be UTF-8, but another encoding can be specified with
 
 #### On Updating
 
-XXX: revisit
+A web application respects the normal rules for web caching, and may optionally use advanced mechanisms for improved startup, like the [HTML5 AppCache](http://www.whatwg.org/specs/web-apps/current-work/multipage/offline.html#offline).  Given this, there are no special considerations for application update for the normal resources that an app uses.
 
-Note that, because the logic for a web application is loaded using the normal rules for web caching, and may optionally use [HTML5 AppCache](http://www.whatwg.org/specs/web-apps/current-work/multipage/offline.html#offline) for bulk caching, there is no need to deploy new versions of the manifest or the application to clients.  The normal web caching rules apply, so that when a browser is online it will check for new versions of application logic, text, images, and sound, and download them if needed.
-
-A manifest update would be required only in situations where the manifest must actually change.  This could include a new URL, a new web browser capability, or a change to the icon, descriptive text, or localized strings.  The release date contained in the manifest is the only source of versioning data for this operation.  See [**updating manifests**](http://wiki.mozilla.org/Labs/Apps/Manifest) for more discussion.
+One area where webapps are different, is in the handling of the manifest.  There are some changes that can be made to a manifest that may require user approval (requests for additional `capabilities`, for instance).  Depending on the implementation of the application repository, it may be unclear whether an update has occured.  To allow developers a clean way to deal with this issue, they may provide a `version` property in the application manifest.  This version may be later checked by inspecting the return value of the `navigator.apps.getInstalled()` function.  The ability to check the currently installed version, combined with using `navigator.apps.install()` to explicitly trigger a manifest update, allow one to manage updating of the application manifest.  Finally, given `version` is an opaque string to the repository, applications may use whatever versioning scheme they desire.
 
 #### Application Security Tiers
 
