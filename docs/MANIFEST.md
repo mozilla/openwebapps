@@ -94,9 +94,11 @@ For detailed technical discussion of the manifest, please visit [the wiki](http:
 
 #### Serving Manifests
 
-Proper web applications should serve manifests as separate resources under urls which have `base_url` as a prefix.  By convention, manifests should be contained in files with an extension of `.webapp`.  Web application manifests should be served with a `Content-Type` header of `application/x-web-app-manifest+json`.  Both manifests and applications should be provided over SSL.
+Proper web applications should serve manifests as separate resources under urls which have `base_url` as a prefix.  By convention, manifests should be contained in files with an extension of `.webapp`.  Web application manifests should be served with a `Content-Type` header of `application/x-web-app-manifest+json`.  Manifests MAY be served over SSL to mitigate certain classes of attacks.
 
 The document is expected to be UTF-8, but another encoding can be specified with the `Content-Type: application/json; charset=X` (i.e., we use the normal process for handling document encodings).
+
+User Agents when possible SHOULD meaningfully message the site identity and TLS status when prompting a user to install an application.
 
 #### On Updating
 
