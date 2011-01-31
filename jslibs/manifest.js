@@ -34,274 +34,274 @@
  * ***** END LICENSE BLOCK ***** */
 
 /**
-  2010-07-14
-  First version of server code
-  -Michael Hanson. Mozilla
+   2010-07-14
+   First version of server code
+   -Michael Hanson. Mozilla
 
-  2010-08-27
-  Manifest validation code broken out into a separate file.
+   2010-08-27
+   Manifest validation code broken out into a separate file.
 
-  2010-12-04
-  Manifest validation re-written for updated specification
+   2010-12-04
+   Manifest validation re-written for updated specification
 **/
 
 ;var Manifest = (function() {
 
-    // initialize a manifest object from a javascript manifest representation,
-    // validating as we go.
-    // throws a developer readable string upon discovery of an invalid manifest.
-    function validate(manf) {
-        var errorThrow = function(msg, path) {
-            if (path != undefined && typeof path != 'object') path = [ path ];
-            throw {
-                msg: msg,
-                path: (path ? path : [ ]),
-                toString: function () {
-                    if (this.path && this.path.length > 0) return ("(" + this.path.join("/") + ") " + this.msg); 
-                    return this.msg;
-                }
-            };
-        };
-
-        // Validate and clean the request
-        if(!manf) {
-            errorThrow('null');
+  // initialize a manifest object from a javascript manifest representation,
+  // validating as we go.
+  // throws a developer readable string upon discovery of an invalid manifest.
+  function validate(manf) {
+    var errorThrow = function(msg, path) {
+      if (path != undefined && typeof path != 'object') path = [ path ];
+      throw {
+        msg: msg,
+        path: (path ? path : [ ]),
+        toString: function () {
+          if (this.path && this.path.length > 0) return ("(" + this.path.join("/") + ") " + this.msg); 
+          return this.msg;
         }
+      };
+    };
 
-        // commonly used check functions
-        var nonEmptyStringCheck = function(x) {
-            if ((typeof x !== 'string') || x.length === 0) errorThrow();
-        };
-
-        // a table that specifies manfiest properties, and validation functions
-        // each key is the name of a valid top level property.
-        // each value is an object with four optional properties:
-        //  required: if present and has a truey value, then the prop is required
-        //  check: if present and a function for a value, then is passed a value present in manifest for validation
-        //  normalize: if present and has a function for a value, then accepts current value
-        //             in manifest as argument, and outputs a value to replace it.
-        //  may_overlay: if present and hase a truey value, then this property may be overlaid by
-        //               content in the locales map. 
-        //
-        // returning errors:
-        //   validation functions throw objects with two fields:
-        //     msg: an english, developer readable error message
-        //     path: an array of properties that describes which field has the error
-        //
-        var manfProps = {
-            base_url: {
-                required: true,
-                check: function (x) {
-                    if (typeof x !== 'string') errorThrow();
-                    try {
-                        // will throw if the url is invalid
-                        var p = URLParse(x).validate().normalize().path;
-                        // urls must end with a slash
-                        if (!p.length || p[p.length - 1] != '/') throw "trailing slash required";
-                    } catch(e) {
-                        errorThrow(e);
-                    }
-                },
-                normalize: function(x) {
-                    return URLParse(x).normalize().toString();
-                }
-            },
-            capabilities: {
-                check: function(x) {
-                    if (!x || typeof x !== 'object' /* || x.constructor !== Array*/) errorThrow();
-                    for (var i = 0; i < x.length; i++) {
-                        if (typeof x[i] !== 'string') errorThrow(undefined, [i]);
-                    }
-                }
-            },
-            default_locale: {
-                required: true,
-                check: nonEmptyStringCheck
-            },
-            description: {
-                may_overlay: true,
-                check: nonEmptyStringCheck
-            },
-            developer: {
-                may_overlay: true,
-                check: function(x) {
-                    if (typeof x !== 'object') errorThrow();
-                    for (var k in x) {
-                        if (!x.hasOwnProperty(k)) continue;
-                        if (!(k in { name:null, url:null})) errorThrow('under developer, only "name" and "url" properties are allowed', k);
-                        if (typeof x[k] !== 'string') errorThrow(undefined, k);
-                    }
-                }
-            },
-            //widget might become more complex, and this validation code would need to become so as well
-            widget: {
-                //a path to an embeddable widget for display in a small iframe
-                 check: function (x) {
-                     if (typeof x.path !== 'string') errorThrow('widget path not a string');
-                     if (x.width) {
-                      var w = parseInt(x.width,10);
-                      if (w < 10 || w > 1000) errorThrow('widget width outside allowed range [10 - 1000]'); 
-                     }
-                     if (x.height) {
-                      var h = parseInt(x.height,10);
-                      if (h < 10 || h > 1000) errorThrow('widget height outside allowed range [10 - 1000]'); 
-                     }
-                 }
-            },
-
-            icons: {
-                may_overlay: true,
-                check: function (x) {
-                    if (typeof x !== 'object') errorThrow();
-                    for (var k in x) {
-                        if (!x.hasOwnProperty(k)) continue;
-                        if (typeof x[k] !== 'string') errorThrow(undefined, k);
-                        if (x[k].indexOf('..') != -1) errorThrow(undefined, k);
-                    }
-                }
-            },
-            installs_allowed_from: {
-                check: function(x) {
-                    if (!x || typeof x !== 'object' || x.constructor !== Array) errorThrow("expected array of urls");
-                    for (var i = 0; i < x.length; i++) {
-                        var path;
-                        try {
-                            path = URLParse(x[i]).validate().path;
-                        } catch (e) {
-                            errorThrow(e, i)
-                        }
-                        // XXX: should this be a warning?  (in other news, should we invent a way to
-                        // convey warnings to client code?)
-                        if (path && path.length > 1) {
-                            errorThrow("path on url is meaningless here", i);
-                        }
-                    }
-                },
-                normalize: function(o) {
-                    var n = [];
-                    for (var i = 0; i < o.length; i++) {
-                        n.push(URLParse(o[i]).normalize().toString());
-                    }
-                    return n;
-                }
-            },
-            launch_path: {
-                may_overlay: true,
-                check: function (x) {
-                    if (typeof x !== 'string' || x.indexOf("..") !== -1) errorThrow();
-                },
-                normalize: function(x) {
-                    // XXX: can/should we do better normalization than this??
-                    return ((x.length > 0) ? x : undefined);
-                }
-            },
-            locales: {
-                check: function (l) {
-                    // XXX: we really need a robust parser for language tags
-                    // to do this correctly:
-                    // http://www.rfc-editor.org/rfc/bcp/bcp47.txt
-                    if (typeof l !== 'object') errorThrow();
-                    for (var tag in l) {
-                        if (!l.hasOwnProperty(tag)) continue;
-                        // XXX: parse and validate language tag (for real)
-                        if (typeof tag !== 'string' || tag.length == 0) errorThrow();
-                        if (typeof l[tag] !== 'object') errorThrow();
-
-                        // now l[tag] is a locale specific overlay, which is basically
-                        // a manifest in its own right.  We'll go validate that.  By passing
-                        // true as the second arg ot validateManifestProperties we restrict
-                        // allowed manifest fields to only those which may be overlaid. 
-                        try {
-                            validateManifestProperties(l[tag], true);
-                        } catch (e) {
-                            e.path.unshift(tag);
-                            throw e;
-                        }
-                    }
-                }
-            },
-            manifest_name: {
-                check: function (x) {
-                    if (typeof x === 'string') {
-                        // See RFC 3986 'segment' production for discussion of allowed chars in manfest_name
-                        if (x.length === 0) errorThrow("blank value not allowed");
-                        else if (!/^[A-Za-z0-9\-\._~!\$&\'\(\)\*\+\,\;\=\:\@\%]+$/.test(x))
-                            errorThrow("invalid characters present");
-                    } else {
-                        // non-strings not allowed
-                        errorThrow();
-                    }
-                }
-            },
-            manifest_version: {
-                required: true,
-                check: function (x) {
-                    if (!((typeof x === 'string') && /^\d+.\d+$/.test(x))) errorThrow();
-                    if (x !== '0.2') errorThrow("unsupported manifest version: " + x + " (expected 0.2)");
-                }
-            },
-            name: {
-                may_overlay: true,
-                required: true,
-                check: nonEmptyStringCheck
-            },
-            experimental: {
-              required: false
-            }
-        };
-
-        // a function to extract nested values given an object and array of property names
-        function extractValue(obj, props) {
-            return ((props.length === 0) ? obj : extractValue(obj[props[0]], props.slice(1)));
-        }
-
-        // a function that will validate properties of a manfiest using the
-        // manfProps data structure above.
-        // returns a normalized version of the manifest, throws upon
-        // detection of invalid properties
-        function validateManifestProperties(manf, onlyOverlaidFields) {
-            var normalizedManf = {};
-            for (var prop in manf) {
-                if (!manf.hasOwnProperty(prop)) continue;
-                if (!(prop in manfProps)) errorThrow('unsupported property', prop);
-                var pSpec = manfProps[prop];
-                if (onlyOverlaidFields && !pSpec.may_overlay) {
-                    errorThrow('may not be overridded per-locale', prop);
-                }
-                if (typeof pSpec.check === 'function') {
-                    try {
-                        pSpec.check(manf[prop]);
-                    } catch (e) {
-                        e.path.unshift(prop);
-                        if (!e.msg) e.msg = 'invalid value: ' + extractValue(manf, e.path);
-                        console.log(e);
-                        throw e;
-                    }
-                }
-                if (typeof pSpec.normalize === 'function') {
-                    normalizedManf[prop] = pSpec.normalize(manf[prop]);
-                    // special case.  a normalization function can remove properties by
-                    // returning undefined.
-                    if (normalizedManf[prop] === undefined) delete normalizedManf[prop];
-                } else {
-                    normalizedManf[prop] = manf[prop];
-                }
-            }
-            return normalizedManf;
-        }
-
-        // iterate through required properties, and verify they're present
-        for (var prop in manfProps) {
-            if (!manfProps.hasOwnProperty(prop) || !manfProps[prop].required) continue;
-            if (!(prop in manf)) {
-                errorThrow('missing "' + prop + '" property');
-            }
-        }
-
-        return validateManifestProperties(manf, false);
+    // Validate and clean the request
+    if(!manf) {
+      errorThrow('null');
     }
 
-    return {
-        validate: validate
+    // commonly used check functions
+    var nonEmptyStringCheck = function(x) {
+      if ((typeof x !== 'string') || x.length === 0) errorThrow();
+    };
+
+    // a table that specifies manfiest properties, and validation functions
+    // each key is the name of a valid top level property.
+    // each value is an object with four optional properties:
+    //  required: if present and has a truey value, then the prop is required
+    //  check: if present and a function for a value, then is passed a value present in manifest for validation
+    //  normalize: if present and has a function for a value, then accepts current value
+    //             in manifest as argument, and outputs a value to replace it.
+    //  may_overlay: if present and hase a truey value, then this property may be overlaid by
+    //               content in the locales map. 
+    //
+    // returning errors:
+    //   validation functions throw objects with two fields:
+    //     msg: an english, developer readable error message
+    //     path: an array of properties that describes which field has the error
+    //
+    var manfProps = {
+      base_url: {
+        required: true,
+        check: function (x) {
+          if (typeof x !== 'string') errorThrow();
+          try {
+            // will throw if the url is invalid
+            var p = URLParse(x).validate().normalize().path;
+            // urls must end with a slash
+            if (!p.length || p[p.length - 1] != '/') throw "trailing slash required";
+          } catch(e) {
+            errorThrow(e);
+          }
+        },
+        normalize: function(x) {
+          return URLParse(x).normalize().toString();
+        }
+      },
+      capabilities: {
+        check: function(x) {
+          if (!x || typeof x !== 'object') errorThrow();
+          for (var i = 0; i < x.length; i++) {
+            if (typeof x[i] !== 'string') errorThrow(undefined, [i]);
+          }
+        }
+      },
+      default_locale: {
+        required: true,
+        check: nonEmptyStringCheck
+      },
+      description: {
+        may_overlay: true,
+        check: nonEmptyStringCheck
+      },
+      developer: {
+        may_overlay: true,
+        check: function(x) {
+          if (typeof x !== 'object') errorThrow();
+          for (var k in x) {
+            if (!x.hasOwnProperty(k)) continue;
+            if (!(k in { name:null, url:null})) errorThrow('under developer, only "name" and "url" properties are allowed', k);
+            if (typeof x[k] !== 'string') errorThrow(undefined, k);
+          }
+        }
+      },
+      //widget might become more complex, and this validation code would need to become so as well
+      widget: {
+        //a path to an embeddable widget for display in a small iframe
+        check: function (x) {
+          if (typeof x.path !== 'string') errorThrow('widget path not a string');
+          if (x.width) {
+            var w = parseInt(x.width,10);
+            if (w < 10 || w > 1000) errorThrow('widget width outside allowed range [10 - 1000]'); 
+          }
+          if (x.height) {
+            var h = parseInt(x.height,10);
+            if (h < 10 || h > 1000) errorThrow('widget height outside allowed range [10 - 1000]'); 
+          }
+        }
+      },
+
+      icons: {
+        may_overlay: true,
+        check: function (x) {
+          if (typeof x !== 'object') errorThrow();
+          for (var k in x) {
+            if (!x.hasOwnProperty(k)) continue;
+            if (typeof x[k] !== 'string') errorThrow(undefined, k);
+            if (x[k].indexOf('..') != -1) errorThrow(undefined, k);
+          }
+        }
+      },
+      installs_allowed_from: {
+        check: function(x) {
+          if (!x || typeof x !== 'object' || x.constructor !== Array) errorThrow("expected array of urls");
+          for (var i = 0; i < x.length; i++) {
+            var path;
+            try {
+              path = URLParse(x[i]).validate().path;
+            } catch (e) {
+              errorThrow(e, i)
+            }
+            // XXX: should this be a warning?  (in other news, should we invent a way to
+            // convey warnings to client code?)
+            if (path && path.length > 1) {
+              errorThrow("path on url is meaningless here", i);
+            }
+          }
+        },
+        normalize: function(o) {
+          var n = [];
+          for (var i = 0; i < o.length; i++) {
+            n.push(URLParse(o[i]).normalize().toString());
+          }
+          return n;
+        }
+      },
+      launch_path: {
+        may_overlay: true,
+        check: function (x) {
+          if (typeof x !== 'string' || x.indexOf("..") !== -1) errorThrow();
+        },
+        normalize: function(x) {
+          // XXX: can/should we do better normalization than this??
+          return ((x.length > 0) ? x : undefined);
+        }
+      },
+      locales: {
+        check: function (l) {
+          // XXX: we really need a robust parser for language tags
+          // to do this correctly:
+          // http://www.rfc-editor.org/rfc/bcp/bcp47.txt
+          if (typeof l !== 'object') errorThrow();
+          for (var tag in l) {
+            if (!l.hasOwnProperty(tag)) continue;
+            // XXX: parse and validate language tag (for real)
+            if (typeof tag !== 'string' || tag.length == 0) errorThrow();
+            if (typeof l[tag] !== 'object') errorThrow();
+
+            // now l[tag] is a locale specific overlay, which is basically
+            // a manifest in its own right.  We'll go validate that.  By passing
+            // true as the second arg ot validateManifestProperties we restrict
+            // allowed manifest fields to only those which may be overlaid. 
+            try {
+              validateManifestProperties(l[tag], true);
+            } catch (e) {
+              e.path.unshift(tag);
+              throw e;
+            }
+          }
+        }
+      },
+      manifest_name: {
+        check: function (x) {
+          if (typeof x === 'string') {
+            // See RFC 3986 'segment' production for discussion of allowed chars in manfest_name
+            if (x.length === 0) errorThrow("blank value not allowed");
+            else if (!/^[A-Za-z0-9\-\._~!\$&\'\(\)\*\+\,\;\=\:\@\%]+$/.test(x))
+              errorThrow("invalid characters present");
+          } else {
+            // non-strings not allowed
+            errorThrow();
+          }
+        }
+      },
+      manifest_version: {
+        required: true,
+        check: function (x) {
+          if (!((typeof x === 'string') && /^\d+.\d+$/.test(x))) errorThrow();
+          if (x !== '0.2') errorThrow("unsupported manifest version: " + x + " (expected 0.2)");
+        }
+      },
+      name: {
+        may_overlay: true,
+        required: true,
+        check: nonEmptyStringCheck
+      },
+      experimental: {
+        required: false
+      }
+    };
+
+    // a function to extract nested values given an object and array of property names
+    function extractValue(obj, props) {
+      return ((props.length === 0) ? obj : extractValue(obj[props[0]], props.slice(1)));
     }
+
+    // a function that will validate properties of a manfiest using the
+    // manfProps data structure above.
+    // returns a normalized version of the manifest, throws upon
+    // detection of invalid properties
+    function validateManifestProperties(manf, onlyOverlaidFields) {
+      var normalizedManf = {};
+      for (var prop in manf) {
+        if (!manf.hasOwnProperty(prop)) continue;
+        if (!(prop in manfProps)) errorThrow('unsupported property', prop);
+        var pSpec = manfProps[prop];
+        if (onlyOverlaidFields && !pSpec.may_overlay) {
+          errorThrow('may not be overridded per-locale', prop);
+        }
+        if (typeof pSpec.check === 'function') {
+          try {
+            pSpec.check(manf[prop]);
+          } catch (e) {
+            e.path.unshift(prop);
+            if (!e.msg) e.msg = 'invalid value: ' + extractValue(manf, e.path);
+            console.log(e);
+            throw e;
+          }
+        }
+        if (typeof pSpec.normalize === 'function') {
+          normalizedManf[prop] = pSpec.normalize(manf[prop]);
+          // special case.  a normalization function can remove properties by
+          // returning undefined.
+          if (normalizedManf[prop] === undefined) delete normalizedManf[prop];
+        } else {
+          normalizedManf[prop] = manf[prop];
+        }
+      }
+      return normalizedManf;
+    }
+
+    // iterate through required properties, and verify they're present
+    for (var prop in manfProps) {
+      if (!manfProps.hasOwnProperty(prop) || !manfProps[prop].required) continue;
+      if (!(prop in manf)) {
+        errorThrow('missing "' + prop + '" property');
+      }
+    }
+
+    return validateManifestProperties(manf, false);
+  }
+
+  return {
+    validate: validate
+  }
 })();
