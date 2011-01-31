@@ -108,9 +108,22 @@
       },
       capabilities: {
         check: function(x) {
+          function isArray(o) {
+            return (o && typeof(o) === 'object' && o instanceof Array &&
+                    o.length && typeof o.length === 'number');
+          }
           if (!x || typeof x !== 'object') errorThrow();
-          for (var i = 0; i < x.length; i++) {
-            if (typeof x[i] !== 'string') errorThrow(undefined, [i]);
+          if (isArray(x)) {
+            errorThrow("must be a javascript object, not an array");
+          }
+          // we know that capabilities is an object, objects by definition have
+          // string properties.  At this point we can iterate over requested
+          // capabilities and validate them.
+          for (var c in x) {
+            if (!x.hasOwnProperty(c)) continue;
+            // now 'c' holds the capability key and x[c] holds the capability
+            // value.
+            // XXX: validate?  how?
           }
         }
       },
