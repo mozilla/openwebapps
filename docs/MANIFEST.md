@@ -22,10 +22,10 @@ For a discussion of the security and privacy considerations around the applicati
 
       "base_url": "https://mozillaball.mozillalabs.com/",
 
-      "capabilities": [
-        "geolocation",
-        "navigation_consolidation"
-      ],
+      "capabilities": {
+        "geolocation": true,
+        "navigation_consolidation": true
+      },
 
       "icons": {
         "16": "icon-16.png",
@@ -76,7 +76,7 @@ For detailed technical discussion of the manifest, please visit [the wiki](http:
 
 * [**launch_path**](http://wiki.mozilla.org/Labs/Apps/Manifest#launch_path): (optional) The path that is appended to base_url to create the *launch URL* for the application, which is the page that is loaded when the application starts.  If empty or not provided, the base_url will be treated as the *launch URL*.
 
-* [**capabilities**](http://wiki.mozilla.org/Labs/Apps/Manifest#capabilities): (optional) a list of strings describing advanced web browser capabilities that the application requests.  Browser-native application repositories should prompt the user for permission to use these capabilities at installation time; the user is free to deny access to any or all of these permission requests, but this may cause the application to behave incorrectly.
+* [**capabilities**](http://wiki.mozilla.org/Labs/Apps/Manifest#capabilities): (optional) an object which expresses advanced web browser capabilities desired by the application.  UAs with native support for openwebapps should prompt the user for permission to grant these capabilities at installation time; the user is free to deny access to any or all of these permission requests, but this may cause the application to behave incorrectly.
 
 * [**icons**](http://wiki.mozilla.org/Labs/Apps/Manifest#icons): (optional) a map of icon sizes to URLs, which are interpreted relative to the base_url, which should contain square images suitable for use as application icons.  data URLs are legal in this field.
 
