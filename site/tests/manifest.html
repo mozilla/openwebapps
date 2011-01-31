@@ -22,7 +22,6 @@ normalization of manifests.  This page tests and demonstrates its functioning.
 
 <pre class="doctest">
 $ writeln(null !== Manifest.validate({
->   manifest_version: "0.2",
 >   name: "SimplestPossibleManifest",
 >   base_url: "http://simple.mozillalabs.com/",
 >   default_locale: "en",
@@ -48,16 +47,7 @@ Error: missing "default_locale" property
 <pre class="doctest">
 $ writeln(null !== Manifest.validate({
 >   base_url: "http://simple.mozillalabs.com/",
->   default_locale: "en"
-> }));
-Error: missing "manifest_version" property
-</pre>
-
-<pre class="doctest">
-$ writeln(null !== Manifest.validate({
->   base_url: "http://simple.mozillalabs.com/",
 >   default_locale: "en",
->   manifest_version: "0.2"
 > }));
 Error: missing "name" property
 </pre>
@@ -66,34 +56,14 @@ Error: missing "name" property
 $ writeln(null !== Manifest.validate({
 >   base_url: "http://simple.mozillalabs.com/",
 >   default_locale: "en",
->   manifest_version: "0.2",
 >   name: "AManifestBooYah"
 > }));
 true
 </pre>
 
-<h3>Property: version</h3>
-<pre class="doctest">
-$ var m = {
->   manifest_version: "0.2",
->   name: "SimplestPossibleManifest",
->   base_url: "http://simple.mozillalabs.com/",
->   default_locale: "en",
-> };
-> writeln(null !== Manifest.validate(m));
-true
-$ m.manifest_version = "1"
-> Manifest.validate(m);
-Error: (manifest_version) invalid value: 1
-$ m.manifest_version = ".1"
-> Manifest.validate(m);
-Error: (manifest_version) invalid value: .1
-</pre>
-
 <h3>Property: name</h3>
 <pre class="doctest">
 $ var m = {
->   manifest_version: "0.2",
 >   name: "SimplestPossibleManifest",
 >   base_url: "http://simple.mozillalabs.com/",
 >   default_locale: "en",
@@ -117,7 +87,6 @@ true
 <h3>Property: base_url</h3>
 <pre class="doctest">
 $ var m = {
->   manifest_version: "0.2",
 >   name: "SimplestPossibleManifest",
 >   base_url: "http://simple.mozillalabs.com/",
 >   default_locale: "en",
@@ -150,7 +119,6 @@ XXX: we need to validate locale tag syntax.  there's an rfc for that.
 
 <pre class="doctest">
 $ var m = {
->   manifest_version: "0.2",
 >   name: "SimplestPossibleManifest",
 >   base_url: "http://simple.mozillalabs.com/",
 >   default_locale: "en",
@@ -171,7 +139,6 @@ true
 
 <pre class="doctest">
 $ var m = {
->   manifest_version: "0.2",
 >   name: "SimplestPossibleManifest",
 >   description: "Well, not the simplest *possible*, really",
 >   base_url: "http://simple.mozillalabs.com/",
@@ -194,7 +161,6 @@ true
 
 <pre class="doctest">
 $ var m = {
->   manifest_version: "0.2",
 >   name: "SimplestPossibleManifest",
 >   description: "Well, not the simplest *possible*, really",
 >   base_url: "http://mozillalabs.com/simple/",
@@ -221,7 +187,6 @@ true
 
 <pre class="doctest">
 $ var m = {
->   manifest_version: "0.2",
 >   name: "SimplestPossibleManifest",
 >   capabilities: ["a", "b", "c", "d" ],
 >   base_url: "http://mozillalabs.com/simple/",
@@ -244,7 +209,6 @@ true
 
 <pre class="doctest">
 $ var m = {
->   manifest_version: "0.2",
 >   name: "SimplestPossibleManifest",
 >   icons: {
 >     16:  "images/icon_16.png",
@@ -274,7 +238,6 @@ Error: (icons/16) invalid value:
 
 <pre class="doctest">
 $ var m = {
->   manifest_version: "0.2",
 >   name: "SimplestPossibleManifest",
 >   developer: {
 >     name: "Mozilla Labs, yay!",
@@ -297,7 +260,6 @@ Error: (developer/url) invalid value: null
 
 <pre class="doctest">
 $ var m = {
->   manifest_version: "0.2",
 >   name: "SimplestPossibleManifest",
 >   developer: {
 >     name: "Mozilla Labs, yay!",
@@ -325,7 +287,6 @@ Error: (locales/es/capabilities) may not be overridded per-locale
 
 <pre class="doctest">
 $ var m = {
->   manifest_version: "0.2",
 >   name: "SimplestPossibleManifest",
 >   base_url: "http://mozillalabs.com/simple/",
 >   default_locale: "en",
@@ -353,7 +314,6 @@ $ // normalization test
 
 <pre class="doctest">
 $ var m = {
->   manifest_version: "0.2",
 >   name: "SimplestPossibleManifest",
 >   base_url: "http://mozillalabs.com/simple/",
 >   default_locale: "en",
@@ -373,7 +333,6 @@ Error: (manifest_name) blank value not allowed
 
 <pre class="doctest">
 $ var m = {
->   manifest_version: "0.2",
 >   name: "SimplestPossibleManifest",
 >   base_url: "http://simple.mozillalabs.com/",
 >   default_locale: "en",

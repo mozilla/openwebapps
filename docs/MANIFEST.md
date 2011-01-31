@@ -1,4 +1,4 @@
-### The Application Manifest v0.2
+### The Application Manifest
 
 See also the [wiki page on Application Manifests](http://wiki.mozilla.org/Labs/Apps/Manifest).
 
@@ -15,8 +15,6 @@ For a discussion of the security and privacy considerations around the applicati
 #### An Example Manifest
 
     {
-      "manifest_version": "0.2",
-
       "version": "1.0",
 
       "name": "MozillaBall",
@@ -65,8 +63,6 @@ For a discussion of the security and privacy considerations around the applicati
 #### Discussion of the fields
 
 For detailed technical discussion of the manifest, please visit [the wiki](http://wiki.mozilla.org/Labs/Apps/Manifest).  Informally, the meanings of the fields are:
-
-* [**manifest_version**](http://wiki.mozilla.org/Labs/Apps/Manifest#name): The version of this specification that a manifest conforms to.
 
 * [**name**](http://wiki.mozilla.org/Labs/Apps/Manifest#name): A human-readable name for the application.
 

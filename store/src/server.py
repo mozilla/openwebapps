@@ -367,7 +367,6 @@ class XRDSHandler(WebHandler):
 
 
 TaskTrackerApp = {
-  "manifest_version": "0.2",
   "default_locale": "en-US",
   "name":"Task Tracker", 
   "description":"Manage tasks with ease using this flexible task management application.\n\nCreate To Do lists or manage complex hierarchical tasks chains.\n\nIntegrates with many web-based calendars and notification systems.\n\n(Not really, this is only a demo)",
