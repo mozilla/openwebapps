@@ -97,7 +97,7 @@
         check: function(x) {
           function isArray(o) {
             return (o && typeof(o) === 'object' && o instanceof Array &&
-                    o.length && typeof o.length === 'number');
+                    o.length != undefined && typeof o.length === 'number');
           }
           if (!x || typeof x !== 'object') errorThrow();
           if (isArray(x)) {
@@ -142,6 +142,7 @@
           if (typeof x !== 'object') errorThrow();
           for (var k in x) {
             if (!x.hasOwnProperty(k)) continue;
+            if (!k.match(/^[1-9][0-9]*$/)) errorThrow("invalid property name (must be a numeric pixel size): " + k);
             if (typeof x[k] !== 'string') errorThrow(undefined, k);
             if (x[k].indexOf('..') != -1) errorThrow(undefined, k);
           }
@@ -257,7 +258,6 @@
           } catch (e) {
             e.path.unshift(prop);
             if (!e.msg) e.msg = 'invalid value: ' + extractValue(manf, e.path);
-            console.log(e);
             throw e;
           }
         }
