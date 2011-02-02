@@ -93,23 +93,6 @@
     //     path: an array of properties that describes which field has the error
     //
     var manfProps = {
-      base_url: {
-        required: true,
-        check: function (x) {
-          if (typeof x !== 'string') errorThrow();
-          try {
-            // will throw if the url is invalid
-            var p = URLParse(x).validate().normalize().path;
-            // urls must end with a slash
-            if (!p.length || p[p.length - 1] != '/') throw "trailing slash required";
-          } catch(e) {
-            errorThrow(e);
-          }
-        },
-        normalize: function(x) {
-          return URLParse(x).normalize().toString();
-        }
-      },
       capabilities: {
         check: function(x) {
           function isArray(o) {
@@ -221,19 +204,6 @@
               e.path.unshift(tag);
               throw e;
             }
-          }
-        }
-      },
-      manifest_name: {
-        check: function (x) {
-          if (typeof x === 'string') {
-            // See RFC 3986 'segment' production for discussion of allowed chars in manfest_name
-            if (x.length === 0) errorThrow("blank value not allowed");
-            else if (!/^[A-Za-z0-9\-\._~!\$&\'\(\)\*\+\,\;\=\:\@\%]+$/.test(x))
-              errorThrow("invalid characters present");
-          } else {
-            // non-strings not allowed
-            errorThrow();
           }
         }
       },
