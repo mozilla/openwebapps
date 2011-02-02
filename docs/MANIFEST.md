@@ -8,7 +8,7 @@ The Manifest is encoded inside a file as a JSON data structure, and a url to tha
 
 When an application is self-published the application developer triggers application installation in a page that he controls (see API documentation around `navigator.apps.install()`).  When a store or curated directory publishes an application, they trigger application installation by providing a url to the manifest of the hosted application.
 
-For detailed description of the manifest, and discussion of its design, visit [the wiki](http://wiki.mozilla.org/Labs/Apps/Manifest).  (Note that the design of the manifest is intended to build on and comment on existing work by Google on [hosted web application manifests](http://code.google.com/chrome/apps/docs/developers_guide.html#live); please see the wiki for more in-depth discussion)
+For a detailed description of the manifest, and discussion of its design, visit [the wiki](http://wiki.mozilla.org/Labs/Apps/Manifest).  (Note that the design of the manifest is intended to build on and comment on existing work by Google on [hosted web application manifests](http://code.google.com/chrome/apps/docs/developers_guide.html#live); please see the wiki for more in-depth discussion)
 
 For a discussion of the security and privacy considerations around the application manifest, please see [Security and Privacy Considerations](security.html).  In particular, for a discussion of using digital signatures to create tamper-evident manifests, see [the wiki](http://wiki.mozilla.org/Labs/Apps/Manifest#Signatures).
 
@@ -66,11 +66,11 @@ For detailed technical discussion of the manifest, please visit [the wiki](http:
 
 * [**description**](http://wiki.mozilla.org/Labs/Apps/Manifest#description): (optional) A human-readable description of the application.
 
-* [**launch_path**](http://wiki.mozilla.org/Labs/Apps/Manifest#launch_path): (optional) The path within the application's origin which is loaded when an application starts.  If empty or not provided, the origin will be treated as the *launch URL*.
+* [**launch_path**](http://wiki.mozilla.org/Labs/Apps/Manifest#launch_path): (optional) The path within the application's origin which is loaded when an application starts.  If empty or not provided, the application's origin will be treated as the launch URL.
 
-* [**capabilities**](http://wiki.mozilla.org/Labs/Apps/Manifest#capabilities): (optional) an object which expresses advanced web browser capabilities desired by the application.  UAs with native support for openwebapps should prompt the user for permission to grant these capabilities at installation time; the user is free to deny access to any or all of these permission requests, but this may cause the application to behave incorrectly.
+* [**capabilities**](http://wiki.mozilla.org/Labs/Apps/Manifest#capabilities): (optional) an object which expresses advanced web browser capabilities desired by the application.  UAs with native support for openwebapps should prompt the user for permission to grant these capabilities at installation time.
 
-* [**icons**](http://wiki.mozilla.org/Labs/Apps/Manifest#icons): (optional) a map of icon sizes to URLs, which are interpreted relative to the base_url, which should contain square images suitable for use as application icons.  data URLs are legal in this field.
+* [**icons**](http://wiki.mozilla.org/Labs/Apps/Manifest#icons): (optional) a map of icon sizes to URLs, which are interpreted relative to the base_url, which should contain square images suitable for use as application icons.  Data URLs are legal values in this object.
 
 * [**developer**](http://wiki.mozilla.org/Labs/Apps/Manifest#developer): (optional) information about the developer of the application, suitable for use in repository and dashboard UIs
 
@@ -78,17 +78,17 @@ For detailed technical discussion of the manifest, please visit [the wiki](http:
 
     * [**url**](http://wiki.mozilla.org/Labs/Apps/Manifest#developer.url): the URL of a site containing more information about the application's developer.  This URL is typically rendered when the user clicks on the name of the application's developer while viewing details about an application inside the dashboard (or browser).
 
-* [**locales**](http://wiki.mozilla.org/Labs/Apps/Manifest#locales): (optional) a map of local-specific overrides on the data contained in the manifest, which UIs should use to provide localized views.  Each locale entry is keyed on a [locale tag](http://www.ietf.org/rfc/rfc4646.txt), and contains a sparse representation of the manifest; any field that is present in the locale value should override the matching field in the manifest.   Certain fields may not be overridden, including capabilities, default_locale, locales itself, and installs_allowed_from; a manifest that overrides any of these fields is invalid.
+* [**locales**](http://wiki.mozilla.org/Labs/Apps/Manifest#locales): (optional) a map of local-specific overrides on the data contained in the manifest, which UIs should use to provide localized views.  Each locale entry is keyed on a [locale tag](http://www.ietf.org/rfc/rfc4646.txt), and contains a sparse representation of the manifest; any field that is present in the locale value should override the matching field in the manifest.   Certain fields may not be overridden, including *capabilities*, *default_locale*, *locales* itself, and *installs_allowed_from*; a manifest that overrides any of these fields is invalid.
 
 * [**default_locale**](http://wiki.mozilla.org/Labs/Apps/Manifest#default.locale): The locale tag for the "default" translation of manifest properties.  That is, the locale of values outside of the locales map.  The presence of this key makes it possible to enumerate the locales supported by a manifest.
 
-* [**installs_allowed_from**](http://wiki.mozilla.org/Labs/Apps/Manifest#installs.allowed.from): (optional) An array of origins (scheme + host + port) that should be allowed to trigger installation of this application.  This field gives the host of an application control over who may offer the application for installation, and must be respected by the application repository (eventually, the user agent).  If omitted, installation may only be triggered from the origin where the application is hosted.  This field allows developers hosting their applications to explicitly delegate installation privileges to sites or stores with whom they have a relationship.
+* [**installs_allowed_from**](http://wiki.mozilla.org/Labs/Apps/Manifest#installs.allowed.from): (optional) An array of origins that should be allowed to trigger installation of this application.  This field allows developers hosting their applications to explicitly delegate installation privileges to sites or stores with whom they have a relationship, and must be respected by the application repository (eventually, the user agent).  If omitted, installation may only be triggered from the origin where the application is hosted.
 
 * [**version**](http://wiki.mozilla.org/Labs/Apps/Manifest#version): (optional) A string that represents the version of the application.  The repository doesn't use this value in any way, but developers may embed this string into the manifest and extract it to help deal with various update cases.  See the section on updating, below.
 
 #### Serving Manifests
 
-Manifests SHOULD be contained in files with an extension of `.webapp`.  Web application manifests MUST be served with a `Content-Type` header of `application/x-web-app-manifest+json`.  Manifests MAY be served over SSL to mitigate certain classes of attacks.  Finally, 
+Manifests SHOULD be contained in files with an extension of `.webapp`.  Web application manifests MUST be served with a `Content-Type` header of `application/x-web-app-manifest+json`.  Manifests MAY be served over SSL to mitigate certain classes of attacks.
 
 The document is expected to be UTF-8, but another encoding can be specified with a `charset` parameter on the `Content-Type` header (i.e. `Content-Type: application/x-web-app-manifest+json; charset=ISO-8859-4`).
 
