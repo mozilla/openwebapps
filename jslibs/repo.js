@@ -84,10 +84,10 @@
                 try {
                   callback(aKey, install);
                 } catch (e) {
-                  console.log("Error inside iterateApps callback: " + e);
+                  // console.log("Error inside iterateApps callback: " + e);
                 }
             } catch (e) {
-                logError("invalid application detected: " + e);
+                // logError("invalid application detected: " + e);
                 toRemove.push(aKey);
             }
         }
