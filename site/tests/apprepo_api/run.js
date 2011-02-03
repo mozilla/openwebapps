@@ -118,12 +118,13 @@ function createServer(port) {
             return;
           }
 
-          // determine content type.  all text/ types will get hostnames replaced
           var exts = {
             ".js":   "text/javascript",
             ".css":  "text/css",
-            ".html": "text/html"
+            ".html": "text/html",
+            ".webapp": "application/x-web-app-manifest+json"
           };
+
           var ext = path.extname(filename);
           var mimeType = (exts[ext]) ? exts[ext] : "application/unknown";
 
