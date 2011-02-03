@@ -194,21 +194,7 @@
         var manifestToInstall;
         var installOrigin = origin;
 
-        if (args.manifest) {
-            // this is a "direct install", which is currently only recommended
-            // for developers.  We display a strongly-worded warning message
-            // to scare users off.
-
-            // Validate and clean the request
-            try {
-                manifestToInstall = Manifest.validate(args.manifest);
-                promptDisplayFunc(installOrigin, manifestToInstall, installConfirmationFinish,
-                                  { isExternalServer: true });
-
-            } catch(e) {
-                cb({error: ["invalidManifest", "couldn't validate your manifest: " + e]});
-            }
-        } else if (args.url) {
+        if (args.url) {
             // contact our server to retrieve the URL
             fetchManifestFunc(args.url, function(fetchedManifest) {
                 if (!fetchedManifest) {
@@ -222,15 +208,7 @@
                     }
                     try {
                         manifestToInstall = Manifest.validate(fetchedManifest);
-
-                        // Security check: Does this manifest's calculated manifest URL match where
-                        // we got it from?
-                        var expectedURL = manifestToInstall.base_url + (manifestToInstall.manifest_name ? manifestToInstall.manifest_name : "manifest.webapp");
-                        var isExternalServer = (expectedURL != args.url);
-
-                        promptDisplayFunc(installOrigin, manifestToInstall, installConfirmationFinish,
-                                          { isExternalServer: isExternalServer });
-
+                        promptDisplayFunc(installOrigin, manifestToInstall, installConfirmationFinish);
                     } catch(e) {
                         cb({error: ["invalidManifest", "couldn't validate your manifest: "]});
                     }
@@ -238,7 +216,7 @@
             });
         } else {
             // neither a manifest nor a URL means we cannot proceed.
-            cb({error: [ "missingManifest", "install requires a url or manifest argument" ]});
+            cb({error: [ "missingManifest", "install requires a url argument" ]});
         }
     };
 

@@ -654,35 +654,26 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
         function callInstall(args) {
             setupWindow();
             if (!args) { args = {}; }
+            else {
+                if (typeof(args) !== 'object')  throw "parameter to install() must be an object";
+                for (var k in args) {
+                    if (!args.hasOwnProperty(k)) continue;
+                    if (k !== "install_data" && k !== "url" && k != "callback") {
+                        throw "unsupported argument: " + k;
+                    }
+                }
+            }
             chan.call({
                 method: "install",
                 params: {
-                    manifest: args.manifest, // optional
-                    url: args.url,           // optional
-                    authorization_url: args.authorization_url || null,
-                    session: args.session || false,
+                    url: args.url,
+                    install_data: args.install_data || null // optional
                 },
                 error: function(error, message) {
                     // XXX we need to relay this to the client
                     if (typeof console !== "undefined") console.log( " installation failed: "  + error + " - " + message);
                 },
                 success: function(v) {
-                    if (args.callback) args.callback(v);
-                }
-            });
-        }
-
-        function callVerify(args) {
-            setupWindow();
-            chan.call({
-                method: "verify",
-                error: function(error, message) {
-                    // XXX we need to relay this to the client
-                    if (typeof console !== "undefined") console.log( " couldn't begin verification: "  + error + " - " + message);
-                },
-                success: function(v) {
-                    // XXX: what's the utility of this callback?  it depends on
-                    // verification flow
                     if (args.callback) args.callback(v);
                 }
             });
@@ -814,7 +805,6 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
         // Return AppClient object with exposed API calls
         return {
             install: callInstall,
-            verify: callVerify,
             getInstalled: callGetInstalled,
             getInstalledBy: callGetInstalledBy,
             mgmt: {

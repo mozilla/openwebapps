@@ -36,11 +36,9 @@ in the API:
 
 The installation API is exposed as properties on the `navigator.apps` object.
 
-*   `install({ manifest: <manifest object> , [  authorization_url: <url> ], [ signature: <sig> ], callback: <function> }):`
+*   `install({ url: <url to manifest> , [ install_data: <object> ], callback: <function> }):`
 
     Prompts the user for confirmation of the manifest, possibly checking the installation and application domains against a registry of known malware sites.  If the user consents, the manifest is installed into the repository, along with the hostname of the installing site and a timestamp.  If the installing site does not use SSL, the user will be strongly discouraged from installing the application.   When the installation flow is completed with success or failure, the installing website is notified through the callback.
-
-     The optional authorization_url and signature fields are persisted into local storage along with the manifest, as part of the installation. ([wiki](http://wiki.mozilla.org/Labs/Apps/MyApps#install))
 
 *   `getInstalled( <callback> ):`
 
@@ -49,10 +47,6 @@ The installation API is exposed as properties on the `navigator.apps` object.
 *   `getInstalledBy( <callback> ):`
 
     returns, through the callback, the applications that were installed by the calling domain.  This allows an application directory or store to determine if an application is already installed, during browsing. ([wiki](http://wiki.mozilla.org/Labs/Apps/MyApps#getInstalledBy))
-
-*   `verify ( [<return-to>], <callback> ):`
-
-    selects the application whose URL matches the calling site, and initiates the verification flow for that application by loading the authorizationURL of the application.  <!-- FIXME: what happens when more than one matches? --> See [The Verification Flow](verification.html). ([wiki](http://wiki.mozilla.org/Labs/Apps/MyApps#verify))
 
 <!-- FIXME: probably some simple example is called for here? Or link to some examples page on wiki -->
 

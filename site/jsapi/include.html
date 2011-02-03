@@ -204,7 +204,7 @@ body
 </div>
 <script>
 
-function displayInstallPrompt(originHostname, manifest, clientCB, options) {
+function displayInstallPrompt(originHostname, manifest, clientCB) {
   // whenever client's callback is invoked, we should first cleanup (and hide the dialog)
   cb = function(r) {
     delete document.getElementById("installButton").onclick;
@@ -239,9 +239,6 @@ function displayInstallPrompt(originHostname, manifest, clientCB, options) {
     }
     document.getElementById("appicon").src = icon;
 
-  }
-  if (options.isExternalServer) {
-    document.getElementById("warnings").innerHTML = "This application definition is <b>not provided by the application</b>.";
   }
 
   // now that the content is setup, message untrusted javascript to display us
