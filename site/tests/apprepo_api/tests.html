@@ -41,7 +41,7 @@ $ navigator.apps.mgmt.list(function(l) {
 >  var total = l.length;
 >  finished = (total === 0);
 >  for (var i = 0; i < l.length; i++) {
->    navigator.apps.mgmt.remove(l[i].id, function(r) {
+>    navigator.apps.mgmt.remove(l[i].origin, function(r) {
 >      finished = (--total === 0);
 >    });
 >  }
@@ -63,13 +63,17 @@ apps.install(true)
 $ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true, wrapArgs: true}));
 apps.mgmt.list([
   {
-...
+    installTime: ...,
     installURL: "http://127.0.0.1:...",
-...
-    name: "Super Crazy Basic App"
+    manifest: {
+      default_locale: "en",
+      name: "Super Crazy Basic App"
+    },
+    origin: "http://127.0.0.1:..."
   }
 ])
 </pre>
+
 
   <button onclick="doctest()" type="button">Test all</button>
 

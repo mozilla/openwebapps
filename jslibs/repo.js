@@ -80,14 +80,14 @@
 
             try {
                 var install = appStorage.get(aKey);
-                install.app = Manifest.validate(install.app);
+                install.manifest = Manifest.validate(install.manifest);
                 try {
                   callback(aKey, install);
                 } catch (e) {
-                  // console.log("Error inside iterateApps callback: " + e);
+                  console.log("Error inside iterateApps callback: " + e);
                 }
             } catch (e) {
-                // logError("invalid application detected: " + e);
+                console.log("invalid application detected: " + e);
                 toRemove.push(aKey);
             }
         }
@@ -168,21 +168,23 @@
         function installConfirmationFinish(allowed)
         {
             if (allowed) {
-                var key = manifestToInstall.base_url;
+                var key = origin;
                 if (manifestToInstall.launch_path) key += manifestToInstall.launch_path;
 
                 // Create installation data structure
                 var installation = {
-                    app: manifestToInstall,
+                    manifest: manifestToInstall,
+                    origin: origin,
                     installTime: new Date().getTime(),
                     installURL: installOrigin
                 };
 
-                if (args.authorization_url) {
-                    installation.authorizationURL = args.authorization_url;
+                if (args.install_data) {
+                    installation.install_data = args.install_data;
                 }
 
                 // Save - blow away any existing value
+                console.log(key);
                 appStorage.put(key, installation);
 
                 if (cb) cb(true);
@@ -264,37 +266,8 @@
     // JSON representation into what the client expects (allowing us to change
     // the internal representation as neccesary)
     function generateExternalView(key, item) {
-        // XXX: perhaps localization should happen here?  be sent as an argument
-        // to the list function?
-        var result = {
-            id: key,
-            installURL: item.installURL,
-            installTime: item.installTime,
-            launchURL: item.app.base_url + (item.app.launch_path ? item.app.launch_path : ""),
-        };
 
-        if (item.app && item.app.icons) result.icons = item.app.icons;
-        if (item.app && item.app.name) result.name = item.app.name;
-        if (item.app && item.app.description) result.description = item.app.description;
-        if (item.app && item.app.developer) result.developer = item.app.developer;
-        
-        if (item.app && item.app.widget) {
-          result.widgetURL = item.app.base_url + (item.app.widget.path ? item.app.widget.path : "");
-          
-          if (item.app.widget.width) {
-            result.widgetWidth = parseInt(item.app.widget.width,10);
-          }
-              
-          if (item.app.widget.height) {
-            result.widgetHeight = parseInt(item.app.widget.height,10);
-          }
-        }
-        
-        if (item.app.experimental) {
-          result.experimental = item.app.experimental;
-        }
-
-        return result;
+        return item;
     }
 
     function list() {
