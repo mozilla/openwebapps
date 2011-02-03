@@ -54,11 +54,13 @@ Delete all applications and then verify that list() yields no apps.
 
 <pre class="doctest">
 $ var finished = false;
-$ navigator.apps.mgmt.list(function(l) {
->  var total = l.length;
+$ navigator.apps.mgmt.list(function(m) {
+>  var total = 0;
+>  for (var k in m) if (m.hasOwnProperty(k)) total++;
 >  finished = (total === 0);
->  for (var i = 0; i < l.length; i++) {
->    navigator.apps.mgmt.remove(l[i].id, function(r) {
+>  for (var k in m) {
+>    if (!m.hasOwnProperty(k)) continue;
+>    navigator.apps.mgmt.remove(k, function(r) {
 >      finished = (--total === 0);
 >    });
 >  }
@@ -66,9 +68,8 @@ $ navigator.apps.mgmt.list(function(l) {
 $ wait(function() { return finished; });
 $ finished = false;
 $ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true}));
-apps.mgmt.list([])
+apps.mgmt.list({})
 </pre>
-
 
 <h3>Dashboard Storage</h3>
 

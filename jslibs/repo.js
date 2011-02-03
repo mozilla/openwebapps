@@ -266,14 +266,13 @@
     // JSON representation into what the client expects (allowing us to change
     // the internal representation as neccesary)
     function generateExternalView(key, item) {
-
         return item;
     }
 
     function list() {
-        var installed = [];
+        var installed = {};
         iterateApps(function(key, item) {
-            installed.push(generateExternalView(key, item));
+            installed[key] = item;
         });
         return installed;
     };

@@ -37,11 +37,13 @@ Delete all applications and then verify that list() yields no apps.
 
 <pre class="doctest">
 $ var finished = false;
-$ navigator.apps.mgmt.list(function(l) {
->  var total = l.length;
+$ navigator.apps.mgmt.list(function(m) {
+>  var total = 0;
+>  for (var k in m) if (m.hasOwnProperty(k)) total++;
 >  finished = (total === 0);
->  for (var i = 0; i < l.length; i++) {
->    navigator.apps.mgmt.remove(l[i].origin, function(r) {
+>  for (var k in m) {
+>    if (!m.hasOwnProperty(k)) continue;
+>    navigator.apps.mgmt.remove(k, function(r) {
 >      finished = (--total === 0);
 >    });
 >  }
@@ -49,7 +51,7 @@ $ navigator.apps.mgmt.list(function(l) {
 $ wait(function() { return finished; });
 $ finished = false;
 $ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true}));
-apps.mgmt.list([])
+apps.mgmt.list({})
 </pre>
 
 <h3>Install a basic application</h3>
@@ -61,8 +63,8 @@ $ navigator.apps.install(
 >   });
 apps.install(true)
 $ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true, wrapArgs: true}));
-apps.mgmt.list([
-  {
+apps.mgmt.list({
+  http://127.0.0.1:...: {
     installTime: ...,
     installURL: "http://127.0.0.1:...",
     manifest: {
@@ -71,8 +73,10 @@ apps.mgmt.list([
     },
     origin: "http://127.0.0.1:..."
   }
-])
+})
 </pre>
+
+<h3>Re-install that application with a </h3>
 
 
   <button onclick="doctest()" type="button">Test all</button>
