@@ -76,7 +76,30 @@ apps.mgmt.list({
 })
 </pre>
 
-<h3>Re-install that application with a </h3>
+<h3>Re-install that application with a different manifest</h3>
+
+this should be considered an "upgrade", because we may not have
+two manifests per origin.
+
+<pre class="doctest">
+$ navigator.apps.install(
+>   {url: SERVERS['basic_app'] + "/manifest2.webapp",
+>    callback: Spy('apps.install', {wait: true, ignoreThis: true})
+>   });
+apps.install(true)
+$ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true, wrapArgs: true}));
+apps.mgmt.list({
+  http://127.0.0.1:...: {
+    installTime: ...,
+    installURL: "http://127.0.0.1:...",
+    manifest: {
+      default_locale: "en",
+      name: "Wild and Crazy Basic App"
+    },
+    origin: "http://127.0.0.1:..."
+  }
+})
+</pre>
 
 
   <button onclick="doctest()" type="button">Test all</button>

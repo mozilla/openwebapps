@@ -210,7 +210,10 @@
                     }
                     try {
                         manifestToInstall = Manifest.validate(fetchedManifest);
-                        promptDisplayFunc(installOrigin, manifestToInstall, installConfirmationFinish);
+                        // if an app with the same origin is currently installed, this is an update
+                        var isUpdate = appStorage.has(installOrigin);
+                        promptDisplayFunc(installOrigin, manifestToInstall, isUpdate,
+                                          installConfirmationFinish);
                     } catch(e) {
                         cb({error: ["invalidManifest", "couldn't validate your manifest: "]});
                     }
@@ -221,11 +224,6 @@
             cb({error: [ "missingManifest", "install requires a url argument" ]});
         }
     };
-
-    function verify() {
-        // XXX: write me
-    }
-
 
     /** Determines which applications are installed for the origin domain */
     function getInstalled(origin) {
@@ -305,7 +303,6 @@
         getInstalled: getInstalled,
         getInstalledBy: getInstalledBy,
         loadState: loadState,
-        saveState: saveState,
-        verify: verify
+        saveState: saveState
     }
 })();
