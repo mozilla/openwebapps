@@ -1,0 +1,78 @@
+<html>
+<head>
+  <title>App Repo API Tests</title>
+  <script type="text/javascript" src="doctestjs/doctest.js"></script>
+  <link rel="stylesheet" type="text/css" href="doctestjs/doctest.css" />
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+</head>
+<body>
+<h2> App Repo API Tests </h2>
+
+<p>
+  These API tests run in a local environment provided by a test
+  server.  There are multiple local bound ports which coincide with
+  different running apps.  By including /servers.js from the test
+  server, window.SERVERS is populated with a map of server names
+  (directory names) to URL where that app can be accessed.
+</p>
+
+<div>
+  <button onclick="doctest()" type="button">Test all</button>
+  <pre id="doctestOutput"></pre>
+</div>
+
+<h3>Verify Testing Environment</h3>
+
+First let's ensure that the testing environment is sane...
+<pre class="doctest">
+$ var dirs = [];
+> for (var k in SERVERS) dirs.push(k);
+> dirs.sort();
+["_primary", "basic_app", "improper_headers", "json_sytax_error", "multiple_apps"]
+</pre>
+
+<h3>Clear All Apps</h3>
+
+Delete all applications and then verify that list() yields no apps.
+
+<pre class="doctest">
+$ var finished = false;
+$ navigator.apps.mgmt.list(function(l) {
+>  var total = l.length;
+>  finished = (total === 0);
+>  for (var i = 0; i < l.length; i++) {
+>    navigator.apps.mgmt.remove(l[i].id, function(r) {
+>      finished = (--total === 0);
+>    });
+>  }
+> });
+$ wait(function() { return finished; });
+$ finished = false;
+$ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true}));
+apps.mgmt.list([])
+</pre>
+
+<h3>Install a basic application</h3>
+
+<pre class="doctest">
+$ navigator.apps.install(
+>   {url: SERVERS['basic_app'] + "/manifest.webapp",
+>    callback: Spy('apps.install', {wait: true, ignoreThis: true})
+>   });
+$ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true, wrapArgs: true}));
+apps.mgmt.list([
+  {
+...
+  }
+])
+</pre>
+
+  <button onclick="doctest()" type="button">Test all</button>
+
+</body>
+<script type="text/javascript" src="/servers.js"></script>
+<script type="text/javascript" src="/jsapi/include.js"></script>
+<script type="text/javascript">
+  navigator.apps.setRepoOrigin(SERVERS['_primary']);
+</script>
+</html>
