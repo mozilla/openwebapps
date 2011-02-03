@@ -59,10 +59,14 @@ $ navigator.apps.install(
 >   {url: SERVERS['basic_app'] + "/manifest.webapp",
 >    callback: Spy('apps.install', {wait: true, ignoreThis: true})
 >   });
+apps.install(true)
 $ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true, wrapArgs: true}));
 apps.mgmt.list([
   {
 ...
+    installURL: "http://127.0.0.1:...",
+...
+    name: "Super Crazy Basic App"
   }
 ])
 </pre>
