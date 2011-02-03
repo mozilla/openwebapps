@@ -99,7 +99,6 @@ function createServer(port) {
     }
 
     var serveFile = function (filename) {
-      console.log("serving " + filename);
       path.exists(filename, function(exists) {
         if(!exists) {
           response.writeHead(404, {"Content-Type": "text/plain"});
