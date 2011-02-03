@@ -43,11 +43,9 @@ function createServer(port) {
 
     var filename = path.join(siteroot, url.parse(request.url).pathname);
 
-    // I'd like to use this to normalize HTML (optionally):
-    //   http://github.com/aredridel/html5
-    // Maybe turn it into XML/XHTML so it's easy to parse browser-side
+    // hook to fetch manifests for HTML5 repos
     var parsedURI = url.parse(request.url, true);
-    if (parsedURI.pathname == '/subreq') {
+    if (parsedURI.pathname == '/getmanifest') {
       var makeRequest = function (getURI) {
         getURI = url.parse(getURI);
         getURI.pathname = getURI.pathname || '/';
@@ -77,8 +75,8 @@ function createServer(port) {
           });
         });
       };
-      makeRequest(parsedURI.query.uri);
-      sys.puts("Proxy URL " + parsedURI.query.uri);
+      makeRequest(parsedURI.query.url);
+      sys.puts("Proxy URL " + parsedURI.query.url);
       return;
     }
 
