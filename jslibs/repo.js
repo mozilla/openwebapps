@@ -185,7 +185,6 @@
                 }
 
                 // Save - blow away any existing value
-                console.log(key);
                 appStorage.put(key, installation);
 
                 if (cb) cb(true);
