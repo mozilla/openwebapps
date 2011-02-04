@@ -69,6 +69,7 @@ apps.mgmt.list({
     install_url: "http://127.0.0.1:...",
     manifest: {
       default_locale: "en",
+      installs_allowed_from: ["*"],
       name: "Super Crazy Basic App"
     },
     origin: "http://127.0.0.1:..."
@@ -94,6 +95,7 @@ apps.mgmt.list({
     install_url: "http://127.0.0.1:...",
     manifest: {
       default_locale: "en",
+      installs_allowed_from: ["*"],
       name: "Wild and Crazy Basic App"
     },
     origin: "http://127.0.0.1:..."
@@ -109,7 +111,7 @@ apps.getInstalledBy([
   {
     install_time: ...,
     install_url: "http://127.0.0.1:...",
-    manifest: {default_locale: "en", name: "Wild and Crazy Basic App"},
+    manifest: {default_locale: "en", installs_allowed_from: ["*"], name: "Wild and Crazy Basic App"},
     origin: "http://127.0.0.1:..."
   }
 ])

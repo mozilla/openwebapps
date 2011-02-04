@@ -152,6 +152,7 @@
         check: function(x) {
           if (!x || typeof x !== 'object' || x.constructor !== Array) errorThrow("expected array of urls");
           for (var i = 0; i < x.length; i++) {
+            if (x[i] === '*') continue;
             var path;
             try {
               path = URLParse(x[i]).validate().path;
@@ -168,7 +169,8 @@
         normalize: function(o) {
           var n = [];
           for (var i = 0; i < o.length; i++) {
-            n.push(URLParse(o[i]).normalize().toString());
+            if (o[i] === '*') n.push(o[i]);
+            else n.push(URLParse(o[i]).normalize().toString());
           }
           return n;
         }

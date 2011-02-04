@@ -148,6 +148,21 @@
         return result;
     }
 
+    function mayInstall(installOrigin, manifestToInstall)
+    {
+        if (manifestToInstall && manifestToInstall.installs_allowed_from) {
+            var iaf = manifestToInstall.installs_allowed_from;
+            for (var i = 0; i < iaf.length; i++) {
+                console.log(iaf[i]);
+                if (iaf[i] === '*' || urlMatchesDomain(installOrigin, iaf[i])) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     // trigger application installation.
     //   origin -- the URL of the site requesting installation
     //   args -- the argument object provided by the calling site upon invocation of
@@ -211,8 +226,14 @@
                     try {
                         manifestToInstall = Manifest.validate(fetchedManifest);
 
+                        if (!mayInstall(installOrigin, manifestToInstall)) {
+                            cb({error: ["permissionDenied", "origin '" + installOrigin + "' may not install this app"]});
+                            return;
+                        }
+
                         // if an app with the same origin is currently installed, this is an update
                         var isUpdate = appStorage.has(installOrigin);
+
                         promptDisplayFunc(installOrigin, manifestToInstall, isUpdate,
                                           installConfirmationFinish);
                     } catch(e) {
