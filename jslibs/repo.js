@@ -140,7 +140,7 @@
         var result = [];
 
         iterateApps(function(key, item) {
-            if (urlMatchesDomain(item.installURL, origin)) {
+            if (urlMatchesDomain(item.install_url, origin)) {
                 result.push(item);
             }
         });

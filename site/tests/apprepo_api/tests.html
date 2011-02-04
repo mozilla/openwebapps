@@ -101,6 +101,27 @@ apps.mgmt.list({
 })
 </pre>
 
+<h3>We installed it, getInstalledBy should return it.</h3>
+
+<pre class="doctest">
+$ navigator.apps.getInstalledBy(Spy('apps.getInstalledBy', {wait: true, ignoreThis: true}));
+apps.getInstalledBy([
+  {
+    install_time: ...,
+    install_url: "http://127.0.0.1:...",
+    manifest: {default_locale: "en", name: "Wild and Crazy Basic App"},
+    origin: "http://127.0.0.1:..."
+  }
+])
+</pre>
+
+<h3>getInstalled should not.</h3>
+
+
+<pre class="doctest">
+$ navigator.apps.getInstalled(Spy('apps.getInstalled', {wait: true, ignoreThis: true}));
+apps.getInstalled([])
+</pre>
 
   <button onclick="doctest()" type="button">Test all</button>
 
