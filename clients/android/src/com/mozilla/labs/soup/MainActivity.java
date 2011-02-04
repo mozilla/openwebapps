@@ -66,23 +66,38 @@ public class MainActivity extends Activity implements OnClickListener {
     }
     
     protected void getAndShowApps(String uname, String paswd, String node) {
-    	String manifest = service.getManifest(uname, paswd, node);
-
-		if (manifest.equals("")) {
-			// authentication failed
-			Toast.makeText(this, R.string.invalidPassword, Toast.LENGTH_SHORT).show();
-			setContentView(R.layout.login_page);
-		} else if (manifest.equals("{}")) {
-			// empty manifest
-			System.out.println("Uh oh the manifest was empty!");
-			addUser(uname, paswd, node);
-			setContentView(R.layout.main_page);
-		} else {
-			// non empty manifest
-			System.out.println("Got a bunch of apps but let's see if JSON is valid");
-			addUser(uname, paswd, node);
-			showApps(service.parseManifest(manifest));
-		}
+    	class FetchManifestTask extends AsyncTask<String, Void, String[]> {
+    		protected String[] doInBackground(String... params) {
+    			String manifest = service.getManifest(params[0], params[1], params[2]);
+    			String[] result = {params[0], params[1], params[2], manifest};
+    			return result;
+    		}
+    		
+    		protected void onPostExecute(String[] result) {
+    			String manifest = result[3];
+    			
+    			if (manifest.equals("")) {
+    				// authentication failed
+    				Toast.makeText(MainActivity.this, R.string.invalidPassword, Toast.LENGTH_SHORT).show();
+    				setContentView(R.layout.login_page);
+    			} else if (manifest.equals("{}")) {
+    				// empty manifest
+    				System.out.println("Uh oh the manifest was empty!");
+    				addUser(result[0], result[1], result[2]);
+    				setContentView(R.layout.main_page);
+    			} else {
+    				// non empty manifest
+    				System.out.println("Got a bunch of apps but let's see if JSON is valid");
+    				addUser(result[0], result[1], result[2]);
+    				showApps(service.parseManifest(manifest));
+    			}
+    			
+    			spin.dismiss();
+    		}
+    	}
+    	
+    	spin = ProgressDialog.show(this, "", getString(R.string.loadingMessage), true);
+    	new FetchManifestTask().execute(uname, paswd, node);
     }
     
     @Override
