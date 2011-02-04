@@ -48,9 +48,10 @@
 *
 * The value of each entry is a serialized structure like this:
 * {
-*   app: { <application metadata> },
-*   installTime: <install timestamp, UTC milliseconds>,
-*   installURL: <the URL that invoked the install function>
+*   manifest: { <app manifest> },
+*   install_time: <install timestamp, UTC milliseconds>,
+*   install_url: <the URL that invoked the install function>
+*   origin: <the origin of the app>
 * }
 *
 */
@@ -175,8 +176,8 @@
                 var installation = {
                     manifest: manifestToInstall,
                     origin: origin,
-                    installTime: new Date().getTime(),
-                    installURL: installOrigin
+                    install_time: new Date().getTime(),
+                    install_url: installOrigin
                 };
 
                 if (args.install_data) {
@@ -210,6 +211,7 @@
                     }
                     try {
                         manifestToInstall = Manifest.validate(fetchedManifest);
+
                         // if an app with the same origin is currently installed, this is an update
                         var isUpdate = appStorage.has(installOrigin);
                         promptDisplayFunc(installOrigin, manifestToInstall, isUpdate,
@@ -227,33 +229,12 @@
 
     /** Determines which applications are installed for the origin domain */
     function getInstalled(origin) {
-        var installsResult = getInstallsForOrigin(origin);
-
-        // Caller doesn't get to see installs, just apps:
-        var result = [];
-        for (var i=0;i<installsResult.length;i++)
-        {
-            result.push(installsResult[i].app);
-        }
-
-        return result;
+        return getInstallsForOrigin(origin);
     };
 
     /** Determines which applications were installed by the origin domain. */
     function getInstalledBy(origin) {
-        var installsResult = getInstallsByOrigin(origin);
-        // Caller gets to see installURL, installTime, and manifest
-        var result = [];
-        for (var i=0;i<installsResult.length;i++)
-        {
-            result.push({
-                installURL: installsResult[i].installURL,
-                installTime: installsResult[i].installTime,
-                manifest: installsResult[i].app,
-            });
-        }
-
-        return result;
+        return getInstallsByOrigin(origin);
     };
 
     /* Management APIs for dashboards live beneath here */
