@@ -113,9 +113,8 @@
     }
 
     // Returns whether this application runs in the specified domain (scheme://hostname[:nonStandardPort])
-    function applicationMatchesDomain(application, domain)
+    function applicationMatchesDomain(testURL, domain)
     {
-        var testURL = application.base_url;
         if (urlMatchesDomain(testURL, domain)) return true;
         return false;
     }
@@ -126,7 +125,7 @@
         var result = [];
 
         iterateApps(function(key, item) {
-            if (applicationMatchesDomain(item.app, origin)) {
+            if (applicationMatchesDomain(item.origin, origin)) {
                 result.push(item);
             }
         });
@@ -153,7 +152,6 @@
         if (manifestToInstall && manifestToInstall.installs_allowed_from) {
             var iaf = manifestToInstall.installs_allowed_from;
             for (var i = 0; i < iaf.length; i++) {
-                console.log(iaf[i]);
                 if (iaf[i] === '*' || urlMatchesDomain(installOrigin, iaf[i])) {
                     return true;
                 }
@@ -190,7 +188,7 @@
                 // Create installation data structure
                 var installation = {
                     manifest: manifestToInstall,
-                    origin: origin,
+                    origin: appOrigin,
                     install_time: new Date().getTime(),
                     install_url: installOrigin
                 };
@@ -210,8 +208,19 @@
 
         var manifestToInstall;
         var installOrigin = origin;
+        var appOrigin = undefined;
 
         if (args.url) {
+            // extract the application origin from the manifest URL
+            try {
+              var u = URLParse(args.url);
+              u.path = u.query = u.anchor = undefined;
+              appOrigin = u.toString();
+            } catch(e) {
+              cb({error: ["manifestURLError", e.toString()]});
+              return;
+            }
+
             // contact our server to retrieve the URL
             fetchManifestFunc(args.url, function(fetchedManifest) {
                 if (!fetchedManifest) {
