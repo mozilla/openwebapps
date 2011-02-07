@@ -118,7 +118,7 @@
         Repo.install(t.origin, args, displayInstallPrompt, fetchManifest, function(r) {
             if (r === true) {
                 t.complete(r);
-            } else if (typeof r.error === 'array' && r.error.length === 2) {
+            } else if (typeof r.error === 'object' && typeof r.error.length === 'number' && r.error.length === 2) {
                 t.error(r.error[0], errorRepr(r.error[1]));
             } else {
                 t.error("internalError", "unknown internal error during install: " + errorRepr(r));

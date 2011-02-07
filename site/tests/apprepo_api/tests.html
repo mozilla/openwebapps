@@ -28,7 +28,7 @@ First let's ensure that the testing environment is sane...
 $ var dirs = [];
 > for (var k in SERVERS) dirs.push(k);
 > dirs.sort();
-["_primary", "basic_app", "improper_headers", "json_sytax_error", "multiple_apps"]
+["_primary", "basic_app", "json_syntax_error"]
 </pre>
 
 <h3>Clear All Apps</h3>
@@ -59,7 +59,7 @@ apps.mgmt.list({})
 <pre class="doctest">
 $ navigator.apps.install(
 >   {url: SERVERS['basic_app'] + "/manifest.webapp",
->    callback: Spy('apps.install', {wait: true, ignoreThis: true})
+>    onsuccess: Spy('apps.install', {wait: true, ignoreThis: true})
 >   });
 apps.install(true)
 $ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true, wrapArgs: true}));
@@ -85,7 +85,7 @@ two manifests per origin.
 <pre class="doctest">
 $ navigator.apps.install(
 >   {url: SERVERS['basic_app'] + "/manifest2.webapp",
->    callback: Spy('apps.install', {wait: true, ignoreThis: true})
+>    onsuccess: Spy('apps.install', {wait: true, ignoreThis: true})
 >   });
 apps.install(true)
 $ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true, wrapArgs: true}));
@@ -119,11 +119,22 @@ apps.getInstalledBy([
 
 <h3>getInstalled should not.</h3>
 
-
 <pre class="doctest">
 $ navigator.apps.getInstalled(Spy('apps.getInstalled', {wait: true, ignoreThis: true}));
 apps.getInstalled([])
 </pre>
+
+<h3>Installation of an app with a syntax error in manifest</h3>
+
+<pre class="doctest">
+$ navigator.apps.install(
+>   {url: SERVERS['json_syntax_error'] + "/manifest.webapp",
+>    onsuccess: Spy('apps.install.success', {wait: false, ignoreThis: true}),
+>    onerror: Spy('apps.install.error', {wait: true, ignoreThis: true})
+>   });
+apps.install.error({code: "manifestParseError", message: "couldn't parse manifest JSON from http://127.0.0.1:.../manifest.webapp"})
+</pre>
+
 
   <button onclick="doctest()" type="button">Test all</button>
 
