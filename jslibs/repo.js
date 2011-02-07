@@ -246,7 +246,7 @@
                         promptDisplayFunc(installOrigin, manifestToInstall, isUpdate,
                                           installConfirmationFinish);
                     } catch(e) {
-                        cb({error: ["invalidManifest", "couldn't validate your manifest: "]});
+                        cb({error: ["invalidManifest", "couldn't validate your manifest: " + e ]});
                     }
                 }
             });
