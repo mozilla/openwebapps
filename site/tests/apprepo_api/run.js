@@ -74,6 +74,17 @@ function createServer(port) {
             response.end();
           });
         });
+        siteRequest.socket.addListener('error', function(socketException){
+          if (socketException.errno === 61 /*ECONNREFUSED*/) {
+            sys.log('ECONNREFUSED: connection refused to '
+                    +request.socket.host
+                    +':'
+                    +request.socket.port);
+          } else {
+            sys.log(socketException);
+          }
+          fourOhFour(response);
+        });
       };
       makeRequest(parsedURI.query.url);
       sys.puts("Proxy URL " + parsedURI.query.url);
