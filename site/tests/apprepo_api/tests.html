@@ -263,28 +263,14 @@ apps.getInstalledBy([
 <h3>list should now contain two apps</h3>
 
 <pre class="doctest">
-$ navigator.apps.mgmt.list(Spy('list', {wait: true, wrapArgs: true}));
-list({
-  http://127.0.0.1:...: {
-    install_origin: "http://127.0.0.1:...",
-    install_time: ...,
-    manifest: {
-      default_locale: "en",
-      name: "An application which does not grant permission for any other origin to install it"
-    },
-    origin: "http://127.0.0.1:..."
-  },
-  http://127.0.0.1:...: {
-    install_origin: "http://127.0.0.1:...",
-    install_time: ...,
-    manifest: {
-      default_locale: "en",
-      installs_allowed_from: ["*"],
-      name: "Wild and Crazy Basic App"
-    },
-    origin: "http://127.0.0.1:..."
-  }
-})
+$ var spy = Spy('list');
+> navigator.apps.mgmt.list(function(apps) {
+>   var i = 0;
+>   for (var origin in apps) if (apps.hasOwnProperty(origin)) i++;
+>   spy.func(i);
+>  });
+> spy.wait();
+list(2)
 </pre>
 
 <h3>Verify mgmt permissions don't work off repo origin</h3>
