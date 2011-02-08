@@ -54,12 +54,12 @@ The installation API is exposed as properties on the `navigator.apps` object.
     **onerror** is an [error callback](#error-object) that will be invoked if the installation fails.  Possible error
     codes include:
 
-        * `denied` - if the user refuses to install the application
-        * `permissionDenied` - if the installing site is not allowed to trigger the installation
-        * `manifestURLError` - if the url to the manifest is malformed
-        * `networkError` - if the application host is unreachable
-        * `manifestParseError` - if the manifest contains syntax errors (not proper JSON)
-        * `invalidManifest` - if the manifest contains semantic errors (i.e. missing required properties)
+      * `denied` - if the user refuses to install the application
+      * `permissionDenied` - if the installing site is not allowed to trigger the installation
+      * `manifestURLError` - if the url to the manifest is malformed
+      * `networkError` - if the application host is unreachable
+      * `manifestParseError` - if the manifest contains syntax errors (not proper JSON)
+      * `invalidManifest` - if the manifest contains semantic errors (i.e. missing required properties)
 
     Finally, the install() function will throw an exception if required arguments are missing (url), or if
     unsupported arguments are present.
