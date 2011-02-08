@@ -2,7 +2,7 @@
 
 See also the [wiki page on Application Manifests](http://wiki.mozilla.org/Labs/Apps/Manifest).
 
-The Manifest contains some information that the web browser needs to interact with an application.  It provides both human-readable elements (a name, a set of icons, and a description; possibly in multiple languages) and machine-readable elements (URLs, lists of capabilities), which allow the application repository and dashboard to display and launch applications.  The manifest and origin where its hosted at install time collectively are the complete description of an installed application.
+The Manifest contains some information that the web browser needs to interact with an application.  It provides both human-readable elements (a name, a set of icons, and a description; possibly in multiple languages) and machine-readable elements (URLs, lists of capabilities), which allow the application repository and dashboard to display and launch applications.  The manifest and origin (scheme, host, and port) where its hosted at install time collectively are the complete description of an installed application.
 
 The Manifest is encoded inside a file as a JSON data structure, and a url to that file is provided to the browser when an application is installed.  The manifest is persisted in the application repository and is used by the dashboard and browser in subsequent interactions with the user.
 
