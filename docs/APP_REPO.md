@@ -85,8 +85,8 @@ account to sync their applications.
 
 *   `list( <onsuccess callback>, [onerror callback] )`
 
-    List all installed applications.  The return value is a object which contains the
-    array of [application objects](#app-object) indexed by their origin.
+    List all installed applications.  The return value is a object which contains
+    [application objects](#app-object) indexed by their origin.
 
 *   `remove( <origin>, [onsuccess callback], [onerror callback] )`
 
