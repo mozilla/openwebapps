@@ -61,7 +61,7 @@ $ navigator.apps.mgmt.list(function(m) {
 >  finished = (total === 0);
 >  for (var k in m) {
 >    if (!m.hasOwnProperty(k)) continue;
->    navigator.apps.mgmt.remove(k, function(r) {
+>    navigator.apps.mgmt.uninstall(k, function(r) {
 >      finished = (--total === 0);
 >    });
 >  }
@@ -300,29 +300,29 @@ $ chan.call(buildJSChanArgs("loginStatus", false));
 error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory")
 $ chan.call(buildJSChanArgs("list", false));
 error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory")
-$ chan.call(buildJSChanArgs("remove", false));
+$ chan.call(buildJSChanArgs("uninstall", false));
 error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory")
 $ chan.call(buildJSChanArgs("saveState", false));
 error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory")
 </pre>
 
 
-<h3>Verify proper errors from remove()</h3>
+<h3>Verify proper errors from uninstall()</h3>
 <pre class="doctest">
-$ navigator.apps.mgmt.remove(
+$ navigator.apps.mgmt.uninstall(
 >    "http://nosuch.app",
 >    Spy('success', {wait: false, ignoreThis: true}),
 >    Spy('error', {wait: true, ignoreThis: true}));
 error({code: "noSuchApplication", message: "no application exists with the origin: http://nosuch.app"})
 </pre>
 
-<h3>Verify no callbacks are required to remove()</h3>
+<h3>Verify no callbacks are required to uninstall()</h3>
 
-All args are optional to remove.  To test this we'll remove an app (basic_app), wait 100ms, and
+All args are optional to uninstall.  To test this we'll uninstall an app (basic_app), wait 100ms, and
 then verify that list returns a single app.
 
 <pre class="doctest">
-$ navigator.apps.mgmt.remove(SERVERS['basic_app']);
+$ navigator.apps.mgmt.uninstall(SERVERS['basic_app']);
 > wait(100);
 $ navigator.apps.mgmt.list(Spy('list', {wait: true, wrapArgs: true}));
 list({

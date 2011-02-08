@@ -35,15 +35,15 @@ $ // We'll show all the methods we're testing
 > }
 > arr = arr.sort();
 > for (var i = 0; i < arr.length; i++) writeln(arr[i]);
-navigator.apps.getInstalled
+navigator.apps.amInstalled
 navigator.apps.getInstalledBy
 navigator.apps.install
 navigator.apps.mgmt.launch
 navigator.apps.mgmt.list
 navigator.apps.mgmt.loadState
 navigator.apps.mgmt.loginStatus
-navigator.apps.mgmt.remove
 navigator.apps.mgmt.saveState
+navigator.apps.mgmt.uninstall
 navigator.apps.setRepoOrigin
 </pre>
 
@@ -60,7 +60,7 @@ $ navigator.apps.mgmt.list(function(m) {
 >  finished = (total === 0);
 >  for (var k in m) {
 >    if (!m.hasOwnProperty(k)) continue;
->    navigator.apps.mgmt.remove(k, function(r) {
+>    navigator.apps.mgmt.uninstall(k, function(r) {
 >      finished = (--total === 0);
 >    });
 >  }

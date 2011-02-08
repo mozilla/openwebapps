@@ -87,9 +87,9 @@ account to sync their applications.
     List all installed applications.  The return value is a object which contains
     [application objects](#app-object) indexed by their origin.
 
-*   `remove( <origin>, [onsuccess callback], [onerror callback] )`
+*   `uninstall( <origin>, [onsuccess callback], [onerror callback] )`
 
-    Remove an application from the repository.  `origin` is the origin the application to be removed.
+    Uninstall an application from the repository.  `origin` is the origin the application to be removed.
     onsuccess will be invoked subsequent to the application's removal, or onerror will be invoked
     and passed an [error object](#error-object) with a code of `noSuchApp` if the specified application
     doesn't exist.

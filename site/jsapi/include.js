@@ -767,10 +767,10 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
             });
         }
 
-        function callRemove(origin, onsuccess, onerror) {
+        function callUninstall(origin, onsuccess, onerror) {
             setupWindow();
             chan.call({
-                method: "remove",
+                method: "uninstall",
                 params: origin,
                 error: function(error, message) {
                     deliverError(error, message, onerror);
@@ -781,7 +781,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
             });
         }
 
-        function callLoadState(onsucces, onerror) {
+        function callLoadState(onsuccess, onerror) {
             setupWindow();
             chan.call({
                 method: "loadState",
@@ -833,7 +833,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
                 loadState: callLoadState,
                 loginStatus: callLoginStatus,
                 list: callList,
-                remove: callRemove,
+                uninstall: callUninstall,
                 saveState: callSaveState
             },
             html5Implementation: true,

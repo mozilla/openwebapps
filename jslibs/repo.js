@@ -301,7 +301,7 @@
         return installed;
     };
 
-    function remove(origin) {
+    function uninstall(origin) {
         origin = normalizeOrigin(origin);
         var item = appStorage.get(origin);
         if (!item) throw [ "noSuchApplication", "no application exists with the origin: " + origin];
@@ -326,7 +326,7 @@
     return {
         list: list,
         install: install,
-        remove: remove,
+        uninstall: uninstall,
         amInstalled: amInstalled,
         getInstalledBy: getInstalledBy,
         loadState: loadState,

@@ -53,9 +53,9 @@
       );
     });
 
-    chan.bind("remove", function(trans) {
+    chan.bind("uninstall", function(trans) {
       trans.delayReturn(true);
-      navigator.apps.mgmt.remove(
+      navigator.apps.mgmt.uninstall(
         // any ol' app id will do, we shouldn't get that far, we don't have mgmt perms
         SERVERS['basic_app'],
         function(v) { trans.complete(v); },

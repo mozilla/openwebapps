@@ -160,9 +160,9 @@
         return Repo.list();
     });
 
-    chan.bind('remove', function(t, origin) {
+    chan.bind('uninstall', function(t, origin) {
         verifyMgmtPermission(t.origin);
-        return Repo.remove(origin);
+        return Repo.uninstall(origin);
     });
 
     chan.bind('loadState', function(t) {
