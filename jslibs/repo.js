@@ -171,6 +171,7 @@
     //   promptDisplayFunc -- is a callback function that will be invoked to display a
     //           user prompt.  the function should accept 4 arguments which are:
     //             installOrigin --
+    //             appOrigin -- 
     //             manifestToInstall --
     //             installationConfirmationFinishCallback --
     //             arguments object
@@ -185,9 +186,6 @@
         function installConfirmationFinish(allowed)
         {
             if (allowed) {
-                var key = origin;
-                if (manifestToInstall.launch_path) key += manifestToInstall.launch_path;
-
                 // Create installation data structure
                 var installation = {
                     manifest: manifestToInstall,
@@ -201,7 +199,7 @@
                 }
 
                 // Save - blow away any existing value
-                appStorage.put(key, installation);
+                appStorage.put(appOrigin, installation);
 
                 if (cb) cb(true);
             } else {
@@ -251,9 +249,9 @@
                         }
 
                         // if an app with the same origin is currently installed, this is an update
-                        var isUpdate = appStorage.has(installOrigin);
+                        var isUpdate = appStorage.has(appOrigin);
 
-                        promptDisplayFunc(installOrigin, manifestToInstall, isUpdate,
+                        promptDisplayFunc(installOrigin, appOrigin, manifestToInstall, isUpdate,
                                           installConfirmationFinish);
                     } catch(e) {
                         cb({error: ["invalidManifest", "couldn't validate your manifest: " + e ]});

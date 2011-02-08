@@ -204,7 +204,7 @@ body
 </div>
 <script>
 
-function displayInstallPrompt(originHostname, manifest, isUpdate, clientCB) {
+function displayInstallPrompt(installOrigin, appOrigin, manifest, isUpdate, clientCB) {
   // whenever client's callback is invoked, we should first cleanup (and hide the dialog)
   cb = function(r) {
     delete document.getElementById("installButton").onclick;
@@ -212,10 +212,10 @@ function displayInstallPrompt(originHostname, manifest, isUpdate, clientCB) {
     ClientBridge.hideDialog(); clientCB(r);
   };
 
-  document.getElementById("site").textContent = originHostname;
+  document.getElementById("site").textContent = installOrigin;
 
   document.getElementById("appname").textContent = manifest.name;
-  document.getElementById("base_url").textContent = originHostname;
+  document.getElementById("base_url").textContent = appOrigin;
 
   document.getElementById("install_verb").textContent = isUpdate ? "update" : "install";
   document.getElementById("install_noun").textContent = isUpdate ? "update" : "installation";
