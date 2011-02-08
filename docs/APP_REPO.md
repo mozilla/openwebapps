@@ -66,7 +66,7 @@ The installation API is exposed as properties on the `navigator.apps` object.
 *   `amInstalled( <onsuccess callback>, [onerror callback] ):`
 
     Provides a means for an application to check if it's installed.  Once determined, the `onsuccess` function will
-    be invoked with a single argument: an [application object](#app-object) if installed, or `undefined` if not.
+    be invoked with a single argument: an [application object](#app-object) if installed, or `null` if not.
 
 *   `getInstalledBy( <onsuccess callback>, [onerror callback] ):`
 

@@ -122,7 +122,7 @@
     // Return all installations that belong to the given origin domain
     function appForOrigin(origin)
     {
-        var rv = undefined;
+        var rv = null;
         iterateApps(function(key, item) {
             if (applicationMatchesDomain(item.origin, origin)) {
                 rv = item;
