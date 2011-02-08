@@ -164,6 +164,15 @@
         return false;
     }
 
+    // given an origin, normalize it (like, http://foo:80 --> http://foo), or
+    // https://bar:443 --> https://bar, or even http://baz/ --> http://baz)
+    function normalizeOrigin(origin) {
+        var url = URLParse(origin).normalize();
+        url.path = url.query = url.anchor = undefined; 
+        return url.toString();
+    }
+
+
     // trigger application installation.
     //   origin -- the URL of the site requesting installation
     //   args -- the argument object provided by the calling site upon invocation of
@@ -182,6 +191,7 @@
     //         attempt is complete.
 
     function install(origin, args, promptDisplayFunc, fetchManifestFunc, cb) {
+        origin = normalizeOrigin(origin);
 
         function installConfirmationFinish(allowed)
         {
@@ -219,9 +229,7 @@
 
             // extract the application origin from the manifest URL
             try {
-              var u = URLParse(args.url);
-              u.path = u.query = u.anchor = undefined;
-              appOrigin = u.toString();
+              appOrigin = normalizeOrigin(args.url);
             } catch(e) {
               cb({error: ["manifestURLError", e.toString()]});
               return;
@@ -266,12 +274,12 @@
 
     /** Determines which applications are installed for the origin domain */
     function amInstalled(origin) {
-        return appForOrigin(origin);
+        return appForOrigin(normalizeOrigin(origin));
     };
 
     /** Determines which applications were installed by the origin domain. */
     function getInstalledBy(origin) {
-        return getInstallsByOrigin(origin);
+        return getInstallsByOrigin(normalizeOrigin(origin));
     };
 
     /* Management APIs for dashboards live beneath here */
@@ -294,6 +302,7 @@
     };
 
     function remove(origin) {
+        origin = normalizeOrigin(origin);
         var item = appStorage.get(origin);
         if (!item) throw [ "noSuchApplication", "no application exists with the origin: " + origin];
         appStorage.remove(origin);
