@@ -49,7 +49,7 @@ The installation API is exposed as properties on the `navigator.apps` object.
     This object may be used as a means of an installing site (possibly store or directory) communicating with an
     application.  Information related to purchase verification may be transmitted in this object.
 
-    **onsuccess** is a function that will be invoked if the application is successfully installed.
+    **onsuccess** is a callback that will be invoked if the application is successfully installed.
 
     **onerror** is an [error callback](#error-object) that will be invoked if the installation fails.  Possible error
     codes include:
@@ -83,55 +83,64 @@ the API exposes functions to fuel application sync, which lets the dashboard dis
 the logged-in state of the user and allows the user to sign up or register for an
 account to sync their applications.
 
-*   `list( <callback> )`
+*   `list( <onsuccess callback>, [onerror callback] )`
 
-    XXX: should there be a locale argument to list?  where should localization occur?
+    List all installed applications.  The return value is a object which contains the
+    array of [application objects](#app-object) indexed by their origin.
 
-    List all installed applications.  The return value is an an array of objects.  Each object has the following properties:
+*   `remove( <origin>, [onsuccess callback], [onerror callback] )`
 
-    `id (string)`: A unique identifier for the application.  
-    `installURL (string)`: The url from which the application was installed  
-    `installTime (integer)`: The time that the application was installed (generated via Date().getTime, represented as the number of milliseconds between midnight of January 1st, 1970 and the time the app was installed).  
-    `icons (object)`: An object mapping strings representing icon size (i.e. '96' or '128') to urls of the actual icon (often data urls)  
-    `name (string)`: The human readable (localized) name of the application.  
-    `description (string)`: The human readable (localized) description of the application.  
-    `launchURL (string)`: The url that the user should be redirected to where the application can be launched.  
-    `developer (object)`: An object containing `name` and `url` properties describing the developer of the application  
+    Remove an application from the repository.  `origin` is the origin the application to be removed.
+    onsuccess will be invoked subsequent to the application's removal, or onerror will be invoked
+    and passed an [error object](#error-object) with a code of `noSuchApp` if the specified application
+    doesn't exist.
 
-*   `remove( <id>, <callback> )`
+*  `saveState( <stateObject>, [onsuccess callback], [onerror callback] )`
 
-    Remove an application from the repository.  `id` is the unique launch URL of the application, and the callback will be invoked after the operation completes.
+    Save dashboard specific state into the application repository.  This function should be used by dashboards to persist context.  This function is superior to other persistence mechanisms as it allows for the backup and synchronization of a users state, if the user so desires.
 
-*  `saveState( <dashboard identifier>, <stateObject>, [callback] )`
+*  `loadState( <onsuccess callback>, [onerror callback] )`
 
-    Save dashboard specific state into the application repository.  This function should be used by dashboards to persist context.  This function is superior to other persistence mechanisms as it allows for the backup and synchronization of a users state, if the user so desires.  `dashboard identifier` could be a guid, or some string which is a reasonably unique dashboard implementation identifier under which the state data will be scoped.  
+    Load state saved by `saveState`, and returns it asynchronously to the `onsuccess` callback.
 
-*  `loadState( <dashboard identifier>, <callback> )`
+*  `getLoggedInUser( <onsuccess callback>, [onerror callback] )`
 
-    Load state saved by `saveState`.  
-
-*  `getLoggedInUser( <callback> )`
-
-    Determine whether a user is currently authenticated to the application repository for the purposes of application synchronization.  The callback takes a single argument which is `null` when no user is logged in, otherwise the argument is a javascript object containing the following properties:
+    Determine whether a user is currently authenticated to the application repository for the purposes of application synchronization.
+    The callback takes a single argument which is `null` when no user is logged in, otherwise the argument is a javascript object
+    containing the following properties:
 
     `userName (string)`: a unique identifier which is meaningful to both the system and the user (i.e. email address). 
     `displayName (string)`: a human readable identifier which identifies a user (not neccesarily unique, i.e. first name).
 
-*  `login( <callback> )`
+*  `login( <onsuccess callback>, [onerror callback] )`
 
-    Cause the application repository to display login UI to the user.  A callback will be invoked when the process of user authentication is complete and will be provided the same arguments as the callback to `getLoggedInUser()`.
+    Cause the application repository to display login UI to the user.  The `onsuccess` callback will be invoked when the
+    process of user authentication is complete and will be provided the same arguments as the callback to `getLoggedInUser()`.
 
-*  `logout( <callback> )`
+*  `logout( <onsuccess callback>, [onerror callback] )`
 
-    Logout the currently authenticated user.  A noop if no user is currently authenticated.  The callback argument will be invoked when the operation is complete and takes no arguments.
+    Logout the currently authenticated user.  A noop if no user is currently authenticated.  The `onsuccess` callback argument will be
+    invoked when the operation is complete and takes no arguments.
 
 #### Application Representation  <a name="app-object"></a>
 
-XXX
+Wherever *application objects* are returned via the api, they are represented as javascript objects
+with the following fields:
+
+    `origin (string)`: The origin of the application (scheme, host, and port)
+    `manifest (object)`: The currently stored version of the manifest of the application.
+    `install_time (integer)`: The time that the application was installed (generated via Date().getTime, represented as the number of milliseconds between midnight of January 1st, 1970 and the time the app was installed).  
+    `install_origin (string)`: The origin of the site that triggered the installation of the application.
 
 #### Error Objects  <a name="error-object"></a>
 
-XXX
+Errors are returned via callbacks in the API.  Errors are represented as javascript
+objects with the following properties:
+
+    `code (string)`: A short, english, camel cased error code that may be programmatically
+                     checked to optimize user facing error displays.
+    `message (string)`: A short, english, developer readable sentence that describes the cause
+                     of the error in more specifics.  Useful for debugging and error logs.
 
 #### Mobile Considerations
 
