@@ -50,7 +50,7 @@
 * {
 *   manifest: { <app manifest> },
 *   install_time: <install timestamp, UTC milliseconds>,
-*   install_url: <the URL that invoked the install function>
+*   install_origin: <the URL that invoked the install function>
 *   origin: <the origin of the app>
 * }
 *
@@ -137,7 +137,7 @@
         var result = [];
 
         iterateApps(function(key, item) {
-            if (urlMatchesDomain(item.install_url, origin)) {
+            if (urlMatchesDomain(item.install_origin, origin)) {
                 result.push(item);
             }
         });
@@ -191,7 +191,7 @@
                     manifest: manifestToInstall,
                     origin: appOrigin,
                     install_time: new Date().getTime(),
-                    install_url: installOrigin
+                    install_origin: installOrigin
                 };
 
                 if (args.install_data) {

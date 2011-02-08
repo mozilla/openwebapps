@@ -90,8 +90,8 @@ apps.install(true)
 $ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true, wrapArgs: true}));
 apps.mgmt.list({
   http://127.0.0.1:...: {
+    install_origin: "http://127.0.0.1:...",
     install_time: ...,
-    install_url: "http://127.0.0.1:...",
     manifest: {
       default_locale: "en",
       installs_allowed_from: ["*"],
@@ -116,8 +116,8 @@ apps.install(true)
 $ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true, wrapArgs: true}));
 apps.mgmt.list({
   http://127.0.0.1:...: {
+    install_origin: "http://127.0.0.1:...",
     install_time: ...,
-    install_url: "http://127.0.0.1:...",
     manifest: {
       default_locale: "en",
       installs_allowed_from: ["*"],
@@ -134,8 +134,8 @@ apps.mgmt.list({
 $ navigator.apps.getInstalledBy(Spy('apps.getInstalledBy', {wait: true, ignoreThis: true}));
 apps.getInstalledBy([
   {
+    install_origin: "http://127.0.0.1:...",
     install_time: ...,
-    install_url: "http://127.0.0.1:...",
     manifest: {default_locale: "en", installs_allowed_from: ["*"], name: "Wild and Crazy Basic App"},
     origin: "http://127.0.0.1:..."
   }
@@ -155,8 +155,8 @@ apps.amInstalled(undefined)
 $ var chan = embedIFrameAndStartChannel(SERVERS['basic_app'] + "/include.html");
 > chan.call(buildJSChanArgs("amInstalled", true));
 success({
+  install_origin: "http://127.0.0.1:...",
   install_time: ...,
-  install_url: "http://127.0.0.1:...",
   manifest: {default_locale: "en", installs_allowed_from: ["*"], name: "Wild and Crazy Basic App"},
   origin: "http://127.0.0.1:..."
 })
@@ -229,8 +229,8 @@ $ hideIFrame(SERVERS['no_delegated_install']);
 > // now getInstalled should show that we're installed
 > chan.call(buildJSChanArgs("amInstalled", true));
 success({
+  install_origin: "http://127.0.0.1:...",
   install_time: ...,
-  install_url: "http://127.0.0.1:...",
   manifest: {default_locale: "en", name: "An application which does not grant permission for any other origin to install it"},
   origin: "http://127.0.0.1:..."
 })
@@ -238,8 +238,8 @@ $ // and getInstalledBy should show that same result
 > chan.call(buildJSChanArgs("getInstalledBy", true));
 success([
   {
+    install_origin: "http://127.0.0.1:...",
     install_time: ...,
-    install_url: "http://127.0.0.1:...",
     manifest: {default_locale: "en", name: "An application which does not grant permission for any other origin to install it"},
     origin: "http://127.0.0.1:..."
   }
@@ -252,8 +252,8 @@ success([
 $ navigator.apps.getInstalledBy(Spy('apps.getInstalledBy', {wait: true, ignoreThis: true}));
 apps.getInstalledBy([
   {
+    install_origin: "http://127.0.0.1:...",
     install_time: ...,
-    install_url: "http://127.0.0.1:...",
     manifest: {default_locale: "en", installs_allowed_from: ["*"], name: "Wild and Crazy Basic App"},
     origin: "http://127.0.0.1:..."
   }
@@ -266,8 +266,8 @@ apps.getInstalledBy([
 $ navigator.apps.mgmt.list(Spy('list', {wait: true, wrapArgs: true}));
 list({
   http://127.0.0.1:...: {
+    install_origin: "http://127.0.0.1:...",
     install_time: ...,
-    install_url: "http://127.0.0.1:...",
     manifest: {
       default_locale: "en",
       name: "An application which does not grant permission for any other origin to install it"
@@ -275,8 +275,8 @@ list({
     origin: "http://127.0.0.1:..."
   },
   http://127.0.0.1:...: {
+    install_origin: "http://127.0.0.1:...",
     install_time: ...,
-    install_url: "http://127.0.0.1:...",
     manifest: {
       default_locale: "en",
       installs_allowed_from: ["*"],
@@ -327,8 +327,8 @@ $ navigator.apps.mgmt.remove(SERVERS['basic_app']);
 $ navigator.apps.mgmt.list(Spy('list', {wait: true, wrapArgs: true}));
 list({
   http://127.0.0.1:...: {
+    install_origin: "http://127.0.0.1:...",
     install_time: ...,
-    install_url: "http://127.0.0.1:...",
     manifest: {
       default_locale: "en",
       name: "An application which does not grant permission for any other origin to install it"
