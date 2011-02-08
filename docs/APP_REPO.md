@@ -100,7 +100,8 @@ account to sync their applications.
 
 *  `loadState( <onsuccess callback>, [onerror callback] )`
 
-    Load state saved by `saveState`, and returns it asynchronously to the `onsuccess` callback.
+    Load state saved by `saveState`, and returns it asynchronously to the `onsuccess` callback, which will receive as an
+    argument the previously saved data, or `undefined` if no data has been saved.
 
 *  `getLoggedInUser( <onsuccess callback>, [onerror callback] )`
 
