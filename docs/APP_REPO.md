@@ -29,8 +29,7 @@ in the API:
    self-distributing applications, and app directories.
 
 2. "Management API" - functions related to the display, launch or
-   synchronization of applications.  Primarily used by dashboards
-   authored in HTML.
+   synchronization of applications.  Primarily used by dashboards.
 
 #### Installation API (`navigator.apps.*`) <a name="install-api"></a>
 
