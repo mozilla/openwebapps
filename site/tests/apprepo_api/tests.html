@@ -28,7 +28,7 @@ First let's ensure that the testing environment is sane...
 $ var dirs = [];
 > for (var k in SERVERS) dirs.push(k);
 > dirs.sort();
-["_primary", "bad_content_type", "basic_app", "json_syntax_error", "missing_required_field"]
+["_primary", "bad_content_type", "basic_app", "json_syntax_error", "missing_required_field", "no_delegated_install"]
 </pre>
 
 <h3>Clear All Apps</h3>
@@ -159,6 +159,19 @@ apps.install.error({
   message: "application manifests must be of Content-Type \"application/x-web-app-manifest+json\""
 })
 </pre>
+
+<h3>Installation of an app without delegated installation permissions</h3>
+
+<pre class="doctest">
+$ navigator.apps.install(
+>   {url: SERVERS['no_delegated_install'] + "/manifest.webapp",
+>    onsuccess: Spy('apps.install.success', {wait: false, ignoreThis: true}),
+>    onerror: Spy('apps.install.error', {wait: true, ignoreThis: true})
+>   });
+apps.install.error({code: "permissionDenied", message: "origin 'http://127.0.0.1:...' may not install this app"})
+
+</pre>
+
 
   <button onclick="doctest()" type="button">Test all</button>
 
