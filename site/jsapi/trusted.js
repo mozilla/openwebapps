@@ -98,11 +98,11 @@
         // contact our server to retrieve the URL
         var xhr = new XMLHttpRequest();
         // proxy through HTML5 repo host to support cross domain fetching
-        xhr.open("GET", "https://myapps.mozillalabs.com/getmanifest?url=" + escape(url), true);
+        xhr.open("GET", "/getmanifest?url=" + escape(url), true);
         xhr.onreadystatechange = function(aEvt) {
             if (xhr.readyState == 4) {
                 if (xhr.status == 200) {
-                    cb(xhr.responseText);
+                    cb(xhr.responseText, xhr.getResponseHeader("Content-Type"));
                 } else {
                     cb(null);
                 }
@@ -118,7 +118,7 @@
         Repo.install(t.origin, args, displayInstallPrompt, fetchManifest, function(r) {
             if (r === true) {
                 t.complete(r);
-            } else if (typeof r.error === 'array' && r.error.length === 2) {
+            } else if (typeof r.error === 'object' && typeof r.error.length === 'number' && r.error.length === 2) {
                 t.error(r.error[0], errorRepr(r.error[1]));
             } else {
                 t.error("internalError", "unknown internal error during install: " + errorRepr(r));
@@ -126,34 +126,9 @@
         });
     });
 
-    chan.bind('verify', function(t, args) {
-        // We will look for manifests whose app_urls filter matches the origin.
-        // If we find one, we will initiate verification of the user
-        // by contacting the authorizationURL defined in the installation record.
-
-        // If we find two... well, for now, we take the first one.
-        // Perhaps we should find the first one that has an authorization URL.
-
-        var result = Repo.getInstalled(t.origin);
-        if (result.length == 0) return null;
-
-        // Must have authorizationURL
-        if (!result[0].authorizationURL)
-        {
-            throw ['invalidArguments', 'missing authorization url' ];
-        }
-
-        // TODO Could optionally have a returnto
-        win.parent.location = result[0].authorizationURL;
-
-        // return value isn't meaningful.  as a result of overwriting
-        // the parent location, we'll be torn down.
-        return;
-    });
-
     /** Determines which applications are installed *for* the origin domain */
-    chan.bind('getInstalled', function(t, args) {
-        return Repo.getInstalled(t.origin);
+    chan.bind('amInstalled', function(t, args) {
+      return Repo.amInstalled(t.origin);
     });
 
     /** Determines which applications were installed *by* the origin domain. */
@@ -185,9 +160,9 @@
         return Repo.list();
     });
 
-    chan.bind('remove', function(t, key) {
+    chan.bind('uninstall', function(t, origin) {
         verifyMgmtPermission(t.origin);
-        return Repo.remove(key);
+        return Repo.uninstall(origin);
     });
 
     chan.bind('loadState', function(t) {

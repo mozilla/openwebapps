@@ -23,8 +23,7 @@ normalization of manifests.  This page tests and demonstrates its functioning.
 <pre class="doctest">
 $ writeln(null !== Manifest.validate({
 >   name: "SimplestPossibleManifest",
->   base_url: "http://simple.mozillalabs.com/",
->   default_locale: "en",
+>   default_locale: "en"
 > }));
 true
 </pre>
@@ -34,27 +33,18 @@ true
 <pre class="doctest">
 $ writeln(null !== Manifest.validate({
 > }));
-Error: missing "base_url" property
-</pre>
-
-<pre class="doctest">
-$ writeln(null !== Manifest.validate({
->   base_url: "http://simple.mozillalabs.com/"
-> }));
 Error: missing "default_locale" property
 </pre>
 
 <pre class="doctest">
 $ writeln(null !== Manifest.validate({
->   base_url: "http://simple.mozillalabs.com/",
->   default_locale: "en",
+>   default_locale: "en"
 > }));
 Error: missing "name" property
 </pre>
 
 <pre class="doctest">
 $ writeln(null !== Manifest.validate({
->   base_url: "http://simple.mozillalabs.com/",
 >   default_locale: "en",
 >   name: "AManifestBooYah"
 > }));
@@ -65,8 +55,7 @@ true
 <pre class="doctest">
 $ var m = {
 >   name: "SimplestPossibleManifest",
->   base_url: "http://simple.mozillalabs.com/",
->   default_locale: "en",
+>   default_locale: "en"
 > };
 > writeln(null !== Manifest.validate(m));
 true
@@ -84,35 +73,6 @@ $ m.name = "@#%(@$*^)!#*^@$&*@$(%^*@#$&*@$*&";
 true
 </pre>
 
-<h3>Property: base_url</h3>
-<pre class="doctest">
-$ var m = {
->   name: "SimplestPossibleManifest",
->   base_url: "http://simple.mozillalabs.com/",
->   default_locale: "en",
-> };
-> writeln(null !== Manifest.validate(m));
-true
-$ m.base_url = null;
-> var m2 = Manifest.validate(m);
-Error: (base_url) invalid value: null
-$ m.base_url = "file:///Users/yourhome/yourdir/";
-> var m2 = Manifest.validate(m);
-Error: (base_url) invalid url: unsupported scheme: file
-$ m.base_url = "httpx://bogus.scheme/";
-> var m2 = Manifest.validate(m);
-Error: (base_url) invalid url: unsupported scheme: httpx
-$ m.base_url = "https://just.fine.url:64000/foo/bar/path/.../ungh/";
-> null !== Manifest.validate(m);
-true
-$ m.base_url = "https://just.fine.url:64000/foo/../bar/";
-> writeln(Manifest.validate(m).base_url);
-https://just.fine.url:64000/bar/
-$ m.base_url = "http://needs.trailing.slash/oops";
-> writeln(Manifest.validate(m).base_url);
-Error: (base_url) trailing slash required
-</pre>
-
 <h3>Property: default_locale</h3>
 
 XXX: we need to validate locale tag syntax.  there's an rfc for that.
@@ -120,8 +80,7 @@ XXX: we need to validate locale tag syntax.  there's an rfc for that.
 <pre class="doctest">
 $ var m = {
 >   name: "SimplestPossibleManifest",
->   base_url: "http://simple.mozillalabs.com/",
->   default_locale: "en",
+>   default_locale: "en"
 > };
 > writeln(null !== Manifest.validate(m));
 true
@@ -141,8 +100,7 @@ true
 $ var m = {
 >   name: "SimplestPossibleManifest",
 >   description: "Well, not the simplest *possible*, really",
->   base_url: "http://simple.mozillalabs.com/",
->   default_locale: "en",
+>   default_locale: "en"
 > };
 > writeln(null !== Manifest.validate(m));
 true
@@ -163,9 +121,8 @@ true
 $ var m = {
 >   name: "SimplestPossibleManifest",
 >   description: "Well, not the simplest *possible*, really",
->   base_url: "http://mozillalabs.com/simple/",
 >   launch_path: "index.html",
->   default_locale: "en",
+>   default_locale: "en"
 > };
 > writeln(null !== Manifest.validate(m));
 true
@@ -178,7 +135,6 @@ true
 $ m.launch_path = ""; // will be removed
 > undefined === Manifest.validate(m).launch_path;
 $ m.launch_path = "foo/bar/index.html";
-$ m.base_url = "http://www.google.com/"
 > Manifest.validate(m) !== null;
 true
 </pre>
@@ -188,19 +144,21 @@ true
 <pre class="doctest">
 $ var m = {
 >   name: "SimplestPossibleManifest",
->   capabilities: ["a", "b", "c", "d" ],
->   base_url: "http://mozillalabs.com/simple/",
->   default_locale: "en",
+>   capabilities: { "a": true, "b": null, "c": [ ], "d": { }, "e": 1234, "f": undefined },
+>   default_locale: "en"
 > };
 > writeln(null !== Manifest.validate(m));
 true
-$ m.capabilities.push(42);
-> Manifest.validate(m);
-Error: (capabilities/4) invalid value: 42
-$ m.capabilities = [ null ];
-> Manifest.validate(m);
-Error: (capabilities/0) invalid value: null
 $ m.capabilities = [ ];
+> Manifest.validate(m);
+Error: (capabilities) must be a javascript object, not an array
+$ m.capabilities = true;
+> Manifest.validate(m);
+Error: (capabilities) invalid value: true
+$ m.capabilities = undefined;
+> Manifest.validate(m);
+Error: (capabilities) invalid value: undefined
+$ m.capabilities = { };
 > writeln(null !== Manifest.validate(m));
 true
 </pre>
@@ -215,14 +173,10 @@ $ var m = {
 >     48:  "images/icon_48.png",
 >     128: "images/icon_128.png"
 >   },
->   base_url: "http://mozillalabs.com/simple/",
->   default_locale: "en",
+>   default_locale: "en"
 > };
 > writeln(null !== Manifest.validate(m));
 true
-$ m.icons["256"] = "realbig.png";
-> Manifest.validate(m);
-Error: (icons/256) invalid key, expected 16, 48, or 128
 $ m.icons = { 16: "foo/../../outta_my_scope.png" };
 > Manifest.validate(m);
 Error: (icons/16) invalid value: foo/../../outta_my_scope.png
@@ -232,6 +186,9 @@ true
 $ m.icons["16"] = [ ];
 > Manifest.validate(m);
 Error: (icons/16) invalid value: 
+$ m.icons = { "bogus_key": "foo.png" };
+> Manifest.validate(m);
+Error: (icons) invalid property name (must be a numeric pixel size): bogus_key
 </pre>
 
 <h3>Property: developer</h3>
@@ -243,8 +200,7 @@ $ var m = {
 >     name: "Mozilla Labs, yay!",
 >     url:  "http://mozillalabs.com"
 >   },
->   base_url: "http://mozillalabs.com/simple/",
->   default_locale: "en",
+>   default_locale: "en"
 > };
 > writeln(null !== Manifest.validate(m));
 true
@@ -265,7 +221,6 @@ $ var m = {
 >     name: "Mozilla Labs, yay!",
 >     url:  "http://mozillalabs.com"
 >   },
->   base_url: "http://mozillalabs.com/simple/",
 >   default_locale: "en",
 >   locales: {
 >     es: { developer: { name: "Mozilla Labs, guay!" } },
@@ -288,7 +243,6 @@ Error: (locales/es/capabilities) may not be overridded per-locale
 <pre class="doctest">
 $ var m = {
 >   name: "SimplestPossibleManifest",
->   base_url: "http://mozillalabs.com/simple/",
 >   default_locale: "en",
 >   installs_allowed_from: [
 >     "https://appstore.mozillalabs.com",
@@ -312,21 +266,54 @@ $ // normalization test
 ["http://no_port.eu/", "http://no_slash.ch:8080/"]
 </pre>
 
+<h3>Property: widgets!</h3>
+
 <pre class="doctest">
 $ var m = {
->   name: "SimplestPossibleManifest",
->   base_url: "http://mozillalabs.com/simple/",
+>   name: "WidgetyManifest",
 >   default_locale: "en",
->   manifest_name: "manifest.webapp"
+>   widget: {
+>     height: 100,
+>     width: 200,
+>     path: "/mywidget.html"
+>   }
 > };
 > writeln(null !== Manifest.validate(m));
 true
-$ m.manifest_name = "foo/bar/baz/manifest.webapp";
+$ delete m.widget.height; // height and width are optional
+> delete m.widget.width;
+> writeln(null !== Manifest.validate(m));
+true
+$ delete m.widget.path; // but path is required...
 > Manifest.validate(m);
-Error: (manifest_name) invalid characters present
-$ m.manifest_name = "";
+Error: (widget/path) invalid value: undefined
+$ m.widget.path = "needsslash.html"; // ...and must start with a slash
 > Manifest.validate(m);
-Error: (manifest_name) blank value not allowed
+Error: (widget/path) must start with '/'
+$ m.widget.path = "/foo/../needsslash.html"; // ...but we'll normalize!
+> Manifest.validate(m);
+{default_locale: "en", name: "WidgetyManifest", widget: {path: "/needsslash.html"}}
+$ m.widget.width = "100"; // width must be a number...
+> Manifest.validate(m);
+Error: (widget/width) must be an integer
+$ m.widget.width = 7777; // ... must be in range ...
+> Manifest.validate(m);
+Error: (widget/width) outside allowed range [10 - 1000]
+$ m.widget.width = 100.00; // ... but we'll normalize!
+> Manifest.validate(m);
+{default_locale: "en", name: "WidgetyManifest", widget: {path: "/needsslash.html", width: 100}}
+$ m.widget.height = "100"; // height must be a number...
+> Manifest.validate(m);
+Error: (widget/height) must be an integer
+$ m.widget.height = 7777; // ... must be in range ...
+> Manifest.validate(m);
+Error: (widget/height) outside allowed range [10 - 1000]
+$ m.widget.height = 100.00; // ... but we'll normalize!
+> Manifest.validate(m);
+{default_locale: "en", name: "WidgetyManifest", widget: {height: 100, path: "/needsslash.html", width: 100}}
+$ m.widget.speshul = "very"; // we allow props we don't understand 
+> writeln(null !== Manifest.validate(m));
+true
 </pre>
 
 <h3>Bogus properties</h3>
@@ -334,7 +321,6 @@ Error: (manifest_name) blank value not allowed
 <pre class="doctest">
 $ var m = {
 >   name: "SimplestPossibleManifest",
->   base_url: "http://simple.mozillalabs.com/",
 >   default_locale: "en",
 >   bogus: "si"
 > };

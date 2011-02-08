@@ -1,0 +1,394 @@
+<html>
+<head>
+  <title>App Repo API Tests</title>
+  <script type="text/javascript" src="doctestjs/doctest.js"></script>
+  <link rel="stylesheet" type="text/css" href="doctestjs/doctest.css" />
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+  <style type="text/css" media="screen">
+      iframe {
+        display: none;
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+      }
+  </style>
+</head>
+<body id="testingBody">
+<h2> App Repo API Tests </h2>
+
+<p>
+  These API tests run in a local environment provided by a test
+  server.  There are multiple local bound ports which coincide with
+  different running apps.  By including /servers.js from the test
+  server, window.SERVERS is populated with a map of server names
+  (directory names) to URL where that app can be accessed.
+</p>
+
+<div>
+  <button onclick="doctest()" type="button">Test all</button>
+  <pre id="doctestOutput"></pre>
+</div>
+
+<h3>Verify Testing Environment</h3>
+
+First let's ensure that the testing environment is sane...
+<pre class="doctest">
+$ var dirs = [];
+> for (var k in SERVERS) dirs.push(k);
+> dirs.sort();
+[
+  "_primary",
+  "bad_content_type",
+  "basic_app",
+  "json_syntax_error",
+  "missing_required_field",
+  "no_delegated_install",
+  "no_mgmt_api_off_repo_origin"
+]
+</pre>
+
+<h3>Clear All Apps</h3>
+
+Delete all applications and then verify that list() yields no apps.
+
+<pre class="doctest">
+$ var finished = false;
+$ navigator.apps.mgmt.list(function(m) {
+>  var total = 0;
+>  for (var k in m) if (m.hasOwnProperty(k)) total++;
+>  finished = (total === 0);
+>  for (var k in m) {
+>    if (!m.hasOwnProperty(k)) continue;
+>    navigator.apps.mgmt.uninstall(k, function(r) {
+>      finished = (--total === 0);
+>    });
+>  }
+> });
+$ wait(function() { return finished; });
+$ finished = false;
+$ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true}));
+apps.mgmt.list({})
+</pre>
+
+<h3>Install missing required arguments will throw</h3>
+
+<pre class="doctest">
+$ navigator.apps.install();
+Error: install missing required url argument
+</pre>
+
+<h3>Install a basic application</h3>
+
+<pre class="doctest">
+$ navigator.apps.install(
+>   {url: SERVERS['basic_app'] + "/manifest.webapp",
+>    onsuccess: Spy('apps.install', {wait: true, ignoreThis: true})
+>   });
+apps.install(true)
+$ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true, wrapArgs: true}));
+apps.mgmt.list({
+  http://127.0.0.1:...: {
+    install_origin: "http://127.0.0.1:...",
+    install_time: ...,
+    manifest: {
+      default_locale: "en",
+      installs_allowed_from: ["*"],
+      name: "Super Crazy Basic App"
+    },
+    origin: "http://127.0.0.1:..."
+  }
+})
+</pre>
+
+<h3>Re-install that application with a different manifest</h3>
+
+this should be considered an "upgrade", because we may not have
+two manifests per origin.
+
+<pre class="doctest">
+$ navigator.apps.install(
+>   {url: SERVERS['basic_app'] + "/manifest2.webapp",
+>    onsuccess: Spy('apps.install', {wait: true, ignoreThis: true})
+>   });
+apps.install(true)
+$ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true, wrapArgs: true}));
+apps.mgmt.list({
+  http://127.0.0.1:...: {
+    install_origin: "http://127.0.0.1:...",
+    install_time: ...,
+    manifest: {
+      default_locale: "en",
+      installs_allowed_from: ["*"],
+      name: "Wild and Crazy Basic App"
+    },
+    origin: "http://127.0.0.1:..."
+  }
+})
+</pre>
+
+<h3>We installed it, getInstalledBy should return it.</h3>
+
+<pre class="doctest">
+$ navigator.apps.getInstalledBy(Spy('apps.getInstalledBy', {wait: true, ignoreThis: true}));
+apps.getInstalledBy([
+  {
+    install_origin: "http://127.0.0.1:...",
+    install_time: ...,
+    manifest: {default_locale: "en", installs_allowed_from: ["*"], name: "Wild and Crazy Basic App"},
+    origin: "http://127.0.0.1:..."
+  }
+])
+</pre>
+
+<h3>amInstalled should not.</h3>
+
+<pre class="doctest">
+$ navigator.apps.amInstalled(Spy('apps.amInstalled', {wait: true, ignoreThis: true}));
+apps.amInstalled(null)
+</pre>
+
+<h3>getInstalled from basic app's domain *should* show the new app</h3>
+
+<pre class="doctest">
+$ var chan = embedIFrameAndStartChannel(SERVERS['basic_app'] + "/include.html");
+> chan.call(buildJSChanArgs("amInstalled", true));
+success({
+  install_origin: "http://127.0.0.1:...",
+  install_time: ...,
+  manifest: {default_locale: "en", installs_allowed_from: ["*"], name: "Wild and Crazy Basic App"},
+  origin: "http://127.0.0.1:..."
+})
+</pre>
+
+<h3>Installation of an app with a syntax error in manifest</h3>
+
+<pre class="doctest">
+$ navigator.apps.install(
+>   {url: SERVERS['json_syntax_error'] + "/manifest.webapp",
+>    onsuccess: Spy('apps.install.success', {wait: false, ignoreThis: true}),
+>    onerror: Spy('apps.install.error', {wait: true, ignoreThis: true})
+>   });
+apps.install.error({code: "manifestParseError", message: "couldn't parse manifest JSON from http://127.0.0.1:.../manifest.webapp"})
+</pre>
+
+<h3>Installation of an app with a malformed manifest (missing key)</h3>
+
+<pre class="doctest">
+$ navigator.apps.install(
+>   {url: SERVERS['missing_required_field'] + "/manifest.webapp",
+>    onsuccess: Spy('apps.install.success', {wait: false, ignoreThis: true}),
+>    onerror: Spy('apps.install.error', {wait: true, ignoreThis: true})
+>   });
+apps.install.error({code: "invalidManifest", message: "couldn't validate your manifest: missing \"name\" property"})
+</pre>
+
+<h3>Installation of an app without required HTTP Content-Type</h3>
+
+<pre class="doctest">
+$ navigator.apps.install(
+>   {url: SERVERS['bad_content_type'] + "/manifest.json",
+>    onsuccess: Spy('apps.install.success', {wait: false, ignoreThis: true}),
+>    onerror: Spy('apps.install.error', {wait: true, ignoreThis: true})
+>   });
+apps.install.error({
+  code: "invalidManifest",
+  message: "application manifests must be of Content-Type \"application/x-web-app-manifest+json\""
+})
+</pre>
+
+<h3>Installation of an app without delegated installation permissions</h3>
+
+<pre class="doctest">
+$ navigator.apps.install(
+>   {url: SERVERS['no_delegated_install'] + "/manifest.webapp",
+>    onsuccess: Spy('apps.install.success', {wait: false, ignoreThis: true}),
+>    onerror: Spy('apps.install.error', {wait: true, ignoreThis: true})
+>   });
+apps.install.error({code: "permissionDenied", message: "origin 'http://127.0.0.1:...' may not install this app"})
+</pre>
+
+<h3>Installation of that same app, from its own origin</h3>
+
+NOTE:  This is a rather tricky test:  We'll programatically embed an iframe from
+a non-repo origin and load web content from that origin.  The content
+(<tt>no_mgmt_api_off_repo_origin/include.html</tt>) uses jschannel to allow us
+to programmatically drive it running queries against the test app repo from
+off domain.
+
+<pre class="doctest">
+$ var chan = embedIFrameAndStartChannel(SERVERS['no_delegated_install'] + "/include.html");
+$ // now for a horrible hack.  when installing from within an iframe, in and HTML5 environment
+> // prompting will occur inside that iframe.  yuck!  We'll temporarily show that iframe
+> // so the testor can click.
+> showIFrame(SERVERS['no_delegated_install']);
+$ chan.call(buildJSChanArgs("install", true));
+success(true)
+$ hideIFrame(SERVERS['no_delegated_install']);
+> // now getInstalled should show that we're installed
+> chan.call(buildJSChanArgs("amInstalled", true));
+success({
+  install_origin: "http://127.0.0.1:...",
+  install_time: ...,
+  manifest: {default_locale: "en", name: "An application which does not grant permission for any other origin to install it"},
+  origin: "http://127.0.0.1:..."
+})
+$ // and getInstalledBy should show that same result
+> chan.call(buildJSChanArgs("getInstalledBy", true));
+success([
+  {
+    install_origin: "http://127.0.0.1:...",
+    install_time: ...,
+    manifest: {default_locale: "en", name: "An application which does not grant permission for any other origin to install it"},
+    origin: "http://127.0.0.1:..."
+  }
+])
+</pre>
+
+<h3>getInstalled by from origin shouldn't show second app</h3>
+
+<pre class="doctest">
+$ navigator.apps.getInstalledBy(Spy('apps.getInstalledBy', {wait: true, ignoreThis: true}));
+apps.getInstalledBy([
+  {
+    install_origin: "http://127.0.0.1:...",
+    install_time: ...,
+    manifest: {default_locale: "en", installs_allowed_from: ["*"], name: "Wild and Crazy Basic App"},
+    origin: "http://127.0.0.1:..."
+  }
+])
+</pre>
+
+<h3>list should now contain two apps</h3>
+
+<pre class="doctest">
+$ navigator.apps.mgmt.list(Spy('list', {wait: true, wrapArgs: true}));
+list({
+  http://127.0.0.1:...: {
+    install_origin: "http://127.0.0.1:...",
+    install_time: ...,
+    manifest: {
+      default_locale: "en",
+      name: "An application which does not grant permission for any other origin to install it"
+    },
+    origin: "http://127.0.0.1:..."
+  },
+  http://127.0.0.1:...: {
+    install_origin: "http://127.0.0.1:...",
+    install_time: ...,
+    manifest: {
+      default_locale: "en",
+      installs_allowed_from: ["*"],
+      name: "Wild and Crazy Basic App"
+    },
+    origin: "http://127.0.0.1:..."
+  }
+})
+</pre>
+
+<h3>Verify mgmt permissions don't work off repo origin</h3>
+
+<pre class="doctest">
+$ // first let's add an iframe with the child to the document */
+> var chan = embedIFrameAndStartChannel(SERVERS['no_mgmt_api_off_repo_origin'] + "/include.html");
+> chan.call(buildJSChanArgs("launch", false));
+error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory")
+$ chan.call(buildJSChanArgs("loadState", false));
+error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory")
+$ chan.call(buildJSChanArgs("loginStatus", false));
+error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory")
+$ chan.call(buildJSChanArgs("list", false));
+error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory")
+$ chan.call(buildJSChanArgs("uninstall", false));
+error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory")
+$ chan.call(buildJSChanArgs("saveState", false));
+error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory")
+</pre>
+
+
+<h3>Verify proper errors from uninstall()</h3>
+<pre class="doctest">
+$ navigator.apps.mgmt.uninstall(
+>    "http://nosuch.app",
+>    Spy('success', {wait: false, ignoreThis: true}),
+>    Spy('error', {wait: true, ignoreThis: true}));
+error({code: "noSuchApplication", message: "no application exists with the origin: http://nosuch.app"})
+</pre>
+
+<h3>Verify no callbacks are required to uninstall()</h3>
+
+All args are optional to uninstall.  To test this we'll uninstall an app (basic_app), wait 100ms, and
+then verify that list returns a single app.
+
+<pre class="doctest">
+$ navigator.apps.mgmt.uninstall(SERVERS['basic_app']);
+> wait(100);
+$ navigator.apps.mgmt.list(Spy('list', {wait: true, wrapArgs: true}));
+list({
+  http://127.0.0.1:...: {
+    install_origin: "http://127.0.0.1:...",
+    install_time: ...,
+    manifest: {
+      default_locale: "en",
+      name: "An application which does not grant permission for any other origin to install it"
+    },
+    origin: "http://127.0.0.1:..."
+  }
+})
+</pre>
+  <button onclick="doctest()" type="button">Test all</button>
+
+</body>
+<script type="text/javascript" src="/servers.js"></script>
+<script type="text/javascript" src="/jsapi/include.js"></script>
+<script type="text/javascript" src="/js/jschannel.js"></script>
+<script type="text/javascript">
+  navigator.apps.setRepoOrigin(SERVERS['_primary']);
+
+  // a utility function to make it quick to attach iframes and establish jschannels to them:
+  // this serves as the basis for several different types of cross-origin tests
+  function embedIFrameAndStartChannel(url) {
+    var iframe = document.createElement("iframe");
+    iframe.src = url;
+    document.body.appendChild(iframe);
+    // next, let's connect to her over a jschannel
+    var chan =  Channel.build({
+        window: iframe.contentWindow,
+        scope: "test",
+        origin: "*"
+    });
+    return chan;
+  }
+
+  // a utility function to automatically build up proper jschan.call args:
+  function buildJSChanArgs(name, shouldSucceed) {
+    return { method: name,
+             success: Spy('success', {wait: shouldSucceed, ignoreThis: true}), 
+             error: Spy('error', {wait: !shouldSucceed, ignoreThis: true}) };
+  }
+
+  // given an origin of a host, find the iframe associated with it and
+  // maximize it
+  function showIFrame(origin) {
+    var tags = document.getElementsByTagName('iframe');
+    for (var i = 0; i < tags.length; i++) {
+      if (0 === tags[i].getAttribute('src').indexOf(origin)) {
+        tags[i].style.display = "inline";
+        return;
+      }
+    }
+  }
+
+  function hideIFrame(origin) {
+    var tags = document.getElementsByTagName('iframe');
+    for (var i = 0; i < tags.length; i++) {
+      if (0 === tags[i].getAttribute('src').indexOf(origin)) {
+        tags[i].style.display = "none";
+        return;
+      }
+    }
+  }
+
+</script>
+</html>

@@ -77,6 +77,10 @@
       if (typeof x !== 'string') errorThrow();
     };
 
+    var isInteger = function(x) {
+      return (typeof x === 'number' && Math.ceil(x) == Math.floor(x));
+    };
+
     // a table that specifies manfiest properties, and validation functions
     // each key is the name of a valid top level property.
     // each value is an object with four optional properties:
@@ -93,28 +97,11 @@
     //     path: an array of properties that describes which field has the error
     //
     var manfProps = {
-      base_url: {
-        required: true,
-        check: function (x) {
-          if (typeof x !== 'string') errorThrow();
-          try {
-            // will throw if the url is invalid
-            var p = URLParse(x).validate().normalize().path;
-            // urls must end with a slash
-            if (!p.length || p[p.length - 1] != '/') throw "trailing slash required";
-          } catch(e) {
-            errorThrow(e);
-          }
-        },
-        normalize: function(x) {
-          return URLParse(x).normalize().toString();
-        }
-      },
       capabilities: {
         check: function(x) {
           function isArray(o) {
             return (o && typeof(o) === 'object' && o instanceof Array &&
-                    o.length && typeof o.length === 'number');
+                    o.length != undefined && typeof o.length === 'number');
           }
           if (!x || typeof x !== 'object') errorThrow();
           if (isArray(x)) {
@@ -159,6 +146,7 @@
           if (typeof x !== 'object') errorThrow();
           for (var k in x) {
             if (!x.hasOwnProperty(k)) continue;
+            if (!k.match(/^[1-9][0-9]*$/)) errorThrow("invalid property name (must be a numeric pixel size): " + k);
             if (typeof x[k] !== 'string') errorThrow(undefined, k);
             if (x[k].indexOf('..') != -1) errorThrow(undefined, k);
           }
@@ -168,6 +156,7 @@
         check: function(x) {
           if (!x || typeof x !== 'object' || x.constructor !== Array) errorThrow("expected array of urls");
           for (var i = 0; i < x.length; i++) {
+            if (x[i] === '*') continue;
             var path;
             try {
               path = URLParse(x[i]).validate().path;
@@ -184,7 +173,8 @@
         normalize: function(o) {
           var n = [];
           for (var i = 0; i < o.length; i++) {
-            n.push(URLParse(o[i]).normalize().toString());
+            if (o[i] === '*') n.push(o[i]);
+            else n.push(URLParse(o[i]).normalize().toString());
           }
           return n;
         }
@@ -224,19 +214,6 @@
           }
         }
       },
-      manifest_name: {
-        check: function (x) {
-          if (typeof x === 'string') {
-            // See RFC 3986 'segment' production for discussion of allowed chars in manfest_name
-            if (x.length === 0) errorThrow("blank value not allowed");
-            else if (!/^[A-Za-z0-9\-\._~!\$&\'\(\)\*\+\,\;\=\:\@\%]+$/.test(x))
-              errorThrow("invalid characters present");
-          } else {
-            // non-strings not allowed
-            errorThrow();
-          }
-        }
-      },
       name: {
         may_overlay: true,
         required: true,
@@ -248,17 +225,30 @@
       },
       //widget might become more complex, and this validation code would need to become so as well
       widget: {
-        //a path to an embeddable widget for display in a small iframe
+        // a path to an embeddable widget for display in a small iframe
         check: function (x) {
-          if (typeof x.path !== 'string') errorThrow('widget path not a string');
+          if (typeof x.path !== 'string') errorThrow(undefined, "path");
+          if (x.path.indexOf('/') !== 0) errorThrow("must start with '/'", "path");
           if (x.width) {
-            var w = parseInt(x.width,10);
-            if (w < 10 || w > 1000) errorThrow('widget width outside allowed range [10 - 1000]'); 
+            if (!isInteger(x.width)) errorThrow('must be an integer', "width");
+            if (x.width < 10 || x.width > 1000) errorThrow('outside allowed range [10 - 1000]', "width");
           }
           if (x.height) {
-            var h = parseInt(x.height,10);
-            if (h < 10 || h > 1000) errorThrow('widget height outside allowed range [10 - 1000]'); 
+            if (!isInteger(x.height)) errorThrow('must be an integer', "height");
+            if (x.height < 10 || x.height > 1000) errorThrow('outside allowed range [10 - 1000]', "height");
           }
+        },
+        normalize: function(x) {
+          // normalization occurs after validation.  we know these are
+          // valid integers in range (if present), but they may have trailing
+          // zeros and a decimal point.
+          if (x.width) x.width = Math.floor(x.width);
+          if (x.height) x.height = Math.floor(x.height);
+
+          // path normalization, we'll use the URLParse library as it will do nice
+          // thinks, like collapse dots.
+          x.path = URLParse("http://fake" + x.path).normalize().path;
+          return x;
         }
       }
     };
@@ -287,7 +277,6 @@
           } catch (e) {
             e.path.unshift(prop);
             if (!e.msg) e.msg = 'invalid value: ' + extractValue(manf, e.path);
-            console.log(e);
             throw e;
           }
         }
