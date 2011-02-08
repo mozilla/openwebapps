@@ -127,10 +127,11 @@ account to sync their applications.
 Wherever *application objects* are returned via the api, they are represented as javascript objects
 with the following fields:
 
-    `origin (string)`: The origin of the application (scheme, host, and port)
     `manifest (object)`: The currently stored version of the manifest of the application.
-    `install_time (integer)`: The time that the application was installed (generated via Date().getTime, represented as the number of milliseconds between midnight of January 1st, 1970 and the time the app was installed).  
+    `origin (string)`: The origin of the application (scheme, host, and port)
+    `install_data (object)`: data provided at the time `navigator.apps.install()` was invoked.
     `install_origin (string)`: The origin of the site that triggered the installation of the application.
+    `install_time (integer)`: The time that the application was installed (generated via Date().getTime, represented as the number of milliseconds between midnight of January 1st, 1970 and the time the app was installed).  
 
 #### Error Objects  <a name="error-object"></a>
 
