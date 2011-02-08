@@ -48,7 +48,7 @@ The installation API is exposed as properties on the `navigator.apps` object.
     This object may be used as a means of an installing site (possibly store or directory) communicating with an
     application.  Information related to purchase verification may be transmitted in this object.
 
-    **onsuccess** is a callback that will be invoked if the application is successfully installed.
+    **onsuccess** is a callback that will be invoked with no arguments if the application is successfully installed.
 
     **onerror** is an [error callback](#error-object) that will be invoked if the installation fails.  Possible error
     codes include:
