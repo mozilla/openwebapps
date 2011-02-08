@@ -4,8 +4,11 @@
   <script type="text/javascript" src="doctestjs/doctest.js"></script>
   <link rel="stylesheet" type="text/css" href="doctestjs/doctest.css" />
   <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+  <style type="text/css" media="screen">
+      iframe { display: none; }
+  </style>
 </head>
-<body>
+<body id="testingBody">
 <h2> App Repo API Tests </h2>
 
 <p>
@@ -28,7 +31,15 @@ First let's ensure that the testing environment is sane...
 $ var dirs = [];
 > for (var k in SERVERS) dirs.push(k);
 > dirs.sort();
-["_primary", "bad_content_type", "basic_app", "json_syntax_error", "missing_required_field", "no_delegated_install"]
+[
+  "_primary",
+  "bad_content_type",
+  "basic_app",
+  "json_syntax_error",
+  "missing_required_field",
+  "no_delegated_install",
+  "no_mgmt_api_off_repo_origin"
+]
 </pre>
 
 <h3>Clear All Apps</h3>
@@ -169,15 +180,54 @@ $ navigator.apps.install(
 >    onerror: Spy('apps.install.error', {wait: true, ignoreThis: true})
 >   });
 apps.install.error({code: "permissionDenied", message: "origin 'http://127.0.0.1:...' may not install this app"})
-
 </pre>
 
+<h3>Verify mgmt permissions don't work off repo origin</h3>
+
+NOTE:  This is a rather tricky test:  We'll programatically embed an iframe from
+a non-repo origin and load web content from that origin.  The content
+(<tt>no_mgmt_api_off_repo_origin/include.html</tt>) uses jschannel to allow us
+to programmatically drive it running queries against the test app repo from
+off domain.
+
+<pre class="doctest">
+$ // first let's add an iframe with the child to the document */
+> var iframe = document.createElement("iframe");
+> iframe.src = SERVERS['no_mgmt_api_off_repo_origin'] + "/include.html";
+> document.body.appendChild(iframe);
+> // next, let's connect to him over a jschannel
+> var chan = Channel.build({
+>    window: iframe.contentWindow,
+>    scope: "test",
+>    origin: "*"
+> });
+> // a utility function to automatically build up proper jschan.call args:
+> function buildJSChanArgs(name) {
+>   return { method: name,
+>            success: Spy('success', {wait: false, ignoreThis: true}), 
+>            error: Spy('error', {wait: true, ignoreThis: true}) };
+> }
+> // now let's queue up a message requesting him to call the 'launch' mgmt function
+> chan.call(buildJSChanArgs("launch"));
+error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory")
+$ chan.call(buildJSChanArgs("loadState"));
+error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory")
+$ chan.call(buildJSChanArgs("loginStatus"));
+error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory")
+$ chan.call(buildJSChanArgs("list"));
+error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory")
+$ chan.call(buildJSChanArgs("remove"));
+error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory")
+$ chan.call(buildJSChanArgs("saveState"));
+error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory")
+</pre>
 
   <button onclick="doctest()" type="button">Test all</button>
 
 </body>
 <script type="text/javascript" src="/servers.js"></script>
 <script type="text/javascript" src="/jsapi/include.js"></script>
+<script type="text/javascript" src="/js/jschannel.js"></script>
 <script type="text/javascript">
   navigator.apps.setRepoOrigin(SERVERS['_primary']);
 </script>

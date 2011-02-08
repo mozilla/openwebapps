@@ -655,7 +655,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
         // is undefined, throw!
         function deliverError(code, message, onerror) {
             var errObj = { code: code, message: message };
-            if (typeof onerror === 'function') onerror(errObj);
+            if (typeof onerror === 'function') onerror.call(undefined, errObj);
             else throw errObj; // what else can we do?
         }
 
@@ -721,6 +721,21 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
         var _lastListResults = [];
 
         function callLaunch(id, onsuccess, onerror) {
+            // perform a quick management API check.  While this check doesn't actually
+            // enforce any security, it does offer consistent error messages.  Even with the
+            // removal of this check the rest of this function won't work, because it relies
+            // on previous invocation of list() (to discover the launchURL).
+            var loc = window.location
+            if ((loc.protocol + "://" + loc.host) !== AppRepositoryOrigin) {
+                setTimeout(function() {
+                    deliverError("permissionDenied",
+                                 "to access open web apps management apis, you must be on the same domain " +
+                                 "as the application repostiory",
+                                 onerror);
+                }, 0);
+                return;
+            }
+
             for (var i = 0; i < _lastListResults.length; i++) {
                 if (_lastListResults[i].id === id) {
                     window.open(_lastListResults[i].launchURL, "openwebapp_" + id);
@@ -811,11 +826,11 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
             getInstalledBy: callGetInstalledBy,
             mgmt: {
                 launch: callLaunch,
+                loadState: callLoadState,
+                loginStatus: callLoginStatus,
                 list: callList,
                 remove: callRemove,
-                loadState: callLoadState,
-                saveState: callSaveState,
-                loginStatus: callLoginStatus
+                saveState: callSaveState
             },
             html5Implementation: true,
             // a debugging routine which allows debugging or testing clients
