@@ -5,7 +5,14 @@
   <link rel="stylesheet" type="text/css" href="doctestjs/doctest.css" />
   <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
   <style type="text/css" media="screen">
-      iframe { display: none; }
+      iframe {
+        display: none;
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+      }
   </style>
 </head>
 <body id="testingBody">
@@ -182,7 +189,7 @@ $ navigator.apps.install(
 apps.install.error({code: "permissionDenied", message: "origin 'http://127.0.0.1:...' may not install this app"})
 </pre>
 
-<h3>Verify mgmt permissions don't work off repo origin</h3>
+<h3>Installation of that same app, from its own origin</h3>
 
 NOTE:  This is a rather tricky test:  We'll programatically embed an iframe from
 a non-repo origin and load web content from that origin.  The content
@@ -191,26 +198,32 @@ to programmatically drive it running queries against the test app repo from
 off domain.
 
 <pre class="doctest">
+$ var chan = embedIFrameAndStartChannel(SERVERS['no_delegated_install'] + "/include.html");
+$ // now for a horrible hack.  when installing from within an iframe, in and HTML5 environment
+> // prompting will occur inside that iframe.  yuck!  We'll temporarily show that iframe
+> // so the testor can click.
+> showIFrame(SERVERS['no_delegated_install']);
+$ chan.call(buildJSChanArgs("install", true));
+success(true)
+$ hideIFrame(SERVERS['no_delegated_install']);
+</pre>
+
+<h3>Verify mgmt permissions don't work off repo origin</h3>
+
+<pre class="doctest">
 $ // first let's add an iframe with the child to the document */
 > var chan = embedIFrameAndStartChannel(SERVERS['no_mgmt_api_off_repo_origin'] + "/include.html");
-> // a utility function to automatically build up proper jschan.call args:
-> function buildJSChanArgs(name) {
->   return { method: name,
->            success: Spy('success', {wait: false, ignoreThis: true}), 
->            error: Spy('error', {wait: true, ignoreThis: true}) };
-> }
-> // now let's queue up a message requesting him to call the 'launch' mgmt function
-> chan.call(buildJSChanArgs("launch"));
+> chan.call(buildJSChanArgs("launch", false));
 error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory")
-$ chan.call(buildJSChanArgs("loadState"));
+$ chan.call(buildJSChanArgs("loadState", false));
 error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory")
-$ chan.call(buildJSChanArgs("loginStatus"));
+$ chan.call(buildJSChanArgs("loginStatus", false));
 error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory")
-$ chan.call(buildJSChanArgs("list"));
+$ chan.call(buildJSChanArgs("list", false));
 error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory")
-$ chan.call(buildJSChanArgs("remove"));
+$ chan.call(buildJSChanArgs("remove", false));
 error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory")
-$ chan.call(buildJSChanArgs("saveState"));
+$ chan.call(buildJSChanArgs("saveState", false));
 error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory")
 </pre>
 
@@ -225,7 +238,7 @@ error("permissionDenied", "to access open web apps management apis, you must be 
 
   // a utility function to make it quick to attach iframes and establish jschannels to them:
   // this serves as the basis for several different types of cross-origin tests
-  function embedIFrameAndStartChannel(url) { 
+  function embedIFrameAndStartChannel(url) {
     var iframe = document.createElement("iframe");
     iframe.src = url;
     document.body.appendChild(iframe);
@@ -236,6 +249,35 @@ error("permissionDenied", "to access open web apps management apis, you must be 
         origin: "*"
     });
     return chan;
+  }
+
+  // a utility function to automatically build up proper jschan.call args:
+  function buildJSChanArgs(name, shouldSucceed) {
+    return { method: name,
+             success: Spy('success', {wait: shouldSucceed, ignoreThis: true}), 
+             error: Spy('error', {wait: !shouldSucceed, ignoreThis: true}) };
+  }
+
+  // given an origin of a host, find the iframe associated with it and
+  // maximize it
+  function showIFrame(origin) {
+    var tags = document.getElementsByTagName('iframe');
+    for (var i = 0; i < tags.length; i++) {
+      if (0 === tags[i].getAttribute('src').indexOf(origin)) {
+        tags[i].style.display = "inline";
+        return;
+      }
+    }
+  }
+
+  function hideIFrame(origin) {
+    var tags = document.getElementsByTagName('iframe');
+    for (var i = 0; i < tags.length; i++) {
+      if (0 === tags[i].getAttribute('src').indexOf(origin)) {
+        tags[i].style.display = "none";
+        return;
+      }
+    }
   }
 
 </script>

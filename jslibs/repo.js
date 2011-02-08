@@ -147,8 +147,13 @@
         return result;
     }
 
-    function mayInstall(installOrigin, manifestToInstall)
+    function mayInstall(installOrigin, appOrigin, manifestToInstall)
     {
+        // apps may always trigger install from their own domain
+        if (installOrigin === appOrigin) return true;
+
+        // otherwise, when installOrigin != appOrigin, we must check the
+        // installs_allowed_from member of the manifest
         if (manifestToInstall && manifestToInstall.installs_allowed_from) {
             var iaf = manifestToInstall.installs_allowed_from;
             for (var i = 0; i < iaf.length; i++) {
@@ -211,6 +216,11 @@
         var appOrigin = undefined;
 
         if (args.url) {
+            // support absolute paths as a developer convenience
+            if (0 == args.url.indexOf('/')) {
+              args.url = origin + args.url;
+            }
+
             // extract the application origin from the manifest URL
             try {
               var u = URLParse(args.url);
@@ -237,7 +247,7 @@
                     try {
                         manifestToInstall = Manifest.validate(fetchedManifest);
 
-                        if (!mayInstall(installOrigin, manifestToInstall)) {
+                        if (!mayInstall(installOrigin, appOrigin, manifestToInstall)) {
                             cb({error: ["permissionDenied", "origin '" + installOrigin + "' may not install this app"]});
                             return;
                         }
