@@ -222,9 +222,11 @@
             }
 
             // contact our server to retrieve the URL
-            fetchManifestFunc(args.url, function(fetchedManifest) {
+            fetchManifestFunc(args.url, function(fetchedManifest, contentType) {
                 if (!fetchedManifest) {
                     cb({error: ["networkError", "couldn't retrieve application manifest from network"]});
+                } else if (contentType.indexOf("application/x-web-app-manifest+json") != 0) {
+                    cb({error: ["invalidManifest", "application manifests must be of Content-Type \"application/x-web-app-manifest+json\""]});
                 } else {
                     try {
                         fetchedManifest = JSON.parse(fetchedManifest);

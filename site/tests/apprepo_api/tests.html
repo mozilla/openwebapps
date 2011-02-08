@@ -28,7 +28,7 @@ First let's ensure that the testing environment is sane...
 $ var dirs = [];
 > for (var k in SERVERS) dirs.push(k);
 > dirs.sort();
-["_primary", "basic_app", "json_syntax_error", "missing_required_field"]
+["_primary", "bad_content_type", "basic_app", "json_syntax_error", "missing_required_field"]
 </pre>
 
 <h3>Clear All Apps</h3>
@@ -144,6 +144,20 @@ $ navigator.apps.install(
 >    onerror: Spy('apps.install.error', {wait: true, ignoreThis: true})
 >   });
 apps.install.error({code: "invalidManifest", message: "couldn't validate your manifest: missing \"name\" property"})
+</pre>
+
+<h3>Installation of an app without required HTTP Content-Type</h3>
+
+<pre class="doctest">
+$ navigator.apps.install(
+>   {url: SERVERS['bad_content_type'] + "/manifest.json",
+>    onsuccess: Spy('apps.install.success', {wait: false, ignoreThis: true}),
+>    onerror: Spy('apps.install.error', {wait: true, ignoreThis: true})
+>   });
+apps.install.error({
+  code: "invalidManifest",
+  message: "application manifests must be of Content-Type \"application/x-web-app-manifest+json\""
+})
 </pre>
 
   <button onclick="doctest()" type="button">Test all</button>
