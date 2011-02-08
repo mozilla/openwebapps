@@ -40,6 +40,12 @@ For a discussion of the security and privacy considerations around the applicati
         "https://appstore.mozillalabs.com"
       ],
 
+      "widget": {
+        "path": "/widget.html",
+        "width": 100,
+        "height": 200
+      },
+
       "locales": {
         "es": {
           "description": "¡Acción abierta emocionante del desarrollo del Web!",
@@ -85,6 +91,14 @@ For detailed technical discussion of the manifest, please visit [the wiki](http:
 * [**installs_allowed_from**](http://wiki.mozilla.org/Labs/Apps/Manifest#installs.allowed.from): (optional) An array of origins that should be allowed to trigger installation of this application.  This field allows developers hosting their applications to explicitly delegate installation privileges to sites or stores with whom they have a relationship, and must be respected by the application repository (eventually, the user agent).  If omitted, installation may only be triggered from the origin where the application is hosted.
 
 * [**version**](http://wiki.mozilla.org/Labs/Apps/Manifest#version): (optional) A string that represents the version of the application.  The repository doesn't use this value in any way, but developers may embed this string into the manifest and extract it to help deal with various update cases.  See the section on updating, below.
+
+* [**widget**](http://wiki.mozilla.org/Labs/Apps/Manifest#widget): (optional) An HTML document that is designed to be rendered inside an iframe to give users an abbreviated view of your app.
+
+    * [**path**](http://wiki.mozilla.org/Labs/Apps/Manifest#widget.path): (required) Must be an absolute path starting with '/', and will be concatenated to the application origin. 
+
+    * [**width**](http://wiki.mozilla.org/Labs/Apps/Manifest#widget.width): An integer between 10 and 1000 representing the desired rendered width of the widget.
+
+    * [**height**](http://wiki.mozilla.org/Labs/Apps/Manifest#widget.width): An integer between 10 and 1000 representing the desired rendered height of the widget.
 
 #### Serving Manifests
 

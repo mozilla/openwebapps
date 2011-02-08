@@ -77,6 +77,10 @@
       if (typeof x !== 'string') errorThrow();
     };
 
+    var isInteger = function(x) {
+      return (typeof x === 'number' && Math.ceil(x) == Math.floor(x));
+    };
+
     // a table that specifies manfiest properties, and validation functions
     // each key is the name of a valid top level property.
     // each value is an object with four optional properties:
@@ -221,17 +225,30 @@
       },
       //widget might become more complex, and this validation code would need to become so as well
       widget: {
-        //a path to an embeddable widget for display in a small iframe
+        // a path to an embeddable widget for display in a small iframe
         check: function (x) {
-          if (typeof x.path !== 'string') errorThrow('widget path not a string');
+          if (typeof x.path !== 'string') errorThrow(undefined, "path");
+          if (x.path.indexOf('/') !== 0) errorThrow("must start with '/'", "path");
           if (x.width) {
-            var w = parseInt(x.width,10);
-            if (w < 10 || w > 1000) errorThrow('widget width outside allowed range [10 - 1000]'); 
+            if (!isInteger(x.width)) errorThrow('must be an integer', "width");
+            if (x.width < 10 || x.width > 1000) errorThrow('outside allowed range [10 - 1000]', "width");
           }
           if (x.height) {
-            var h = parseInt(x.height,10);
-            if (h < 10 || h > 1000) errorThrow('widget height outside allowed range [10 - 1000]'); 
+            if (!isInteger(x.height)) errorThrow('must be an integer', "height");
+            if (x.height < 10 || x.height > 1000) errorThrow('outside allowed range [10 - 1000]', "height");
           }
+        },
+        normalize: function(x) {
+          // normalization occurs after validation.  we know these are
+          // valid integers in range (if present), but they may have trailing
+          // zeros and a decimal point.
+          if (x.width) x.width = Math.floor(x.width);
+          if (x.height) x.height = Math.floor(x.height);
+
+          // path normalization, we'll use the URLParse library as it will do nice
+          // thinks, like collapse dots.
+          x.path = URLParse("http://fake" + x.path).normalize().path;
+          return x;
         }
       }
     };
