@@ -36,11 +36,35 @@ in the API:
 
 The installation API is exposed as properties on the `navigator.apps` object.
 
-*   `install({ url: <url to manifest> , [ install_data: <object> ], callback: <function> }):`
+*   `install({ url: <url to manifest> , [ install_data: <object> ], [ onsuccess: <function> ], [ onerror: <function> ] }):`
 
-    Prompts the user for confirmation of the manifest, possibly checking the installation and application domains against a registry of known malware sites.  If the user consents, the manifest is installed into the repository, along with the hostname of the installing site and a timestamp.  If the installing site does not use SSL, the user will be strongly discouraged from installing the application.   When the installation flow is completed with success or failure, the installing website is notified through the callback.
+    Trigger the installation of an application.  During the installation process, the application will be validated
+    and the user prompted to approve the installation.
 
-*   `getInstalled( <callback> ):`
+    **url** is a `string` URL containing the location of the manifest to be installed.  In the case of self distribution
+    (where the installing origin is the same as the application origin), the installing site may omit the origin part of
+    the url and provide an absolute path (beginning with '/').
+
+    **install_data** is an `object` containing data that will be associated with the installed application.
+    This object may be used as a means of an installing site (possibly store or directory) communicating with an
+    application.  Information related to purchase verification may be transmitted in this object.
+
+    **onsuccess** is a function that will be invoked if the application is successfully installed.
+
+    **onerror** is an [error callback](#error_object) that will be invoked if the installation fails.  Possible error
+    codes include:
+
+        * `denied` - if the user refuses to install the application
+        * `permissionDenied` - if the installing site is not allowed to trigger the installation
+        * `manifestURLError` - if the url to the manifest is malformed
+        * `networkError` - if the application host is unreachable
+        * `manifestParseError` - if the manifest contains syntax errors (not proper JSON)
+        * `invalidManifest` - if the manifest contains semantic errors (i.e. missing required properties)
+
+    Finally, the install() function will throw an exception if required arguments are missing (url), or if
+    unsupported arguments are present.
+
+*   `amInstalled( <onsuccess callback>, [onerror callback] ):`
 
     returns, through the callback, the installed applications whose URLs are contained by the calling site.  This allows an application to find out whether its manifest has been installed on a browser when the user visits the site. ([wiki](http://wiki.mozilla.org/Labs/Apps/MyApps#getInstalled))
 
@@ -101,6 +125,9 @@ account to sync their applications.
 
     Logout the currently authenticated user.  A noop if no user is currently authenticated.  The callback argument will be invoked when the operation is complete and takes no arguments.
 
+#### Error Objects  <a name="error-objects"></a>
+
+XXX
 
 #### Mobile Considerations
 

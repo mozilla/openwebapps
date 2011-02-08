@@ -126,31 +126,6 @@
         });
     });
 
-    chan.bind('verify', function(t, args) {
-        // We will look for manifests whose app_urls filter matches the origin.
-        // If we find one, we will initiate verification of the user
-        // by contacting the authorizationURL defined in the installation record.
-
-        // If we find two... well, for now, we take the first one.
-        // Perhaps we should find the first one that has an authorization URL.
-
-        var result = Repo.getInstalled(t.origin);
-        if (result.length == 0) return null;
-
-        // Must have authorizationURL
-        if (!result[0].authorizationURL)
-        {
-            throw ['invalidArguments', 'missing authorization url' ];
-        }
-
-        // TODO Could optionally have a returnto
-        win.parent.location = result[0].authorizationURL;
-
-        // return value isn't meaningful.  as a result of overwriting
-        // the parent location, we'll be torn down.
-        return;
-    });
-
     /** Determines which applications are installed *for* the origin domain */
     chan.bind('getInstalled', function(t, args) {
         return Repo.getInstalled(t.origin);

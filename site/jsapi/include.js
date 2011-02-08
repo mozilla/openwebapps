@@ -671,6 +671,10 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
                     }
                 }
             }
+            if (!args.url || typeof(args.url) !== 'string') {
+                throw "install missing required url argument";
+            }
+
             chan.call({
                 method: "install",
                 params: {

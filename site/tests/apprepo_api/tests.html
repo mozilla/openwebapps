@@ -72,6 +72,13 @@ $ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true}));
 apps.mgmt.list({})
 </pre>
 
+<h3>Install missing required arguments will throw</h3>
+
+<pre class="doctest">
+$ navigator.apps.install();
+Error: install missing required url argument
+</pre>
+
 <h3>Install a basic application</h3>
 
 <pre class="doctest">
