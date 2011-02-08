@@ -120,17 +120,15 @@
     }
 
     // Return all installations that belong to the given origin domain
-    function getInstallsForOrigin(origin)
+    function appForOrigin(origin)
     {
-        var result = [];
-
+        var rv = undefined;
         iterateApps(function(key, item) {
             if (applicationMatchesDomain(item.origin, origin)) {
-                result.push(item);
+                rv = item;
             }
         });
-
-        return result;
+        return rv;
     }
 
     // Return all installations that were installed by the given origin domain
@@ -269,8 +267,8 @@
     };
 
     /** Determines which applications are installed for the origin domain */
-    function getInstalled(origin) {
-        return getInstallsForOrigin(origin);
+    function amInstalled(origin) {
+        return appForOrigin(origin);
     };
 
     /** Determines which applications were installed by the origin domain. */
@@ -322,7 +320,7 @@
         list: list,
         install: install,
         remove: remove,
-        getInstalled: getInstalled,
+        amInstalled: amInstalled,
         getInstalledBy: getInstalledBy,
         loadState: loadState,
         saveState: saveState

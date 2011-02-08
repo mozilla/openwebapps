@@ -51,7 +51,7 @@ The installation API is exposed as properties on the `navigator.apps` object.
 
     **onsuccess** is a function that will be invoked if the application is successfully installed.
 
-    **onerror** is an [error callback](#error_object) that will be invoked if the installation fails.  Possible error
+    **onerror** is an [error callback](#error-object) that will be invoked if the installation fails.  Possible error
     codes include:
 
         * `denied` - if the user refuses to install the application
@@ -66,13 +66,13 @@ The installation API is exposed as properties on the `navigator.apps` object.
 
 *   `amInstalled( <onsuccess callback>, [onerror callback] ):`
 
-    returns, through the callback, the installed applications whose URLs are contained by the calling site.  This allows an application to find out whether its manifest has been installed on a browser when the user visits the site. ([wiki](http://wiki.mozilla.org/Labs/Apps/MyApps#getInstalled))
+    Provides a means for an application to check if it's installed.  Once determined, the `onsuccess` function will
+    be invoked with a single argument: an [application object](#app-object) if installed, or `undefined` if not.
 
-*   `getInstalledBy( <callback> ):`
+*   `getInstalledBy( <onsuccess callback>, [onerror callback] ):`
 
-    returns, through the callback, the applications that were installed by the calling domain.  This allows an application directory or store to determine if an application is already installed, during browsing. ([wiki](http://wiki.mozilla.org/Labs/Apps/MyApps#getInstalledBy))
-
-<!-- FIXME: probably some simple example is called for here? Or link to some examples page on wiki -->
+    Returns, through the callback, the applications that were installed by the calling domain.  This allows an application
+    directory or store to determine which applications it has installed on behalf of the current user. ([wiki](http://wiki.mozilla.org/Labs/Apps/MyApps#getInstalledBy)).  `onsuccess` will be invoked with an array of the [application objects](#app-object) installed by the calling origin.
 
 #### Management API (`navigator.apps.mgmt.*`)  <a name="mgmt-api"></a>
 
@@ -125,7 +125,11 @@ account to sync their applications.
 
     Logout the currently authenticated user.  A noop if no user is currently authenticated.  The callback argument will be invoked when the operation is complete and takes no arguments.
 
-#### Error Objects  <a name="error-objects"></a>
+#### Application Representation  <a name="app-object"></a>
+
+XXX
+
+#### Error Objects  <a name="error-object"></a>
 
 XXX
 

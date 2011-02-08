@@ -20,9 +20,9 @@
       scope: "test"
     });
 
-    chan.bind("getInstalled", function(trans) {
+    chan.bind("amInstalled", function(trans) {
       trans.delayReturn(true);
-      navigator.apps.getInstalled(
+      navigator.apps.amInstalled(
         function(v) { trans.complete(v); },
         function(errObj) { trans.error(errObj.code, errObj.message) }
       );

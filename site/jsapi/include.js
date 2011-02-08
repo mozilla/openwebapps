@@ -690,10 +690,10 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
             });
         }
 
-        function callGetInstalled(onsuccess, onerror) {
+        function callAmInstalled(onsuccess, onerror) {
             setupWindow();
             chan.call({
-                method: "getInstalled",
+                method: "amInstalled",
                 error: function(error, message) {
                     deliverError(error, message, onerror);
                 },
@@ -826,7 +826,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
         // Return AppClient object with exposed API calls
         return {
             install: callInstall,
-            getInstalled: callGetInstalled,
+            amInstalled: callAmInstalled,
             getInstalledBy: callGetInstalledBy,
             mgmt: {
                 launch: callLaunch,
