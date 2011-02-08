@@ -106,7 +106,7 @@ account to sync their applications.
 *  `getLoggedInUser( <onsuccess callback>, [onerror callback] )`
 
     Determine whether a user is currently authenticated to the application repository for the purposes of application synchronization.
-    The callback takes a single argument which is `null` when no user is logged in, otherwise the argument is a javascript object
+    The callback receives a single argument which is `null` when no user is logged in, otherwise the argument is a javascript object
     containing the following properties:
 
     `userName (string)`: a unique identifier which is meaningful to both the system and the user (i.e. email address). 
@@ -120,7 +120,7 @@ account to sync their applications.
 *  `logout( <onsuccess callback>, [onerror callback] )`
 
     Logout the currently authenticated user.  A noop if no user is currently authenticated.  The `onsuccess` callback argument will be
-    invoked when the operation is complete and takes no arguments.
+    invoked when the operation is complete and receives no arguments.
 
 #### Application Representation  <a name="app-object"></a>
 
