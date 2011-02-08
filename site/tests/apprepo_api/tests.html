@@ -142,6 +142,21 @@ $ navigator.apps.getInstalled(Spy('apps.getInstalled', {wait: true, ignoreThis: 
 apps.getInstalled([])
 </pre>
 
+<h3>getInstalled from basic app's domain *should* show the new app</h3>
+
+<pre class="doctest">
+$ var chan = embedIFrameAndStartChannel(SERVERS['basic_app'] + "/include.html");
+> chan.call(buildJSChanArgs("getInstalled", true));
+success([
+  {
+    install_time: ...,
+    install_url: "http://127.0.0.1:...",
+    manifest: {default_locale: "en", installs_allowed_from: ["*"], name: "Wild and Crazy Basic App"},
+    origin: "http://127.0.0.1:..."
+  }
+])
+</pre>
+
 <h3>Installation of an app with a syntax error in manifest</h3>
 
 <pre class="doctest">
@@ -206,6 +221,67 @@ $ // now for a horrible hack.  when installing from within an iframe, in and HTM
 $ chan.call(buildJSChanArgs("install", true));
 success(true)
 $ hideIFrame(SERVERS['no_delegated_install']);
+> // now getInstalled should show that we're installed
+> chan.call(buildJSChanArgs("getInstalled", true));
+success([
+  {
+    install_time: ...,
+    install_url: "http://127.0.0.1:...",
+    manifest: {default_locale: "en", name: "An application which does not grant permission for any other origin to install it"},
+    origin: "http://127.0.0.1:..."
+  }
+])
+$ // and getInstalledBy should show that same result
+> chan.call(buildJSChanArgs("getInstalledBy", true));
+success([
+  {
+    install_time: ...,
+    install_url: "http://127.0.0.1:...",
+    manifest: {default_locale: "en", name: "An application which does not grant permission for any other origin to install it"},
+    origin: "http://127.0.0.1:..."
+  }
+])
+</pre>
+
+<h3>getInstalled by from origin shouldn't show second app</h3>
+
+<pre class="doctest">
+$ navigator.apps.getInstalledBy(Spy('apps.getInstalledBy', {wait: true, ignoreThis: true}));
+apps.getInstalledBy([
+  {
+    install_time: ...,
+    install_url: "http://127.0.0.1:...",
+    manifest: {default_locale: "en", installs_allowed_from: ["*"], name: "Wild and Crazy Basic App"},
+    origin: "http://127.0.0.1:..."
+  }
+])
+</pre>
+
+<h3>list should now contain two apps</h3>
+
+<pre class="doctest">
+$ navigator.apps.mgmt.list(Spy('list', {wait: true, wrapArgs: true}));
+list({
+  http://127.0.0.1:...: {
+    install_time: ...,
+    install_url: "http://127.0.0.1:...",
+    manifest: {
+      default_locale: "en",
+      name: "An application which does not grant permission for any other origin to install it"
+    },
+    origin: "http://127.0.0.1:..."
+  },
+  http://127.0.0.1:...: {
+    install_time: ...,
+    install_url: "http://127.0.0.1:...",
+    manifest: {
+      default_locale: "en",
+      installs_allowed_from: ["*"],
+      name: "Wild and Crazy Basic App"
+    },
+    origin: "http://127.0.0.1:..."
+  }
+})
 </pre>
 
 <h3>Verify mgmt permissions don't work off repo origin</h3>
