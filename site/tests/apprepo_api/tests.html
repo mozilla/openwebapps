@@ -192,15 +192,7 @@ off domain.
 
 <pre class="doctest">
 $ // first let's add an iframe with the child to the document */
-> var iframe = document.createElement("iframe");
-> iframe.src = SERVERS['no_mgmt_api_off_repo_origin'] + "/include.html";
-> document.body.appendChild(iframe);
-> // next, let's connect to him over a jschannel
-> var chan = Channel.build({
->    window: iframe.contentWindow,
->    scope: "test",
->    origin: "*"
-> });
+> var chan = embedIFrameAndStartChannel(SERVERS['no_mgmt_api_off_repo_origin'] + "/include.html");
 > // a utility function to automatically build up proper jschan.call args:
 > function buildJSChanArgs(name) {
 >   return { method: name,
@@ -230,5 +222,21 @@ error("permissionDenied", "to access open web apps management apis, you must be 
 <script type="text/javascript" src="/js/jschannel.js"></script>
 <script type="text/javascript">
   navigator.apps.setRepoOrigin(SERVERS['_primary']);
+
+  // a utility function to make it quick to attach iframes and establish jschannels to them:
+  // this serves as the basis for several different types of cross-origin tests
+  function embedIFrameAndStartChannel(url) { 
+    var iframe = document.createElement("iframe");
+    iframe.src = url;
+    document.body.appendChild(iframe);
+    // next, let's connect to her over a jschannel
+    var chan =  Channel.build({
+        window: iframe.contentWindow,
+        scope: "test",
+        origin: "*"
+    });
+    return chan;
+  }
+
 </script>
 </html>
