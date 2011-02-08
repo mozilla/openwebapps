@@ -160,9 +160,9 @@
         return Repo.list();
     });
 
-    chan.bind('remove', function(t, key) {
+    chan.bind('remove', function(t, origin) {
         verifyMgmtPermission(t.origin);
-        return Repo.remove(key);
+        return Repo.remove(origin);
     });
 
     chan.bind('loadState', function(t) {

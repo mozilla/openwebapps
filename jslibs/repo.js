@@ -293,10 +293,10 @@
         return installed;
     };
 
-    function remove(key) {
-        var item = appStorage.get(key);
-        if (!item) throw {error: [ "noSuchApplication", "no application exists with the id: " + key]};
-        appStorage.remove(key);
+    function remove(origin) {
+        var item = appStorage.get(origin);
+        if (!item) throw [ "noSuchApplication", "no application exists with the origin: " + origin];
+        appStorage.remove(origin);
         return true;
     };
 

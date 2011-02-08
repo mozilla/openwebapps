@@ -767,11 +767,11 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
             });
         }
 
-        function callRemove(id, onsuccess, onerror) {
+        function callRemove(origin, onsuccess, onerror) {
             setupWindow();
             chan.call({
                 method: "remove",
-                params: id,
+                params: origin,
                 error: function(error, message) {
                     deliverError(error, message, onerror);
                 },

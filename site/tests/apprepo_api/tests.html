@@ -306,6 +306,37 @@ $ chan.call(buildJSChanArgs("saveState", false));
 error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory")
 </pre>
 
+
+<h3>Verify proper errors from remove()</h3>
+<pre class="doctest">
+$ navigator.apps.mgmt.remove(
+>    "http://nosuch.app",
+>    Spy('success', {wait: false, ignoreThis: true}),
+>    Spy('error', {wait: true, ignoreThis: true}));
+error({code: "noSuchApplication", message: "no application exists with the origin: http://nosuch.app"})
+</pre>
+
+<h3>Verify no callbacks are required to remove()</h3>
+
+All args are optional to remove.  To test this we'll remove an app (basic_app), wait 100ms, and
+then verify that list returns a single app.
+
+<pre class="doctest">
+$ navigator.apps.mgmt.remove(SERVERS['basic_app']);
+> wait(100);
+$ navigator.apps.mgmt.list(Spy('list', {wait: true, wrapArgs: true}));
+list({
+  http://127.0.0.1:...: {
+    install_time: ...,
+    install_url: "http://127.0.0.1:...",
+    manifest: {
+      default_locale: "en",
+      name: "An application which does not grant permission for any other origin to install it"
+    },
+    origin: "http://127.0.0.1:..."
+  }
+})
+</pre>
   <button onclick="doctest()" type="button">Test all</button>
 
 </body>
