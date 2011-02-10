@@ -144,6 +144,8 @@ FFRepoImpl.prototype = {
                     } else {
                       errorResult = result.error;
                     }
+                    // Note, here and below we use (1,...) to force this to be
+                    // window (instead of args):
                     (1,args.onerror)(errorResult);
                   }
                 } else {
