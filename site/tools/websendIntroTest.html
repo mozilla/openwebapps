@@ -1,0 +1,78 @@
+<html>
+<head>
+<title>Introduction test</title>
+<style>
+</style>
+<script>
+
+function request()
+{
+  navigator.introducer.introduce(
+    document.getElementById("requestButton"),
+
+    [ 'org.example.bookmark' ],
+
+    function (agreed, provider, frame) {
+
+      if (!agreed) {
+        // User cancelled request.
+        document.getElementById("status").innerHTML = "Introduction was cancelled";
+        return;
+      }
+      if (!provider) {
+        // Introduction failed, try using a partner site.
+        document.getElementById("status").innerHTML = "Introduction failed: no providers found";
+        return;
+      }
+
+      // Restrict the presentation space given to the selected Provider.
+      if (frame) {
+        frame.height = 40;
+        frame.width = 400;
+      }
+      
+      document.getElementById("status").innerHTML = "Got an introduction - communicating now.";
+
+      // Listen for messages from the selected Provider.
+      provider.onmessage = function (event) {
+        dump("WebSend Customer OnMessage " + event.data + "\n");
+        gotMessage(event);
+        //provider.close();
+      };
+
+      // Send a message to the selected Provider.
+      var hello = "Hi there";
+      // provider.postMessage(hello);
+  });
+}
+
+this.window.addEventListener('message', function(event) {
+  dump("Old Skool event listener fired in WebSend Customer: " +event.data +"\n");
+  gotMessage(event);
+
+}, false);
+
+function gotMessage(m) {
+  document.getElementById("debug").innerHTML += "<div>Msg: " + m.data + "</div>";
+}
+
+</script>
+</head>
+
+<body>
+
+<div style="width:500px;margin:auto;padding-top:32px;font:18pt Helvetica">
+<p>This button asks your browser to provide an introduction to a "get profile" service.</p>
+
+<div style="border:none;width:400px;height:60px;overflow-y:hidden">
+<button id="requestButton" onclick="request()">Request Introduction</button>
+</div>
+</div>
+
+<div id="status" style="width:500px;margin:auto;padding-top:32px;font:18pt Helvetica;color:#900000">
+</div>
+<div id="debug"  style="width:500px;margin:auto;padding-top:32px;font:12pt Helvetica;color:#900000">
+</div>
+
+</body>
+</html>

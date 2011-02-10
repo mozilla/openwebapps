@@ -1,0 +1,40 @@
+<html>
+<head></head>
+<script>
+var id = {
+  
+  getProfile: function(requested_fields) {
+    
+    function parseSelector(src) {
+      
+    }
+  
+    function extractInto(srcObj, dstObj, tArray, idx) {
+      var term = tArray[idx];
+      if (srcObj[term]) {
+        var val = srcObj[term];
+        if (idx+1 == tArray.length) {
+          dstObj[term] = val;
+        } else {
+          if (!dstObj[term]) dstObj[term] = {};
+          extractInto(val, dstObj[term], tArray, idx+1);
+        }
+      } 
+    }
+    
+    var result = {};
+    
+    var profile_data = window.localStorage.getItem("profile");
+    if (profile_data) {
+      var full_profile = JSON.parse(profile_data);
+      for (var f in requested_fields)
+      {
+        extractInto(full_profile, result, requested_fields[f].split("/"), 0);
+      }
+    }
+    return ["ok", result];
+  }
+}
+</script>
+<body></body>
+</html>

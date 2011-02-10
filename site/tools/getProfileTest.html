@@ -1,0 +1,37 @@
+<html>
+<head>
+<title>Get Profile Test</title>
+<style>
+</style>
+<script>
+
+function request()
+{
+  var provider_whitelist = ["*"];
+  var requested_fields = ["name", "gender", "birthday", "emails", "addresses"];
+
+  navigator.services.id.getProfile(
+    provider_whitelist,
+    function(status, profile)
+    {
+      dump("getProfile response was called\n");
+      document.getElementById("status").innerHTML = "Received profile result: status is " + status + 
+        "<br>Profile is " + JSON.stringify(profile);
+    },
+    
+    requested_fields
+  );
+}
+</script>
+</head>
+<body>
+
+<div style="width:500px;margin:auto;margin-top:100px">
+<button id="requestButton" onclick="request()" style="font:18pt Helvetica;width:300px;height:40px">Get Profile Data</button>
+</div>
+
+<div id="status" style="width:400px;left-margin:40px;padding-top:32px;font:18pt Helvetica;color:#900000"></div>
+<div id="debug"  style="width:400px;word-wrap:break-word;left-margin:40px;padding-top:32px;font:12pt Helvetica;color:#900000"></div>
+
+</body>
+</html>
