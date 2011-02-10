@@ -94,7 +94,7 @@
         }
 
         for (var j = 0; j < toRemove.length; j++) {
-            appStorage.remove(toRemove[i]);
+            appStorage.remove(toRemove[j]);
         }
     };
 
@@ -168,7 +168,7 @@
     // https://bar:443 --> https://bar, or even http://baz/ --> http://baz)
     function normalizeOrigin(origin) {
         var url = URLParse(origin).normalize();
-        url.path = url.query = url.anchor = undefined; 
+        url.path = url.query = url.anchor = undefined;
         return url.toString();
     }
 
@@ -180,7 +180,7 @@
     //   promptDisplayFunc -- is a callback function that will be invoked to display a
     //           user prompt.  the function should accept 4 arguments which are:
     //             installOrigin --
-    //             appOrigin -- 
+    //             appOrigin --
     //             manifestToInstall --
     //             installationConfirmationFinishCallback --
     //             arguments object
@@ -220,6 +220,10 @@
         var manifestToInstall;
         var installOrigin = origin;
         var appOrigin = undefined;
+
+        if (!args || !args.url || typeof(args.url) !== 'string') {
+            throw "install missing required url argument";
+        }
 
         if (args.url) {
             // support absolute paths as a developer convenience
@@ -331,5 +335,5 @@
         getInstalledBy: getInstalledBy,
         loadState: loadState,
         saveState: saveState
-    }
+    };
 })();
