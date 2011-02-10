@@ -57,7 +57,7 @@
         msg: msg,
         path: (path ? path : [ ]),
         toString: function () {
-          if (this.path && this.path.length > 0) return ("(" + this.path.join("/") + ") " + this.msg); 
+          if (this.path && this.path.length > 0) return ("(" + this.path.join("/") + ") " + this.msg);
           return this.msg;
         }
       };
@@ -89,7 +89,7 @@
     //  normalize: if present and has a function for a value, then accepts current value
     //             in manifest as argument, and outputs a value to replace it.
     //  may_overlay: if present and hase a truey value, then this property may be overlaid by
-    //               content in the locales map. 
+    //               content in the locales map.
     //
     // returning errors:
     //   validation functions throw objects with two fields:
@@ -154,7 +154,12 @@
       },
       installs_allowed_from: {
         check: function(x) {
-          if (!x || typeof x !== 'object' || x.constructor !== Array) errorThrow("expected array of urls");
+          // Checking x.constructor === Array doesn't always give true
+          // when the object really is an array (maybe different array
+          // constructors are flying about?)
+          if (!x || typeof x !== 'object' || typeof x.length != 'number') {
+            errorThrow("expected array of urls: " + JSON.stringify(x));
+          }
           for (var i = 0; i < x.length; i++) {
             if (x[i] === '*') continue;
             var path;
@@ -204,7 +209,7 @@
             // now l[tag] is a locale specific overlay, which is basically
             // a manifest in its own right.  We'll go validate that.  By passing
             // true as the second arg ot validateManifestProperties we restrict
-            // allowed manifest fields to only those which may be overlaid. 
+            // allowed manifest fields to only those which may be overlaid.
             try {
               validateManifestProperties(l[tag], true);
             } catch (e) {
