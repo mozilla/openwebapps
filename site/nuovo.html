@@ -1,0 +1,43 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta http-equiv="X-UA-Compatible" content="IE=8"/>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+  <title>Nuovo Dashboard</title>
+  <link rel="shortcut icon" href="favicon.png" type="image/png">
+  <link rel="stylesheet" href="nuovodashboard.css" type="text/css" title="screen">
+  <link rel="stylesheet" href="details.css" type="text/css" title="screen">
+
+
+  <link rel="stylesheet" type="text/css" href="js/jquery-ui.css"/>
+  <script type="text/javascript" src="js/jquery-1.4.2.min.js"></script>
+  <script type="text/javascript" src="js/jquery-ui-1.8.6.custom.min.js"></script>
+
+  <script type="text/javascript" src="js/compat.js"></script>
+  <script type="text/javascript" src="js/jschannel.js"></script>
+  <script type="text/javascript" src="jsapi/include.js"></script>
+  <script type="text/javascript" src="js/nuovodashboard.js"></script>
+
+<link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.1/themes/base/jquery-ui.css"/>
+
+</head>
+
+<body>
+
+<div id="topContainer">
+
+  <div id="header"><!-- <img src="img/nuovologo.png"> --><span class="headerText glowy-blue-text">Launchpad</span></div>
+  <div class="horiz-divider glowy-blue-frame"></div>
+    
+  <div class="dashContent">
+    <ul class="appDock glowy-blue-outline" id="dock"></ul>
+    <div id="filterAndListBox">
+      <div class="appFilter glowy-blue-outline"><input id="filter" type="search" onKeyUp="filterAppList(event)" class="filterText glowy-blue-text" /></div>
+      <div class="appList glowy-blue-outline" id="list"></div>
+    </div>
+    <div class="widgetSpace glowy-blue-outline" id="widgets"></div>
+  </div>
+</div>
+
+</body>
+</html>

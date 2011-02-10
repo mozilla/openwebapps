@@ -33,6 +33,7 @@ public final class R {
     public static final class string {
         public static final int invalidPassword=0x7f040006;
         public static final int invalidUser=0x7f040005;
+        public static final int loadingMessage=0x7f040009;
         public static final int loginButtonLabel=0x7f040003;
         public static final int loginIDLabel=0x7f040001;
         public static final int loginMessage=0x7f040004;

@@ -121,13 +121,13 @@ function TypedStorage(browserStorage) {
 
 TypedStorage.ObjectStore = function (objType, typedStorage) {
 
-  var file = Components.classes["@mozilla.org/file/directory_service;1"]  
-                       .getService(Components.interfaces.nsIProperties)  
-                       .get("ProfD", Components.interfaces.nsIFile);  
-  file.append("applications.sqlite");  
-  var storageService = Components.classes["@mozilla.org/storage/service;1"]  
-                          .getService(Components.interfaces.mozIStorageService);  
-  var dbConn = storageService.openDatabase(file); // Will also create the file if it does not exist  
+  var file = Components.classes["@mozilla.org/file/directory_service;1"]
+                       .getService(Components.interfaces.nsIProperties)
+                       .get("ProfD", Components.interfaces.nsIFile);
+  file.append("applications.sqlite");
+  var storageService = Components.classes["@mozilla.org/storage/service;1"]
+                          .getService(Components.interfaces.mozIStorageService);
+  var dbConn = storageService.openDatabase(file); // Will also create the file if it does not exist
 
   // See if the table is already created:
   var statement;
@@ -142,9 +142,9 @@ TypedStorage.ObjectStore = function (objType, typedStorage) {
   }
   if (!tableExists) {
     try {
-      dbConn.executeSimpleSQL("CREATE TABLE " + objType + " (id INTEGER PRIMARY KEY, key TEXT UNIQUE NOT NULL, data TEXT)");  
+      dbConn.executeSimpleSQL("CREATE TABLE " + objType + " (id INTEGER PRIMARY KEY, key TEXT UNIQUE NOT NULL, data TEXT)");
     } catch (e) {
-      console.log("Error while creating table: " + e); 
+      console.log("Error while creating table: " + e);
       throw e;
     }
   }
@@ -158,13 +158,13 @@ TypedStorage.ObjectStore = function (objType, typedStorage) {
   self.get = function (key) {
     var getStatement;
     try {
-      getStatement = dbConn.createStatement("SELECT data FROM " + objType + " WHERE key = :key");  
+      getStatement = dbConn.createStatement("SELECT data FROM " + objType + " WHERE key = :key");
       getStatement.params.key = key;
       var data;
       if (getStatement.executeStep()) {
         data = getStatement.row.data;
       }
-      
+
       if (data) {
         // FIXME: should this ignore parse errors?
         return JSON.parse(data);
@@ -190,16 +190,19 @@ TypedStorage.ObjectStore = function (objType, typedStorage) {
 
   //remove the object at a specified key
   self.remove = function (key) {
+    if (key === undefined) {
+      throw('Invalid key passed to TypedStorage().remove(): undefined');
+    }
     var canceled = ! self._typedStorage.dispatchEvent('delete',
         {target: key, eventType: 'delete', storageType: self});
     if (! canceled) {
       var removeStatement;
-      try {      
+      try {
         removeStatement = dbConn.createStatement("DELETE FROM " + objType + " WHERE key = :key");
-        removeStatement.params.key = key;        
+        removeStatement.params.key = key;
         removeStatement.executeStep();
       } catch (e) {
-        console.log("Error while deleting from table " + objType + ": " + e+ "; " + dbConn.lastErrorString + "; statement was " + 
+        console.log("Error while deleting from table " + objType + ": " + e+ "; " + dbConn.lastErrorString + "; statement was " +
           "DELETE FROM " + objType + " WHERE key = :key" + "; key was " + key);
         throw e;
       } finally {
@@ -261,15 +264,17 @@ TypedStorage.ObjectStore = function (objType, typedStorage) {
   function setObject(key, value) {
     var setStatement;
     try {
-      setStatement = dbConn.createStatement("INSERT OR REPLACE INTO " + objType + " (key, data) VALUES (:key, :data )");  
+      setStatement = dbConn.createStatement("INSERT OR REPLACE INTO " + objType + " (key, data) VALUES (:key, :data )");
       setStatement.params.key = key;
       setStatement.params.data = JSON.stringify(value);
       setStatement.executeStep();
     } catch (e) {
+      console.log('Stack:\n' + e.stack + '\n');
+      console.log('variables:'+ JSON.stringify(key)+','+ JSON.stringify(value));
       console.log("Error while updating table " + objType + ": " + e + "; " + dbConn.lastErrorString);
       throw e;
     } finally {
-      if (setStatement) setStatement.finalize()
+      if (setStatement) setStatement.finalize();
     }
   }
 

@@ -1,0 +1,4 @@
+{
+  "name": "An application which does not grant permission for any other origin to install it",
+  "default_locale": "en"
+}

@@ -1,0 +1,89 @@
+<html>
+  <body>
+    This page contains javascript that can be included in an iframe and
+    upon recieving commands over jschannel will attempt to invoke privileged
+    repository management APIs.
+  </body>
+  <script src="/servers.js"></script>
+  <!-- jschannel, that's how our parent will control us -->
+  <script src="/jschannel.js"></script>
+  <!-- finally, define our handlers that'll be invoked over jschannel by the parent -->
+  <script>
+  function myonload() {
+    // update repo origin for the test environment
+    navigator.apps.setRepoOrigin(SERVERS['_primary']);
+
+    var chan = Channel.build({
+      window: window.parent,
+      origin: "*",
+      scope: "test"
+    });
+
+    chan.bind("launch", function(trans, p) {
+      trans.delayReturn(true);
+      navigator.apps.mgmt.launch(
+        // any ol' app id will do, we shouldn't get that far, we don't have mgmt perms
+        SERVERS['basic_app'],
+        function(v) { trans.complete(v); },
+        function(errObj) { trans.error(errObj.code, errObj.message) }
+      );
+    });
+
+    chan.bind("loadState", function(trans) {
+      trans.delayReturn(true);
+      navigator.apps.mgmt.loadState(
+        function(v) { trans.complete(v); },
+        function(errObj) { trans.error(errObj.code, errObj.message) }
+      );
+    });
+
+    chan.bind("loginStatus", function(trans) {
+      trans.delayReturn(true);
+      navigator.apps.mgmt.loginStatus(
+        function(v) { trans.complete(v); },
+        function(errObj) { trans.error(errObj.code, errObj.message) }
+      );
+    });
+
+    chan.bind("list", function(trans) {
+      trans.delayReturn(true);
+      navigator.apps.mgmt.list(
+        function(v) { trans.complete(v); },
+        function(errObj) { trans.error(errObj.code, errObj.message) }
+      );
+    });
+
+    chan.bind("uninstall", function(trans) {
+      trans.delayReturn(true);
+      navigator.apps.mgmt.uninstall(
+        // any ol' app id will do, we shouldn't get that far, we don't have mgmt perms
+        SERVERS['basic_app'],
+        function(v) { trans.complete(v); },
+        function(errObj) { trans.error(errObj.code, errObj.message) }
+      );
+    });
+
+    chan.bind("saveState", function(trans) {
+      trans.delayReturn(true);
+      navigator.apps.mgmt.saveState(
+        { some: "fake state" },
+        function(v) { trans.complete(v); },
+        function(errObj) { trans.error(errObj.code, errObj.message) }
+      );
+    });
+  }
+  </script>
+  <!-- a tricky bit here, we need to include the repo API js.  Well wait
+    -- to bind our JSChannel until the browser decides to load it.  -->
+  <script>
+    var includeJsURL = SERVERS['_primary'] + "/jsapi/include.js";
+    var scriptTag = document.createElement("script");
+    scriptTag.src = includeJsURL;
+    scriptTag.onreadystatechange = function () {
+      if (this.readyState == 'complete') myonload();
+    };
+    scriptTag.onload = myonload;
+    document.getElementsByTagName('head')[0].appendChild(scriptTag);
+  </script>
+
+</html>

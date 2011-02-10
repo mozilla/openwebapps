@@ -1,5 +1,4 @@
 {
-    "manifest_version": "0.2",
     "name":"MozillaBall",
     "base_url": "https://mozillaball.mozillalabs.com/",
     "launch_path": "",

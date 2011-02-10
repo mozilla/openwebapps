@@ -67,14 +67,14 @@ var cR = {};
 loader.loadSubScript("resource://openwebapps/modules/repo.js");
 
 function FFRepoImpl() {
-    
+
 }
 FFRepoImpl.prototype = {
     __proto__: Repo,
-    
+
     install: function _install(location, args, window) {
-        function displayPrompt(installOrigin, manifestToInstall, 
-            installConfirmationFinishFn, options)
+        function displayPrompt(installOrigin, appOrigin, manifestToInstall,
+            isUpdate, installConfirmationFinishFn)
         {
             let acceptButton = new Object();
             let declineButton = new Object();
@@ -121,12 +121,12 @@ FFRepoImpl.prototype = {
             xhr.onreadystatechange = function(aEvt) {
                 if (xhr.readyState == 4) {
                     if (xhr.status == 200) {
-                        cb(xhr.responseText);
+                        cb(xhr.responseText, xhr.getResponseHeader('Content-Type'));
                     } else {
                         cb(null);
                     }
                 }
-            }
+            };
             xhr.send(null);
         }
 
@@ -134,17 +134,30 @@ FFRepoImpl.prototype = {
             function(result) {
                 // install is complete
                 // TODO: implement notifications
-                
+
                 if (result !== true) {
                   dump("Failed install: " + JSON.stringify(result) + "\n");
-                  args.callback(false);
+                  if (args.onerror) {
+                    let errorResult;
+                    if (result.error.length == 2) {
+                      // Then it's [code, error]
+                      errorResult = {code: result.error[0], message: result.error[1]};
+                    } else {
+                      errorResult = result.error;
+                    }
+                    // Note, here and below we use (1,...) to force this to be
+                    // window (instead of args):
+                    (1,args.onerror)(errorResult);
+                  }
                 } else {
-                  args.callback(true);
+                  if (args.onsuccess) {
+                    (1,args.onsuccess)();
+                  }
                 }
             }
         );
     },
-    
+
     // we are overriding the common repo.js method because that one has
     // not been implemented yet
     verify: function _verify(location, args) {
@@ -171,7 +184,7 @@ FFRepoImpl.prototype = {
         // the parent location, we'll be torn down.
         return;
     },
-    
+
     /* a function to check that an invoking page has "management" permission
      * all this means today is that the invoking page (dashboard) is served
      * from the same domain as the application repository. */
@@ -202,7 +215,7 @@ FFRepoImpl.prototype = {
         var userInfo = sync.readProfile();
         return [userInfo, loginInfo];
     },
-    
+
     launch: function _launch(location, id) {
         function openAppURL(app)
         {
@@ -213,13 +226,13 @@ FFRepoImpl.prototype = {
             let bEnum = wm.getEnumerator("navigator:browser");
             let found = false;
             let url = app.launchURL;
-            
+
             // Do we already have this app running in a tab?  If so, target it.
             while (!found && bEnum.hasMoreElements()) {
                 let browserWin = bEnum.getNext();
                 let tabbrowser = browserWin.gBrowser;
                 let numTabs = tabbrowser.browsers.length;
-                
+
                 for (let index = 0; index < tabbrowser.tabs.length; index++) {
                     let cur = tabbrowser.tabs[index];
                     let brs = tabbrowser.getBrowserForTab(cur);
@@ -231,7 +244,7 @@ FFRepoImpl.prototype = {
 
                         // Focus *this* browser-window
                         browserWin.focus();
-                        
+
                         // XXX: Do we really need a reload here?
                         //tabbrowser.selectedBrowser.loadURI(
                         //   url, null // TODO don't break referrer!
@@ -240,7 +253,7 @@ FFRepoImpl.prototype = {
                     }
                 }
             }
-            
+
             // Our URL does not belong to a currently running app.  Create a new
             // tab for that app and load our URL into it.
             if (!found) {
@@ -268,15 +281,15 @@ FFRepoImpl.prototype = {
                 return;
             }
         }
-        
+
         // Could not find specified app
         throw "Invalid AppID: " + id;
     },
-    
+
     getCurrentPageHasApp: function _getCurrentPageHasApp() {
       return this.currentPageAppURL != null;
     },
-    
+
     getCurrentPageApp: function _getCurrentPageApp(callback) {
 
       dump("Fetching current page app\n");
@@ -309,29 +322,28 @@ FFRepoImpl.prototype = {
                       callback(null);
                   }
               }
-          }
+          };
           xhr.send(null);
         } catch (e) {
           dump(e + "\n");
-        } 
+        }
       }
-      
+
     },
-    
+
     setCurrentPageAppURL: function _setCurrentPageApp(aURI) {
       this.currentPageAppURL = aURI;
       this.currentPageAppManifest = null;
     },
     
-    websendIntroduce: function _websendIntroduce(browser, pickerPresentationCallback, 
-        iframeCreationCallback, anchor, wanted, callback) {
+    websendIntroduce: function _websendIntroduce(browser, pickerPresentationCallback, iframeCreationCallback, anchor, wanted, callback) {
       try {
       
       // Find whether we have some apps that implement 'wanted'
       var potentialProviders = [];
       var apps = Repo.list();
       var matchArray = [];
-      for each (var app in apps) 
+      for each (var app in apps)
       {
         if (app.experimental && app.experimental.providers)
         {
@@ -346,11 +358,11 @@ FFRepoImpl.prototype = {
           }
           if (matchArray.length > 0) {
             potentialProviders.push(app);
-            break; 
+            break;
           }
         }
       }
-      
+
       if (potentialProviders.length == 0)
       {
         callback([]); // no matches, sorry!
@@ -376,11 +388,9 @@ FFRepoImpl.prototype = {
           if (providerElem.frame) {
             let theIframe = iframeCreationCallback(providerElem.frame, matchArray, callback);
           }
-          // SPEC issue: if the frame doesn't call welcome, the calling page has no opportunity
-          //             to resize it.  that's not good.
         });
-      } 
-      
+      }
+
       } catch (e) {
         dump(e+"\n");
       }

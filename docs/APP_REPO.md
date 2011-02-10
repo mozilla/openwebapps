@@ -29,32 +29,49 @@ in the API:
    self-distributing applications, and app directories.
 
 2. "Management API" - functions related to the display, launch or
-   synchronization of applications.  Primarily used by dashboards
-   authored in HTML.
+   synchronization of applications.  Primarily used by dashboards.
 
 #### Installation API (`navigator.apps.*`) <a name="install-api"></a>
 
 The installation API is exposed as properties on the `navigator.apps` object.
 
-*   `install({ manifest: <manifest object> , [  authorization_url: <url> ], [ signature: <sig> ], callback: <function> }):`
+*   `install({ url: <url to manifest> , [ install_data: <object> ], [ onsuccess: <function> ], [ onerror: <function> ] }):`
 
-    Prompts the user for confirmation of the manifest, possibly checking the installation and application domains against a registry of known malware sites.  If the user consents, the manifest is installed into the repository, along with the hostname of the installing site and a timestamp.  If the installing site does not use SSL, the user will be strongly discouraged from installing the application.   When the installation flow is completed with success or failure, the installing website is notified through the callback.
+    Trigger the installation of an application.  During the installation process, the application will be validated
+    and the user prompted to approve the installation.
 
-     The optional authorization_url and signature fields are persisted into local storage along with the manifest, as part of the installation. ([wiki](http://wiki.mozilla.org/Labs/Apps/MyApps#install))
+    **url** is a `string` URL containing the location of the manifest to be installed.  In the case of self distribution
+    (where the installing origin is the same as the application origin), the installing site may omit the origin part of
+    the url and provide an absolute path (beginning with '/').
 
-*   `getInstalled( <callback> ):`
+    **install_data** is an `object` containing data that will be associated with the installed application.
+    This object may be used as a means of an installing site (possibly store or directory) communicating with an
+    application.  Information related to purchase verification may be transmitted in this object.
 
-    returns, through the callback, the installed applications whose URLs are contained by the calling site.  This allows an application to find out whether its manifest has been installed on a browser when the user visits the site. ([wiki](http://wiki.mozilla.org/Labs/Apps/MyApps#getInstalled))
+    **onsuccess** is a callback that will be invoked with no arguments if the application is successfully installed.
 
-*   `getInstalledBy( <callback> ):`
+    **onerror** is an [error callback](#error-object) that will be invoked if the installation fails.  Possible error
+    codes include:
 
-    returns, through the callback, the applications that were installed by the calling domain.  This allows an application directory or store to determine if an application is already installed, during browsing. ([wiki](http://wiki.mozilla.org/Labs/Apps/MyApps#getInstalledBy))
+      * `denied` - if the user refuses to install the application
+      * `permissionDenied` - if the installing site is not allowed to trigger the installation
+      * `manifestURLError` - if the url to the manifest is malformed
+      * `networkError` - if the application host is unreachable
+      * `manifestParseError` - if the manifest contains syntax errors (not proper JSON)
+      * `invalidManifest` - if the manifest contains semantic errors (i.e. missing required properties)
 
-*   `verify ( [<return-to>], <callback> ):`
+    Finally, the install() function will throw an exception if required arguments are missing (url), or if
+    unsupported arguments are present.
 
-    selects the application whose URL matches the calling site, and initiates the verification flow for that application by loading the authorizationURL of the application.  <!-- FIXME: what happens when more than one matches? --> See [The Verification Flow](verification.html). ([wiki](http://wiki.mozilla.org/Labs/Apps/MyApps#verify))
+*   `amInstalled( <onsuccess callback>, [onerror callback] ):`
 
-<!-- FIXME: probably some simple example is called for here? Or link to some examples page on wiki -->
+    Provides a means for an application to check if it's installed.  Once determined, the `onsuccess` function will
+    be invoked with a single argument: an [application object](#app-object) if installed, or `null` if not.
+
+*   `getInstalledBy( <onsuccess callback>, [onerror callback] ):`
+
+    Returns, through the callback, the applications that were installed by the calling domain.  This allows an application
+    directory or store to determine which applications it has installed on behalf of the current user. ([wiki](http://wiki.mozilla.org/Labs/Apps/MyApps#getInstalledBy)).  `onsuccess` will be invoked with an array of the [application objects](#app-object) installed by the calling origin.
 
 #### Management API (`navigator.apps.mgmt.*`)  <a name="mgmt-api"></a>
 
@@ -65,48 +82,66 @@ the API exposes functions to fuel application sync, which lets the dashboard dis
 the logged-in state of the user and allows the user to sign up or register for an
 account to sync their applications.
 
-*   `list( <callback> )`
+*   `list( <onsuccess callback>, [onerror callback] )`
 
-    XXX: should there be a locale argument to list?  where should localization occur?
+    List all installed applications.  The return value is a object which contains
+    [application objects](#app-object) indexed by their origin.
 
-    List all installed applications.  The return value is an an array of objects.  Each object has the following properties:
+*   `uninstall( <origin>, [onsuccess callback], [onerror callback] )`
 
-    `id (string)`: A unique identifier for the application.  
-    `installURL (string)`: The url from which the application was installed  
-    `installTime (integer)`: The time that the application was installed (generated via Date().getTime, represented as the number of milliseconds between midnight of January 1st, 1970 and the time the app was installed).  
-    `icons (object)`: An object mapping strings representing icon size (i.e. '96' or '128') to urls of the actual icon (often data urls)  
-    `name (string)`: The human readable (localized) name of the application.  
-    `description (string)`: The human readable (localized) description of the application.  
-    `launchURL (string)`: The url that the user should be redirected to where the application can be launched.  
-    `developer (object)`: An object containing `name` and `url` properties describing the developer of the application  
+    Uninstall an application from the repository.  `origin` is the origin the application to be removed.
+    onsuccess will be invoked subsequent to the application's removal, or onerror will be invoked
+    and passed an [error object](#error-object) with a code of `noSuchApp` if the specified application
+    doesn't exist.
 
-*   `remove( <id>, <callback> )`
+*  `saveState( <stateObject>, [onsuccess callback], [onerror callback] )`
 
-    Remove an application from the repository.  `id` is the unique launch URL of the application, and the callback will be invoked after the operation completes.
+    Save dashboard specific state into the application repository.  This function should be used by dashboards to persist context.  This function is superior to other persistence mechanisms as it allows for the backup and synchronization of a users state, if the user so desires.
 
-*  `saveState( <dashboard identifier>, <stateObject>, [callback] )`
+*  `loadState( <onsuccess callback>, [onerror callback] )`
 
-    Save dashboard specific state into the application repository.  This function should be used by dashboards to persist context.  This function is superior to other persistence mechanisms as it allows for the backup and synchronization of a users state, if the user so desires.  `dashboard identifier` could be a guid, or some string which is a reasonably unique dashboard implementation identifier under which the state data will be scoped.  
+    Load state saved by `saveState`, and returns it asynchronously to the `onsuccess` callback, which will receive as an
+    argument the previously saved data, or `undefined` if no data has been saved.
 
-*  `loadState( <dashboard identifier>, <callback> )`
+*  `getLoggedInUser( <onsuccess callback>, [onerror callback] )`
 
-    Load state saved by `saveState`.  
-
-*  `getLoggedInUser( <callback> )`
-
-    Determine whether a user is currently authenticated to the application repository for the purposes of application synchronization.  The callback takes a single argument which is `null` when no user is logged in, otherwise the argument is a javascript object containing the following properties:
+    Determine whether a user is currently authenticated to the application repository for the purposes of application synchronization.
+    The callback receives a single argument which is `null` when no user is logged in, otherwise the argument is a javascript object
+    containing the following properties:
 
     `userName (string)`: a unique identifier which is meaningful to both the system and the user (i.e. email address). 
     `displayName (string)`: a human readable identifier which identifies a user (not neccesarily unique, i.e. first name).
 
-*  `login( <callback> )`
+*  `login( <onsuccess callback>, [onerror callback] )`
 
-    Cause the application repository to display login UI to the user.  A callback will be invoked when the process of user authentication is complete and will be provided the same arguments as the callback to `getLoggedInUser()`.
+    Cause the application repository to display login UI to the user.  The `onsuccess` callback will be invoked when the
+    process of user authentication is complete and will be provided the same arguments as the callback to `getLoggedInUser()`.
 
-*  `logout( <callback> )`
+*  `logout( <onsuccess callback>, [onerror callback] )`
 
-    Logout the currently authenticated user.  A noop if no user is currently authenticated.  The callback argument will be invoked when the operation is complete and takes no arguments.
+    Logout the currently authenticated user.  A noop if no user is currently authenticated.  The `onsuccess` callback argument will be
+    invoked when the operation is complete and receives no arguments.
 
+#### Application Representation  <a name="app-object"></a>
+
+Wherever *application objects* are returned via the api, they are represented as javascript objects
+with the following fields:
+
+    `manifest (object)`: The currently stored version of the manifest of the application.
+    `origin (string)`: The origin of the application (scheme, host, and port)
+    `install_data (object)`: data provided at the time `navigator.apps.install()` was invoked.
+    `install_origin (string)`: The origin of the site that triggered the installation of the application.
+    `install_time (integer)`: The time that the application was installed (generated via Date().getTime, represented as the number of milliseconds between midnight of January 1st, 1970 and the time the app was installed).  
+
+#### Error Objects  <a name="error-object"></a>
+
+Errors are returned via callbacks in the API.  Errors are represented as javascript
+objects with the following properties:
+
+    `code (string)`: A short, english, camel cased error code that may be programmatically
+                     checked to optimize user facing error displays.
+    `message (string)`: A short, english, developer readable sentence that describes the cause
+                     of the error in more specifics.  Useful for debugging and error logs.
 
 #### Mobile Considerations
 

@@ -35,17 +35,16 @@ $ // We'll show all the methods we're testing
 > }
 > arr = arr.sort();
 > for (var i = 0; i < arr.length; i++) writeln(arr[i]);
-navigator.apps.getInstalled
+navigator.apps.amInstalled
 navigator.apps.getInstalledBy
 navigator.apps.install
 navigator.apps.mgmt.launch
 navigator.apps.mgmt.list
 navigator.apps.mgmt.loadState
 navigator.apps.mgmt.loginStatus
-navigator.apps.mgmt.remove
 navigator.apps.mgmt.saveState
+navigator.apps.mgmt.uninstall
 navigator.apps.setRepoOrigin
-navigator.apps.verify
 </pre>
 
 
@@ -55,11 +54,13 @@ Delete all applications and then verify that list() yields no apps.
 
 <pre class="doctest">
 $ var finished = false;
-$ navigator.apps.mgmt.list(function(l) {
->  var total = l.length;
+$ navigator.apps.mgmt.list(function(m) {
+>  var total = 0;
+>  for (var k in m) if (m.hasOwnProperty(k)) total++;
 >  finished = (total === 0);
->  for (var i = 0; i < l.length; i++) {
->    navigator.apps.mgmt.remove(l[i].id, function(r) {
+>  for (var k in m) {
+>    if (!m.hasOwnProperty(k)) continue;
+>    navigator.apps.mgmt.uninstall(k, function(r) {
 >      finished = (--total === 0);
 >    });
 >  }
@@ -67,56 +68,7 @@ $ navigator.apps.mgmt.list(function(l) {
 $ wait(function() { return finished; });
 $ finished = false;
 $ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true}));
-apps.mgmt.list([])
-</pre>
-
-
-<h3>Application Installation</h3>
-
-Install a single application
-
-<pre class="doctest">
-$ var manifest = {
->   "manifest_version": "0.2",
->   "name":"FakeApp",
->   "base_url": "http://fakea.pp/",
->   "launch_path": "",
->   "default_locale":"en"
-> }
-$ navigator.apps.install(
->   {manifest: manifest,
->    callback: Spy('apps.install', {wait: true, ignoreThis: true})
->   });
-apps.install(true)
-$ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true, wrapArgs: true}));
-apps.mgmt.list([
-  {
-    id: "...",
-    installTime: ...,
-    installURL: "...",
-    launchURL: "http://fakea.pp/",
-    name: "FakeApp"
-  }
-])
-</pre>
-
-<h3>Checking for Application Installation</h3>
-
-getInstalled should yield no results, as this test application is not hosted at
-http://fakea.pp
-
-<pre class="doctest">
-$ var finished = false;
-$ navigator.apps.getInstalled(Spy('apps.getInstalled', {wait: true}));
-apps.getInstalled([])
-</pre>
-
-getInstalledBy should yield 1 result, as we just installed FakeApp.
-
-<pre class="doctest">
-$ var finished = false;
-$ navigator.apps.getInstalledBy(Spy('apps.getInstalledBy', {wait: true}));
-apps.getInstalledBy([...{...}...])
+apps.mgmt.list({})
 </pre>
 
 <h3>Dashboard Storage</h3>
