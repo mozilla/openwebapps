@@ -206,7 +206,7 @@ var container = document.getElementById("icon_region");
 for (var i=0;i<appList.length;i++) {
   
   container.appendChild(createAppIcon(appList[i]));
-  if (i && ((i % 5) == 0)) {
+  if (i && (((i+1) % 5) == 0)) {
     var br = elem("br");
     br.setAttribute("clear", "left");
     container.appendChild(br);
