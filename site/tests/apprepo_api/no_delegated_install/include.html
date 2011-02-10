@@ -23,7 +23,7 @@
       trans.delayReturn(true);
       navigator.apps.install({
         url: "/manifest.webapp",
-        onsuccess: function(v) { trans.complete(v); },
+        onsuccess: function() { trans.complete(); },
         onerror: function(errObj) { trans.error(errObj.code, errObj.message) }
       });
     });

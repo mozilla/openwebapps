@@ -684,8 +684,8 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
                 error: function(error, message) {
                     deliverError(error, message, args.onerror);
                 },
-                success: function(v) {
-                    if (args.onsuccess) args.onsuccess(v);
+                success: function() {
+                    if (args.onsuccess) args.onsuccess();
                 }
             });
         }

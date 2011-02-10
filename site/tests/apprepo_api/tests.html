@@ -3,7 +3,7 @@
   <title>App Repo API Tests</title>
   <script type="text/javascript" src="doctestjs/doctest.js"></script>
   <link rel="stylesheet" type="text/css" href="doctestjs/doctest.css" />
-  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
   <style type="text/css" media="screen">
       iframe {
         display: none;
@@ -18,13 +18,17 @@
 <body id="testingBody">
 <h2> App Repo API Tests </h2>
 
-<p>
-  These API tests run in a local environment provided by a test
+<p> These API tests run in a local environment provided by a test
   server.  There are multiple local bound ports which coincide with
   different running apps.  By including /servers.js from the test
   server, window.SERVERS is populated with a map of server names
-  (directory names) to URL where that app can be accessed.
-</p>
+  (directory names) to URL where that app can be accessed.  (Look at
+  the first test to match the dynamic ports against the specific
+  apps.)  </p>
+
+<p> Note: you must manually hit "install" three times during this test
+  for it to be successful.  If you don't, or hit them too slowly, you
+  will get failures. </p>
 
 <div>
   <button onclick="doctest()" type="button">Test all</button>
@@ -35,18 +39,16 @@
 
 First let's ensure that the testing environment is sane...
 <pre class="doctest">
-$ var dirs = [];
-> for (var k in SERVERS) dirs.push(k);
-> dirs.sort();
-[
-  "_primary",
-  "bad_content_type",
-  "basic_app",
-  "json_syntax_error",
-  "missing_required_field",
-  "no_delegated_install",
-  "no_mgmt_api_off_repo_origin"
-]
+$ writeln(SERVERS);
+{
+  _primary: "...",
+  bad_content_type: "...",
+  basic_app: "...",
+  json_syntax_error: "...",
+  missing_required_field: "...",
+  no_delegated_install: "...",
+  no_mgmt_api_off_repo_origin: "..."
+}
 </pre>
 
 <h3>Clear All Apps</h3>
@@ -54,6 +56,9 @@ $ var dirs = [];
 Delete all applications and then verify that list() yields no apps.
 
 <pre class="doctest">
+$ // Out of curiosity we'll see what's installed:
+> navigator.apps.mgmt.list(Spy('list', {wait: true}));
+list(...)
 $ var finished = false;
 $ navigator.apps.mgmt.list(function(m) {
 >  var total = 0;
@@ -63,6 +68,10 @@ $ navigator.apps.mgmt.list(function(m) {
 >    if (!m.hasOwnProperty(k)) continue;
 >    navigator.apps.mgmt.uninstall(k, function(r) {
 >      finished = (--total === 0);
+>    }, function (e) {
+>      finished = true;
+>      writeln('Error:', e);
+>      throw('Failed');
 >    });
 >  }
 > });
@@ -86,7 +95,7 @@ $ navigator.apps.install(
 >   {url: SERVERS['basic_app'] + "/manifest.webapp",
 >    onsuccess: Spy('apps.install', {wait: true, ignoreThis: true})
 >   });
-apps.install(true)
+apps.install()
 $ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true, wrapArgs: true}));
 apps.mgmt.list({
   http://127.0.0.1:...: {
@@ -112,7 +121,7 @@ $ navigator.apps.install(
 >   {url: SERVERS['basic_app'] + "/manifest2.webapp",
 >    onsuccess: Spy('apps.install', {wait: true, ignoreThis: true})
 >   });
-apps.install(true)
+apps.install()
 $ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true, wrapArgs: true}));
 apps.mgmt.list({
   http://127.0.0.1:...: {
@@ -224,7 +233,7 @@ $ // now for a horrible hack.  when installing from within an iframe, in and HTM
 > // so the testor can click.
 > showIFrame(SERVERS['no_delegated_install']);
 $ chan.call(buildJSChanArgs("install", true));
-success(true)
+success()
 $ hideIFrame(SERVERS['no_delegated_install']);
 > // now getInstalled should show that we're installed
 > chan.call(buildJSChanArgs("amInstalled", true));
@@ -266,10 +275,15 @@ apps.getInstalledBy([
 $ var spy = Spy('list');
 > navigator.apps.mgmt.list(function(apps) {
 >   var i = 0;
->   for (var origin in apps) if (apps.hasOwnProperty(origin)) i++;
+>   for (var origin in apps) {
+>     if (apps.hasOwnProperty(origin)) i++;
+>     writeln('Origin: ', origin);
+>   }
 >   spy.func(i);
 >  });
 > spy.wait();
+Origin: ...
+Origin: ...
 list(2)
 </pre>
 
@@ -350,7 +364,7 @@ list({
   // a utility function to automatically build up proper jschan.call args:
   function buildJSChanArgs(name, shouldSucceed) {
     return { method: name,
-             success: Spy('success', {wait: shouldSucceed, ignoreThis: true}), 
+             success: Spy('success', {wait: shouldSucceed, ignoreThis: true}),
              error: Spy('error', {wait: !shouldSucceed, ignoreThis: true}) };
   }
 
