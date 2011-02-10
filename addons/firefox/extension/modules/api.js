@@ -44,6 +44,7 @@ var EXPORTED_SYMBOLS = ["FFRepoImplService"];
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://openwebapps/modules/typed_storage.js");
+Components.utils.import("resource://openwebapps/modules/injector.js");
 
 var console = {
     log: function(s) {dump(s+"\n");}
@@ -322,8 +323,10 @@ FFRepoImpl.prototype = {
       this.currentPageAppManifest = null;
     },
     
-    websendIntroduce: function _websendIntroduce(browser, pickerPresentationCallback, iframeCreationCallback, anchor, wanted, callback) {
+    websendIntroduce: function _websendIntroduce(browser, pickerPresentationCallback, 
+        iframeCreationCallback, anchor, wanted, callback) {
       try {
+      
       // Find whether we have some apps that implement 'wanted'
       var potentialProviders = [];
       var apps = Repo.list();
@@ -354,12 +357,14 @@ FFRepoImpl.prototype = {
       }
       else
       {
+        // Save off the introductionCallback keyed on browser.contentDocument;
+        // we'll need it when somebody calls welcome() later.
+      
         pickerPresentationCallback(potentialProviders, function(gotProvider) {
           // instantiate the provider..
-          
           // assuming there will be a frame for now?
-          
-          // which provider to load?  what if we matched more than one? SPEC
+          // which provider to load?  TODO to be 100% correct we should render each of the
+          // matching providers for the app as a different line item.
           let providerElem;
           for each (let p in gotProvider.experimental.providers) {
             for each (let w in wanted) {
@@ -368,16 +373,11 @@ FFRepoImpl.prototype = {
               }
             }
           }
-          let theIframe;
           if (providerElem.frame) {
-            theIframe = iframeCreationCallback(providerElem.frame);
+            let theIframe = iframeCreationCallback(providerElem.frame, matchArray, callback);
           }
-          
-          // get the MessagePort
-          
-          // invoke the callback (or do we wait for welcome?)
-          // first arg is array of data types supported by selected provider
-          callback(matchArray, null, theIframe);
+          // SPEC issue: if the frame doesn't call welcome, the calling page has no opportunity
+          //             to resize it.  that's not good.
         });
       } 
       
@@ -385,11 +385,60 @@ FFRepoImpl.prototype = {
         dump(e+"\n");
       }
     },
-    websendWelcome: function _websendWelcome(registrants, callback) {
-    
+    websendWelcome: function _websendWelcome(browser, window, registrants, callback, introductionCallback) {
+      // browser is the top-level browser
+      // window is the iframe's window
+      
+      // BIG SCARY UNSAFE ASSUMPTION: The introduce() calling context is the top-level context.
+      // Go recover the introductionCallback based on the introducing window (but see ASSUMPTION above, meh)
+      // FIX: use window.parent not gBrowser.contentDocument
+      
+      // not sure what to do with welcomeCallback. SPEC.
+      // TODO don't understand what to do with registrants? 
+      try {
+        var servicePort = new MessagePort(window, window.location.href);
+        introductionCallback(["bork bork bork"], servicePort, window);
+      } catch (e) {
+        dump(e + "\n");
+        dump(e.stack + "\n");
+      }
+      
+      try {
+        var customerPort = new MessagePort(browser.contentWindow, browser.contentWindow.location.href);
+        callback(customerPort, {"customer":browser.contentDocument.location.href, "wanted":["who knows"]});
+      } catch (e) {
+        dump(e + "\n");
+        dump(e.stack + "\n");
+      }
     }
-    
 };
+
+
+function MessagePort(window,targetDomain) {
+  this.window = window;
+  this.targetDomain = targetDomain;
+}
+
+MessagePort.prototype = 
+{
+  postMessage: function(msg) {
+    dump("Call to postMessage: " + msg + "; window is " + this.window + "\n");
+    if (this.window) {
+      dump("Posting message to service: " + JSON.stringify(msg) + " with targetDomain " + this.targetDomain + "\n");                    
+      this.window.postMessage(JSON.stringify(msg), "*");//this.targetDomain);
+    }
+  },
+  
+  close: function() {
+    this.window = null;
+  }
+}
+
+MessagePort.__defineSetter__("onmessage", function(val) {
+  this.window.addEventListener('message', val, false);
+});
+
+
 
 // Declare the singleton:
 var FFRepoImplService = new FFRepoImpl();

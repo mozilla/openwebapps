@@ -39,7 +39,7 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
   Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
   
   // Add hotkey support. Not a failure if this doesn't load
-  Components.utils.import("resource://openwebapps/modules/hotkey.js");
+  // Components.utils.import("resource://openwebapps/modules/hotkey.js");
   
   // This add-on manager is only available in Firefox 4+
   try {
@@ -544,7 +544,12 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
     
   };
 
-  InjectorInit(window);
+  InjectorInit(window, 
+    function serviceSelectionCallback(suiteName, methodName, serviceList)
+    {
+      
+    }
+  );
   var repo = FFRepoImplService;
   injector.register({
     apibase: "navigator.apps", name: "install", script: null,
@@ -600,10 +605,7 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
     getapi: function () {
       return function (callback) {
         try {
-          dump("about to list\n");
           var result = repo.list(gBrowser.contentDocument.location);
-          dump("got result " + result + "\n");
-          dump("callback is " + callback + "\n");
           if (callback) callback(result);
         }catch(e) {
           dump(e + "\n" + e.stack + "\n");
@@ -656,7 +658,8 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
   injector.register({
     apibase: "navigator.introducer", name: "introduce", script: null,
     getapi: function () {
-      return function (anchor, wanted, callback) {
+      return function (anchor, wanted, introductionCallback) {
+        gBrowser.ownerDocument.introductionCallback = introductionCallback;
         repo.websendIntroduce(gBrowser, 
           function showPicker(potentialProviders, pickedProviderCB) {
             // Present a consent panel:
@@ -695,23 +698,29 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
             xulPanel.sizeTo(160,40 + potentialProviders.length * 40);
             xulPanel.openPopup(anchor, "after_start", 0, 0);
         }, 
-        function iframeCreationCallback(frameURL) {
+        function iframeCreationCallback(frameURL, matchArray, introductionCallback) {
           var doc = gBrowser.ownerDocument;   
           let theIframe = doc.createElementNS("http://www.w3.org/1999/xhtml", 'iframe');
           theIframe.src = frameURL;
           anchor.parentNode.appendChild(theIframe);
+          theIframe.setAttribute("introductionCallback", introductionCallback);
           return theIframe;
-        }, anchor, wanted, callback);
+        }, anchor, wanted, introductionCallback);
       }
   }});
+
   injector.register({
     apibase: "navigator.introducer", name: "welcome", script: null,
     getapi: function () {
       return function (registrants, callback) {
-        repo.websendWelcome(gBrowser, registrants, callback);
+        repo.websendWelcome(gBrowser, window, registrants, callback, gBrowser.ownerDocument.introductionCallback);
       }
   }});
   // End experimental support for web-send
+  
+  // Begin experimental services support
+  
+  // End experimental services support
   
   window.addEventListener("load", fn.bind(openwebapps, "onLoad"), false);
   window.addEventListener("unload", fn.bind(openwebapps, "onUnload"), false);
@@ -719,3 +728,4 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
   window.addEventListener("TabSelect", fn.bind(openwebapps, "onTabSelected"), false);
 
 }());
+
