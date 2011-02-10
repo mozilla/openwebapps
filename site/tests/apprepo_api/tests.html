@@ -93,7 +93,7 @@ Error: install missing required url argument
 <pre class="doctest">
 $ navigator.apps.install(
 >   {url: SERVERS['basic_app'] + "/manifest.webapp",
->    onsuccess: Spy('apps.install', {wait: true, ignoreThis: true})
+>    onsuccess: Spy('apps.install', {wait: true})
 >   });
 apps.install()
 $ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true, wrapArgs: true}));
@@ -119,7 +119,7 @@ two manifests per origin.
 <pre class="doctest">
 $ navigator.apps.install(
 >   {url: SERVERS['basic_app'] + "/manifest2.webapp",
->    onsuccess: Spy('apps.install', {wait: true, ignoreThis: true})
+>    onsuccess: Spy('apps.install', {wait: true})
 >   });
 apps.install()
 $ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true, wrapArgs: true}));
@@ -140,7 +140,7 @@ apps.mgmt.list({
 <h3>We installed it, getInstalledBy should return it.</h3>
 
 <pre class="doctest">
-$ navigator.apps.getInstalledBy(Spy('apps.getInstalledBy', {wait: true, ignoreThis: true}));
+$ navigator.apps.getInstalledBy(Spy('apps.getInstalledBy', {wait: true}));
 apps.getInstalledBy([
   {
     install_origin: "http://127.0.0.1:...",
@@ -154,7 +154,7 @@ apps.getInstalledBy([
 <h3>amInstalled should not.</h3>
 
 <pre class="doctest">
-$ navigator.apps.amInstalled(Spy('apps.amInstalled', {wait: true, ignoreThis: true}));
+$ navigator.apps.amInstalled(Spy('apps.amInstalled', {wait: true}));
 apps.amInstalled(null)
 </pre>
 
@@ -176,8 +176,8 @@ success({
 <pre class="doctest">
 $ navigator.apps.install(
 >   {url: SERVERS['json_syntax_error'] + "/manifest.webapp",
->    onsuccess: Spy('apps.install.success', {wait: false, ignoreThis: true}),
->    onerror: Spy('apps.install.error', {wait: true, ignoreThis: true})
+>    onsuccess: Spy('apps.install.success', {wait: false}),
+>    onerror: Spy('apps.install.error', {wait: true})
 >   });
 apps.install.error({code: "manifestParseError", message: "couldn't parse manifest JSON from http://127.0.0.1:.../manifest.webapp"})
 </pre>
@@ -187,8 +187,8 @@ apps.install.error({code: "manifestParseError", message: "couldn't parse manifes
 <pre class="doctest">
 $ navigator.apps.install(
 >   {url: SERVERS['missing_required_field'] + "/manifest.webapp",
->    onsuccess: Spy('apps.install.success', {wait: false, ignoreThis: true}),
->    onerror: Spy('apps.install.error', {wait: true, ignoreThis: true})
+>    onsuccess: Spy('apps.install.success', {wait: false}),
+>    onerror: Spy('apps.install.error', {wait: true})
 >   });
 apps.install.error({code: "invalidManifest", message: "couldn't validate your manifest: missing \"name\" property"})
 </pre>
@@ -198,8 +198,8 @@ apps.install.error({code: "invalidManifest", message: "couldn't validate your ma
 <pre class="doctest">
 $ navigator.apps.install(
 >   {url: SERVERS['bad_content_type'] + "/manifest.json",
->    onsuccess: Spy('apps.install.success', {wait: false, ignoreThis: true}),
->    onerror: Spy('apps.install.error', {wait: true, ignoreThis: true})
+>    onsuccess: Spy('apps.install.success', {wait: false}),
+>    onerror: Spy('apps.install.error', {wait: true})
 >   });
 apps.install.error({
   code: "invalidManifest",
@@ -212,8 +212,8 @@ apps.install.error({
 <pre class="doctest">
 $ navigator.apps.install(
 >   {url: SERVERS['no_delegated_install'] + "/manifest.webapp",
->    onsuccess: Spy('apps.install.success', {wait: false, ignoreThis: true}),
->    onerror: Spy('apps.install.error', {wait: true, ignoreThis: true})
+>    onsuccess: Spy('apps.install.success', {wait: false}),
+>    onerror: Spy('apps.install.error', {wait: true})
 >   });
 apps.install.error({code: "permissionDenied", message: "origin 'http://127.0.0.1:...' may not install this app"})
 </pre>
@@ -258,7 +258,7 @@ success([
 <h3>getInstalled by from origin shouldn't show second app</h3>
 
 <pre class="doctest">
-$ navigator.apps.getInstalledBy(Spy('apps.getInstalledBy', {wait: true, ignoreThis: true}));
+$ navigator.apps.getInstalledBy(Spy('apps.getInstalledBy', {wait: true}));
 apps.getInstalledBy([
   {
     install_origin: "http://127.0.0.1:...",
@@ -311,8 +311,8 @@ error("permissionDenied", "to access open web apps management apis, you must be 
 <pre class="doctest">
 $ navigator.apps.mgmt.uninstall(
 >    "http://nosuch.app",
->    Spy('success', {wait: false, ignoreThis: true}),
->    Spy('error', {wait: true, ignoreThis: true}));
+>    Spy('success', {wait: false}),
+>    Spy('error', {wait: true}));
 error({code: "noSuchApplication", message: "no application exists with the origin: http://nosuch.app"})
 </pre>
 
@@ -364,8 +364,8 @@ list({
   // a utility function to automatically build up proper jschan.call args:
   function buildJSChanArgs(name, shouldSucceed) {
     return { method: name,
-             success: Spy('success', {wait: shouldSucceed, ignoreThis: true}),
-             error: Spy('error', {wait: !shouldSucceed, ignoreThis: true}) };
+             success: Spy('success', {wait: shouldSucceed}),
+             error: Spy('error', {wait: !shouldSucceed}) };
   }
 
   // given an origin of a host, find the iframe associated with it and

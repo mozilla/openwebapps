@@ -144,11 +144,11 @@ FFRepoImpl.prototype = {
                     } else {
                       errorResult = result.error;
                     }
-                    args.onerror(errorResult);
+                    (1,args.onerror)(errorResult);
                   }
                 } else {
                   if (args.onsuccess) {
-                    args.onsuccess();
+                    (1,args.onsuccess)();
                   }
                 }
             }
