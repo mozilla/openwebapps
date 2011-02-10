@@ -13,3 +13,6 @@ style     chrome://global/content/customizeToolbar.xul chrome://openwebapps/skin
 
 interfaces components/IGlobalHotkeys.xpt
 binary-component components/libhotkey.dll ABI=WINNT_x86-msvc
+
+component {1DD224F3-7720-4E62-BAE9-30C1DCD6F519} components/about.js
+contract @mozilla.org/network/protocol/about;1?what=apps {1DD224F3-7720-4E62-BAE9-30C1DCD6F519}
