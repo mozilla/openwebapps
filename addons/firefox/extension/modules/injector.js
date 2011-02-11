@@ -123,14 +123,10 @@ let Injector = {
            createInstance(Components.interfaces.nsIPrincipal), 
     );*/
 
-    sandbox.importFunction(provider.getapi(), '__mozilla_injected_api_'+(provider.mangledName?provider.mangledName:provider.name)+'__');
+    sandbox.importFunction(provider.getapi(safeWin), '__mozilla_injected_api_'+(provider.mangledName?provider.mangledName:provider.name)+'__');
     sandbox.window = safeWin;
     sandbox.navigator = safeWin.navigator.wrappedJSObject;
-    
-    //dump("About to eval in sandbox: " + this._scriptToInject(provider) + "; sandbox is " +sandbox + "\n");
-    
     Cu.evalInSandbox(this._scriptToInject(provider), sandbox, "1.8");
-    //dump("injected api "+provider.name+": "+sandbox.navigator.mozilla.labs+"\n");
   }
 
 };

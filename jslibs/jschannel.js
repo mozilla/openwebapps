@@ -82,6 +82,13 @@
         delete s_boundChans[origin][scope];
         // possibly leave a empty object around.  whatevs.
     }
+    
+    function s_isArray(obj) {
+      if (Array.isArray) return Array.isArray(obj);
+      else {
+        return (Object.prototype.toString(obj) === "[object Array]");
+      }
+    }
 
     // No two outstanding outbound messages may have the same id, period.  Given that, a single table
     // mapping "transaction ids" to message handlers, allows efficient routing of Callback, Error, and
@@ -338,7 +345,7 @@
                             } else if (typeof e === 'object') {
                                 // either an array or an object
                                 // * if its an array of length two, then  array[0] is the code, array[1] is the error message
-                                if (e && e instanceof Array && e.length == 2) {
+                                if (e && s_isArray(e) && e.length == 2) { // e instanceof Array && e.length == 2) {
                                     error = e[0];
                                     message = e[1];
                                 }

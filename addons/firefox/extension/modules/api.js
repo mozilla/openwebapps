@@ -114,8 +114,6 @@ FFRepoImpl.prototype = {
 
         function fetchManifest(url, cb)
         {
-            dump("ENTER api fetchManifest " + url + "\n");
-        
             // contact our server to retrieve the URL
             var xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"].
                     createInstance(Ci.nsIXMLHttpRequest);
@@ -123,7 +121,6 @@ FFRepoImpl.prototype = {
             xhr.onreadystatechange = function(aEvt) {
                 if (xhr.readyState == 4) {
                     if (xhr.status == 200) {
-                        dump("SUCCESS api fetchManifest " + url + "\n");
                         cb(xhr.responseText, xhr.getResponseHeader('Content-Type'));
                     } else {
                         cb(null);
@@ -133,14 +130,12 @@ FFRepoImpl.prototype = {
             xhr.send(null);
         }
 
-        dump("ENTER api install " + JSON.stringify(args) + "\n");
         return Repo.install(location, args, displayPrompt, fetchManifest,
             function(result) {
                 // install is complete
                 // TODO: implement notifications
 
                 if (result !== true) {
-                  dump("Failed install: " + JSON.stringify(result) + "\n");
                   if (args.onerror) {
                     let errorResult;
                     if (result.error.length == 2) {
@@ -193,21 +188,29 @@ FFRepoImpl.prototype = {
      * all this means today is that the invoking page (dashboard) is served
      * from the same domain as the application repository. */
     verifyMgmtPermission: function _verifyMgmtPermission(origin) {
-        return true;
-        /*
-        dump("origin is " + origin + "\n");
-
+    
         var loc = origin;
+
         // make an exception for local testing, who via postmessage events
         // have an origin of "null"
-        if ((origin === 'null' && origin.location.protocol === 'file:') ||
-            ((loc.protocol + "//" + loc.host) === origin))
-        {
-            return;
+        if ((origin === 'null' && origin.protocol === 'file:')) {
+          return;
         }
+        
+        // this is where we could have a whitelist of acceptable management
+        // domains.
+        dump("origin.host is " + origin.host + "\n");
+        if (origin.host == "127.0.0.1:60172" || /* special case for unit testing: to be removed when we get capability tracking for mgmt! */
+            origin.host == "apps.mozillalabs.com" ||
+            origin.host == "stage.apps.mozillalabs.com")
+        {
+          return;
+        }
+        
+        // but for now:
         throw [ 'permissionDenied',
                 "to access open web apps management apis, you must be on the same domain " +
-                "as the application repostiory" ];*/
+                "as the application repostiory" ];
     },
 
     loginStatus: function loginStatus(location, args) {
@@ -300,12 +303,9 @@ FFRepoImpl.prototype = {
 
     getCurrentPageApp: function _getCurrentPageApp(callback) {
 
-      dump("Fetching current page app\n");
-
       if (this.currentPageAppURL) {
 
         if (this.currentPageAppManifest) {
-          dump("Cached; returning immediately\n");
           callback(this.currentPageAppManifest);
           return;
         }
@@ -317,17 +317,11 @@ FFRepoImpl.prototype = {
               if (xhr.readyState == 4) {
                   if (xhr.status == 200) {
                     try {
-                      //dump("Got manifest: " + xhr.responseText + "\n");
                       var manifest = JSON.parse(xhr.responseText);
-                      dump("parsed it\n");
                       this.currentPageAppManifest = manifest;
-                      dump("set this variable\n");
                       callback(manifest);
-                      dump("did callback\n");
                     } catch (e) {
-                      dump("Error while parsing manifest: " + e + "\n");
                       // TODO report this out
-                      dump("Malformed manifest for current page: "+ xhr.responseText + "\n");
                       callback(null);
                     }
                   } else {
@@ -337,7 +331,7 @@ FFRepoImpl.prototype = {
           };
           xhr.send(null);
         } catch (e) {
-          dump(e + "\n");
+          dump("Error in getCurrentPageApp: " + e + "\n");
         }
       }
 
@@ -404,7 +398,7 @@ FFRepoImpl.prototype = {
       }
 
       } catch (e) {
-        dump(e+"\n");
+        dump("Error in websend Introduce: " + e+"\n");
       }
     },
     websendWelcome: function _websendWelcome(browser, window, registrants, callback, introductionCallback) {
@@ -419,18 +413,16 @@ FFRepoImpl.prototype = {
       // TODO don't understand what to do with registrants? 
       try {
         var servicePort = new MessagePort(window, window.location.href);
-        introductionCallback(["bork bork bork"], servicePort, window);
+        introductionCallback(["service-match-goes-here?"], servicePort, window);
       } catch (e) {
-        dump(e + "\n");
-        dump(e.stack + "\n");
+        dump("Error in websend welcome introductionCallback: " + e + "\n");
       }
       
       try {
         var customerPort = new MessagePort(browser.contentWindow, browser.contentWindow.location.href);
         callback(customerPort, {"customer":browser.contentDocument.location.href, "wanted":["who knows"]});
       } catch (e) {
-        dump(e + "\n");
-        dump(e.stack + "\n");
+        dump("Error in websend welcome callback:"  +e + "\n");
       }
     }
 };
@@ -444,10 +436,8 @@ function MessagePort(window,targetDomain) {
 MessagePort.prototype = 
 {
   postMessage: function(msg) {
-    dump("Call to postMessage: " + msg + "; window is " + this.window + "\n");
     if (this.window) {
-      dump("Posting message to service: " + JSON.stringify(msg) + " with targetDomain " + this.targetDomain + "\n");                    
-      this.window.postMessage(JSON.stringify(msg), "*");//this.targetDomain);
+      this.window.postMessage(JSON.stringify(msg), "*");//TODO: get domain targeting right, do not use until this is done!  (+/- this.targetDomain?)
     }
   },
   

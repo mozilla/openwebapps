@@ -555,10 +555,10 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
   var repo = FFRepoImplService;
   injector.register({
     apibase: "navigator.apps", name: "install", script: null,
-    getapi: function () {
+    getapi: function (contentWindowRef) {
       return function (args) {
         try {
-          repo.install(gBrowser.contentDocument.location, args, window);
+          repo.install(contentWindowRef.location, args, window);
         } catch (e) {
           dump(e + "\n");
           dump(e.stack + "\n");
@@ -568,25 +568,25 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
   }});
   injector.register({
     apibase: "navigator.apps", name: "amInstalled", script: null,
-    getapi: function () {
+    getapi: function (contentWindowRef) {
       return function (callback) {
-        var result = repo.amInstalled(gBrowser.contentDocument.location);
+        var result = repo.amInstalled(contentWindowRef.location);
         if (callback && typeof(callback) === 'function') callback(result);
       };
   }});
   injector.register({
     apibase: "navigator.apps", name: "getInstalledBy", script: null,
-    getapi: function () {
+    getapi: function (contentWindowRef) {
       return function (callback) {
-        var result = repo.getInstalledBy(gBrowser.contentDocument.location);
+        var result = repo.getInstalledBy(contentWindowRef.location);
         if (callback && typeof(callback) === 'function') callback(result);
       };
   }});
   injector.register({
     apibase: "navigator.apps", name: "verify", script: null,
-    getapi: function () {
+    getapi: function (contentWindowRef) {
       return function (args) {
-        repo.verify(gBrowser.contentDocument.location, args);
+        repo.verify(contentWindowRef.location, args);
       };
   }});
   injector.register({
@@ -595,19 +595,23 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
       return function (args) {
       };
   }});
+  
+  // management APIs:
   injector.register({
     apibase: "navigator.apps.mgmt", name: "launch", script: null,
-    getapi: function () {
+    getapi: function (contentWindowRef) {
       return function (args) {
-        repo.launch(window, gBrowser.contentDocument.location, args);
+        repo.verifyMgmtPermission(contentWindowRef.location);
+        repo.launch(window, contentWindowRef.location, args);
       };
   }});
   injector.register({
     apibase: "navigator.apps.mgmt", name: "list", script: null,
-    getapi: function () {
+    getapi: function (contentWindowRef) {
       return function (callback) {
+        repo.verifyMgmtPermission(contentWindowRef.location);
         try {
-          var result = repo.list(gBrowser.contentDocument.location);
+          var result = repo.list(contentWindowRef.location);
           if (callback) callback(result);
         } catch(e) {
           dump(e + "\n" + e.stack + "\n");
@@ -616,24 +620,27 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
   }});
   injector.register({
     apibase: "navigator.apps.mgmt", name: "loginStatus", script: null,
-    getapi: function () {
+    getapi: function (contentWindowRef) {
       return function (args) {
-        return repo.loginStatus(gBrowser.contentDocument.location, args);
+        repo.verifyMgmtPermission(contentWindowRef.location);
+        return repo.loginStatus(contentWindowRef.location, args);
       };
   }});
   injector.register({
     apibase: "navigator.apps.mgmt", name: "loadState", script: null,
-    getapi: function () {
+    getapi: function (contentWindowRef) {
       return function (callback) {
-        var result = repo.loadState(gBrowser.contentDocument.location);
+        repo.verifyMgmtPermission(contentWindowRef.location);
+        var result = repo.loadState(contentWindowRef.location);
         if (callback && typeof(callback) === 'function') callback(result);
       };
   }});
   injector.register({
     apibase: "navigator.apps.mgmt", name: "saveState", script: null,
-    getapi: function () {
+    getapi: function (contentWindowRef) {
       return function (state, callback) {
-        var result = repo.saveState(gBrowser.contentDocument.location, state);
+        repo.verifyMgmtPermission(contentWindowRef.location);
+        var result = repo.saveState(contentWindowRef.location, state);
         if (callback && typeof(callback) === 'function') {
           callback(result);
         }
@@ -641,8 +648,9 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
   }});
   injector.register({
     apibase: "navigator.apps.mgmt", name: "uninstall", script: null,
-    getapi: function () {
+    getapi: function (contentWindowRef) {
       return function (key, callback, onerror) {
+        repo.verifyMgmtPermission(contentWindowRef.location);
         let result = undefined;
         // FIXME: this should do a permission check on gBrowser.contentDocument.location
         try {
@@ -678,7 +686,7 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
   // Experimental support for web-send:
   injector.register({
     apibase: "navigator.introducer", name: "introduce", script: null,
-    getapi: function () {
+    getapi: function (contentWindowRef) {
       return function (anchor, wanted, introductionCallback) {
         gBrowser.ownerDocument.introductionCallback = introductionCallback;
         repo.websendIntroduce(gBrowser, 
@@ -732,7 +740,7 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
 
   injector.register({
     apibase: "navigator.introducer", name: "welcome", script: null,
-    getapi: function () {
+    getapi: function (contentWindowRef) {
       return function (registrants, callback) {
         repo.websendWelcome(gBrowser, window, registrants, callback, gBrowser.ownerDocument.introductionCallback);
       }
