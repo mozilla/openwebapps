@@ -12,11 +12,6 @@ chrome.extension.onConnect.addListener(function(port) {
 
     var origin = port.sender.tab.url;
 
-    // for clients from file:// urls we'll store the string "null".
-    // XXX: this is for symmetry with the HTML implementation.  Are we
-    // happy with this?
-    origin = ((origin.indexOf('file://') == 0) ? "null" : origin);
-
     port.onMessage.addListener(function(msg) {
         if (typeof(msg) === 'object' && msg.action) {
             switch (msg.action) {
@@ -25,6 +20,13 @@ chrome.extension.onConnect.addListener(function(port) {
                 if (mgmtAuthorized(origin)) {
                     sendResponse(msg, Repo.list());
                 }
+                break;
+            case 'setOrigin':
+                // this is our content script calling from an isolated
+                // world to specify the proper origin, which seems the only
+                // reliable way to get origin (otherwise iframes have
+                // origin of parent doc)
+                origin = msg.origin;
                 break;
             case 'uninstall':
                 if (mgmtAuthorized(origin)) {
@@ -48,7 +50,6 @@ chrome.extension.onConnect.addListener(function(port) {
                 break;
             case 'loginStatus':
                 if (mgmtAuthorized(origin)) {
-                    console.log("XXX: implement login status for sync");
                     sendResponse(msg, null);
                 }
                 break;

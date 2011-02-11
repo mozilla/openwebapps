@@ -162,6 +162,11 @@ document.documentElement.appendChild(owaContainer);
 // establish a connection to the extension
 var port = chrome.extension.connect();
 
+// first message we send is our *real* origin, as the
+// chrome.extension.onConnect stuff doesn't handle x-domain frames well
+var realOrigin = window.location.protocol + "//" + window.location.host;
+port.postMessage({action: "setOrigin", origin: realOrigin});
+
 // next, let's register to receive incoming events from the page
 d.addEventListener('__openWebAppsInEvent', function() {
     var data = document.getElementById('__openWebAppsIn').innerText;
