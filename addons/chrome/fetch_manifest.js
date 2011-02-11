@@ -5,11 +5,11 @@ function FetchManifest(url, cb) {
     xhr.onreadystatechange = function(aEvt) {
         if (xhr.readyState == 4) {
             if (xhr.status == 200) {
-                cb(xhr.responseText);
+                cb(xhr.responseText, xhr.getResponseHeader('Content-Type'));
             } else {
                 cb(null);
             }
         }
-    }
+    };
     xhr.send(null);
 }

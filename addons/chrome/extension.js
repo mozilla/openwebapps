@@ -8,7 +8,7 @@ function mgmtAuthorized(url) {
 chrome.extension.onConnect.addListener(function(port) {
     var sendResponse = function(msg, resp) {
         if (msg.tid) port.postMessage({tid: msg.tid, resp: resp});
-    }
+    };
 
     var origin = port.sender.tab.url;
 
@@ -26,9 +26,13 @@ chrome.extension.onConnect.addListener(function(port) {
                     sendResponse(msg, Repo.list());
                 }
                 break;
-            case 'remove':
+            case 'uninstall':
                 if (mgmtAuthorized(origin)) {
-                    sendResponse(msg, Repo.remove(msg.args.id));
+                    try {
+                        sendResponse(msg, Repo.uninstall(msg.args.id));
+                    } catch (e) {
+                        sendResponse(msg, {error: e});
+                    }
                 }
                 break;
             case 'loadState':
@@ -59,8 +63,8 @@ chrome.extension.onConnect.addListener(function(port) {
                     sendResponse(msg, r);
                 });
                 break;
-            case 'getInstalled':
-                sendResponse(msg, Repo.getInstalled(origin));
+            case 'amInstalled':
+                sendResponse(msg, Repo.amInstalled(origin));
                 break;
             case 'getInstalledBy':
                 sendResponse(msg, Repo.getInstalledBy(origin));
