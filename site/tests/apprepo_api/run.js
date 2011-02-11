@@ -155,7 +155,7 @@ function createServer(port) {
       }
     });
   });
-  myserver.listen(0, "localhost");
+  myserver.listen(port, "localhost");
   return myserver;
 };
 
@@ -164,11 +164,13 @@ var dirs = fs.readdirSync(__dirname);
 
 console.log("Starting test apps:");
 
-// bind a primary testing webserver which will become the repostiory host
-// and the place from which tests are run.
-dirs.push("_primary");
+// bind the "primary" testing webserver to a fixed local port, it'll
+// be the place from which tests are run, and it's the repository host
+// for the purposes of testing.
+boundServers["_primary"] = createServer(60172);
+
 dirs.forEach(function(d) {
-  if (d !== '_primary' && !fs.lstatSync(path.join(__dirname,d)).isDirectory()) return;
+  if (!fs.lstatSync(path.join(__dirname,d)).isDirectory()) return;
   boundServers[d] = createServer(0);
   var addr = boundServers[d].address();
   console.log("  " + d + ": http://" + addr.address + ":" + addr.port);
