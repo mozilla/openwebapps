@@ -8,14 +8,9 @@ function mgmtAuthorized(url) {
 chrome.extension.onConnect.addListener(function(port) {
     var sendResponse = function(msg, resp) {
         if (msg.tid) port.postMessage({tid: msg.tid, resp: resp});
-    }
+    };
 
     var origin = port.sender.tab.url;
-
-    // for clients from file:// urls we'll store the string "null".
-    // XXX: this is for symmetry with the HTML implementation.  Are we
-    // happy with this?
-    origin = ((origin.indexOf('file://') == 0) ? "null" : origin);
 
     port.onMessage.addListener(function(msg) {
         if (typeof(msg) === 'object' && msg.action) {
@@ -26,9 +21,20 @@ chrome.extension.onConnect.addListener(function(port) {
                     sendResponse(msg, Repo.list());
                 }
                 break;
-            case 'remove':
+            case 'setOrigin':
+                // this is our content script calling from an isolated
+                // world to specify the proper origin, which seems the only
+                // reliable way to get origin (otherwise iframes have
+                // origin of parent doc)
+                origin = msg.origin;
+                break;
+            case 'uninstall':
                 if (mgmtAuthorized(origin)) {
-                    sendResponse(msg, Repo.remove(msg.args.id));
+                    try {
+                        sendResponse(msg, Repo.uninstall(msg.args.id));
+                    } catch (e) {
+                        sendResponse(msg, {error: e});
+                    }
                 }
                 break;
             case 'loadState':
@@ -44,7 +50,6 @@ chrome.extension.onConnect.addListener(function(port) {
                 break;
             case 'loginStatus':
                 if (mgmtAuthorized(origin)) {
-                    console.log("XXX: implement login status for sync");
                     sendResponse(msg, null);
                 }
                 break;
@@ -59,8 +64,8 @@ chrome.extension.onConnect.addListener(function(port) {
                     sendResponse(msg, r);
                 });
                 break;
-            case 'getInstalled':
-                sendResponse(msg, Repo.getInstalled(origin));
+            case 'amInstalled':
+                sendResponse(msg, Repo.amInstalled(origin));
                 break;
             case 'getInstalledBy':
                 sendResponse(msg, Repo.getInstalledBy(origin));

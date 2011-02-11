@@ -20,7 +20,8 @@
         {
             "run_at": "document_start",
             "matches": [ "<all_urls>" ],
-            "js": [ "inject_api.js" ]
+            "js": [ "inject_api.js" ],
+            "all_frames": true
         }
     ]
 }

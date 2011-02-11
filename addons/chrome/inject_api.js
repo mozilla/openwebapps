@@ -4,7 +4,7 @@
 // loaded page which will shim in functions into navigator.apps.
 //
 // navigator.apps will then communicate with this content script
-// via custom DOM events and embedding data in the DOM.  This 
+// via custom DOM events and embedding data in the DOM.  This
 // content script will the communicate into trusted code using
 // chrome provided mechanisms.
 //
@@ -18,13 +18,27 @@ function inject_api() {
     // webpage.  his goal in life is to shim navigator.apps.
     // to expose the OpenWebApps API and relay calls into trusted
     // code.
+
+    function callOnerror(onerror, error) {
+        if (! onerror) {
+            return;
+        }
+        if (error.error) {
+            error = error.error;
+        }
+        if (error.length == 2) {
+            error = {code: error[0], message: error[1]};
+        }
+        onerror(error);
+    }
+
     if (!navigator.apps || navigator.apps.html5Implementation) {
         var transactions = {};
         var cur_trans_id = 1000;
 
         var is_array = function(v) {
             return v && typeof v === 'object' && v.constructor === Array;
-        }
+        };
 
         // delay interaction with the dom (for the return listener) until
         // a message is sent into the extension.  At this early stage of
@@ -62,16 +76,27 @@ function inject_api() {
 
         console.log("injecting navigator.apps API");
         navigator.apps = {
-            getInstalled:function (cb) {
-                sendToExtension('getInstalled', undefined, cb);
+            amInstalled:function (cb) {
+                sendToExtension('amInstalled', undefined, cb);
             },
             getInstalledBy:function (cb) {
                 sendToExtension('getInstalledBy', undefined, cb);
             },
             install:function (obj) {
-                var cb = obj.callback;
-                delete obj.callback;
-                sendToExtension('install', obj, cb);
+                if (! obj || !obj.url) {
+                    throw "install missing required url argument";
+                }
+                var onsuccess = obj.onsuccess;
+                var onerror = obj.onerror;
+                delete obj.onsuccess;
+                delete obj.onerror;
+                sendToExtension('install', obj, function (r) {
+                    if (r === true) {
+                        onsuccess();
+                    } else {
+                        callOnerror(onerror, r);
+                    }
+                });
             },
             setRepoOrigin: function () {
                 console.log("WARNING: navigator.apps.setRepoOrigin is meaningless when the openwebapps extension is installed");
@@ -86,8 +111,20 @@ function inject_api() {
                 list: function (cb) {
                     sendToExtension('list', undefined, cb);
                 },
-                remove: function (id) {
-                    sendToExtension('remove', { id: id }, (arguments.length == 2 ? arguments[1] : null));
+                uninstall: function (id) {
+                    var callback = null;
+                    if (arguments.length > 1) {
+                        var onsuccess = arguments[1];
+                        var onerror = arguments[2];
+                        callback = function (r) {
+                            if (r === true) {
+                                onsuccess();
+                            } else {
+                                callOnerror(onerror, r);
+                            }
+                        };
+                    }
+                    sendToExtension('uninstall', { id: id }, callback);
                 },
                 loadState: function (cb) {
                     sendToExtension('loadState', undefined, cb);
@@ -125,6 +162,11 @@ document.documentElement.appendChild(owaContainer);
 // establish a connection to the extension
 var port = chrome.extension.connect();
 
+// first message we send is our *real* origin, as the
+// chrome.extension.onConnect stuff doesn't handle x-domain frames well
+var realOrigin = window.location.protocol + "//" + window.location.host;
+port.postMessage({action: "setOrigin", origin: realOrigin});
+
 // next, let's register to receive incoming events from the page
 d.addEventListener('__openWebAppsInEvent', function() {
     var data = document.getElementById('__openWebAppsIn').innerText;
@@ -132,7 +174,7 @@ d.addEventListener('__openWebAppsInEvent', function() {
     port.postMessage(msg);
 });
 
-// a listener to receive messages from the extension 
+// a listener to receive messages from the extension
 port.onMessage.addListener(function(msg) {
     var d = document.getElementById('__openWebAppsOut');
     d.innerText = JSON.stringify(msg);
