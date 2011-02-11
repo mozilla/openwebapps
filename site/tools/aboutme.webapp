@@ -1,7 +1,5 @@
 {
-    "manifest_version": "0.2",
     "name":"About Me",
-    "base_url": "https://aboutme.mozillalabs.com/",
     "launch_path": "",
     "developer": {
         "name":"Mozilla Labs Demo",

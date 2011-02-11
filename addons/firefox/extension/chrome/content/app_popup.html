@@ -117,7 +117,10 @@ BODY {
   height:16px;
   background-image: -moz-image-rect(url(chrome://openwebapps/content/close.png), 0%, 50%, 100%, 25%);
 }
-
+#install_status {
+  font:bold 9pt Helvetica;
+  color:red;
+}
 #offer_install {
   position: absolute;
   right: 10px;
@@ -160,6 +163,7 @@ BODY {
 <div>
 <div id="offer_name"></div>
 <div id="offer_desc"></div>
+<div id="install_status"></div>
 </div>
 
 <div id="offer_controls">
@@ -174,44 +178,29 @@ BODY {
 <div id="icon_region"></div>
 <script>
 Components.utils.import("resource://openwebapps/modules/api.js");
-var repo = FFRepoImplService;
-var appList = repo.list(); // XXX This will become asynchronous.
 
-var height  = Math.ceil(appList.length / 5.0) * 100 + (repo.getCurrentPageHasApp() ? 180 : 0);
-document.body.style.height = height;
-
-if (repo.getCurrentPageHasApp())
+function renderIconList(appDict)
 {
-  repo.getCurrentPageApp(function(currentPageApp) {
-    if (currentPageApp) {
-      var offer_region = document.getElementById("offer_region");
-      offer_region.style.display = "block";
-      var offer_name = document.getElementById("offer_name");
-      offer_name.appendChild(document.createTextNode(currentPageApp.name));
+  var appCount = 0;
+  for (var key in appDict) appCount += 1;
+  var height  = Math.ceil(appCount / 5.0) * 100 + (repo.getCurrentPageHasApp() ? 180 : 0);
+  document.body.style.height = height;
 
-      var offer_icon = document.getElementById("offer_icon");
-      var iconImg = getBiggestIcon(currentPageApp);
-      offer_icon.style.background = "url(\"" + iconImg + "\") no-repeat #000000";
-      offer_icon.style.backgroundSize = "100%";
-
-      var offer_desc = document.getElementById("offer_desc");
-      if (currentPageApp.description) {
-        offer_desc.appendChild(document.createTextNode(currentPageApp.description));
-      }
-    }
-  });
-}
-
-var container = document.getElementById("icon_region");
-for (var i=0;i<appList.length;i++) {
+  var container = document.getElementById("icon_region");
   
-  container.appendChild(createAppIcon(appList[i]));
-  if (i && (((i+1) % 5) == 0)) {
-    var br = elem("br");
-    br.setAttribute("clear", "left");
-    container.appendChild(br);
+  var count = 0;
+  for (var appID in appDict) {
+    
+    container.appendChild(createAppIcon(appDict[appID].manifest));
+    if (count && (((count+1) % 5) == 0)) {
+      var br = elem("br");
+      br.setAttribute("clear", "left");
+      container.appendChild(br);
+    }
+    count += 1;
   }
 }
+
 
 function elem(type, clazz) {
   var e = document.createElement(type);
@@ -250,7 +239,65 @@ function createAppIcon(app)
   return appContainer;
 }
 
+try {
 
+var repo = FFRepoImplService;
+dump("calling list \n");
+var appDict = repo.list();// note that we're calling the internal List call here, which is not asynchronous.
+renderIconList(appDict);
+dump("called list\n");
+
+if (repo.getCurrentPageHasApp())
+{
+  repo.getCurrentPageApp(function(currentPageApp) {
+  
+    try {
+    
+      if (currentPageApp) {
+        var offer_region = document.getElementById("offer_region");
+        offer_region.style.display = "block";
+        var offer_name = document.getElementById("offer_name");
+        offer_name.appendChild(document.createTextNode(currentPageApp.name));
+
+        var offer_icon = document.getElementById("offer_icon");
+        var iconImg = getBiggestIcon(currentPageApp);
+        offer_icon.style.background = "url(\"" + iconImg + "\") no-repeat #000000";
+        offer_icon.style.backgroundSize = "100%";
+
+        var offer_desc = document.getElementById("offer_desc");
+        if (currentPageApp.description) {
+          offer_desc.appendChild(document.createTextNode(currentPageApp.description));
+        }
+        document.getElementById("offer_install").onclick = function() {
+          
+          var installArgs = 
+            {
+              url: repo.getCurrentPageAppManifestURL().spec, 
+              onerror:function(result) {
+                document.getElementById("install_status").appendChild(document.createTextNode("Error: " + result.message));
+              },
+              onsuccess:function(result) {
+                // should animate something cool happening here. :)
+                dump("installation result: " + JSON.stringify(result) + "\n");
+                document.getElementById("offer_region").style.display = "none";
+              }
+            };
+          var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"]
+                             .getService(Components.interfaces.nsIWindowMediator);
+          var recentWindow = wm.getMostRecentWindow("navigator:browser");
+            
+          repo.install(window.location, installArgs, recentWindow);
+        }
+      }
+    } catch (e) {
+      dump("Error with current page app: " + e + "\n");
+    }
+  });
+}
+
+}catch (e) {
+  dump(e + "\n");
+}
 
 </script>
 </body>

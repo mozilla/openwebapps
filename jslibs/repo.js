@@ -149,6 +149,9 @@
     {
         // apps may always trigger install from their own domain
         if (installOrigin === appOrigin) return true;
+        
+        // chrome code can always do it:
+        if (installOrigin == "chrome://openwebapps") return true;
 
         // otherwise, when installOrigin != appOrigin, we must check the
         // installs_allowed_from member of the manifest
@@ -243,7 +246,7 @@
             fetchManifestFunc(args.url, function(fetchedManifest, contentType) {
                 if (!fetchedManifest) {
                     cb({error: ["networkError", "couldn't retrieve application manifest from network"]});
-                } else if (contentType.indexOf("application/x-web-app-manifest+json") != 0) {
+                } else if (!contentType || contentType.indexOf("application/x-web-app-manifest+json") != 0) {
                     cb({error: ["invalidManifest", "application manifests must be of Content-Type \"application/x-web-app-manifest+json\""]});
                 } else {
                     try {

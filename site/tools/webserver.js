@@ -3,6 +3,11 @@ var sys = require("sys"),
     url = require("url"),
     path = require("path"),
     fs = require("fs");
+    
+function endsWith(s, val) {
+  var idx = s.lastIndexOf(val);
+  return (idx >= 0 && idx == s.length - val.length);
+}
 
 function createServer(port) {
   return http.createServer(function(request, response) {
@@ -49,6 +54,13 @@ function createServer(port) {
     		return;
     	}
 
+      var contentType;
+      if (endsWith(filename, ".webapp")) {
+        contentType = "application/x-web-app-manifest+json";
+      } else if (endsWith(filename, ".htm") || endsWith(filename, ".html")) {
+        contentType = "text/html";
+      }
+
     	fs.readFile(filename, "binary", function(err, file) {
     		if(err) {
     			response.writeHead(500, {"Content-Type": "text/plain"});
@@ -58,7 +70,9 @@ function createServer(port) {
     			return;
     		}
 
-    		response.writeHead(200);
+        var headers = {};
+        if (contentType) headers["Content-Type"] = contentType;
+    		response.writeHead(200, headers);
     		response.write(file, "binary");
     		response.end();
         sys.puts("200 " + filename);

@@ -114,6 +114,8 @@ FFRepoImpl.prototype = {
 
         function fetchManifest(url, cb)
         {
+            dump("ENTER api fetchManifest " + url + "\n");
+        
             // contact our server to retrieve the URL
             var xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"].
                     createInstance(Ci.nsIXMLHttpRequest);
@@ -121,6 +123,7 @@ FFRepoImpl.prototype = {
             xhr.onreadystatechange = function(aEvt) {
                 if (xhr.readyState == 4) {
                     if (xhr.status == 200) {
+                        dump("SUCCESS api fetchManifest " + url + "\n");
                         cb(xhr.responseText, xhr.getResponseHeader('Content-Type'));
                     } else {
                         cb(null);
@@ -130,6 +133,7 @@ FFRepoImpl.prototype = {
             xhr.send(null);
         }
 
+        dump("ENTER api install " + JSON.stringify(args) + "\n");
         return Repo.install(location, args, displayPrompt, fetchManifest,
             function(result) {
                 // install is complete
@@ -290,6 +294,10 @@ FFRepoImpl.prototype = {
       return this.currentPageAppURL != null;
     },
 
+    getCurrentPageAppManifestURL: function _getCurrentPageAppManifestURL() {
+      return this.currentPageAppURL;
+    },
+
     getCurrentPageApp: function _getCurrentPageApp(callback) {
 
       dump("Fetching current page app\n");
@@ -309,11 +317,15 @@ FFRepoImpl.prototype = {
               if (xhr.readyState == 4) {
                   if (xhr.status == 200) {
                     try {
-                      dump("Got manifest\n");
+                      //dump("Got manifest: " + xhr.responseText + "\n");
                       var manifest = JSON.parse(xhr.responseText);
+                      dump("parsed it\n");
                       this.currentPageAppManifest = manifest;
+                      dump("set this variable\n");
                       callback(manifest);
+                      dump("did callback\n");
                     } catch (e) {
+                      dump("Error while parsing manifest: " + e + "\n");
                       // TODO report this out
                       dump("Malformed manifest for current page: "+ xhr.responseText + "\n");
                       callback(null);
