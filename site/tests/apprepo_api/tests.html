@@ -15,7 +15,7 @@
       }
   </style>
 </head>
-<body id="testingBody">
+<body id="testingBody" class="autodoctest">
 <h2> App Repo API Tests </h2>
 
 <p> These API tests run in a local environment provided by a test
@@ -30,15 +30,11 @@
   for it to be successful.  If you don't, or hit them too slowly, you
   will get failures. </p>
 
-<div>
-  <button onclick="doctest()" type="button">Test all</button>
-  <pre id="doctestOutput"></pre>
-</div>
-
+<div class="test">
 <h3>Verify Testing Environment</h3>
 
 First let's ensure that the testing environment is sane...
-<pre class="doctest">
+<pre class="doctest setup">
 $ writeln(SERVERS);
 {
   _primary: "...",
@@ -51,11 +47,14 @@ $ writeln(SERVERS);
 }
 </pre>
 
+</div>
+
+<div class="test">
 <h3>Clear All Apps</h3>
 
 Delete all applications and then verify that list() yields no apps.
 
-<pre class="doctest">
+<pre class="doctest setup">
 $ // Out of curiosity we'll see what's installed:
 > navigator.apps.mgmt.list(Spy('list', {wait: true}));
 list(...)
@@ -81,6 +80,9 @@ $ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true}));
 apps.mgmt.list({})
 </pre>
 
+</div>
+
+<div class="test">
 <h3>Install missing required arguments will throw</h3>
 
 <pre class="doctest">
@@ -88,6 +90,9 @@ $ navigator.apps.install();
 Error: install missing required url argument
 </pre>
 
+</div>
+
+<div class="test">
 <h3>Install a basic application</h3>
 
 <pre class="doctest">
@@ -171,6 +176,9 @@ success({
 })
 </pre>
 
+</div>
+
+<div class="test">
 <h3>Installation of an app with a syntax error in manifest</h3>
 
 <pre class="doctest">
@@ -182,6 +190,9 @@ $ navigator.apps.install(
 apps.install.error({code: "manifestParseError", message: "couldn't parse manifest JSON from http://127.0.0.1:.../manifest.webapp"})
 </pre>
 
+</div>
+
+<div class="test">
 <h3>Installation of an app with a malformed manifest (missing key)</h3>
 
 <pre class="doctest">
@@ -193,6 +204,9 @@ $ navigator.apps.install(
 apps.install.error({code: "invalidManifest", message: "couldn't validate your manifest: missing \"name\" property"})
 </pre>
 
+</div>
+
+<div class="test">
 <h3>Installation of an app without required HTTP Content-Type</h3>
 
 <pre class="doctest">
@@ -207,6 +221,9 @@ apps.install.error({
 })
 </pre>
 
+</div>
+
+<div class="test">
 <h3>Installation of an app without delegated installation permissions</h3>
 
 <pre class="doctest">
@@ -218,6 +235,9 @@ $ navigator.apps.install(
 apps.install.error({code: "permissionDenied", message: "origin 'http://127.0.0.1:...' may not install this app"})
 </pre>
 
+</div>
+
+<div class="test">
 <h3>Installation of that same app, from its own origin</h3>
 
 NOTE:  This is a rather tricky test:  We'll programatically embed an iframe from
@@ -306,7 +326,9 @@ $ chan.call(buildJSChanArgs("saveState", false));
 error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory")
 </pre>
 
+</div>
 
+<div class="test">
 <h3>Verify proper errors from uninstall()</h3>
 <pre class="doctest">
 $ navigator.apps.mgmt.uninstall(
@@ -316,6 +338,9 @@ $ navigator.apps.mgmt.uninstall(
 error({code: "noSuchApplication", message: "no application exists with the origin: http://nosuch.app"})
 </pre>
 
+</div>
+
+<div class="test">
 <h3>Verify no callbacks are required to uninstall()</h3>
 
 All args are optional to uninstall.  To test this we'll uninstall an app (basic_app), wait 100ms, and
@@ -337,7 +362,8 @@ list({
   }
 })
 </pre>
-  <button onclick="doctest()" type="button">Test all</button>
+
+</div>
 
 </body>
 <script type="text/javascript" src="/servers.js"></script>
