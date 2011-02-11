@@ -1,8 +1,15 @@
 console.log("OpenWebApps extension loaded");
 
 function mgmtAuthorized(url) {
-    // XXX: write me
-    return true;
+    [
+      "https://myapps.mozillalabs.com",
+      "https://stage.myapps.mozillalabs.com",
+      "http://127.0.0.1:60172"
+    ].forEach (function(x) {
+      if (0 === url.indexOf(x)) return true;
+    });
+
+    return false;
 }
 
 chrome.extension.onConnect.addListener(function(port) {
