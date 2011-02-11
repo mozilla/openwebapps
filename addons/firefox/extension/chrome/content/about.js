@@ -25,7 +25,7 @@
 Components.utils.import("resource://openwebapps/modules/api.js");
 
 var repo = FFRepoImplService;
-var appList = repo.list(); // XXX This will become asynchronous.
+var appDict = repo.list(); // note that this is using the internal, non-async API
 
 function elem(type, clazz) {
   var e = document.createElement(type);
@@ -45,65 +45,62 @@ if (idx > 0) {
   }
 
   if (params["appid"]) {
-    var appMatches = appList.filter(function(x) {return (x.id == params["appid"])});
-    if (appMatches && appMatches.length > 0) {
-      var theApp = appMatches[0];
+    var theApp = appDict[params["appid"]];
 
-      document.getElementById("viewcontrols").style.display = "block";
+    document.getElementById("viewcontrols").style.display = "block";
 
-      if (params["viewsrc"]) {
-        var container = document.getElementById("viewsrc");
-        document.title = "Source of application: " + params["appid"];
-        var box = elem("div", "viewsrc");
-        container.appendChild(box);
-        
-        function renderValue(parent, key, val, aBox) {
-          if (parent == "icons") {
-            dump("key is " + key + "\n");
-            aBox.setAttribute("style", "margin:4px;width:" + key + "px;height:" + key+ "px;background-image:url(\"" + val + "\")");
-            dump("margin:4px;width:" + key + "px;height:" + key+ "px;background-image:url(\"" + val + "\")\n");
+    if (params["viewsrc"]) {
+      var container = document.getElementById("viewsrc");
+      document.title = "Source of application: " + params["appid"];
+      var box = elem("div", "viewsrc");
+      container.appendChild(box);
+      
+      function renderValue(parent, key, val, aBox) {
+        if (parent == "icons") {
+          dump("key is " + key + "\n");
+          aBox.setAttribute("style", "margin:4px;width:" + key + "px;height:" + key+ "px;background-image:url(\"" + val + "\")");
+          dump("margin:4px;width:" + key + "px;height:" + key+ "px;background-image:url(\"" + val + "\")\n");
 
-          } else if (key == "installTime") {
-            aBox.appendChild(document.createTextNode("" + new Date(val) + " - " + val));
+        } else if (key == "installTime") {
+          aBox.appendChild(document.createTextNode("" + new Date(val) + " - " + val));
+        } else {
+          aBox.appendChild(document.createTextNode(val));
+        }
+      }
+      
+      function renderObj(parentKey, obj, aContainer) {
+        for (var key in obj) {
+          if (typeof obj[key] == "object") {
+            var row = elem("div", "row");
+            var label = elem("div", "label");
+            label.appendChild(document.createTextNode(key));
+            row.appendChild(label);
+            aContainer.appendChild(row);
+
+            var subobj = elem("div", "subobj");
+            aContainer.appendChild(subobj);
+            renderObj(key, obj[key], subobj);
           } else {
-            aBox.appendChild(document.createTextNode(val));
+            var row = elem("div", "row");
+            var label = elem("div", "label");
+            var value = elem("div", "value");
+            
+            label.appendChild(document.createTextNode(key));
+            renderValue(parentKey, key, obj[key], value);
+            row.appendChild(label);
+            row.appendChild(value);
+            aContainer.appendChild(row);
           }
         }
-        
-        function renderObj(parentKey, obj, aContainer) {
-          for (var key in obj) {
-            if (typeof obj[key] == "object") {
-              var row = elem("div", "row");
-              var label = elem("div", "label");
-              label.appendChild(document.createTextNode(key));
-              row.appendChild(label);
-              aContainer.appendChild(row);
-
-              var subobj = elem("div", "subobj");
-              aContainer.appendChild(subobj);
-              renderObj(key, obj[key], subobj);
-            } else {
-              var row = elem("div", "row");
-              var label = elem("div", "label");
-              var value = elem("div", "value");
-              
-              label.appendChild(document.createTextNode(key));
-              renderValue(parentKey, key, obj[key], value);
-              row.appendChild(label);
-              row.appendChild(value);
-              aContainer.appendChild(row);
-            }
-          }
-        }
-        renderObj("", theApp, box);
-        
       }
-      else if (params["viewraw"]) {
-        var container = document.getElementById("viewraw");
-        var pre = elem("div", "raw");
-        container.appendChild(pre);
-        pre.appendChild(document.createTextNode(JSON.stringify(theApp)));
-      }
+      renderObj("", theApp, box);
+      
+    }
+    else if (params["viewraw"]) {
+      var container = document.getElementById("viewraw");
+      var pre = elem("div", "raw");
+      container.appendChild(pre);
+      pre.appendChild(document.createTextNode(JSON.stringify(theApp)));
     }
   }
 }
@@ -155,7 +152,7 @@ else
 
   var appListContainer = document.getElementById("applist");
   
-  for (var i=0;i<appList.length;i++)
+  for (var appID in appDict)
   {
     var appRow = elem("div", "app");
     var appCfg = elem("div", "configure");
@@ -176,15 +173,24 @@ else
     appTextBox.appendChild(appReceipt);
 
     // Config
+    var theApp = appDict[appID];
     var viewSrcLink = elem("a");
-    viewSrcLink.href = "about:apps?viewsrc=1&appid=" + appList[i].id;
+    viewSrcLink.href = "about:apps?viewsrc=1&appid=" + appID;
     viewSrcLink.appendChild(document.createTextNode("View Source"));
     appCfg.appendChild(viewSrcLink);
    
     // Detail
-    appIcon.setAttribute("style", "background-image:url(\"" + getBiggestIcon(appList[i]) + "\")");
-    appName.appendChild(document.createTextNode(appList[i].name));
-    appReceipt.appendChild(document.createTextNode("Installed " + formatDate(appList[i].installTime) + " from " + appList[i].installURL));
+    appIcon.setAttribute("style", "background-image:url(\"" + getBiggestIcon(theApp.manifest) + "\")");
+    appName.appendChild(document.createTextNode(theApp.manifest.name));
+    
+    var installationDomain;
+    if (theApp.install_origin == "chrome://openwebapps") {
+      installationDomain = "directly from the site";
+    } else{
+      installationDomain = "from " + theApp.install_origin;
+    }
+    
+    appReceipt.appendChild(document.createTextNode("Installed " + formatDate(theApp.install_time) + ", "+ installationDomain));
     appListContainer.appendChild(appRow);
   }
 }

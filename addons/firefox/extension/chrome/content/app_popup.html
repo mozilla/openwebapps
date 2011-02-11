@@ -242,10 +242,8 @@ function createAppIcon(app)
 try {
 
 var repo = FFRepoImplService;
-dump("calling list \n");
 var appDict = repo.list();// note that we're calling the internal List call here, which is not asynchronous.
 renderIconList(appDict);
-dump("called list\n");
 
 if (repo.getCurrentPageHasApp())
 {

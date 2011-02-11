@@ -183,8 +183,9 @@ function InjectorInit(window) {
       let apps = FFRepoImplService.list("chrome://openwebapps/modules/injector.js");
       let suiteMap = {};
       
-      for each (let app in apps)
+      for (let appKey in apps)
       {
+        let app = apps[appKey].manifest;
         if (app.experimental && app.experimental.services) 
         {
           for each (let service in app.experimental.services)
