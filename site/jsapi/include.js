@@ -737,7 +737,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
                 setTimeout(function() {
                     deliverError("permissionDenied",
                                  "to access open web apps management apis, you must be on the same domain " +
-                                 "as the application repostiory",
+                                 "as the application repository",
                                  onerror);
                 }, 0);
                 return;

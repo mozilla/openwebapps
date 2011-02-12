@@ -152,7 +152,7 @@
         }
         throw [ 'permissionDenied',
                 "to access open web apps management apis, you must be on the same domain " +
-                "as the application repostiory" ];
+                "as the application repository" ];
     }
 
     chan.bind('list', function(t, args) {

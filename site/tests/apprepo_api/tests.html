@@ -313,17 +313,17 @@ list(2)
 $ // first let's add an iframe with the child to the document */
 > var chan = embedIFrameAndStartChannel(SERVERS['no_mgmt_api_off_repo_origin'] + "/include.html");
 > chan.call(buildJSChanArgs("launch", false));
-error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory")
+error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repository")
 $ chan.call(buildJSChanArgs("loadState", false));
-error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory")
+error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repository")
 $ chan.call(buildJSChanArgs("loginStatus", false));
-error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory")
+error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repository")
 $ chan.call(buildJSChanArgs("list", false));
-error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory")
+error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repository")
 $ chan.call(buildJSChanArgs("uninstall", false));
-error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory")
+error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repository")
 $ chan.call(buildJSChanArgs("saveState", false));
-error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory")
+error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repository")
 </pre>
 
 </div>

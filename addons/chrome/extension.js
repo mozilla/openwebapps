@@ -9,7 +9,7 @@ function verifyMgmtAuthorized(url) {
     ].forEach (function(x) {
         if (0 === url.indexOf(x)) authorized = true;
     });
-    if (!authorized) throw [ "permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repostiory" ];
+    if (!authorized) throw [ "permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repository" ];
 }
 
 chrome.extension.onConnect.addListener(function(port) {
