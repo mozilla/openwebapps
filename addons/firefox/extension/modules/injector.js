@@ -307,7 +307,6 @@ function InjectorInit(window) {
         for (let methodName in suiteMap[suiteName])
         {
           let methodList = suiteMap[suiteName][methodName];
-          dump("injecting " + suiteName + "." + methodName + ".\n");
           Injector._inject(aSubject,
             {
               apibase:"navigator.services." + suiteName,

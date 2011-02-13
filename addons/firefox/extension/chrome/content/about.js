@@ -176,7 +176,7 @@ else
     var theApp = appDict[appID];
     var viewSrcLink = elem("a");
     viewSrcLink.href = "about:apps?viewsrc=1&appid=" + appID;
-    viewSrcLink.appendChild(document.createTextNode("View Source"));
+    viewSrcLink.appendChild(document.createTextNode("View Manifest"));
     appCfg.appendChild(viewSrcLink);
    
     // Detail
