@@ -3,12 +3,11 @@ function LaunchApp(id) {
 
     var appStorage = TypedStorage().open("app");
     var i = appStorage.get(id);
-    if (!i || !i.app.base_url) return false;
-    var baseURL = i.app.base_url;
-    var launchURL = baseURL + (i.app.launch_path ? i.app.launch_path : "");
-    var appName = i.app.name;
-    var parsedBaseURL = URLParse(baseURL).normalize();
-    
+    if (!i || !i.origin) return false;
+    var launchURL = i.origin + (i.manifest.launch_path ? i.manifest.launch_path : "");
+    var appName = i.manifest.name;
+    var parsedBaseURL = URLParse(i.origin).normalize();
+
     // determine if this application is running in some tab in some window
     chrome.windows.getAll({populate:true}, function(windows) { 
         for (var i = 0; i < windows.length; i++) {

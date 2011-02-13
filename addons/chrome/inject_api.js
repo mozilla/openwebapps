@@ -29,7 +29,7 @@ function inject_api() {
         if (error.length == 2) {
             error = {code: error[0], message: error[1]};
         }
-        onerror(error);
+        if (onerror) onerror(error);
     }
 
     if (!navigator.apps || navigator.apps.html5Implementation) {
@@ -45,7 +45,7 @@ function inject_api() {
         // page load we cannot query the DOM.
         var returnEventListenerRegistered = false;
 
-        var sendToExtension = function(action, args, cb) {
+        var sendToExtension = function(action, args, onsuccess, onerror) {
             if (!returnEventListenerRegistered) {
                 returnEventListenerRegistered = true;
                 // now let's register for events incoming from the extension
@@ -53,18 +53,24 @@ function inject_api() {
                     var data = document.getElementById('__openWebAppsOut').innerText;
                     var msg = JSON.parse(data);
                     if (transactions[msg.tid]) {
-                        var cb = transactions[msg.tid];
-                        delete transactions[msg.tid];
-                        cb(msg.resp);
+                        if (msg.error) {
+                            var cb = transactions[msg.tid][1];
+                            delete transactions[msg.tid];
+                            if (cb) callOnerror(cb, msg.error);
+                        } else {
+                            var cb = transactions[msg.tid][0];
+                            delete transactions[msg.tid];
+                            cb(msg.resp);
+                        }
                     }
                 });
             }
 
             var aObj = { action: action };
             if (args !== undefined) aObj.args = args;
-            if (cb) {
+            if (onsuccess) {
                 var i = cur_trans_id++;
-                transactions[i] = cb;
+                transactions[i] = [onsuccess, onerror];
                 aObj.tid = i;
             }
             var div = document.getElementById("__openWebAppsIn");
@@ -76,11 +82,11 @@ function inject_api() {
 
         console.log("injecting navigator.apps API");
         navigator.apps = {
-            amInstalled:function (cb) {
-                sendToExtension('amInstalled', undefined, cb);
+            amInstalled:function (onsuccess, onerror) {
+                sendToExtension('amInstalled', undefined, onsuccess, onerror);
             },
-            getInstalledBy:function (cb) {
-                sendToExtension('getInstalledBy', undefined, cb);
+            getInstalledBy:function (onsuccess, onerror) {
+                sendToExtension('getInstalledBy', undefined, onsuccess, onerror);
             },
             install:function (obj) {
                 if (! obj || !obj.url) {
@@ -91,49 +97,30 @@ function inject_api() {
                 delete obj.onsuccess;
                 delete obj.onerror;
                 sendToExtension('install', obj, function (r) {
-                    if (r === true) {
-                        onsuccess();
-                    } else {
-                        callOnerror(onerror, r);
-                    }
-                });
+                    if (typeof onsuccess === 'function') onsuccess();
+                }, onerror);
             },
             setRepoOrigin: function () {
-                console.log("WARNING: navigator.apps.setRepoOrigin is meaningless when the openwebapps extension is installed");
-            },
-            verify: function () {
-                console.log("verify called");
+                console.log("INFO: navigator.apps.setRepoOrigin is meaningless when the openwebapps extension is installed");
             },
             mgmt: {
-                launch:function (id) {
-                    sendToExtension('launch', id);
+                launch:function (id, onsuccess, onerror) {
+                    sendToExtension('launch', id, onsuccess, onerror);
                 },
-                list: function (cb) {
-                    sendToExtension('list', undefined, cb);
+                list: function (onsuccess, onerror) {
+                    sendToExtension('list', undefined, onsuccess, onerror);
                 },
-                uninstall: function (id) {
-                    var callback = null;
-                    if (arguments.length > 1) {
-                        var onsuccess = arguments[1];
-                        var onerror = arguments[2];
-                        callback = function (r) {
-                            if (r === true) {
-                                onsuccess();
-                            } else {
-                                callOnerror(onerror, r);
-                            }
-                        };
-                    }
-                    sendToExtension('uninstall', { id: id }, callback);
+                uninstall: function (id, onsuccess, onerror) {
+                    sendToExtension('uninstall', { id: id }, onsuccess, onerror);
                 },
-                loadState: function (cb) {
-                    sendToExtension('loadState', undefined, cb);
+                loadState: function (onsuccess, onerror) {
+                    sendToExtension('loadState', undefined, onsuccess, onerror);
                 },
-                loginStatus: function (cb) {
-                    sendToExtension('loginStatus', undefined, cb);
+                loginStatus: function (onsuccess, onerror) {
+                    sendToExtension('loginStatus', undefined, onsuccess, onerror);
                 },
-                saveState: function (obj, cb) {
-                    sendToExtension('saveState', obj, cb);
+                saveState: function (obj, onsuccess, onerror) {
+                    sendToExtension('saveState', obj, onsuccess, onerror);
                 }
             }
         };
