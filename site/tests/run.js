@@ -7,14 +7,21 @@ path = require("path"),
 fs = require("fs");
 
 // all bound webservers stored in this lil' object
-var boundServers = { };
+var boundServers = [ ];
 function getWebRootDir(host, port) {
-  for (var k in boundServers) {
-    var a = boundServers[k].address();
+  for (var i = 0; i < boundServers.length; i++) {
+    var o = boundServers[i];
+    var a = o.server.address();
     if (host === a.address && port === a.port) {
-      if (k === '_primary') return __dirname;
-      else return path.join(k);
+      return o.path ? o.path : __dirname;
     }
+  }
+  return undefined;
+}
+
+function getServerByName(name) {
+  for (var i = 0; i < boundServers.length; i++) {
+    if (boundServers[i].name === name) return boundServers[i];
   }
   return undefined;
 }
@@ -99,9 +106,10 @@ function createServer(port) {
     // mapping test names (just dir names) into urls
     if (parsedURI.pathname == '/servers.js') {
       var serverToUrlMap = {};
-      for (var k in boundServers) {
-        var a = boundServers[k].address();
-        serverToUrlMap[path.basename(k)] = "http://" + a.address + ":" + a.port;
+      for (var i = 0; i < boundServers.length; i++) {
+        var o = boundServers[i]
+        var a = o.server.address();
+        serverToUrlMap[o.name] = "http://" + a.address + ":" + a.port;
       }
       var t = "var SERVERS = " + JSON.stringify(serverToUrlMap) + ";";
       response.writeHead(200, {"Content-Type": "application/x-javascript"});
@@ -201,7 +209,7 @@ for (var i=0; i<examplesCopies; i++) {
   examplesDirs.forEach(function (item) {
     dirs.push({
       title: "Examples: (set $EXAMPLE_COPIES to a number for multiple copies)",
-      name: item,
+      name: item + (i ? " ("+i+")" : ""),
       path: path.join(__dirname, '../../examples', item)
     });
   });
@@ -213,11 +221,14 @@ console.log("Starting test apps:");
 // be the place from which tests are run, and it's the repository host
 // for the purposes of testing.
 var PRIMARY_PORT = 60172;
-boundServers["_primary"] = createServer(PRIMARY_PORT);
+boundServers.push({
+  name: "_primary",
+  server: createServer(PRIMARY_PORT)
+});
 
 function formatLink(nameOrServer, extraPath) {
   if (typeof nameOrServer == 'string') {
-    nameOrServer = boundServers[nameOrServer];
+    nameOrServer = getServerByName(nameOrServer).server;
   }
   var addr = nameOrServer.address();
   var url = 'http://' + addr.address + ':' + addr.port;
@@ -237,11 +248,13 @@ dirs.forEach(function(dirObj) {
     console.log('\n' + dirObj.title);
     lastTitle = dirObj.title;
   }
-  boundServers[dirObj.path] = createServer(0);
-  console.log("  " + dirObj.name + ": " + formatLink(dirObj.path));
+  boundServers.push({
+    path: dirObj.path,
+    server: createServer(0),
+    name: dirObj.name
+  });
+  console.log("  " + dirObj.name + ": " + formatLink(dirObj.name));
 });
-
-
 
 console.log("\nTesting server started, to run tests go to: "
             + formatLink("_primary", "/apprepo_api/tests.html"));
