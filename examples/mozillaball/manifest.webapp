@@ -1,6 +1,5 @@
 {
     "name":"MozillaBall",
-    "base_url": "https://mozillaball.mozillalabs.com/",
     "launch_path": "",
     "developer": {
         "name":"Mozilla Labs Demo",
