@@ -200,7 +200,7 @@ var examplesDirs = fs.readdirSync(path.join(__dirname, '../../examples'));
 for (var i=0; i<examplesCopies; i++) {
   examplesDirs.forEach(function (item) {
     dirs.push({
-      title: "Examples: (set $EXAMPLE_COPIES for multiple copies)",
+      title: "Examples: (set $EXAMPLE_COPIES to a number for multiple copies)",
       name: item,
       path: path.join(__dirname, '../../examples', item)
     });
