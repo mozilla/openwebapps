@@ -42,7 +42,7 @@ function createServer(port) {
     var siteroot = getWebRootDir(host, port);
 
     // unknown site?  really?
-    if (! siteroot) return fourOhFour(response, "No site on this port");
+    if (!siteroot) return fourOhFour(response, "No site on this port");
 
     // hook to fetch manifests for HTML5 repos
     var parsedURI = url.parse(request.url, true);
@@ -101,7 +101,7 @@ function createServer(port) {
       var serverToUrlMap = {};
       for (var k in boundServers) {
         var a = boundServers[k].address();
-        serverToUrlMap[k] = "http://" + a.address + ":" + a.port;
+        serverToUrlMap[path.basename(k)] = "http://" + a.address + ":" + a.port;
       }
       var t = "var SERVERS = " + JSON.stringify(serverToUrlMap) + ";";
       response.writeHead(200, {"Content-Type": "application/x-javascript"});
@@ -244,4 +244,4 @@ dirs.forEach(function(dirObj) {
 
 
 console.log("\nTesting server started, to run tests go to: "
-            + formatLink("_primary", "/tests.html"));
+            + formatLink("_primary", "/apprepo_api/tests.html"));
