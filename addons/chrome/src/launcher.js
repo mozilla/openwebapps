@@ -1,13 +1,13 @@
 $(document).ready(function() {
-    function getBiggestIcon(icons) {
+  function getBiggestIcon(manifest, origin) {
         //see if the icons has any icons, and if so, return the largest one
-        if (icons) {
+        if (manifest.icons) {
             var biggest = 0;
-            for (z in icons) {
+            for (z in manifest.icons) {
                 var size = parseInt(z, 10);
                 if (size > biggest) biggest = size;
             }
-            if (biggest !== 0) return icons[biggest];
+            if (biggest !== 0) return origin + manifest.icons[biggest];
         }
         return chrome.extension.getURL("icon.png");
     }
@@ -19,7 +19,7 @@ $(document).ready(function() {
         if (!l.hasOwnProperty(i)) continue;
         var s = $("<span/>");
         s.addClass("launchIcon");
-        var iurl = getBiggestIcon(l[i].icons);
+        var iurl = getBiggestIcon(l[i].manifest, l[i].origin);
         var img = $("<img/>");
         img.attr("src", iurl);
         img.attr('alt', l[i]['name']);

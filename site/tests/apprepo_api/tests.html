@@ -46,7 +46,39 @@ $ writeln(SERVERS);
   no_mgmt_api_off_repo_origin: "..."
 }
 </pre>
+</div>
 
+<div class="test">
+<h3>Presence of functions</h3>
+
+Are all of the functions present that we would expect on the navigator.apps object?
+
+<pre class="doctest">
+$ // We'll show all the methods we're testing
+> var arr = [];
+> for (var f in navigator.apps) {
+>   if (typeof(navigator.apps[f]) === 'function') {
+>     arr.push("navigator.apps." + f);
+>   }
+> }
+> for (var f in navigator.apps.mgmt) {
+>   if (typeof(navigator.apps.mgmt[f]) === 'function') {
+>     arr.push("navigator.apps.mgmt." + f);
+>   }
+> }
+> arr = arr.sort();
+> for (var i = 0; i < arr.length; i++) writeln(arr[i]);
+navigator.apps.amInstalled
+navigator.apps.getInstalledBy
+navigator.apps.install
+navigator.apps.mgmt.launch
+navigator.apps.mgmt.list
+navigator.apps.mgmt.loadState
+navigator.apps.mgmt.loginStatus
+navigator.apps.mgmt.saveState
+navigator.apps.mgmt.uninstall
+navigator.apps.setRepoOrigin
+</pre>
 </div>
 
 <div class="test">
@@ -80,6 +112,31 @@ $ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true}));
 apps.mgmt.list({})
 </pre>
 
+</div>
+
+<div class="test">
+<h3>Dashboard Storage</h3>
+
+navigator.apps.mgmt.{load|save}State() proivde an html dashboard with a mechanism to store
+state inside the application repository.  This can be useful because it allows the app
+repo to synchronize this state across sessions on different browsers.
+
+<pre class="doctest">
+$ navigator.apps.mgmt.saveState(null, Spy('apps.mgmt.saveState', {wait: true}));
+apps.mgmt.saveState(true)
+$ var obj = null;
+> navigator.apps.mgmt.loadState(Spy('apps.mgmt.loadState', {wait: true}));
+apps.mgmt.loadState(null)
+$ navigator.apps.mgmt.saveState(undefined, Spy('apps.mgmt.saveState', {wait: true}));
+apps.mgmt.saveState(true)
+$ var obj = null;
+> navigator.apps.mgmt.loadState(Spy('apps.mgmt.loadState', {wait: true}));
+apps.mgmt.loadState(undefined)
+$ navigator.apps.mgmt.saveState({ open: "web", apps: [ "are", "super", "awesome" ] }, function() { });
+$ wait();
+$ navigator.apps.mgmt.loadState(Spy('apps.mgmt.loadState', {wait: true}));
+apps.mgmt.loadState({apps: ["are", "super", "awesome"], open: "web"})
+</pre>
 </div>
 
 <div class="test">

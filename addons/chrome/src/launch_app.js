@@ -1,12 +1,23 @@
 function LaunchApp(id) {
     console.log("launching app: " + id);
 
-    var appStorage = TypedStorage().open("app");
-    var i = appStorage.get(id);
-    if (!i || !i.origin) return false;
-    var launchURL = i.origin + (i.manifest.launch_path ? i.manifest.launch_path : "");
-    var appName = i.manifest.name;
-    var parsedBaseURL = URLParse(i.origin).normalize();
+    var launchURL = null; 
+    var appName = null;
+    var origin = null;
+
+    if (id === 'dashboard') {  
+        launchURL = origin = "https://myapps.mozillalabs.com";
+        appName = "Dashboard";
+    } else {
+        var appStorage = TypedStorage().open("app");
+        var i = appStorage.get(id);
+        if (!i || !i.origin) return false;
+        launchURL = i.origin + (i.manifest.launch_path ? i.manifest.launch_path : "");
+        appName = i.manifest.name;
+        origin = i.origin;
+    }
+
+    var parsedBaseURL = URLParse(origin).normalize();
 
     // determine if this application is running in some tab in some window
     chrome.windows.getAll({populate:true}, function(windows) { 

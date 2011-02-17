@@ -7,21 +7,31 @@ path = require("path"),
 fs = require("fs");
 
 // all bound webservers stored in this lil' object
-var boundServers = { };
+var boundServers = [ ];
 function getWebRootDir(host, port) {
-  for (var k in boundServers) {
-    var a = boundServers[k].address();
+  for (var i = 0; i < boundServers.length; i++) {
+    var o = boundServers[i];
+    var a = o.server.address();
     if (host === a.address && port === a.port) {
-      if (k === '_primary') return __dirname;
-      else return path.join(__dirname, k);
+      return o.path ? o.path : __dirname;
     }
   }
   return undefined;
 }
 
-function fourOhFour(resp) {
+function getServerByName(name) {
+  for (var i = 0; i < boundServers.length; i++) {
+    if (boundServers[i].name === name) return boundServers[i];
+  }
+  return undefined;
+}
+
+function fourOhFour(resp, reason) {
   resp.writeHead(404, {"Content-Type": "text/plain"});
   resp.write("404 Not Found");
+  if (reason) {
+    resp.write(": " + reason);
+  }
   resp.end();
   return undefined;
 }
@@ -39,9 +49,7 @@ function createServer(port) {
     var siteroot = getWebRootDir(host, port);
 
     // unknown site?  really?
-    if (siteroot === null) return fourOhFour(response);
-
-    var filename = path.join(siteroot, url.parse(request.url).pathname);
+    if (!siteroot) return fourOhFour(response, "No site on this port");
 
     // hook to fetch manifests for HTML5 repos
     var parsedURI = url.parse(request.url, true);
@@ -98,9 +106,10 @@ function createServer(port) {
     // mapping test names (just dir names) into urls
     if (parsedURI.pathname == '/servers.js') {
       var serverToUrlMap = {};
-      for (var k in boundServers) {
-        var a = boundServers[k].address();
-        serverToUrlMap[k] = "http://" + a.address + ":" + a.port;
+      for (var i = 0; i < boundServers.length; i++) {
+        var o = boundServers[i]
+        var a = o.server.address();
+        serverToUrlMap[o.name] = "http://" + a.address + ":" + a.port;
       }
       var t = "var SERVERS = " + JSON.stringify(serverToUrlMap) + ";";
       response.writeHead(200, {"Content-Type": "application/x-javascript"});
@@ -122,7 +131,7 @@ function createServer(port) {
         fs.readFile(filename, "binary", function(err, data) {
           if(err) {
             response.writeHead(500, {"Content-Type": "text/plain"});
-            response.write(err + "n");
+            response.write(err + "\n");
             response.end();
             sys.puts("500 " + filename);
             return;
@@ -136,7 +145,10 @@ function createServer(port) {
           };
 
           var ext = path.extname(filename);
-          var mimeType = (exts[ext]) ? exts[ext] : "application/unknown";
+          var mimeType = exts[ext] || "application/octet-stream";
+
+          data = data.replace(/https?:\/\/(stage\.)?myapps\.mozillalabs\.com/ig,
+                              "http://127.0.0.1:" + PRIMARY_PORT);
 
           response.writeHead(200, {"Content-Type": mimeType});
           response.write(data, "binary");
@@ -146,35 +158,103 @@ function createServer(port) {
       });
     };
 
-    // automatically serve index.html if this is a directory
-    fs.stat(filename, function(err, s) {
-      if (err === null && s.isDirectory()) {
-        serveFile(path.join(filename, "index.html"));
-      } else {
-        serveFile(filename);
-      }
-    });
+
+    function serveFileIndex(filename) {
+      // automatically serve index.html if this is a directory
+      fs.stat(filename, function(err, s) {
+        if (err === null && s.isDirectory()) {
+          serveFile(path.join(filename, "index.html"));
+        } else {
+          serveFile(filename);
+        }
+      });
+    }
+
+    var filename = path.join(siteroot, url.parse(request.url).pathname);
+
+    if (siteroot == __dirname) {
+      // We're layering two directories in this case
+      var otherPath = path.join(__dirname, '..', url.parse(request.url).pathname);
+      path.exists(otherPath, function(exists) {
+        if (exists) {
+          serveFileIndex(otherPath);
+        } else {
+          serveFileIndex(filename);
+        }
+      });
+    } else {
+      serveFileIndex(filename);
+    }
   });
   myserver.listen(port, "localhost");
   return myserver;
 };
 
 // start up webservers on ephemeral ports for each subdirectory here.
-var dirs = fs.readdirSync(__dirname);
+var dirs = fs.readdirSync(path.join(__dirname, 'apprepo_api')).map(
+  function (d) {
+    return {
+      title: "Tests:",
+      name: d,
+      path: path.join(__dirname, 'apprepo_api', d)};
+  });
+
+var examplesCopies = 1;
+if (process.env.EXAMPLE_COPIES) {
+  examplesCopies = parseInt(process.env.EXAMPLE_COPIES);
+  console.log('Starting ' + examplesCopies + ' copies of each example app');
+}
+var examplesDirs = fs.readdirSync(path.join(__dirname, '../../examples'));
+for (var i=0; i<examplesCopies; i++) {
+  examplesDirs.forEach(function (item) {
+    dirs.push({
+      title: "Examples: (set $EXAMPLE_COPIES to a number for multiple copies)",
+      name: item + (i ? " ("+i+")" : ""),
+      path: path.join(__dirname, '../../examples', item)
+    });
+  });
+}
 
 console.log("Starting test apps:");
 
 // bind the "primary" testing webserver to a fixed local port, it'll
 // be the place from which tests are run, and it's the repository host
 // for the purposes of testing.
-boundServers["_primary"] = createServer(60172);
-
-dirs.forEach(function(d) {
-  if (!fs.lstatSync(path.join(__dirname,d)).isDirectory()) return;
-  boundServers[d] = createServer(0);
-  var addr = boundServers[d].address();
-  console.log("  " + d + ": http://" + addr.address + ":" + addr.port);
+var PRIMARY_PORT = 60172;
+boundServers.push({
+  name: "_primary",
+  server: createServer(PRIMARY_PORT)
 });
 
-var addr = boundServers["_primary"].address();
-console.log("\nTesting server started, to run tests go to: http://" + addr.address + ":" + addr.port + "/tests.html");
+function formatLink(nameOrServer, extraPath) {
+  if (typeof nameOrServer == 'string') {
+    nameOrServer = getServerByName(nameOrServer).server;
+  }
+  var addr = nameOrServer.address();
+  var url = 'http://' + addr.address + ':' + addr.port;
+  if (extraPath) {
+    url += extraPath;
+  }
+  return url;
+}
+
+console.log('Primary server:');
+console.log('  ' + formatLink("_primary"));
+
+var lastTitle = null;
+dirs.forEach(function(dirObj) {
+  if (!fs.lstatSync(dirObj.path).isDirectory()) return;
+  if (lastTitle != dirObj.title) {
+    console.log('\n' + dirObj.title);
+    lastTitle = dirObj.title;
+  }
+  boundServers.push({
+    path: dirObj.path,
+    server: createServer(0),
+    name: dirObj.name
+  });
+  console.log("  " + dirObj.name + ": " + formatLink(dirObj.name));
+});
+
+console.log("\nTesting server started, to run tests go to: "
+            + formatLink("_primary", "/apprepo_api/tests.html"));

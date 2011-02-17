@@ -3,14 +3,16 @@
     "version": "0.1",
     "description": "Provides rich browser support for open web applications.",
     "browser_action": {
-        "default_icon": "icon.png",
+        "default_icon": "/img/rocket_24.png",
         "default_title": "Open Web Apps",
-        "default_popup": "launcher.html"
+        "default_popup": "/src/launcher.html"
     },
+    "omnibox": { "keyword" : "app" },
     "icons": {
-        "48": "icon.png"
+        "48": "/img/rocket_48.png",
+        "16": "/img/rocket_16.png"
     },
-    "background_page": "background.html",
+    "background_page": "/src/background.html",
     "permissions": [
         "tabs",
         "http://*/",
@@ -20,7 +22,7 @@
         {
             "run_at": "document_start",
             "matches": [ "<all_urls>" ],
-            "js": [ "inject_api.js" ],
+            "js": [ "/src/inject_api.js" ],
             "all_frames": true
         }
     ]
