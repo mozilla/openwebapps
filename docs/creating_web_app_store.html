@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Mozilla Labs &raquo; Apps &raquo; Developer Guide</title>
+<link href="apps.css" rel="stylesheet" type="text/css" media="screen">
+<link rel="shortcut icon" href="http://mozillalabs.com/wp-content/themes/labs_project/favicon.png" type="image/png"> 
+<script type="text/javascript" src="http://mozillalabs.com/wp-content/themes/labs_project/includes/font.js"></script>
+<style type="text/css" media="screen">
+a:link, a:visited {color: #7b311f;}
+a:hover {color: #7b311f;}
+
+</style>
+</head>
+<body id="projectpage" class="apps subpage">
+
+<div id="blogBg">
+
+	<div id="page">
+		
+		<div id="header">
+		
+			<div id="topnav">
+			
+			<h1 id="logo"><a href="/" title="Mozilla Labs homepage"><img src="http://mozillalabs.com/wp-content/themes/labs_project/img/labs-logo.png" alt="labs-logo" width="161" height="34"></a></h1>
+				
+			<ul id="mainnav">
+			<li><a href="/projects/">Projects</a></li>
+			<li><a href="/hacks/">Hacks</a></li>
+
+			<li><a href="/discussions/">Discussions</a></li>
+			<li><a href="/get-involved/">Get Involved</a></li>
+			<li><a href="/about/">About</a></li>
+			</ul>
+			
+			</div> <!-- END topnav -->
+			
+			<div id="spotlight">
+
+				
+				 
+							
+			</div> <!-- END SPOTLIGHT -->
+		
+		</div> <!-- END HEADER -->
+
+<div class="navItemContainer">
+		<div class="navItem">
+    <a href="http://apps.mozillalabs.com/">Open Web Apps home</a></div>
+</div>
+
+<div id="content">
+<div id="pagecontent">
+<div class="sectioncontent">
+
+			<div class="post-103 post type-post hentry category-help category-home-dash" id="post-103">
+			
+			<div class="dateBox"><span class="month">Jan</span><span class="day">31</span><span class="year">'11</span></div>
+			<h1 class="title">Building Open Web Directories and Stores</h1>
+
+			<div class="entry">
+
+      <h3>Help Users and Developers Connect</h3>
+
+      <p>
+      The Mozilla Labs Open Web Application platform provides features in the web browser
+      that allow web sites to be recognized as "web applications" - rich, interactive experiences,
+      represented by icons, which can be installed and synchronized across devices, and
+      distributed through directories and stores.
+      </p>
+      
+      <h3>Integration with the Browser</h3>
+
+      <p>
+      The application platform provides the <code>navigator.apps</code> JavaScript object,
+      which your store will use to communicate with the browser.
+      </p>
+
+      <p>A web application is identified by its domain; each domain may contain exactly one application.
+      As a directory or store, you may use the <code>navigator.apps</code> API to prompt the browser
+      to install an application by invoking the <code>install</code> method, providing the URL of
+      the application's manifest and whatever optional installation metadata you require.  This metadata
+      can be accessed by application developers to check back with you for purchase confirmation,
+      single sign-on, or other services.
+      </p>
+      
+      <h4>Using getInstalledBy</h4>
+      
+      <p>
+      The <code>navigator.apps.getInstalledBy</code> method allows you to get a list of the applications
+      installed in the current user agent by your domain.  Note that you will not see applications installed
+      by other domains - only the ones that you put there.
+      </p>
+      
+      <p>
+      You can use this method to determine whether the user's installed applications match your expectations,
+      or to implement a "resync" feature if the user signs into your site from a new profile.
+      </p>
+      
+      
+      <h3>Hosting or Not?</h3>
+
+      <p>
+      There is no requirement for a store or directory to host the applications that it describes.
+      The store can simply invoke <code>install</code> with the site's manifest URL.
+      </p>
+      
+      <p>
+      For applications which do not have a server logic component (that is, which are implemented
+      entirely in client-side JavaScript, HTML, and CSS), you may want to implement a hosting feature.
+      To do this, you will need to assign a different domain name to each application and implement
+      server logic to serve the application manifest for each of them.
+      </p>
+      
+      <p>
+      If you are hosting the application logic yourself, you can easily maintain a session
+      with the user to track preferences, proof-of-purchase, or other additional services.  If
+      you are providing services to a remote website, you will need to do some additional
+      work to support a distributed authentication system.
+      </p>
+
+
+		</div>
+
+	
+	
+</div> <!-- END sectioncontent -->
+
+</div> <!-- END blog -->
+
+<div id="getinvolved">
+
+ 
+				
+
+	<div class="sectioncontent">
+
+		 
+
+	</div> <!-- END sectioncontent -->
+
+</div> <!-- END get involved -->
+</div> <!-- END content -->
+
+</div> <!-- END page -->
+</div> <!-- END blogBg -->
+
+
+<div id="endpage">
+
+	<div id="superfooter">
+	
+		<div class="footercontent">
+				
+				<div class="legal">
+				
+					<div id="copyright">
+						<img src="http://mozillalabs.com/wp-content/themes/labs_project/img/mozilla-logo.png" width="41" height="31" alt="Firefox Logo" />
+
+						<p><strong>Copyright &copy; 2005-2011 Mozilla.</strong> All rights reserved.</p>
+					</div>
+					
+					<ul>
+					<li><a href="http://www.mozilla.com/en-US/privacy-policy.html">Privacy Policy</a></li>
+					<li><a href="http://www.mozilla.com/en-US/about/legal.html">Legal Notices</a></li>
+
+					</ul>
+		
+				</div>
+																		
+			</div> <!-- END footercontent -->
+		
+		</div> <!-- END superfooter -->
+	
+	</div> <!-- END endpage -->
+
+</body>
+</html>
