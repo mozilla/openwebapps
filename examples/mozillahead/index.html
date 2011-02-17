@@ -1,0 +1,125 @@
+<html>
+<head>
+<title>MozillaHead</title>
+<style>
+#install_button {
+  padding-top: 3px;
+
+position: relative;
+float: right;
+font: normal normal bold 10pt/normal Helvetica;
+font-size: 16px;
+vertical-align: middle;
+text-align: center;
+letter-spacing: -0.5px;
+color: rgb(255,255,255);
+text-shadow: 0px 1px rgba(0, 0, 0, 0.3);
+width: 140px;
+height: 28px;
+line-height: 26px;
+border: 1px solid rgba(0,0,0,0.2);
+
+-moz-border-radius: 1em;
+-webkit-border-radius: 1em;
+border-radius: 1em;
+
+-moz-box-shadow:
+inset rgba(218,255,191,1) 0 1px 0px,
+inset rgba(0,0,0,0.2) 0 -2px 0px,
+rgba(0,0,0,0.1) 0 2px 0px;
+-webkit-box-shadow:
+inset rgba(218,255,191,1) 0 1px 0px,
+inset rgba(0,0,0,0.2) 0 -2px 0px,
+rgba(0,0,0,0.1) 0 2px 0px;
+-box-shadow:
+inset rgba(218,255,191,1) 0 1px 0px,
+inset rgba(0,0,0,0.2) 0 -2px 0px,
+rgba(0,0,0,0.1) 0 2px 0px;
+
+background-color: rgb(134,214,106); /* for non-css3 browsers */
+background: -webkit-gradient(linear, left top, left bottom, from(rgba(134,214,106,1)), to(rgba(78,152,52,1))); /* for webkit browsers */
+background: -moz-linear-gradient(top,  rgba(134,214,106,1), rgba(78,152,52,1)); /* for firefox 3.6+ */
+
+
+display: block;
+}
+</style>
+<script>
+var context;
+var x=100;
+var y=200;
+var dx=5;
+var dy=5;
+
+function init()
+{
+  context= document.getElementById('myCanvas').getContext('2d');
+  setInterval(draw,10);
+}
+
+function draw()
+{
+  context.clearRect(0,0, 300,300);
+  context.beginPath();
+  context.fillStyle="#0000ff";
+  // Draws a circle of radius 20 at the coordinates 100,100 on the canvas
+  context.arc(x,y,20,0,Math.PI*2,true);
+  context.closePath();
+  context.fill();
+
+  if( x<20 || x>280) dx=-dx;
+  if( y<20 || y>280) dy=-dy;
+  x+=dx;
+  y+=dy;
+}
+
+</script>
+</head>
+
+<body onLoad="init();">
+  <canvas id="myCanvas" style="margin-left:50px;margin-top:50px" width="300" height="300" >
+  </canvas>
+
+<div style="position:absolute;left:100px;top:100px;font:bold 24pt Helvetica;color:#908040">This is MozillaHead!</div>
+<div style="position:absolute;left:420px;width:300px;top:100px;font:bold 10pt Helvetica;color:black">
+This page exists as an example of how a normal website can
+be wrapped up as an Open Web App, targeted at people with mozillas
+on their head!<br><br>
+</div>
+<div id="install_button" style="display:none;position:absolute;left:750px;width:140px;top:100px;">
+    INSTALL
+</div>
+
+</body>
+<script src="jquery-1.4.2.min.js"></script>
+<script src="https://myapps.mozillalabs.com/jsapi/include.js"></script>
+<script>
+
+var gManifestName = "/manifest.webapp";
+
+$(document).ready(function() {
+    navigator.apps.amInstalled(function(result) {
+        if (!result) {
+            $("#install_button").show();
+            $("#install_button").click(function() {
+                navigator.apps.install({
+                  url: gManifestName,
+                  onsuccess: function() {
+                    $("#install_button").text("INSTALLED!").unbind('click');
+                  },
+                  onerror: function(reason) {
+                    // FIXME: note the error somehow
+                  }
+                });
+            });
+        } else {
+            $("#install_button").text("INSTALLED!").show();
+
+        }
+    });
+
+});
+
+</script>
+
+</html>
