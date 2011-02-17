@@ -7,7 +7,7 @@
         "default_title": "Open Web Apps",
         "default_popup": "/src/launcher.html"
     },
-    "omnibox": { "keyword" : "openwebapps" },
+    "omnibox": { "keyword" : "app" },
     "icons": {
         "48": "/img/rocket_48.png",
         "16": "/img/rocket_16.png"
