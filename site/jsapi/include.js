@@ -651,67 +651,70 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
             });
         }
 
+        // package up and deliver an error to the callback provided.  if the callback
+        // is undefined, throw!
+        function deliverError(code, message, onerror) {
+            var errObj = { code: code, message: message };
+            if (typeof onerror === 'function') onerror.call(undefined, errObj);
+            else throw errObj; // what else can we do?
+        }
+
         function callInstall(args) {
             setupWindow();
             if (!args) { args = {}; }
+            else {
+                if (typeof(args) !== 'object')  throw "parameter to install() must be an object";
+                for (var k in args) {
+                    if (!args.hasOwnProperty(k)) continue;
+                    if (k !== "install_data" && k !== "url" && k !== "onsuccess" && k !== "onerror") {
+                        throw "unsupported argument: " + k;
+                    }
+                }
+            }
+            if (!args.url || typeof(args.url) !== 'string') {
+                throw "install missing required url argument";
+            }
+
             chan.call({
                 method: "install",
                 params: {
-                    manifest: args.manifest, // optional
-                    url: args.url,           // optional
-                    authorization_url: args.authorization_url || null,
-                    session: args.session || false,
+                    url: args.url,
+                    install_data: args.install_data || null // optional
                 },
                 error: function(error, message) {
-                    // XXX we need to relay this to the client
-                    if (typeof console !== "undefined") console.log( " installation failed: "  + error + " - " + message);
+                    deliverError(error, message, args.onerror);
                 },
-                success: function(v) {
-                    if (args.callback) args.callback(v);
+                success: function() {
+                    if (args.onsuccess) {
+                        var onsuccess = args.onsuccess;
+                        onsuccess();
+                    }
                 }
             });
         }
 
-        function callVerify(args) {
+        function callAmInstalled(onsuccess, onerror) {
             setupWindow();
             chan.call({
-                method: "verify",
+                method: "amInstalled",
                 error: function(error, message) {
-                    // XXX we need to relay this to the client
-                    if (typeof console !== "undefined") console.log( " couldn't begin verification: "  + error + " - " + message);
+                    deliverError(error, message, onerror);
                 },
                 success: function(v) {
-                    // XXX: what's the utility of this callback?  it depends on
-                    // verification flow
-                    if (args.callback) args.callback(v);
+                    if (onsuccess !== undefined) onsuccess(v);
                 }
             });
         }
 
-        function callGetInstalled(cb) {
-            setupWindow();
-            chan.call({
-                method: "getInstalled",
-                error: function(error, message) {
-                    // XXX we need to relay this to the client
-                    if (typeof console !== "undefined") console.log( " couldn't begin verification: "  + error + " - " + message);
-                },
-                success: function(v) {
-                    if (cb && typeof(cb) === 'function') cb(v);
-                }
-            });
-        }
-
-        function callGetInstalledBy(cb) {
+        function callGetInstalledBy(onsuccess, onerror) {
             setupWindow();
             chan.call({
                 method: "getInstalledBy",
                 error: function(error, message) {
-                    // XXX we need to relay this to the client
-                    if (typeof console !== "undefined") console.log( " couldn't begin verification: "  + error + " - " + message);
+                    deliverError(error, message, onerror);
                 },
                 success: function(v) {
-                    if (cb && typeof(cb) === 'function') cb(v);
+                    if (onsuccess !== undefined) onsuccess(v);
                 }
             });
         }
@@ -724,89 +727,101 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
         // in launch to determine launch url.
         var _lastListResults = [];
 
-        function callLaunch(id) {
+        function callLaunch(id, onsuccess, onerror) {
+            // perform a quick management API check.  While this check doesn't actually
+            // enforce any security, it does offer consistent error messages.  Even with the
+            // removal of this check the rest of this function won't work, because it relies
+            // on previous invocation of list() (to discover the launchURL).
+            var loc = window.location
+            if ((loc.protocol + "://" + loc.host) !== AppRepositoryOrigin) {
+                setTimeout(function() {
+                    deliverError("permissionDenied",
+                                 "to access open web apps management apis, you must be on the same domain " +
+                                 "as the application repository",
+                                 onerror);
+                }, 0);
+                return;
+            }
+
             for (var i = 0; i < _lastListResults.length; i++) {
                 if (_lastListResults[i].id === id) {
                     window.open(_lastListResults[i].launchURL, "openwebapp_" + id);
+                    if (onsuccess) setTimeout(function() { onsuccess(true); }, 0);
                     return;
                 }
             }
-            throw "couldn't find application with id: " + id;
+            setTimeout(function() {
+                deliverError("noSuchApp", "couldn't find application with id: " + id,
+                             onerror);
+            }, 0);
         }
 
-        function callList(func) {
+        function callList(onsuccess, onerror) {
             setupWindow();
             chan.call({
                 method: "list",
                 error: function(error, message) {
-                    // XXX we need to relay this to the client
-                    if (typeof console !== "undefined") console.log("couldn't list apps: "  + error + " - " + message);
+                    deliverError(error, message, onerror);
                 },
                 success: function(v) {
                     _lastListResults = v;
-                    if (func) func(v);
+                    if (onsuccess !== undefined) onsuccess(v);
                 }
             });
         }
 
-        function callRemove(id, func) {
+        function callUninstall(origin, onsuccess, onerror) {
             setupWindow();
             chan.call({
-                method: "remove",
-                params: id,
+                method: "uninstall",
+                params: origin,
                 error: function(error, message) {
-                    // XXX we need to relay this to the client
-                    if (typeof console !== "undefined") console.log("couldn't remove: "  + error + " - " + message);
+                    deliverError(error, message, onerror);
                 },
                 success: function(v) {
-                    if (func) func(v);
+                    if (onsuccess !== undefined) onsuccess(v);
                 }
             });
         }
 
-        function callLoadState(func) {
+        function callLoadState(onsuccess, onerror) {
             setupWindow();
             chan.call({
                 method: "loadState",
                 params: null,
                 error: function(error, message) {
-                    // XXX we need to relay this to the client
-                    if (typeof console !== "undefined") console.log("couldn't loadState: "  + error + " - " + message);
+                    deliverError(error, message, onerror);
                 },
                 success: function(v) {
-                    if (func) func(v);
+                    if (onsuccess !== undefined) onsuccess(v);
                 }
             });
         }
 
-        function callSaveState(obj, func) {
+        function callSaveState(obj, onsuccess, onerror) {
             setupWindow();
             chan.call({
                 method: "saveState",
                 params: {"state": obj},
                 error: function(error, message) {
-                    // XXX we need to relay this to the client
-                    if (typeof console !== "undefined") console.log("couldn't saveState: "  + error + " - " + message);
+                    deliverError(error, message, onerror);
                 },
                 success: function(v) {
-                    if (func) func(v);
+                    if (onsuccess !== undefined) onsuccess(v);
                 }
             });
         }
 
-        function callLoginStatus(func) {
+        function callLoginStatus(onsuccess, onerror) {
             setupWindow();
             chan.call({
                 method: "loginStatus",
                 params: {},
                 error: function(error, message) {
-                    // XXX relay to the client
-                    if (typeof console !== "undefined") console.log("couldn't loginStatus: " + error + " - " + message);
+                    deliverError(error, message, onerror);
                 },
-                success: function (v) {
-                    if (func) {
-                        func(v[0], v[1]);
-                    }
+                success: function(v) {
+                    if (onsuccess !== undefined) onsuccess(v[0], v[1]);
                 }
             });
         }
@@ -814,16 +829,15 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
         // Return AppClient object with exposed API calls
         return {
             install: callInstall,
-            verify: callVerify,
-            getInstalled: callGetInstalled,
+            amInstalled: callAmInstalled,
             getInstalledBy: callGetInstalledBy,
             mgmt: {
                 launch: callLaunch,
-                list: callList,
-                remove: callRemove,
                 loadState: callLoadState,
-                saveState: callSaveState,
-                loginStatus: callLoginStatus
+                loginStatus: callLoginStatus,
+                list: callList,
+                uninstall: callUninstall,
+                saveState: callSaveState
             },
             html5Implementation: true,
             // a debugging routine which allows debugging or testing clients

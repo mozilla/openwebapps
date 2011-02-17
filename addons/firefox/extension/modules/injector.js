@@ -102,7 +102,7 @@ let Injector = {
     let apibase = provider.apibase ? provider.apibase : 'navigator.mozilla.labs';
     script = script.replace(/__API_BASE__/g, apibase)
                   .replace(/__API_NAME__/g, provider.name)
-                  .replace(/__API_INJECTED__/g, '__mozilla_injected_api_'+provider.name+'__');
+                  .replace(/__API_INJECTED__/g, '__mozilla_injected_api_'+(provider.mangledName?provider.mangledName:provider.name)+'__');
     //dump(script+"\n");
     // return a wrapped script that executes the function
     return "("+script+")();";
@@ -118,14 +118,20 @@ let Injector = {
     var safeWin = new XPCNativeWrapper(win);
     // options here are ignored for 3.6
     let sandbox = new Cu.Sandbox(safeWin, { sandboxProto: safeWin, wantXrays: true });
-    sandbox.importFunction(provider.getapi(), '__mozilla_injected_api_'+provider.name+'__');
+    /*let sandbox = new Components.utils.Sandbox(
+        Components.classes["@mozilla.org/systemprincipal;1"].
+           createInstance(Components.interfaces.nsIPrincipal), 
+    );*/
+
+    sandbox.importFunction(provider.getapi(safeWin), '__mozilla_injected_api_'+(provider.mangledName?provider.mangledName:provider.name)+'__');
     sandbox.window = safeWin;
     sandbox.navigator = safeWin.navigator.wrappedJSObject;
     Cu.evalInSandbox(this._scriptToInject(provider), sandbox, "1.8");
-    //dump("injected api "+provider.name+": "+sandbox.navigator.mozilla.labs+"\n");
   }
 
 };
+
+
 
 // hook up a seperate listener for each xul window
 function InjectorInit(window) {
@@ -146,7 +152,6 @@ function InjectorInit(window) {
     },
 
     register: function(provider) {
-      //dump("registering api "+provider.name+"\n");
       this.providers.push(provider);
     },
     registerAction: function(action) {
@@ -154,9 +159,9 @@ function InjectorInit(window) {
     },
 
     observe: function(aSubject, aTopic, aData) {
-      if (!aSubject.location.href) return;
+      //if (!aSubject.location.href) return;
       // is this window a child of OUR XUL window?
-      var mainWindow = aSubject.QueryInterface(Components.interfaces.nsIInterfaceRequestor)
+      let mainWindow = aSubject.QueryInterface(Components.interfaces.nsIInterfaceRequestor)
                      .getInterface(Components.interfaces.nsIWebNavigation)
                      .QueryInterface(Components.interfaces.nsIDocShellTreeItem)
                      .rootTreeItem
@@ -165,16 +170,205 @@ function InjectorInit(window) {
       if (mainWindow != window) {
         return;
       }
-      for (var i in this.actions) {
+      for (let i in this.actions) {
         this.actions[i]();
       }
-      for (var i in this.providers) {
+      for (let i in this.providers) {
         //dump("injecting api "+this.providers[i].name+"\n");
         Injector._inject(aSubject, this.providers[i]);
+      }
+      
+      // Now construct services based on installed apps
+      Components.utils.import("resource://openwebapps/modules/api.js");
+      let apps = FFRepoImplService.list("chrome://openwebapps/modules/injector.js");
+      let suiteMap = {};
+      
+      for (let appKey in apps)
+      {
+        let app = apps[appKey].manifest;
+        if (app.experimental && app.experimental.services) 
+        {
+          for each (let service in app.experimental.services)
+          {
+            let suiteName = service.suite;
+            let methodName = service.method;
+
+            if (!suiteMap[suiteName]) {
+              suite = {};
+              suiteMap[suiteName] = suite;
+            } else {
+              suite = suiteMap[suiteName];
+            }
+            
+            if (!suite[methodName]) {
+              methodList = [];
+              suite[methodName] = methodList;
+            } else {
+              methodList = suite[methodName];
+            }
+            
+            methodList.push( {app:app, service:service});
+          }
+        }
+      }
+      
+      function performServiceInvocation(theApplication, theService, callbackFn, args)
+      {
+        dump("Beginning service invocation for app " + theApplication.name + "." + theService.suite + "." +
+          theService.method + " to " + theService.frame + "\n");
+        dump("callbackFn is " + callbackFn + "\nargs is " + args + "\n");
+          
+        try {
+
+          // There may be more efficient ways to do this.
+          let windowMediator = Cc['@mozilla.org/appshell/window-mediator;1'].
+            getService(Ci.nsIWindowMediator);
+          let window = windowMediator.getMostRecentWindow(null);
+          let document = window.document;
+          let rootElement = document.documentElement;
+
+          // Create an iframe and make it hidden
+          let iframe = document.createElementNS('http://www.w3.org/1999/xhtml', 'iframe');
+          iframe.setAttribute("style", "display:none");
+          iframe.setAttribute("type", "content");
+          rootElement.appendChild(iframe);
+
+          // XXX this is probably not right - unless we require the page to register
+          // onMessage before "load" - is that okay?
+          let parseHandler = {
+            _self: this,
+            handleEvent: function Res_parseHandler_handleEvent(event) {
+              event.target.removeEventListener("load", this, false);
+              try
+              { 
+                // in a pure-JS world, we could just call this:
+                let result = iframe.contentWindow.wrappedJSObject[theService.suite][theService.method].apply(null, args);
+                
+                // Typecheck: result should be an array.
+                callbackFn.apply(null, result);
+              }
+              catch (e) { 
+                dump("ERROR: " + e + "\n"); 
+              }
+              finally { 
+                this._self = null; 
+              }
+            }
+          };
+          iframe.addEventListener("load", parseHandler, true);
+
+          // and now target it
+          iframe.setAttribute("callerWindow", window);
+          iframe.src = theService.frame;        
+        } catch (e) {
+          dump(e + "\n");
+          dump(e.stack + "\n");
+        }
+      }
+      
+      function generateConfirmationMessage(aSuiteName, aMethodName, args)
+      {
+        let hostname = window.gBrowser.selectedBrowser.contentWindow.location.hostname;
+        if (aSuiteName == "id")
+        {
+          if (aMethodName == "getProfile")
+          {
+            let s = "" + hostname + " wants to know your ";
+            for (let i=0;i<args[0].length;i++)
+            {
+              if (i == args[0].length - 1) s += " and ";
+              else if (i > 0) s += ", ";
+              
+              let POCO_RENDER = {
+                "name" : "full name",
+                "gender" : "gender",
+                "birthday" : "birthday",
+                "emails": "email address(es)",
+                "addresses": "street address(es)"
+              }
+              
+              s += POCO_RENDER[args[0][i]]
+            }
+            s += ".";
+            return {message:s, buttonPrefix:"Share data from "};
+          }
+        }
+        else
+        {
+          return {message:
+            "Allow " + hostname + " access to " + aSuiteName + "." + aMethodName + "?",
+            buttonPrefix:"Allow access to "
+          }
+        }
+      }
+      
+      for (let suiteName in suiteMap)
+      {
+        for (let methodName in suiteMap[suiteName])
+        {
+          let methodList = suiteMap[suiteName][methodName];
+          Injector._inject(aSubject,
+            {
+              apibase:"navigator.services." + suiteName,
+              name: methodName,
+              mangledName: 'services_' + suiteName + '_' + methodName,
+              script: null,
+              getapi: function() {
+                let suiteLocal = suiteName;
+                let methodLocal = methodName;
+                return function(whitelist, callbackFn) {
+
+                  // extract arguments:
+                  let args = [];
+                  for (let i=2;i<arguments.length;i++) {
+                    args.push(arguments[i]);
+                  }
+
+                  // Render the message:
+                  dump("making confirmation for " + suiteLocal + "." + methodLocal + ".\n");
+                  
+                  let confirm = generateConfirmationMessage(suiteLocal, methodLocal, args);
+                  let message = confirm.message;
+                  let buttonPrefix = confirm.buttonPrefix;
+                  if (!buttonPrefix) buttonPrefix = "";
+
+                  // TODO get the default.  first one wins right now.
+                  let defaultOption = new Object();
+                  let otherOptions = [];
+                  
+                  defaultOption.label = buttonPrefix + methodList[0].app.name;
+                  defaultOption.accessKey = "i";
+                  defaultOption.callback = function() {
+                    performServiceInvocation(methodList[0].app, methodList[0].service, callbackFn, args);
+                  };
+                  
+                  for (let i=1;i<methodList.length;i++) {
+                    let svc = methodList[i];
+                    let option = new Object();
+                    option.label = buttonPrefix + svc.app.name;
+                    option.accessKey = "p";
+                    option.callback = function() {
+                      performServiceInvocation(svc.app, svc.service, callbackFn, args);
+                    }
+                    otherOptions.push(option);
+                  }
+
+                  let ret = window.PopupNotifications.show(
+                      window.gBrowser.selectedBrowser,
+                      "openwebapps-service-notification",
+                      message, null, defaultOption, otherOptions, {
+                          "persistence": 1,
+                          "persistWhileVisible": true
+                      }
+                  );
+                }
+              }
+            }
+          );
+        }
       }
     }
   };
   window.injector.onLoad();
   window.addEventListener("unload", function() window.injector.onUnload(), false);
 }
-

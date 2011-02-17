@@ -5,22 +5,26 @@ import com.mozilla.labs.soup.R;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.TextView;
+//import android.widget.TextView;
 import android.widget.Toast;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 
 public class MainActivity extends Activity implements OnClickListener {
 	protected SyncService service;
+	protected ProgressDialog spin;
 	protected SharedPreferences prefs;
 	
     public MainActivity() {
@@ -62,23 +66,38 @@ public class MainActivity extends Activity implements OnClickListener {
     }
     
     protected void getAndShowApps(String uname, String paswd, String node) {
-    	String manifest = service.getManifest(uname, paswd, node);
-
-		if (manifest.equals("")) {
-			// authentication failed
-			Toast.makeText(this, R.string.invalidPassword, Toast.LENGTH_SHORT).show();
-			setContentView(R.layout.login_page);
-		} else if (manifest.equals("{}")) {
-			// empty manifest
-			System.out.println("Uh oh the manifest was empty!");
-			addUser(uname, paswd, node);
-			setContentView(R.layout.main_page);
-		} else {
-			// non empty manifest
-			System.out.println("Got a bunch of apps but let's see if JSON is valid");
-			addUser(uname, paswd, node);
-			showApps(service.parseManifest(manifest));
-		}
+    	class FetchManifestTask extends AsyncTask<String, Void, String[]> {
+    		protected String[] doInBackground(String... params) {
+    			String manifest = service.getManifest(params[0], params[1], params[2]);
+    			String[] result = {params[0], params[1], params[2], manifest};
+    			return result;
+    		}
+    		
+    		protected void onPostExecute(String[] result) {
+    			String manifest = result[3];
+    			
+    			if (manifest.equals("")) {
+    				// authentication failed
+    				Toast.makeText(MainActivity.this, R.string.invalidPassword, Toast.LENGTH_SHORT).show();
+    				setContentView(R.layout.login_page);
+    			} else if (manifest.equals("{}")) {
+    				// empty manifest
+    				System.out.println("Uh oh the manifest was empty!");
+    				addUser(result[0], result[1], result[2]);
+    				setContentView(R.layout.main_page);
+    			} else {
+    				// non empty manifest
+    				System.out.println("Got a bunch of apps but let's see if JSON is valid");
+    				addUser(result[0], result[1], result[2]);
+    				showApps(service.parseManifest(manifest));
+    			}
+    			
+    			spin.dismiss();
+    		}
+    	}
+    	
+    	spin = ProgressDialog.show(this, "", getString(R.string.loadingMessage), true);
+    	new FetchManifestTask().execute(uname, paswd, node);
     }
     
     @Override
@@ -113,18 +132,41 @@ public class MainActivity extends Activity implements OnClickListener {
     }
     
     public void onClick(View v) {
-    	ProgressDialog spin = ProgressDialog.show(this, "", getString(R.string.loginMessage), true);
-		String uname = ((EditText)findViewById(R.id.loginID)).getText().toString();
-		String paswd = ((EditText)findViewById(R.id.loginPassword)).getText().toString();
-		
-		String node = service.getCluster(uname);
-		spin.dismiss();
-		
-		if (node.equals("")) {
-			Toast.makeText(this, R.string.invalidUser, Toast.LENGTH_SHORT).show();
-		} else {
-			getAndShowApps(uname, paswd, node);
-		}
+    	// Hide keyboard
+    	InputMethodManager mgr = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+    	mgr.hideSoftInputFromWindow(v.getWindowToken(), 0);
+    	
+    	// This is SO much more uglier than it has to be
+    	// But we do it so as to avoid blocking the UI thread
+    	class FetchAppsTask extends AsyncTask<Void, Void, String[]> {
+    		
+    		// Worker thread
+    		protected String[] doInBackground(Void... params) {
+    			String uname = ((EditText)findViewById(R.id.loginID)).getText().toString();
+    			String paswd = ((EditText)findViewById(R.id.loginPassword)).getText().toString();
+    			String node = service.getCluster(uname);
+    			
+    			if (node.equals("")) {
+    				return null;
+    			} else {
+    				String[] user = {uname, paswd, node};
+    				return user;
+    			}
+    		}
+    		
+    		// You can only access the UI thread here
+    		protected void onPostExecute(String[] result) {
+    			spin.dismiss();
+    			if (result == null) {
+    				Toast.makeText(MainActivity.this, R.string.invalidUser, Toast.LENGTH_SHORT).show();
+    			} else {
+    				getAndShowApps(result[0], result[1], result[2]);
+    			}
+    		}
+    	}
+    	
+    	spin = ProgressDialog.show(this, "", getString(R.string.loginMessage), true);
+    	new FetchAppsTask().execute();
 	}
 }
 

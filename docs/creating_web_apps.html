@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Mozilla Labs &raquo; Apps &raquo; Developer Guide</title>
+<link href="apps.css" rel="stylesheet" type="text/css" media="screen">
+<link rel="shortcut icon" href="http://mozillalabs.com/wp-content/themes/labs_project/favicon.png" type="image/png"> 
+<script type="text/javascript" src="http://mozillalabs.com/wp-content/themes/labs_project/includes/font.js"></script>
+<style type="text/css" media="screen">
+a:link, a:visited {color: #7b311f;}
+a:hover {color: #7b311f;}
+
+</style>
+</head>
+<body id="projectpage" class="apps subpage">
+
+<div id="blogBg">
+
+	<div id="page">
+		
+		<div id="header">
+		
+			<div id="topnav">
+			
+			<h1 id="logo"><a href="/" title="Mozilla Labs homepage"><img src="http://mozillalabs.com/wp-content/themes/labs_project/img/labs-logo.png" alt="labs-logo" width="161" height="34"></a></h1>
+				
+			<ul id="mainnav">
+			<li><a href="/projects/">Projects</a></li>
+			<li><a href="/hacks/">Hacks</a></li>
+
+			<li><a href="/discussions/">Discussions</a></li>
+			<li><a href="/get-involved/">Get Involved</a></li>
+			<li><a href="/about/">About</a></li>
+			</ul>
+			
+			</div> <!-- END topnav -->
+			
+			<div id="spotlight">
+
+				
+				 
+							
+			</div> <!-- END SPOTLIGHT -->
+		
+		</div> <!-- END HEADER -->
+
+<div class="navItemContainer">
+		<div class="navItem">
+    <a href="http://apps.mozillalabs.com/">Open Web Apps home</a></div>
+</div>
+
+<div id="content">
+<div id="pagecontent">
+<div class="sectioncontent">
+
+			<div class="post-103 post type-post hentry category-help category-home-dash" id="post-103">
+			
+			<div class="dateBox"><span class="month">Jan</span><span class="day">31</span><span class="year">'11</span></div>
+			<h1 class="title">Building Open Web Applications</h1>
+
+			<div class="entry">
+
+      <h3>It's HTML5</h3>
+
+      <p>
+      Open Web Applications are websites.  They are built using the HTML5 techniques that
+      run in any web browser, and can be developed using your favorite tools.
+      </p>
+
+      <p>
+      The Mozilla Labs Open Web Applications project is about proposing some additional
+      metadata that lets your app run in a rich, fun, powerful computing environment.
+      This metadata will be used by web browsers, mobile phones, and websites to describe
+      your application and keep your data available on all of your users' devices.
+      </p>
+
+      <h3>Describing the Application Manifest</h3>
+
+      <p>
+      The one thing that distinguishes a web application from a web site is an application
+      manifest.  This is a metadata file that describes the application: its name, its icons,
+      its human-readable description, a list of additional capabilities that it requires.
+      </p>
+
+      <p>
+      The manifest is a simple text file, written in <a href="http://json.org">JSON</a>.
+      Refer to the <a href="https://github.com/mozilla/openwebapps/blob/master/docs/MANIFEST.md">manifest
+      documentation</a> to see how to construct it.  You will need to serve this file from
+      your website; it must be served with a Content-Type of <code>application/x-web-app-manifest+json</code>.
+      </p>
+
+      <h3>Self-Publishing Your Application</h3>
+
+      <p>
+      A number of vendors, from large companies to startups,
+      are building web application stores that will take care of discovery, reviews, ratings, and billing --
+      but you don't need to list your app in a store!  
+      </p>
+
+      <p>
+      You can use the application installation API directly from your site.  Just construct a
+      button or link that invokes this JavaScript:
+      </p>
+      
+      <div style="margin-left:30px;padding-left:30px;padding-right:30px;background-color:rgba(255,255,255,0.7);border:1px solid rgb(190,190,190);">
+      <pre><code style="font-size:small">
+function installCallback(result) {
+  // great - display a message, or redirect to a launch page
+}
+function errorCallback(result) {
+  // whoops - result.code and result.message have details
+}
+
+navigator.apps.install({
+  url: "http://path.to/my/webapp.manifest", 
+  onsuccess: installCallback, 
+  onerror: errorCallback}
+);
+      </code></pre>
+      </div>
+
+      <p>
+      That will cause the browser to load your manifest and ask the user whether they
+      want to install your application.  If they approve the installation, your app will be installed!
+      </p>
+
+      <p>
+      You may optionally provide an <code>install_data</code> attribute to install, to persist some information
+      into the user's installed-applications data store.  This information will be synchronized to their
+      other devices, and can be retrieved by your application using the <code>amInstalled()</code> call (see next section).
+      For example:
+      </p>
+
+      <div style="margin-left:30px;padding-left:30px;padding-right:30px;background-color:rgba(255,255,255,0.7);border:1px solid rgb(190,190,190);">
+      <pre><code style="font-size:small">
+navigator.apps.install({
+  url: "http://path.to/my/webapp.manifest", 
+  onsuccess: installCallback, 
+  onerror: errorCallback,
+  install_data: {
+    user_id: "some_user"
+  }
+});</code></pre>
+      </div>
+
+      <h3>Determining Whether Your App Is Installed</h3>
+
+      <p>
+      When a web browser loads your application page, you should be ready to handle the case that
+      the user doesn't have the application installed.  You can check whether the application is installed
+      by calling <code>amInstalled()</code>, like this:
+      </p>
+
+
+      <div style="margin-left:30px;padding-left:30px;padding-right:30px;background-color:rgba(255,255,255,0.7);border:1px solid rgb(190,190,190);">
+      <pre><code style="font-size:small">
+function getInstalledCallback(data) {
+  if (data) {
+    // yes, we're installed
+    // data.manifest has the manifest
+    // data.install_time is when it was installed
+    // data.install_origin is the domain that called install
+    // data.install_data has the optional data from install
+  } else {
+    // not installed!
+  }
+}
+
+navigator.apps.amInstalled(getInstalledCallback);
+      </code></pre>
+      </div>
+
+
+      <h3>Storing Data Locally</h3>
+
+      <p>
+      The <a href="https://developer.mozilla.org/en/dom/storage">localStorage</a> API provides a key-value
+      store of persistent data that you can use to keep track of user data between visits to your app.  In
+      Firefox 4 and other new browsers, you can also use <a href="https://developer.mozilla.org/en/IndexedDB">
+      IndexedDB</a>, a structured, high-performance client-side datastore.
+      </p>
+      
+      <p>
+      If you have data that needs to be persisted between instances of your application on a user's devices,
+      you should use the <code>install_data</code> option to the <code>install()</code> function, as
+      described above.
+      </p>
+
+      <h3>Running offline and using advanced device APIs</h3>
+
+      <p>
+      Modern web browsers have added a lot of great features to let your application run offline
+      or access device capabilities.  Here are some useful links:
+      <ul>
+      <li><a href="https://developer.mozilla.org/En/Offline_resources_in_Firefox">Running offline</a>: details and
+      demos that show how to use the HTML5 AppCache</li>
+      <li><a href=">https://developer.mozilla.org/en/Online_and_offline_events">Online and Offline Events</a>: detecting
+      when the device changes between online and offline states</li>
+      <li><a href="https://developer.mozilla.org/En/Using_audio_and_video_in_Firefox">Using audio and video</a> in your
+      application</li>
+      <li><a href="https://developer.mozilla.org/en/Drawing_Graphics_with_Canvas">Drawing Graphics with Canvas</a></li>
+      <li><a href="https://developer.mozilla.org/en/WebGL">Drawing 3D Graphics with WebGL</a></li>
+      <li><a href="https://developer.mozilla.org/en/HTML/Content_Editable">Using Content-Editable</a> to create
+      full and fast rich-text editors in your app</li>
+      <li><a href="https://developer.mozilla.org/en/Using_files_from_web_applications">Using Files from Web Applications</a> with
+      the HTML5 File API</li>
+      <li><a href="https://developer.mozilla.org/En/DragDrop/Drag_and_Drop">Using Drag and Drop</a> to drag items between
+      and within web applications</li>
+      <li><a href="https://developer.mozilla.org/en/Detecting_device_orientation">Detecting Device Orientation</a></li>
+      
+      </p>
+      
+
+			</div>
+
+		</div>
+
+	
+	
+</div> <!-- END sectioncontent -->
+
+</div> <!-- END blog -->
+
+<div id="getinvolved">
+
+ 
+				
+
+	<div class="sectioncontent">
+
+		 
+
+	</div> <!-- END sectioncontent -->
+
+</div> <!-- END get involved -->
+</div> <!-- END content -->
+
+</div> <!-- END page -->
+</div> <!-- END blogBg -->
+
+
+<div id="endpage">
+
+	<div id="superfooter">
+	
+		<div class="footercontent">
+				
+				<div class="legal">
+				
+					<div id="copyright">
+						<img src="http://mozillalabs.com/wp-content/themes/labs_project/img/mozilla-logo.png" width="41" height="31" alt="Firefox Logo" />
+
+						<p><strong>Copyright &copy; 2005-2011 Mozilla.</strong> All rights reserved.</p>
+					</div>
+					
+					<ul>
+					<li><a href="http://www.mozilla.com/en-US/privacy-policy.html">Privacy Policy</a></li>
+					<li><a href="http://www.mozilla.com/en-US/about/legal.html">Legal Notices</a></li>
+
+					</ul>
+		
+				</div>
+																		
+			</div> <!-- END footercontent -->
+		
+		</div> <!-- END superfooter -->
+	
+	</div> <!-- END endpage -->
+
+</body>
+</html>

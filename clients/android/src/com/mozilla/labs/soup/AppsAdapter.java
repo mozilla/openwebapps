@@ -23,7 +23,7 @@ public class AppsAdapter extends BaseAdapter implements ListView.OnItemClickList
 	
 	public AppsAdapter(JSONObject installed, MainActivity ma) {
 		mact = ma;
-		Iterator itr = installed.keys();
+		Iterator<?> itr = installed.keys();
 		apps = new JSONObject[installed.length()];
 		
 		int i = 0;

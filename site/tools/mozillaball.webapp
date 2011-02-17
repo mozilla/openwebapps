@@ -1,5 +1,4 @@
 {
-    "manifest_version": "0.2",
     "name":"MozillaBall",
     "base_url": "https://mozillaball.mozillalabs.com/",
     "launch_path": "",
@@ -22,6 +21,13 @@
           "supports": [ "org.example.bookmark" ],
           "frame": "http://localhost:8123/tools/mozillaball_service_frame.html"
         }
-      ]
+      ],
+      "services": [
+        {
+          "suite": "id",
+          "method": "login",
+          "frame": "http://localhost:8123/tools/mozillaball_id_login_frame.html"
+        }
+      ]      
     }
 }

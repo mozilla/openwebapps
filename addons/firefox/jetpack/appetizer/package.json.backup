@@ -1,5 +1,0 @@
-{
-  "description": "Adds Installed Application support to Firefox",
-  "author": "Michael Hanson (mhanson@mozilla.com)",
-  "dependencies": ["jetpack-core"]  
-}

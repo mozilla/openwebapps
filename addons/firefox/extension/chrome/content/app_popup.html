@@ -32,7 +32,7 @@ BODY {
 .split {clear:both;display:inline-block;background-color:green;width:20px;height:20px}
 
 .app {
-	float: left;
+	display:inline-block;
 	position: relative;
 	margin: 0px 5px 10px 5px;
   height:96px;
@@ -62,6 +62,10 @@ BODY {
 /*	background-image: url('img/default-icon.png');*/
 	margin: 10px;
   border:2px solid #d0d0d0 outset;
+  
+  -moz-transition-property: background-size, top, left, opacity;
+  -moz-transition-duration: 500ms, 500ms, 500ms, 500ms;
+  -moz-transition-timing-function: ease-in-out;
 }
 
 #offer_region {
@@ -69,6 +73,11 @@ BODY {
   display:none;
 	font-family:Tahoma, sans-serif !important;
   color:white;
+
+  -moz-transition-property: height, opacity;
+  -moz-transition-duration: 500ms, 500ms;
+  -moz-transition-delay: 500ms, 500ms;
+  -moz-transition-timing-function: ease-in-out, ease-in-out;
 }
 #offer_intro {
   font-weight: bold;
@@ -79,13 +88,15 @@ BODY {
   background-color:#101010;
   border:1px inset #202020;
   padding:8px;
+  width:400px;
 }
 
 #offer_icon {
   width:48px;
   height:48px;
-  margin:10px;
-  float:left;
+  vertical-align:top;
+  margin-right:6px;
+  display:inline-block;
 }
 #offer_name {
   display:block;
@@ -117,7 +128,10 @@ BODY {
   height:16px;
   background-image: -moz-image-rect(url(chrome://openwebapps/content/close.png), 0%, 50%, 100%, 25%);
 }
-
+#install_status {
+  font:bold 9pt Helvetica;
+  color:red;
+}
 #offer_install {
   position: absolute;
   right: 10px;
@@ -146,72 +160,60 @@ BODY {
   background: -moz-linear-gradient(top,  rgba(134,214,106,1), rgba(78,152,52,1)); /* for firefox 3.6+ */
   display: block
 }
-
+#icon_region {
+}
 
 </style>
 </head>
 <body>
+
 <div id="offer_region">
-<div id="offer_intro">This web site has an installable web application:</div>
+  <div id="offer_intro">This web site has an installable web application:</div>
 
-<div id="offer_details">
-<div id="offer_close"><div id="offer_close_button"></div></div>
-<div id="offer_icon"></div>
-<div>
-<div id="offer_name"></div>
-<div id="offer_desc"></div>
-</div>
+  <div id="offer_details">
+<!--    <div id="offer_close"><div id="offer_close_button"></div></div>-->
+    <div id="offer_icon"></div>
 
-<div id="offer_controls">
-<button id="offer_install">INSTALL</button>
-</div>
+    <div style="display:inline-block;width:300px">
+      <div id="offer_name"></div>
+      <div id="offer_desc"></div>
+      <div id="install_status"></div>
+    </div>
 
-</div>
-
-
+    <div id="offer_controls">
+      <button id="offer_install">INSTALL</button>
+    </div>
+  </div>
 </div>
 
 <div id="icon_region"></div>
+
 <script>
 Components.utils.import("resource://openwebapps/modules/api.js");
-var repo = FFRepoImplService;
-var appList = repo.list(); // XXX This will become asynchronous.
 
-var height  = Math.ceil(appList.length / 5.0) * 100 + (repo.getCurrentPageHasApp() ? 180 : 0);
-document.body.style.height = height;
-
-if (repo.getCurrentPageHasApp())
+function renderIconList(appDict)
 {
-  repo.getCurrentPageApp(function(currentPageApp) {
-    if (currentPageApp) {
-      var offer_region = document.getElementById("offer_region");
-      offer_region.style.display = "block";
-      var offer_name = document.getElementById("offer_name");
-      offer_name.appendChild(document.createTextNode(currentPageApp.name));
+  var appCount = 0;
+  for (var key in appDict) appCount += 1;
+  var height  = Math.ceil(appCount / 5.0) * 100 + (repo.getCurrentPageHasApp() ? 180 : 0);
+  document.body.style.height = height;
 
-      var offer_icon = document.getElementById("offer_icon");
-      var iconImg = getBiggestIcon(currentPageApp);
-      offer_icon.style.background = "url(\"" + iconImg + "\") no-repeat #000000";
-      offer_icon.style.backgroundSize = "100%";
-
-      var offer_desc = document.getElementById("offer_desc");
-      if (currentPageApp.description) {
-        offer_desc.appendChild(document.createTextNode(currentPageApp.description));
-      }
-    }
-  });
-}
-
-var container = document.getElementById("icon_region");
-for (var i=0;i<appList.length;i++) {
+  var container = document.getElementById("icon_region");
+  container.innerHTML = "";
   
-  container.appendChild(createAppIcon(appList[i]));
-  if (i && ((i % 5) == 0)) {
-    var br = elem("br");
-    br.setAttribute("clear", "left");
-    container.appendChild(br);
+  var count = 0;
+  for (var appID in appDict) {
+    
+    container.appendChild(createAppIcon(appDict[appID]));
+    if (count && (((count+1) % 5) == 0)) {
+      var br = elem("br");
+      br.setAttribute("clear", "left");
+      container.appendChild(br);
+    }
+    count += 1;
   }
 }
+
 
 function elem(type, clazz) {
   var e = document.createElement(type);
@@ -232,14 +234,32 @@ function getBiggestIcon(minifest) {
   return null;
 }
 
-function createAppIcon(app)
+var wiggleInstalled;
+
+function createAppIcon(installRecord)
 {
+  var app = installRecord.manifest;
+
   var appContainer = elem("div", "app");
   var clickyIcon = elem("div", "icon");
   var iconImg = getBiggestIcon(app);
   if (iconImg) {
       clickyIcon.style.background = "url(\"" + iconImg + "\") no-repeat #404040";
       clickyIcon.style.backgroundSize = "100%";
+
+      if (wiggleInstalled && wiggleInstalled.indexOf(installRecord.origin) == 0) {
+        clickyIcon.style.backgroundSize = "50%";
+        clickyIcon.style.top = "12px";
+        clickyIcon.style.left = "12px";
+        clickyIcon.style.opacity = 0.25;
+        window.setTimeout(function() {
+          clickyIcon.style.top = "0px";
+          clickyIcon.style.left = "0px";
+          clickyIcon.style.backgroundSize="100%"
+          clickyIcon.style.opacity = 1;
+        }, 10);
+      }
+      
   }
   clickyIcon.onclick = function() { repo.launch(null, app.id); };
   appContainer.appendChild(clickyIcon);
@@ -247,10 +267,78 @@ function createAppIcon(app)
   appName.appendChild(document.createTextNode(app.name));
   appName.style.left = "10px";
   appContainer.appendChild(appName);
+  
   return appContainer;
 }
 
+try {
 
+var repo = FFRepoImplService;
+var appDict = repo.list();// note that we're calling the internal List call here, which is not asynchronous.
+renderIconList(appDict);
+
+if (repo.getCurrentPageHasApp())
+{
+  repo.getCurrentPageApp(function(currentPageApp) {
+  
+    try {
+    
+      if (currentPageApp) {
+        var offer_region = document.getElementById("offer_region");
+        offer_region.style.display = "block";
+        var offer_name = document.getElementById("offer_name");
+        offer_name.appendChild(document.createTextNode(currentPageApp.name));
+
+        var offer_icon = document.getElementById("offer_icon");
+        var iconImg = getBiggestIcon(currentPageApp);
+        offer_icon.style.background = "url(\"" + iconImg + "\") no-repeat #000000";
+        offer_icon.style.backgroundSize = "100%";
+
+        var offer_desc = document.getElementById("offer_desc");
+        if (currentPageApp.description) {
+          offer_desc.appendChild(document.createTextNode(currentPageApp.description));
+        }
+        document.getElementById("offer_install").onclick = function() {
+          
+          var installArgs = 
+            {
+              url: repo.getCurrentPageAppManifestURL().spec, 
+              onerror:function(result) {
+                document.getElementById("install_status").appendChild(document.createTextNode("Error: " + result.message));
+              },
+              onsuccess:function(result) {
+                // should animate something cool happening here. :)
+
+                appDict = repo.list();
+                
+                wiggleInstalled = repo.getCurrentPageAppManifestURL().spec;
+                renderIconList(appDict, repo.getCurrentPageAppManifestURL());
+                
+                var off_region = document.getElementById("offer_region");
+                off_region.style.opacity = 0;
+                off_region.style.height = off_region.clientHeight + "px";
+                document.getElementById("icon_region").style.top = off_region.clientHeight + "px";
+                window.setTimeout(function() {
+                  off_region.style.height = "0px";
+                }, 500);
+              }
+            };
+          var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"]
+                             .getService(Components.interfaces.nsIWindowMediator);
+          var recentWindow = wm.getMostRecentWindow("navigator:browser");
+            
+          repo.install(window.location, installArgs, recentWindow);
+        }
+      }
+    } catch (e) {
+      dump("Error with current page app: " + e + "\n");
+    }
+  });
+}
+
+}catch (e) {
+  dump(e + "\n");
+}
 
 </script>
 </body>

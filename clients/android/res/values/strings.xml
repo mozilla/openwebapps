@@ -9,4 +9,5 @@
 	<string name="invalidPassword">Invalid Password. Please try again!</string>
 	<string name="mainMsg">Tap the name of an application to add it to your home screen!</string>
 	<string name="mainMsgNoApps">You currently have no applications installed!</string>
+	<string name="loadingMessage">Loading your Apps...</string>
 </resources>

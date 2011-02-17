@@ -1,0 +1,41 @@
+<html>
+<head>
+<title>ID Login Test</title>
+<style>
+</style>
+<script>
+
+function request()
+{
+  var provider_whitelist = ["*"];
+  var requested_fields = ["email"];
+
+  navigator.services.id.login(
+
+    provider_whitelist,
+
+    function(status, claimed_id, fields, verify_token)
+    {
+      dump("login response was called\n");
+      document.getElementById("status").innerHTML = "Received login result: status is " + status + 
+        "<br>Claimed ID is " + claimed_id + "<br>Fields are " + JSON.stringify(fields) + "<br>Verify token is " + verify_token;
+    },
+    
+    requested_fields
+  );
+}
+</script>
+</head>
+<body>
+
+<div style="width:400px;margin:auto;margin-top:100px">
+<button id="requestButton" onclick="request()">Log Me In</button>
+</div>
+
+<div id="status" style="width:500px;margin:auto;padding-top:32px;font:18pt Helvetica;color:#900000">
+</div>
+<div id="debug"  style="width:500px;margin:auto;padding-top:32px;font:12pt Helvetica;color:#900000">
+</div>
+
+</body>
+</html>

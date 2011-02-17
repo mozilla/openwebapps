@@ -37,16 +37,16 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
   Components.utils.import("resource://openwebapps/modules/injector.js");
   Components.utils.import("resource://openwebapps/modules/api.js");
   Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
-  
+
   // Add hotkey support. Not a failure if this doesn't load
   Components.utils.import("resource://openwebapps/modules/hotkey.js");
-  
+
   // This add-on manager is only available in Firefox 4+
   try {
     Components.utils.import("resource://gre/modules/AddonManager.jsm");
   } catch (e) {
   }
-  
+
   // Also register sync engine in FF4+
   try {
     Components.utils.import("resource://services-sync/main.js");
@@ -117,7 +117,7 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
      * @returns {Function}
      */
     bind: function (obj, f) {
-      //Do not bother if 
+      //Do not bother if
       if (!f) {
         return obj;
       }
@@ -326,12 +326,12 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
               if (buttonNode) {
                 rect = buttonNode.getBoundingClientRect();
                 browser = gBrowser.getBrowserForTab(tabbrowser.selectedTab);
-  
+
                 // try setting the button location as the window may have already loaded
                 try {
                   sendJustInstalledEvent(browser, rect);
                 } catch (ignore) { }
-  
+
                 // Add the load handler in case the window hasn't finished loaded (unlikely)
                 browser.addEventListener("load", makeInstalledLoadHandler(browser, rect), true);
               }
@@ -423,7 +423,7 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
       if (keyOn) {
         try {
           if (oldKey) {
-            oldKey.setAttribute("keycode", "")
+            oldKey.setAttribute("keycode", "");
           }
           f1Key.setAttribute("keycode", this.keycode);
         } catch (e) { error(e); }
@@ -431,7 +431,7 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
         try {
           f1Key.setAttribute("keycode", "");
           if (oldKey) {
-            oldKey.setAttribute("keycode", this.keycode)
+            oldKey.setAttribute("keycode", this.keycode);
           }
         } catch (e) { error(e); }
       }
@@ -465,7 +465,7 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
 
       // Set up the current-app state:
       repo.setCurrentPageAppURL(gBrowser.contentDocument.applicationManifest);
-    
+
       // Create the panel
       let XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
       let xulPanel = document.createElementNS(XUL_NS, 'panel');
@@ -481,15 +481,17 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
       let button = document.getElementById(buttonId);
 
       // How big should we make the panel?
-      
+
       // Rough estimate of total size:
       // width is 68px per app
       // height is about 96px?
-      let list = repo.list();
-      
+      let appDict = repo.list();
+      let count =0;
+      for (var key in appDict) count+=1;
+
       // figure 5 icons per row?
-      let height = 100 + Math.ceil(list.length / 5.0) * 100 + (gBrowser.contentDocument.applicationManifest != null ? 180 : 0);
-      
+      let height = 100 + Math.ceil(count / 5.0) * 100 + (gBrowser.contentDocument.applicationManifest != null ? 180 : 0);
+
       xulPanel.sizeTo(500,height); // used to be 280
       let rect = button.getBoundingClientRect();
       let x = rect.left - 450;
@@ -505,12 +507,12 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
 
           // Annotate the tab with the URL, so we can highlight the button
           // and display the app when the user views this tab.
-          
+
           var ios = Components.classes["@mozilla.org/network/io-service;1"].
             getService(Components.interfaces.nsIIOService);
 
           // XXX TODO: Should we restrict the href to be associated in a limited way with the page?
-          aEvent.target.ownerDocument.applicationManifest = 
+          aEvent.target.ownerDocument.applicationManifest =
             ios.newURI(href, null, ios.newURI(page, null, null));
 
           // If the current browser is this document's browser, update the highlight
@@ -521,13 +523,13 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
               toolbarButton.classList.add("highlight");
             }
           }
-          
+
         } catch (e) {
           dump(e + "\n");
         }
       }
-    }, 
-    
+    },
+
     onTabSelected: function _onTabSelected(aEvent) {
       var browser = gBrowser.selectedBrowser;
 
@@ -541,122 +543,133 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
         }
       }
     }
-    
+
   };
 
-  InjectorInit(window);
+  InjectorInit(window, 
+    function serviceSelectionCallback(suiteName, methodName, serviceList)
+    {
+      
+    }
+  );
   var repo = FFRepoImplService;
   injector.register({
     apibase: "navigator.apps", name: "install", script: null,
-    getapi: function () {
+    getapi: function (contentWindowRef) {
       return function (args) {
         try {
-          dump("repo.loginStatus is " + repo.loginStatus + "\n");
-          repo.install(gBrowser.contentDocument.location, args, window);
+          repo.install(contentWindowRef.location, args, window);
         } catch (e) {
-          dump(e + "\n");
-          dump(e.stack + "\n");
+          dump(e + "\n" + e.stack + "\n");
+          throw e;
         }
-      }
+      };
   }});
   injector.register({
-    apibase: "navigator.apps", name: "getInstalled", script: null,
-    getapi: function () {
+    apibase: "navigator.apps", name: "amInstalled", script: null,
+    getapi: function (contentWindowRef) {
       return function (callback) {
-        var result = repo.getInstalled(gBrowser.contentDocument.location);
+        var result = repo.amInstalled(contentWindowRef.location);
         if (callback && typeof(callback) === 'function') callback(result);
-      }
+      };
   }});
   injector.register({
     apibase: "navigator.apps", name: "getInstalledBy", script: null,
-    getapi: function () {
+    getapi: function (contentWindowRef) {
       return function (callback) {
-        var result = repo.getInstalledBy(gBrowser.contentDocument.location);
+        var result = repo.getInstalledBy(contentWindowRef.location);
         if (callback && typeof(callback) === 'function') callback(result);
-      }
-  }});
-  injector.register({
-    apibase: "navigator.apps", name: "verify", script: null,
-    getapi: function () {
-      return function (args) {
-        repo.verify(gBrowser.contentDocument.location, args);
-      }
+      };
   }});
   injector.register({
     apibase: "navigator.apps", name: "setRepoOrigin", script: null,
     getapi: function () {
       return function (args) {
-      }
+      };
   }});
+  
+  // management APIs:
   injector.register({
     apibase: "navigator.apps.mgmt", name: "launch", script: null,
-    getapi: function () {
+    getapi: function (contentWindowRef) {
       return function (args) {
-        repo.launch(window, gBrowser.contentDocument.location, args);
-      }
+        repo.verifyMgmtPermission(contentWindowRef.location);
+        repo.launch(window, contentWindowRef.location, args);
+      };
   }});
   injector.register({
     apibase: "navigator.apps.mgmt", name: "list", script: null,
-    getapi: function () {
+    getapi: function (contentWindowRef) {
       return function (callback) {
+        repo.verifyMgmtPermission(contentWindowRef.location);
         try {
-          dump("about to list\n");
-          var result = repo.list(gBrowser.contentDocument.location);
-          dump("got result " + result + "\n");
-          dump("callback is " + callback + "\n");
-          if (callback) callback(result);
-        }catch(e) {
+          repo.list(callback);
+        } catch(e) {
           dump(e + "\n" + e.stack + "\n");
         }
-      }
+      };
   }});
   injector.register({
     apibase: "navigator.apps.mgmt", name: "loginStatus", script: null,
-    getapi: function () {
+    getapi: function (contentWindowRef) {
       return function (args) {
-        return repo.loginStatus(gBrowser.contentDocument.location, args);
-      }
+        repo.verifyMgmtPermission(contentWindowRef.location);
+        return repo.loginStatus(args);
+      };
   }});
   injector.register({
     apibase: "navigator.apps.mgmt", name: "loadState", script: null,
-    getapi: function () {
+    getapi: function (contentWindowRef) {
       return function (callback) {
-        var result = repo.loadState(gBrowser.contentDocument.location);
-        if (callback && typeof(callback) === 'function') callback(result);
-      }
+        repo.verifyMgmtPermission(contentWindowRef.location);
+        repo.loadState(contentWindowRef.location, callback);
+      };
   }});
   injector.register({
     apibase: "navigator.apps.mgmt", name: "saveState", script: null,
-    getapi: function () {
+    getapi: function (contentWindowRef) {
       return function (state, callback) {
-        var result = repo.saveState(gBrowser.contentDocument.location, state);
-        if (callback && typeof(callback) === 'function') {
-          callback(result);
-        }
-      }
+        repo.verifyMgmtPermission(contentWindowRef.location);
+        repo.saveState(contentWindowRef.location, state, callback);
+      };
   }});
   injector.register({
-    apibase: "navigator.apps.mgmt", name: "remove", script: null,
-    getapi: function () {
-      return function (key, callback) {
-        var result = repo.remove(gBrowser.contentDocument.location, key);
-        if (callback && typeof(callback) === 'function') callback(result);
-      }
+    apibase: "navigator.apps.mgmt", name: "uninstall", script: null,
+    getapi: function (contentWindowRef) {
+      return function (key, callback, onerror) {
+        repo.verifyMgmtPermission(contentWindowRef.location);
+        // FIXME: this should do a permission check on gBrowser.contentDocument.location
+        try {
+          repo.uninstall(key, callback);
+        } catch (e) {
+          let errorResult;
+          if (e.length && e.length == 2) {
+            // Then it's code/message
+            errorResult = {code: e[0], message: e[1]};
+          } else {
+            errorResult = {code: "exception", message: ''+e};
+          }
+          if (onerror) {
+            onerror(errorResult);
+          }
+        }
+      };
   }});
   injector.registerAction(function() {
     // Clear out the current page URL on every page load
     let toolbarButton = document.getElementById("openwebapps-toolbar-button");
     if (toolbarButton) {
       toolbarButton.classList.remove("highlight");
-    } 
+    }
     repo.setCurrentPageAppURL(null);
   });
-  
+
   // Experimental support for web-send:
   injector.register({
     apibase: "navigator.introducer", name: "introduce", script: null,
-    getapi: function () {
-      return function (anchor, wanted, callback) {
+    getapi: function (contentWindowRef) {
+      return function (anchor, wanted, introductionCallback) {
+        gBrowser.ownerDocument.introductionCallback = introductionCallback;
         repo.websendIntroduce(gBrowser, 
           function showPicker(potentialProviders, pickedProviderCB) {
             // Present a consent panel:
@@ -688,30 +701,36 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
               providerDiv.onclick = function() {
                 xulPanel.hidePopup();
                 pickedProviderCB(provider);
-              }
+              };
             }
             xulPanel.appendChild(div);
             doc.getElementById("mainPopupSet").appendChild(xulPanel);
             xulPanel.sizeTo(160,40 + potentialProviders.length * 40);
             xulPanel.openPopup(anchor, "after_start", 0, 0);
         }, 
-        function iframeCreationCallback(frameURL) {
+        function iframeCreationCallback(frameURL, matchArray, introductionCallback) {
           var doc = gBrowser.ownerDocument;   
           let theIframe = doc.createElementNS("http://www.w3.org/1999/xhtml", 'iframe');
           theIframe.src = frameURL;
           anchor.parentNode.appendChild(theIframe);
+          theIframe.setAttribute("introductionCallback", introductionCallback);
           return theIframe;
-        }, anchor, wanted, callback);
-      }
+        }, anchor, wanted, introductionCallback);
+      };
   }});
+
   injector.register({
     apibase: "navigator.introducer", name: "welcome", script: null,
-    getapi: function () {
+    getapi: function (contentWindowRef) {
       return function (registrants, callback) {
-        repo.websendWelcome(gBrowser, registrants, callback);
+        repo.websendWelcome(gBrowser, window, registrants, callback, gBrowser.ownerDocument.introductionCallback);
       }
   }});
   // End experimental support for web-send
+  
+  // Begin experimental services support
+  
+  // End experimental services support
   
   window.addEventListener("load", fn.bind(openwebapps, "onLoad"), false);
   window.addEventListener("unload", fn.bind(openwebapps, "onUnload"), false);
@@ -719,3 +738,4 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
   window.addEventListener("TabSelect", fn.bind(openwebapps, "onTabSelected"), false);
 
 }());
+

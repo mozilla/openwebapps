@@ -1,8 +1,0 @@
-{
-    "id": "jid0-SauOgWZPJJ7lDBV2KQplMVvzJhY", 
-    "dependencies": [
-        "addon-kit"
-    ], 
-    "description": "Adds Installed Application support to Firefox", 
-    "author": "Michael Hanson (mhanson@mozilla.com)"
-}

@@ -1,0 +1,294 @@
+<html>
+<head>
+<title>About Me</title>
+<link rel="application-manifest" href="aboutme.webapp"></link>
+<script>
+
+function val(l) 
+{
+  var v = document.forms[0][l];
+  if (v.item)
+  {
+    for (var i=0;i<v.length;i++) {
+      if (v[i].checked) return v[i].value;
+    }
+    return null;
+  } else {
+    return v.value;
+  }
+}
+function set(l, v) 
+{
+  dump(l + " " + v + "\n");
+  document.forms[0][l].value = v;
+}
+
+function save()
+{
+  var profile = {};
+  profile.name = {};
+  profile.name.givenName = val("givenName");
+  profile.name.familyName = val("familyName");
+  profile.emails = []
+  profile.emails.push({value:val("email")});
+  profile.addresses = [];
+  profile.addresses.push({
+    streetAddress: val("address/street"),
+    city: val("address/city"),
+    state: val("address/state"),
+    postalCode: val("address/postalCode"),
+    country: val("address/country")
+  });
+  profile.gender = val("gender")
+  dump("gender is " + val("gender") + "\n");
+  
+  var bdayRaw = val("birthday");
+  try {
+    function pad2(val) {
+      if (val < 9) return "0" + val;
+      return val;
+    }
+    var d = new Date(bdayRaw)
+    profile.birthday = (""+d.getFullYear()) + "-" + (pad2(d.getMonth()+1)) + "-" + (pad2(d.getDate()))
+  } catch (e) {}
+  
+  window.localStorage.setItem("profile", JSON.stringify(profile));
+  var result = document.getElementById("control_result");
+  result.innerHTML = "Saved&nbsp;";
+  result.style.opacity = 1.0;
+}
+
+function init()
+{
+  var data = window.localStorage.getItem("profile");
+  if (data) {
+    var profile = JSON.parse(data);
+    if (profile)
+    {
+      if (profile.name) {
+        set("givenName", profile.name.givenName);
+        set("familyName", profile.name.familyName);
+      }
+      if (profile.emails && profile.emails.length > 0) {
+        set("email", profile.emails[0].value);
+      }
+      if (profile.addresses && profile.addresses.length > 0) {
+        set("address/street", profile.addresses[0].streetAddress);
+        set("address/city", profile.addresses[0].city);
+        set("address/state", profile.addresses[0].state);
+        set("address/postalCode", profile.addresses[0].postalCode);
+        set("address/country", profile.addresses[0].country);
+      }
+    }
+  }
+  
+  var s = "";
+  for (var i=0;i<AdCategories.length;i++)
+  {
+    s += "<input type=checkbox> " + AdCategories[i] + "<br>";
+  }
+  document.getElementById("ad_interests").innerHTML = s;
+}
+
+var AdCategories = ["Asian Community", "Auto Buyers", "Auto Buyers - Compact", "Auto Buyers - Convertible", "Auto Buyers - Coupes", "Auto Buyers - Diesel", "Auto Buyers - Hatchback", "Auto Buyers - Hybrid", "Auto Buyers - Luxury", "Auto Buyers - Minivan", "Auto Buyers - New Cars", "Auto Buyers - Sedan", "Auto Buyers - Sports cars", "Auto Buyers - SUV", "Auto Buyers - Trucks", "Auto Buyers - Used Cars", "Auto Buyers - Van", "Auto Buyers - Wagons", "Auto Enthusiasts", "Bizo - Finance Professionals", "Bizo - High Net Worth", "Bizo - IT Professionals", "Bizo - Small Business Owners", "Career - Accounting/Finance", "Career - Arts/Entertainment/Gaming", "Career - Clerical/Administrative", "Career - Construction/Extraction", "Career - Customer Service", "Career - Education/Training/Library", "Career - Engineering/Architecture", "Career - Health Care Professionals", "Career - Human Resources", "Career - Insurance", "Career - IT Professionals", "Career - Legal Services", "Career - Management/Business", "Career - Manufacturing/Production", "Career - Marketing/Advertising", "Career - Media/Communication", "Career - Merchandising/Purchasing/Retail", "Career - Military/Government", "Career - Personal/Home Services", "Career - Public Relations", "Career - Public Utilities/Services", "Career - Real Estate/Building Maintenance", "Career - Research", "Career - Sales/Sales Management", "Career - Science/Biotech", "Career - Transportation/Logistics", "Career - Travel/Hospitality/Restaurant", "Casual Gaming", "Cooking", "Diet and Fitness", "Education", "Entertainment", "Finance", "Finance - Small Business", "Finance - Stocks", "Green Living", "Guys and Gear", "Health", "HH Income $20,000-$29,999", "HH Income $30,000-$39,999", "HH Income $40,000-$49,999", "HH Income $50,000-$59,999", "HH Income $60,000-$74,999", "HH Income $75,000-$99,999", "HH Income $100,000-$124,999", "HH Income $125,000- $149,999", "HH Income $150,000 Plus", "HH Income Under $20,000", "Hobbies", "Home Improvement", "Life Style, Home Owners", "Life Style, Renters", "Life Style, Rural", "Life Style, Suburban", "Life Style, Suburban City", "Life Style, Urban", "Life Style, Urban Core", "Life Style, With Children", "Life Style, Without Children", "Movies", "Offers/Promotions/Coupons", "Online Music Streaming", "Parenting", "Pets", "Real Estate", "Services - Arts and Entertainment", "Services - Automotive", "Services - Biz , Professional Service", "Services - Computers Internet", "Services - Contractors, Construction", "Services - Education", "Services - Finance and Insurance", "Services - Finance and Insurance - Banking", "Services - Finance and Insurance - Debt", "Services - Finance and Insurance - Insurance", "Services - Finance and Insurance - Loans", "Services - Health Medicine", "Services - Home and Garden", "Services - Legal", "Services - Manufacturing, Production", "Services - Other", "Services - Personal Services and Care", "Services - Pets", "Services - Real Estate, Moving, Storage", "Services - Religious Organizations", "Services - Restaurants", "Services - Retail Shopping", "Services - Sports and Recreation", "Services - Telecommunications", "Services - Travel and Transportation", "Shopping", "Shopping - Accessories", "Shopping - Apparel", "Shopping - Apple Products", "Shopping - Appliances", "Shopping - Auto Parts/Repair", "Shopping - Babies/Kids", "Shopping - Bed and Bath", "Shopping - Books", "Shopping - Business/Office Supply", "Shopping - Cameras", "Shopping - Computers", "Shopping - Fashion", "Shopping - Flowers/Gifts", "Shopping - Furniture", "Shopping - Health/Beauty", "Shopping - Home and Garden", "Shopping - Home Decor", "Shopping - Jewelry/Watches", "Shopping - Kitchen", "Shopping - Laptops", "Shopping - Lighting", "Shopping - Men Fashion", "Shopping - Mobile", "Shopping - Music", "Shopping - Musical Instruments", "Shopping - Outdoor", "Shopping - Personal Tech", "Shopping - Pets", "Shopping - Shoes", "Shopping - Software", "Shopping - Sports/Recreation", "Shopping - Toys", "Shopping - TVs", "Shopping - Video Games", "Shopping - Women Fashion", "Shopping - Xbox", "Singles", "Spanish Speakers", "Sports", "Tech - Enthusiasts", "Travel", "Travel - Accommodation", "Travel - Australia", "Travel - Canada", "Travel - Europe", "Travel - Europe-France", "Travel - Europe-Germany", "Travel - Europe-Italy", "Travel - Europe-Portugal", "Travel - Europe-Spain", "Travel - Europe-United kingdom", "Travel - Flights", "Travel - Mexico-Caribbean-Central America", "Travel - USA", "Travel - USA-Alabama", "Travel - USA-California", "Travel - USA-California-San Francisco", "Travel - USA-Colorado", "Travel - USA-Florida", "Travel - USA-Florida-Disney", "Travel - USA-Florida-Miami Beach", "Travel - USA-Hawaii", "Travel - USA-Maryland-Ocean City", "Travel - USA-Nevada", "Travel - USA-Nevada-Las Vegas", "Travel - USA-New York", "Travel - USA-North Carolina", "Travel - USA-South Carolina", "Travel - USA-Texas", "Travel Enthusiasts", "Urban Lifestyle"]
+</script>
+<style>
+BODY {
+  background-color:#f8f8f8;
+}
+
+#banner {
+  font:bold 24pt Helvetica;
+  padding-left:100px;
+  margin-top:32px;
+  margin-bottom:32px;
+}
+#info {
+  border:1px solid #d0d0d0;
+  margin-left:100px;
+  padding:16px;
+  font:10pt Helvetica;
+  width:610px;
+  background-color:white;
+  border-radius:6px;
+}
+
+.row {
+  display:block;
+  position:relative;
+  min-height:42px;
+  padding-bottom:12px;
+  margin-top:3px;
+  border-bottom:1px dotted #e0e0e0;
+}
+.label_main {
+  display:inline-block;
+  width:200px;
+  vertical-align:top;
+}
+.item_main {
+  display:inline-block;
+}
+.item_sub {
+  display:inline-block;
+  width:200px;
+}
+.label_sub {
+  display:inline-block;
+  width:200px;
+  font:9pt Helvetica;
+  color:#888;
+}
+.item_row {
+  display:block;
+}
+.width1 {
+  width:198px;
+}
+.width2 {
+  width:398px;
+}
+.scrolling_box {
+  height:96px;
+  width:398px;
+  font:9pt Helvetica;
+  overflow-y:auto;
+}
+
+.control_row {
+  width:598px;
+  text-align:right;
+  margin-top:16px;
+  min-height:42px;
+}
+.control_row button {
+  width:90px;
+  font:12pt Helvetica;
+}
+#control_result {
+  margin-top:4px;
+  font:italic 9pt Helvetica;
+  color:#449944;
+  -moz-transition:opacity 0.5s;
+  opacity:0;
+}
+#kicker {
+  width:490px;
+  margin:auto;
+  text-align:right;
+  font:8pt Helvetica;
+  color:#606060;
+}
+#kicker A {
+  color:#606060;
+}
+
+</style>
+</head>
+
+<body onLoad="init();">
+
+<form onsubmit="return false;">
+<div id="banner">About Me</div>
+<div id="info">
+
+<div class="row">
+<div class="label_main">Name</div>
+<div class="item_main">
+<div class="item_row">
+<div class="item_sub"><input class="width1" type="text" name="givenName"></div>
+<div class="item_sub"><input class="width1" type="text" name="familyName"></div>
+</div>
+<div class="item_row">
+<div class="label_sub">Given (First) Name</div>
+<div class="label_sub">Family (Last) Name</div>
+</div>
+</div>
+</div>
+
+<div class="row">
+<div class="label_main">Gender</div>
+<div class="item_main">
+<div class="item_row">
+  <input type="radio" name="gender" value="female">Female 
+  <input type="radio" name="gender" value="male">Male
+  <input type="radio" name="gender" value="undisclosed">NA/other/decline to state
+</div>
+</div>
+</div>
+
+<div class="row">
+<div class="label_main">Birthday</div>
+<div class="item_main">
+<div class="item_row">
+<div class="item_sub"><input class="width1" type="text" name="birthday"></div>
+</div>
+</div>
+</div>
+
+
+<div class="row">
+<div class="label_main">Email Address</div>
+<div class="item_sub"><input class="width2" type="text" name="email"></div>
+</div>
+
+
+<div class="row">
+<div class="label_main">Home Address</div>
+<div class="item_main">
+
+<div class="item_row">
+<div class="item_sub"><input class="width2" type="text" name="address/street"></div>
+</div>
+<div class="item_row">
+<div class="label_sub">Street</div>
+</div>
+
+<div class="item_row">
+<div class="item_sub"><input class="width1" type="text" name="address/city"></div>
+<div class="item_sub"><input class="width1" type="text" name="address/state"></div>
+</div>
+<div class="item_row">
+<div class="label_sub">City</div>
+<div class="label_sub">State</div>
+</div>
+
+<div class="item_row">
+<div class="item_sub"><input class="width1" type="text" name="address/postalCode"></div>
+<div class="item_sub"><input class="width1" type="text" name="address/country"></div>
+</div>
+<div class="item_row">
+<div class="label_sub">Postal/ZIP code</div>
+<div class="label_sub">Country</div>
+</div>
+</div>
+</div>
+
+<div class="row">
+<div class="label_main">Advertising Interests</div>
+<div class="item_main">
+<div class="item_row">
+<div class="scrolling_box" id="ad_interests"></div>
+</div>
+</div>
+</div>
+
+<div class="control_row"><button onclick="save()">Save</button><div id="control_result"></div></div>
+</div>
+
+</form>
+
+<div id="kicker">A <a href="#">Mozilla Labs</a> Project &middot; <a href="http://mozilla.com/privacy">Privacy Policy</a></div>
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+
+
