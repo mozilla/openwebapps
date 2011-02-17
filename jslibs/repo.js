@@ -321,7 +321,7 @@
     };
 
     function saveState(id, state) {
-        // storing null purges state
+        // storing undefined purges state
         if (state === undefined) {
             stateStorage.remove(id);
         } else  {
