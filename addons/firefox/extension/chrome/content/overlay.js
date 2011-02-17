@@ -560,7 +560,8 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
         try {
           repo.install(contentWindowRef.location, args, window);
         } catch (e) {
-          dump(e + "\n" + e.stack + "\n");
+          dump(e + "\n");
+          dump(e.stack + "\n");
           throw e;
         }
       };
@@ -579,6 +580,13 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
       return function (callback) {
         var result = repo.getInstalledBy(contentWindowRef.location);
         if (callback && typeof(callback) === 'function') callback(result);
+      };
+  }});
+  injector.register({
+    apibase: "navigator.apps", name: "verify", script: null,
+    getapi: function (contentWindowRef) {
+      return function (args) {
+        repo.verify(contentWindowRef.location, args);
       };
   }});
   injector.register({
@@ -603,7 +611,8 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
       return function (callback) {
         repo.verifyMgmtPermission(contentWindowRef.location);
         try {
-          repo.list(callback);
+          var result = repo.list(contentWindowRef.location);
+          if (callback) callback(result);
         } catch(e) {
           dump(e + "\n" + e.stack + "\n");
         }
@@ -614,7 +623,7 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
     getapi: function (contentWindowRef) {
       return function (args) {
         repo.verifyMgmtPermission(contentWindowRef.location);
-        return repo.loginStatus(args);
+        return repo.loginStatus(contentWindowRef.location, args);
       };
   }});
   injector.register({
@@ -622,7 +631,8 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
     getapi: function (contentWindowRef) {
       return function (callback) {
         repo.verifyMgmtPermission(contentWindowRef.location);
-        repo.loadState(contentWindowRef.location, callback);
+        var result = repo.loadState(contentWindowRef.location);
+        if (callback && typeof(callback) === 'function') callback(result);
       };
   }});
   injector.register({
@@ -630,7 +640,10 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
     getapi: function (contentWindowRef) {
       return function (state, callback) {
         repo.verifyMgmtPermission(contentWindowRef.location);
-        repo.saveState(contentWindowRef.location, state, callback);
+        var result = repo.saveState(contentWindowRef.location, state);
+        if (callback && typeof(callback) === 'function') {
+          callback(result);
+        }
       };
   }});
   injector.register({
@@ -638,9 +651,10 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
     getapi: function (contentWindowRef) {
       return function (key, callback, onerror) {
         repo.verifyMgmtPermission(contentWindowRef.location);
+        let result = undefined;
         // FIXME: this should do a permission check on gBrowser.contentDocument.location
         try {
-          repo.uninstall(key, callback);
+          result = repo.uninstall(key);
         } catch (e) {
           let errorResult;
           if (e.length && e.length == 2) {
@@ -651,6 +665,11 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
           }
           if (onerror) {
             onerror(errorResult);
+          }
+        }
+        if (result !== undefined) {
+          if (callback && typeof(callback) === 'function') {
+            callback(result);
           }
         }
       };

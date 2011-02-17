@@ -16,9 +16,8 @@
  * under the Apache License, Version 2.0; see http://github.com/xauth/xauth
  *
  * Contributor(s):
- *     Michael Hanson <mhanson@mozilla.com>
- *     Dan Walkowski <dwalkowski@mozilla.com>
- *     Anant Narayanan <anant@kix.in>
+ *   Michael Hanson <mhanson@mozilla.com>
+ *   Dan Walkowski <dwalkowski@mozilla.com>
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -34,6 +33,12 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
+/**
+  2010-07-14
+  First version of server code
+  -Michael Hanson. Mozilla
+**/
+
 /*
 * The server stores installed application metadata in local storage.
 *
@@ -43,64 +48,54 @@
 *
 * The value of each entry is a serialized structure like this:
 * {
-*     manifest: { <app manifest> },
-*     install_time: <install timestamp, UTC milliseconds>,
-*     install_origin: <the URL that invoked the install function>
-*     origin: <the origin of the app>
+*   manifest: { <app manifest> },
+*   install_time: <install timestamp, UTC milliseconds>,
+*   install_origin: <the URL that invoked the install function>
+*   origin: <the origin of the app>
 * }
 *
 */
-Repo = (function() {
-    // A TypedStorage singleton global object is expected to be present
-    // Must be provided either by the FF extension, Chrome extension, or in
-    // the HTML5 case, localStorage.
+
+;Repo = (function() {
     var appStorage = TypedStorage().open("app");
     var stateStorage = TypedStorage().open("state");
 
     // iterates over all stored applications manifests and passes them to a
-    // callback function.    This function should be used instead of manual
+    // callback function.  This function should be used instead of manual
     // iteration as it will parse manifests and purge any that are invalid.
-    function iterateApps(callback)
-    {
+    function iterateApps(callback) {
         // we'll automatically clean up malformed installation records as we go
         var toRemove = [];
-        
-        appStorage.keys(function(appKeys) {
-            if (appKeys.length === 0) {
-                // signifies end of iteration, callback will not be called again
-                callback(null, null);
-                return;
-            }
 
-            // manually iterating the apps (rather than using appStorage.iterate() allows
-            // us to differentiate between a corrupt application (for purging), and
-            // an error inside the caller provided callback function
-            for (var i = 0; i < appKeys.length; i++) {
-                var aKey = appKeys[i];
+        var appKeys = appStorage.keys();
+        if (appKeys.length === 0) {
+          return;
+        }
+
+        // manually iterating the apps (rather than using appStorage.iterate() allows
+        // us to differentiate between a corrupt application (for purging), and
+        // an error inside the caller provided callback function
+        for (var i=0; i<appKeys.length; i++)
+        {
+            var aKey = appKeys[i];
+
+            try {
+                var install = appStorage.get(aKey);
+                install.manifest = Manifest.validate(install.manifest);
                 try {
-                    appStorage.get(aKey, function(install) {
-                        install.manifest = Manifest.validate(install.manifest);
-                        try {
-                            callback(aKey, install);
-                        } catch (e) {
-                            console.log("Error inside iterateApps callback: " + e);
-                        }
-                    });
+                  callback(aKey, install);
                 } catch (e) {
-                    console.log("invalid application detected: " + e);
-                    toRemove.push(aKey);
+                  console.log("Error inside iterateApps callback: " + e);
                 }
+            } catch (e) {
+                console.log("invalid application detected: " + e);
+                toRemove.push(aKey);
             }
+        }
 
-            for (var j = 0; j < toRemove.length; j++) {
-                appStorage.remove(toRemove[j], function() {
-                    // nothing to check
-                });
-            }
-            
-            // signifies end of iteration, callback will not be called again
-            callback(null, null);
-        });
+        for (var j = 0; j < toRemove.length; j++) {
+            appStorage.remove(toRemove[j]);
+        }
     };
 
     // Returns whether the given URL belongs to the specified domain (scheme://hostname[:nonStandardPort])
@@ -182,20 +177,20 @@ Repo = (function() {
 
 
     // trigger application installation.
-    //     origin -- the URL of the site requesting installation
-    //     args -- the argument object provided by the calling site upon invocation of
-    //             navigator.apps.install()
-    //     promptDisplayFunc -- is a callback function that will be invoked to display a
-    //             user prompt.    the function should accept 4 arguments which are:
+    //   origin -- the URL of the site requesting installation
+    //   args -- the argument object provided by the calling site upon invocation of
+    //           navigator.apps.install()
+    //   promptDisplayFunc -- is a callback function that will be invoked to display a
+    //           user prompt.  the function should accept 4 arguments which are:
     //             installOrigin --
     //             appOrigin --
     //             manifestToInstall --
     //             installationConfirmationFinishCallback --
     //             arguments object
-    //     fetchManifestFunc -- a function that can can fetch a manifest from a remote url, accepts
+    //   fetchManifestFunc -- a function that can can fetch a manifest from a remote url, accepts
     //             two args, a manifesturl and a callback function that will be invoked with the
     //             manifest JSON text or null in case of error.
-    //     cb -- is a caller provided callback that will be invoked when the installation
+    //   cb -- is a caller provided callback that will be invoked when the installation
     //         attempt is complete.
 
     function install(origin, args, promptDisplayFunc, fetchManifestFunc, cb) {
@@ -217,7 +212,9 @@ Repo = (function() {
                 }
 
                 // Save - blow away any existing value
-                appStorage.put(appOrigin, installation, cb);
+                appStorage.put(appOrigin, installation);
+
+                if (cb) cb(true);
             } else {
                 if (cb) cb({error: ["denied", "User denied installation request"]});
             }
@@ -234,15 +231,15 @@ Repo = (function() {
         if (args.url) {
             // support absolute paths as a developer convenience
             if (0 == args.url.indexOf('/')) {
-                args.url = origin + args.url;
+              args.url = origin + args.url;
             }
 
             // extract the application origin from the manifest URL
             try {
-                appOrigin = normalizeOrigin(args.url);
+              appOrigin = normalizeOrigin(args.url);
             } catch(e) {
-                cb({error: ["manifestURLError", e.toString()]});
-                return;
+              cb({error: ["manifestURLError", e.toString()]});
+              return;
             }
 
             // contact our server to retrieve the URL
@@ -267,12 +264,10 @@ Repo = (function() {
                         }
 
                         // if an app with the same origin is currently installed, this is an update
-                        appStorage.has(appOrigin, function(isUpdate) {
-                            promptDisplayFunc(
-                                installOrigin, appOrigin, manifestToInstall,
-                                isUpdate, installConfirmationFinish
-                            );
-                        });
+                        var isUpdate = appStorage.has(appOrigin);
+
+                        promptDisplayFunc(installOrigin, appOrigin, manifestToInstall, isUpdate,
+                                          installConfirmationFinish);
                     } catch(e) {
                         cb({error: ["invalidManifest", "couldn't validate your manifest: " + e ]});
                     }
@@ -297,7 +292,7 @@ Repo = (function() {
     /* Management APIs for dashboards live beneath here */
 
     // A function which given an installation record, builds an object suitable
-    // to return to a dashboard.    this function may filter information which is
+    // to return to a dashboard.  this function may filter information which is
     // not relevant, and also serves as a place where we can rewrite the internal
     // JSON representation into what the client expects (allowing us to change
     // the internal representation as neccesary)
@@ -305,41 +300,34 @@ Repo = (function() {
         return item;
     }
 
-    function list(cb) {
+    function list() {
         var installed = {};
         iterateApps(function(key, item) {
-            if (key != null && item != null) {
-                installed[key] = item;
-            } else if (cb && typeof(cb) == 'function') {
-                cb(installed);
-            }
+            installed[key] = item;
         });
+        return installed;
     };
 
-    function uninstall(origin, cb) {
+    function uninstall(origin) {
         origin = normalizeOrigin(origin);
-        appStorage.get(origin, function(item) {
-            if (!item)
-                throw [ "noSuchApplication", "no application exists with the origin: " + origin];
-                
-            appStorage.remove(origin, function() {
-                // nothing to check
-                cb(true);
-            });
-        });
+        var item = appStorage.get(origin);
+        if (!item) throw [ "noSuchApplication", "no application exists with the origin: " + origin];
+        appStorage.remove(origin);
+        return true;
     };
 
-    function loadState(id, cb) {
-        stateStorage.get(JSON.stringify(id), cb);
+    function loadState(id) {
+        return stateStorage.get(id);
     };
 
-    function saveState(id, state, cb) {
-        // storing undefined purges state
+    function saveState(id, state) {
+        // storing null purges state
         if (state === undefined) {
-            stateStorage.remove(JSON.stringify(id), cb);
-        } else    {
-            stateStorage.put(JSON.stringify(id), state, cb);
+            stateStorage.remove(id);
+        } else  {
+            stateStorage.put(id, state);
         }
+        return true;
     };
 
     return {
