@@ -308,10 +308,11 @@ Repo = (function() {
     function list(cb) {
         var installed = {};
         iterateApps(function(key, item) {
-            if (key != null && item != null)
+            if (key != null && item != null) {
                 installed[key] = item;
-            else
+            } else if (cb && typeof(cb) == 'function') {
                 cb(installed);
+            }
         });
     };
 
