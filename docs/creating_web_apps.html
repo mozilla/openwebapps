@@ -60,48 +60,43 @@ a:hover {color: #7b311f;}
 
 			<div class="entry">
 
-      <h3>It's HTML5</h3>
-
       <p>
-      Open Web Applications are websites.  They are built using the HTML5 techniques that
+      Open Web Applications are just websites.  They are built using standard web technologies that
       run in any web browser, and can be developed using your favorite tools.
       </p>
 
       <p>
-      The Mozilla Labs Open Web Applications project is about proposing some additional
-      metadata that lets your app run in a rich, fun, powerful computing environment.
-      This metadata will be used by web browsers, mobile phones, and websites to describe
-      your application and keep your data available on all of your users' devices.
+      The Mozilla Labs Open Web Applications project proposes some small additions to
+      existing sites that turn them into applications which run in a rich, fun, and powerful computing environment.
+      These applications run on desktop browsers and mobile devices, and are easier for a user to discover and
+      launch.  They have access to a growing set of novel features, such as synchronizing
+      across all of a users' devices.
       </p>
 
-      <h3>Describing the Application Manifest</h3>
+      <h3>Describing Your Application</h3>
 
       <p>
-      The one thing that distinguishes a web application from a web site is an application
-      manifest.  This is a metadata file that describes the application: its name, its icons,
-      its human-readable description, a list of additional capabilities that it requires.
+      The only thing you have to do to create a web application from a web site is to add an <i>application
+      manifest</i>.  This is a <a href="http://json.org">JSON</a> file that describes your application, including its name, its icons,
+      and its human-readable description.
       </p>
 
       <p>
-      The manifest is a simple text file, written in <a href="http://json.org">JSON</a>.
-      Refer to the <a href="https://github.com/mozilla/openwebapps/blob/master/docs/MANIFEST.md">manifest
-      documentation</a> to see how to construct it.  You will need to serve this file from
-      your website; it must be served with a Content-Type of <code>application/x-web-app-manifest+json</code>.
+      The manifest must be hosted from the same domain as your website, and must be served with a Content-Type of
+      <code>application/x-web-app-manifest+json</code>.
+      For full details about the manifest refer to the <a href="https://github.com/mozilla/openwebapps/blob/master/docs/MANIFEST.md">documentation</a>,
+      and to help get started you can try out our <a href="https://stage.myapps.mozillalabs.com/manifestchecker/">online manifest checker</a>. 
       </p>
 
-      <h3>Self-Publishing Your Application</h3>
+      <h3>Publishing Your Application</h3>
 
       <p>
       A number of vendors, from large companies to startups,
       are building web application stores that will take care of discovery, reviews, ratings, and billing --
-      but you don't need to list your app in a store!  
+      but you're not required to list your application in a store, you can distribute it directly from your
+      site.  Just construct a button or link that invokes this JavaScript:
       </p>
 
-      <p>
-      You can use the application installation API directly from your site.  Just construct a
-      button or link that invokes this JavaScript:
-      </p>
-      
       <div style="margin-left:30px;padding-left:30px;padding-right:30px;background-color:rgba(255,255,255,0.7);border:1px solid rgb(190,190,190);">
       <pre><code style="font-size:small">
 function installCallback(result) {
@@ -120,8 +115,8 @@ navigator.apps.install({
       </div>
 
       <p>
-      That will cause the browser to load your manifest and ask the user whether they
-      want to install your application.  If they approve the installation, your app will be installed!
+      Invoking <tt>navigator.apps.install()</tt> will cause the browser to load your manifest and ask the user whether they
+      want to install your application.  If they approve the installation, your app will be installed into their browser!
       </p>
 
       <p>
@@ -181,7 +176,7 @@ navigator.apps.amInstalled(getInstalledCallback);
       </p>
       
       <p>
-      If you have data that needs to be persisted between instances of your application on a user's devices,
+      If you have data that should be shared between instances of your application across all a user's devices,
       you should use the <code>install_data</code> option to the <code>install()</code> function, as
       described above.
       </p>
