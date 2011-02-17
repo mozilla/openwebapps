@@ -1,14 +1,9 @@
 /**************
 *
-* style.css
+* nuovodashboard.css
 *
 /**************/
 
-/* don't display anything at inital pageload, wait for page load where
- * browser feature checking will occur */
-#container {
-/*  display: none; */
-}
 
 #unsupportedBrowser {
   display: none;
@@ -26,22 +21,15 @@ html {
 
 body {
 	font-family: Tahoma, sans-serif !important;
-
-	background-color: rgb(0,0,0);
-	background: rgba(0,0,0,0.9) url('img/grain.png') repeat top center;
-
-	color: rgb(180,180,180);
+	background: rgba(25,25,35,1);
 	font-size:13px;
 }
 
 @font-face{
-font-family: 'Museo';
-src: url('fonts/MuseoSans_500.otf') format('opentype');
+  font-family: 'Museo';
+  src: url('fonts/MuseoSans_500.otf') format('opentype');
 }
 
-#container {
-	margin: 0px auto;
-}
 
 .glowy-blue-frame {
 	-moz-border-radius: 1em;
@@ -91,8 +79,43 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
 		rgba(70, 180, 255, 1) 0 0 4px;
 
   cursor:default;
+}
+
+.glowy-red-outline {
+	-moz-border-radius: 1em;
+	-webkit-border-radius: 1em;
+	border-radius: 1em;
+	border: 2px solid rgba(255,200,170,1);
 
 
+  -moz-box-shadow: 
+		rgba(255, 120, 100, 1) 0 0 3px 3px,
+		inset	rgba(255, 120, 100, 1) 0 0 3px 3px;
+	-webkit-box-shadow:
+		rgba(255, 120, 100, 1) 0 0 3px 3px,
+		inset	rgba(255, 120, 100, 1) 0 0 3px 3px;
+	box-shadow:
+		rgba(255, 120, 100, 1) 0 0 3px 3px,
+		inset	rgba(255, 120, 100, 1) 0 0 3px 3px;
+
+}
+
+.glowy-red-text {
+	font-family: 'Museo';
+	color: rgba(255, 200, 170, 0.65);
+  background-color: rgba(0,0,0,0);
+
+  -moz-text-shadow: 
+		rgba(255, 120, 100, 0.75) 0 0 12px,
+		rgba(255, 120, 100, 1) 0 0 4px;
+	-webkit-text-shadow:
+		rgba(255, 120, 100, 0.75) 0 0 12px,
+		rgba(255, 120, 100, 1) 0 0 4px;
+	text-shadow:
+		rgba(255, 120, 100, 0.75) 0 0 12px,
+		rgba(255, 120, 100, 1) 0 0 4px;
+
+  cursor:default;
 }
 
 /* ---------------------------  */
@@ -102,15 +125,10 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
 #header {
 	position: relative;
 	min-width: 600px;
-	height: 40px;
+	height: 41px;
 	margin-bottom: 8px;
 }
 
-#header img {
-	position: absolute;
-	top: -20px;
-	right: -10px;
-}
 
 .horiz-divider {
 	position: relative;
@@ -126,7 +144,7 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
 .headerText {
 	position: absolute;
 	font-size: 32px;
-	letter-spacing: 4px;
+	letter-spacing: 3px;
 	margin-left: 10px;
 	margin-top: 2px;
 }
@@ -141,11 +159,30 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
 .appInDock {
   height: 64px;
   width: 64px;
-  
-  margin-left: 8px;
+  float: left;
   margin-top: 8px;
+  margin-left: 8px;
+  margin-right: 8px;
+  -moz-border-radius: 8px;
+	-webkit-border-radius: 8px;
+	border-radius: 8px;
+	background-color: rgba(35,35,50, 1);
 
 }
+
+.appInDockDrop {
+  height: 60px;
+  width: 60px;
+  float: left;
+  margin-top: 8px;
+  margin-left: 10px;
+  margin-right: 10px;
+  -moz-border-radius: 8px;
+	-webkit-border-radius: 8px;
+	border-radius: 8px;
+	background-color: rgba(35,35,50, 1);
+}
+
 
 #filterAndListBox {
   float:left;
@@ -159,13 +196,41 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
 
 .filterText {
   height: 32px;
-  width: 276px;
+  width: 250px;
   border:none;
   font-size: 24px;
   margin-top:4px;
   margin-left:8px;
   letter-spacing:3px;
 }
+
+.topMargin8 {
+  margin-top: 8px;
+}
+
+.glowButton {
+  height: 25px;
+  width: 25px;
+  float: right;
+  margin-right: 8px;
+}
+
+.hot {
+  margin-right: 6px;
+  margin-top: 6px;
+
+ 	height: 30px;
+ 	width: 30px;
+}
+
+.infohot {
+  margin-right: 6px;
+  margin-top: -1px;
+
+ 	height: 30px;
+ 	width: 30px;
+}
+
 
 .appList {
   min-height:100px;
@@ -175,58 +240,14 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
 
 .widgetSpace {
   position: relative;
+/*
   min-height:148px;
+*/
   margin-left:320px;
   max-width:3000;
-  margin-bottom: 8px;;
+  margin-bottom: 8px;
 }
 
-
-
-/* -------------------------------------------------------------  */
-/* ------- MAIN CONTENT TABS AND FRAME -----  */
-/* -------------------------------------------------------------  */
-
-
-.button {
-	position: relative;
-	float: right;
-	font-family: 'Museo';
-	font-size: 16px;
-	vertical-align: middle;
-	text-align: center;
-	letter-spacing: -0.5px;
-	color: rgb(255,255,255);
-	text-shadow: 0px 1px rgba(0, 0, 0, 0.3);
-	width: 140px;
-	height: 28px;
-	line-height: 26px;
-	border: 1px solid rgba(0,0,0,0.2);
-
-	-moz-border-radius: 1em;
-		-webkit-border-radius: 1em;
-			border-radius: 1em;
-
-	-moz-box-shadow:
-		inset rgba(218,255,191,1) 0 1px 0px,
-		inset rgba(0,0,0,0.2) 0 -2px 0px,
-		rgba(0,0,0,0.1) 0 2px 0px;
-	-webkit-box-shadow:
-		inset rgba(218,255,191,1) 0 1px 0px,
-		inset rgba(0,0,0,0.2) 0 -2px 0px,
-		rgba(0,0,0,0.1) 0 2px 0px;
-	-box-shadow:
-		inset rgba(218,255,191,1) 0 1px 0px,
-		inset rgba(0,0,0,0.2) 0 -2px 0px,
-		rgba(0,0,0,0.1) 0 2px 0px;
-
-	background-color: rgb(134,214,106); /* for non-css3 browsers */
-	background: -webkit-gradient(linear, left top, left bottom, from(rgba(134,214,106,1)), to(rgba(78,152,52,1))); /* for webkit browsers */
-	background: -moz-linear-gradient(top,  rgba(134,214,106,1), rgba(78,152,52,1)); /* for firefox 3.6+ */
-
-
-	display: block;
-}
 
 
 /* ---------------------  */
@@ -234,18 +255,15 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
 /* ---------------------  */
 
 .icon {
-/*
-	position: relative;
-*/
   float: left;
 	width: 32px;
 	height: 32px;
 
 	background-image: url('img/default-icon.png');
 
-	-moz-border-radius: 0.5em;
-	-webkit-border-radius: 0.5em;
-	border-radius: 0.5em;
+	-moz-border-radius: 4px;
+	-webkit-border-radius: 4px;
+	border-radius: 4px;
 
 	-moz-box-shadow:
 		inset rgba(255, 255, 255, 0.8) 0 1px 1px,
@@ -270,9 +288,9 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
 	width: 64px;
 	height: 64px;
 
-	-moz-border-radius: 1em;
-	-webkit-border-radius: 1em;
-	border-radius: 1em;
+	-moz-border-radius: 8px;
+	-webkit-border-radius: 8px;
+	border-radius: 8px;
 
 	-moz-box-shadow:
 		inset rgba(255, 255, 255, 0.8) 0 1px 1px,
@@ -292,94 +310,116 @@ src: url('fonts/MuseoSans_500.otf') format('opentype');
 
 }
 
-/*
-.icon a {
-    display: block;
-	position: absolute;
-	width: 96px;
-	height: 96px;
-	font-size: 1.2em;
-	color: rgb(255,255,255);
-	text-decoration: none;
 
-	-moz-border-radius: 1em;
-		-webkit-border-radius: 1em;
-			border-radius: 1em;
-
-	-moz-box-shadow:
-		inset rgba(255, 255, 255, 0.8) 0 1px 1px,
-		inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
-		rgba(0, 0, 0, 0.5) 0px 2px 1px,
-		inset rgba(0, 156, 237, 0.2) 0 0px 24px,
-		rgba(0, 156, 237, 0.6) 0 0px 24px,
-		rgba(0, 156, 237, 1) 0 0px 4px;
-	-webkit-box-shadow:
-		inset rgba(255, 255, 255, 0.8) 0 1px 1px,
-		inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
-		rgba(0, 0, 0, 0.5) 0px 2px 1px,
-		inset rgba(0, 156, 237, 0.2) 0 0px 24px,
-		rgba(0, 156, 237, 0.6) 0 0px 24px,
-		rgba(0, 156, 237, 1) 0 0px 4px;
-	box-shadow:
-		inset rgba(255, 255, 255, 0.8) 0 1px 1px,
-		inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
-		rgba(0, 0, 0, 0.5) 0px 2px 1px,
-		inset rgba(0, 156, 237, 0.2) 0 0px 24px,
-		rgba(0, 156, 237, 0.6) 0 0px 24px,
-		rgba(0, 156, 237, 1) 0 0px 4px;
-
-	-moz-transition: all 1s ease-out; 
-    -o-transition: all 1s ease-out;  
-  	-webkit-transition: all 1s ease-out; 
-
- 	opacity: 0;
-
-}
-
-.icon .moreInfo {
-	background-image: url('img/info.png');
-  z-order: 999;
-  width: 32px;
-  height: 32px;
-  position: absolute;
-  left: -10px;
-  top: -10px;
-  display: none;
-  z-index: 900;
-  cursor:pointer;
+.widgetFrame {
+    background: rgba(25,25,35,1);
+    position : absolute;   
 }
 
 
-.icon a:hover {
-
-	-moz-transition: all 0.25s ease-out;  
-    -o-transition: all 0.25s ease-out;  
-  	-webkit-transition: all 0.25s ease-out;  
-
- 	opacity: 1;
-
-}
-*/
-
-.widget {
-/*
-      position : relative;
-      margin-left : 8;
-      margin-top : 8;
+.clientframe {
+      position : absolute;
+      margin-left : 8px;
+      margin-top : 8px;
       border : 0px white;
-      borderRadius : 0.5em;
       -moz-border-radius : 0.5em;
       -webkit-border-radius : 0.5em;
-      background : white;	
-*/
+      border-radius : 0.5em;
+      background : white
 }
 
+.framehider {
+
+}
 
 .app {
-	margin: 8px;
-	width: 240px;
+  position: relative;
+	margin-left: 8px;
+	margin-top: 8px;
+	width: 292px;
+	height: 32px;
+}
+
+.listLabel {
+    font-size: 18px;
+      line-height: 36px;
+      margin-left: 44px;
+      letter-spacing: 1px;
+      width: 188px;
+}
+
+.labelBox {
+      width: 220px;
+      padding-left: 76px;
+      }
+      
+.infoLabel {
+      font-size: 18px;
+      line-height: 20px;
+      padding-top: 4px;
+      letter-spacing: 1px;
+}
+
+.infoLabelSmall {
+      font-size: 14px;
+      line-height: 16px;
+      padding-left: 1px;
+}
+
+.descriptionBox {
+      padding-top: 20px;
+      padding-left: 2px;
+      width: 300px;
+      height: 100px;
+      overflow: hidden;
+}
+
+.deleteAppButton {
+      padding-top: 30px;
+      padding-left: 20px;
+      width: 85px;
+      height: 30px;
+      float: left;
+}
+
+.widgetToggleButton {
+      padding-top: 30px;
+      padding-right: 20px;
+      width: 85px;
+      height: 30px;
+      float: right;
+      text-align: right;
 }
 
 
-.appList:after { content: "."; display: block; height: 0; clear: both; visibility: hidden; }
 
+/* modal dialog stuff here */
+
+#modalPage
+{
+    display: none;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0px; left: 0px;
+}
+.modalBackground
+{
+    filter: Alpha(Opacity=60); -moz-opacity:0.6; opacity: 0.6;
+    width: 100%; height: 100%; background-color: #000000;
+    position: absolute;
+    z-index: 500;
+    top: 0px; left: 0px;
+}
+
+.modal
+{
+    background-color: rgba(25,25,35,1);
+    position: relative;
+    top: 130px;
+    left: 160px;
+    z-index: 1000;
+    width: 320px;
+    height: 240px;
+    padding: 10px;
+}
