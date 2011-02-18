@@ -33,19 +33,12 @@ true
 <pre class="doctest">
 $ writeln(null !== Manifest.validate({
 > }));
-Error: missing "default_locale" property
-</pre>
-
-<pre class="doctest">
-$ writeln(null !== Manifest.validate({
->   default_locale: "en"
-> }));
 Error: missing "name" property
 </pre>
 
+
 <pre class="doctest">
 $ writeln(null !== Manifest.validate({
->   default_locale: "en",
 >   name: "AManifestBooYah"
 > }));
 true
@@ -71,6 +64,12 @@ true
 $ m.name = "@#%(@$*^)!#*^@$&*@$(%^*@#$&*@$*&";
 > writeln(null !== Manifest.validate(m));
 true
+$ m.name = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+> writeln(null !== Manifest.validate(m));
+true
+$ m.name += "a";
+> writeln(null !== Manifest.validate(m));
+Error: (name) Larger than maximum length (128)
 </pre>
 
 <h3>Property: default_locale</h3>
@@ -113,6 +112,12 @@ Error: (description) invalid value:
 $ delete m.description;
 > Manifest.validate(m) !== null;
 true
+$ m.description = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+> Manifest.validate(m) !== null;
+true
+$ m.description += "b";
+> Manifest.validate(m)
+Error: (description) Larger than maximum length (1024)
 </pre>
 
 <h3>Property: launch_path</h3>
@@ -121,20 +126,18 @@ true
 $ var m = {
 >   name: "SimplestPossibleManifest",
 >   description: "Well, not the simplest *possible*, really",
->   launch_path: "index.html",
+>   launch_path: "/index.html",
 >   default_locale: "en"
 > };
 > writeln(null !== Manifest.validate(m));
 true
 $ m.launch_path = "../index.html"; // not allowed!
 > Manifest.validate(m);
-Error: (launch_path) invalid value: ../index.html
+Error: (launch_path) must start with '/'
 $ m.launch_path = "/"; // meaningless?  normalization will handle this.
 > null !== Manifest.validate(m);
 true
-$ m.launch_path = ""; // will be removed
-> undefined === Manifest.validate(m).launch_path;
-$ m.launch_path = "foo/bar/index.html";
+$ m.launch_path = "/foo/../index.html";
 > Manifest.validate(m) !== null;
 true
 </pre>
@@ -169,20 +172,19 @@ true
 $ var m = {
 >   name: "SimplestPossibleManifest",
 >   icons: {
->     16:  "images/icon_16.png",
->     48:  "images/icon_48.png",
->     128: "images/icon_128.png"
->   },
->   default_locale: "en"
+>     16:  "/images/icon_16.png",
+>     48:  "/images/icon_48.png",
+>     128: "/images/icon_128.png"
+>   }
 > };
 > writeln(null !== Manifest.validate(m));
 true
-$ m.icons = { 16: "foo/../../outta_my_scope.png" };
+$ m.icons = { 16: "/foo/../../outta_my_scope.png" };
 > Manifest.validate(m);
-Error: (icons/16) invalid value: foo/../../outta_my_scope.png
+{icons: {16: "/outta_my_scope.png"}, name: "SimplestPossibleManifest"}
 $ m.icons = { };
-> writeln(null !== Manifest.validate(m));
-true
+> Manifest.validate(m);
+{name: "SimplestPossibleManifest"}
 $ m.icons["16"] = [ ];
 > Manifest.validate(m);
 Error: (icons/16) invalid value: 
@@ -215,6 +217,14 @@ Error: (developer/url) invalid value: null
 <h3>Property: locales</h3>
 
 <pre class="doctest">
+$ var m = {
+>   name: "SimplestPossibleManifest",
+>   locales: {
+>     bg: { developer: { name: "Mozilla Labs, екстра!"} }
+>   }
+> };
+> writeln(null !== Manifest.validate(m));
+Error: (locales) requires the presence of "default_locale"
 $ var m = {
 >   name: "SimplestPossibleManifest",
 >   developer: {
@@ -259,7 +269,7 @@ $ m.installs_allowed_from[0] = "sucky_http://this_url_sucks:8080/";
 Error: (installs_allowed_from/0) invalid url: unsupported scheme: sucky_http
 $ m.installs_allowed_from = "http://store.sellling.apps.for.confused.devs.com";
 > Manifest.validate(m);
-Error: (installs_allowed_from) expected array of urls
+Error: (installs_allowed_from) expected array of urls: "http://store.sellling.apps.for.confused.devs.com"
 $ // normalization test
 > m.installs_allowed_from = [ "http://no_port.eu:80/", "http://no_slash.ch:8080" ];
 > Manifest.validate(m).installs_allowed_from;

@@ -26,9 +26,9 @@ For a discussion of the security and privacy considerations around the applicati
       },
 
       "icons": {
-        "16": "icon-16.png",
-        "48": "icon-48.png",
-        "128": "icon-128.png"
+        "16": "/images/icon-16.png",
+        "48": "/images/icon-48.png",
+        "128": "/images/icon-128.png"
       },
 
       "developer": {
@@ -68,15 +68,15 @@ For a discussion of the security and privacy considerations around the applicati
 
 For detailed technical discussion of the manifest, please visit [the wiki](http://wiki.mozilla.org/Labs/Apps/Manifest).  Informally, the meanings of the fields are:
 
-* [**name**](http://wiki.mozilla.org/Labs/Apps/Manifest#name): A human-readable name for the application.
+* [**name**](http://wiki.mozilla.org/Labs/Apps/Manifest#name): A human-readable name for the application (maximum length is 128 characters).
 
-* [**description**](http://wiki.mozilla.org/Labs/Apps/Manifest#description): (optional) A human-readable description of the application.
+* [**description**](http://wiki.mozilla.org/Labs/Apps/Manifest#description): (optional) A human-readable description of the application  (maximum length is 1024 characters).
 
-* [**launch_path**](http://wiki.mozilla.org/Labs/Apps/Manifest#launch_path): (optional) The path within the application's origin which is loaded when an application starts.  If empty or not provided, the application's origin will be treated as the launch URL.
+* [**launch_path**](http://wiki.mozilla.org/Labs/Apps/Manifest#launch_path): (optional) The path within the application's origin which is loaded when an application starts.  If not provided, the application's origin will be treated as the launch URL.  See [Path Handling](#path-handling).
 
 * [**capabilities**](http://wiki.mozilla.org/Labs/Apps/Manifest#capabilities): (optional) an object which expresses advanced web browser capabilities desired by the application.  UAs with native support for openwebapps should prompt the user for permission to grant these capabilities at installation time.
 
-* [**icons**](http://wiki.mozilla.org/Labs/Apps/Manifest#icons): (optional) a map of icon sizes to URLs, which are interpreted relative to the base_url, which should contain square images suitable for use as application icons.  Data URLs are legal values in this object.
+* [**icons**](http://wiki.mozilla.org/Labs/Apps/Manifest#icons): (optional) a map of icon sizes to paths (may be [absolute paths](#path-handling), or data urls).  Each should contain square images which visually represent the application.
 
 * [**developer**](http://wiki.mozilla.org/Labs/Apps/Manifest#developer): (optional) information about the developer of the application, suitable for use in repository and dashboard UIs
 
@@ -84,9 +84,9 @@ For detailed technical discussion of the manifest, please visit [the wiki](http:
 
     * [**url**](http://wiki.mozilla.org/Labs/Apps/Manifest#developer.url): the URL of a site containing more information about the application's developer.  This URL is typically rendered when the user clicks on the name of the application's developer while viewing details about an application inside the dashboard (or browser).
 
-* [**locales**](http://wiki.mozilla.org/Labs/Apps/Manifest#locales): (optional) a map of local-specific overrides on the data contained in the manifest, which UIs should use to provide localized views.  Each locale entry is keyed on a [locale tag](http://www.ietf.org/rfc/rfc4646.txt), and contains a sparse representation of the manifest; any field that is present in the locale value should override the matching field in the manifest.   Certain fields may not be overridden, including *capabilities*, *default_locale*, *locales* itself, and *installs_allowed_from*; a manifest that overrides any of these fields is invalid.
+* [**locales**](http://wiki.mozilla.org/Labs/Apps/Manifest#locales): (optional) a map of local-specific overrides on the data contained in the manifest, which UIs should use to provide localized views.  Each locale entry is keyed on a [locale tag](http://www.ietf.org/rfc/rfc4646.txt), and contains a sparse representation of the manifest; any field that is present in the locale value should override the matching field in the manifest.   Certain fields may not be overridden, including *capabilities*, *default_locale*, *locales* itself, and *installs_allowed_from*; a manifest that overrides any of these fields is invalid.  When locales is present, `default_locale` must also be present.
 
-* [**default_locale**](http://wiki.mozilla.org/Labs/Apps/Manifest#default.locale): The locale tag for the "default" translation of manifest properties.  That is, the locale of values outside of the locales map.  The presence of this key makes it possible to enumerate the locales supported by a manifest.
+* [**default_locale**](http://wiki.mozilla.org/Labs/Apps/Manifest#default.locale): (required when `locales` is present) The locale tag for the "default" translation of manifest properties.  That is, the locale of values outside of the locales map.  
 
 * [**installs_allowed_from**](http://wiki.mozilla.org/Labs/Apps/Manifest#installs.allowed.from): (optional) An array of origins that should be allowed to trigger installation of this application.  This field allows developers hosting their applications to explicitly delegate installation privileges to sites or stores with whom they have a relationship, and must be respected by the application repository (eventually, the user agent).  If omitted, installation may only be triggered from the origin where the application is hosted.
 
@@ -94,11 +94,15 @@ For detailed technical discussion of the manifest, please visit [the wiki](http:
 
 * [**widget**](http://wiki.mozilla.org/Labs/Apps/Manifest#widget): (optional) An HTML document that is designed to be rendered inside an iframe to give users an abbreviated view of your app.
 
-    * [**path**](http://wiki.mozilla.org/Labs/Apps/Manifest#widget.path): (required) Must be an absolute path starting with '/', and will be concatenated to the application origin. 
+    * [**path**](http://wiki.mozilla.org/Labs/Apps/Manifest#widget.path): (required) The path to the widget.  See [Path Handling](#path-handling).
 
     * [**width**](http://wiki.mozilla.org/Labs/Apps/Manifest#widget.width): An integer between 10 and 1000 representing the desired rendered width of the widget.
 
     * [**height**](http://wiki.mozilla.org/Labs/Apps/Manifest#widget.width): An integer between 10 and 1000 representing the desired rendered height of the widget.
+
+#### Path Handling <a name="path-handling"></a>
+
+All fields which hold paths in the manifest must be absolute paths (i.e. '/images/myicon.png'), and are served from the same origin as the application.
 
 #### Serving Manifests
 

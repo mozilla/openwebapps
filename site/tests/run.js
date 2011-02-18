@@ -43,7 +43,12 @@ function createServer(port) {
     var host = hostname.split(':')[0];
 
     // normalize 'localhost', so it just works.
-    if (host === 'localhost') host = '127.0.0.1';
+    if (host === 'localhost') {
+      var redirectURL = "http://127.0.0.1:" + port + request.url;
+      response.writeHead(302, {"Location": redirectURL});
+      response.end();
+      return;
+    }
 
     // get the directory associated with the port hit by client
     var siteroot = getWebRootDir(host, port);

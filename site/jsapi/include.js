@@ -733,7 +733,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
             // removal of this check the rest of this function won't work, because it relies
             // on previous invocation of list() (to discover the launchURL).
             var loc = window.location
-            if ((loc.protocol + "://" + loc.host) !== AppRepositoryOrigin) {
+            if ((loc.protocol + "//" + loc.host) !== AppRepositoryOrigin) {
                 setTimeout(function() {
                     deliverError("permissionDenied",
                                  "to access open web apps management apis, you must be on the same domain " +
@@ -743,9 +743,9 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
                 return;
             }
 
-            for (var i = 0; i < _lastListResults.length; i++) {
-                if (_lastListResults[i].id === id) {
-                    window.open(_lastListResults[i].origin + (_lastListResults[i].launchURL !== undefined? _lastListResults[i].launchURL : ""), "openwebapp_" + id);
+            for (var origin in _lastListResults) {
+                if (origin === id) {
+                    window.open(origin + (_lastListResults[origin].launchURL !== undefined ? _lastListResults[origin].launchURL : ""), "openwebapp_" + id);
                     if (onsuccess) setTimeout(function() { onsuccess(true); }, 0);
                     return;
                 }

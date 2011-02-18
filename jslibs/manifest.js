@@ -73,12 +73,29 @@
       if ((typeof x !== 'string') || x.length === 0) errorThrow();
     };
 
+    var nonEmptyStringWithMaxLengthCheck = function(maxLength) {
+      return function(x) {
+        nonEmptyStringCheck(x);
+        if (x.length > maxLength) errorThrow("Larger than maximum length (" + maxLength + ")");
+      };
+    };
+
     var stringCheck = function(x) {
       if (typeof x !== 'string') errorThrow();
     };
 
     var isInteger = function(x) {
       return (typeof x === 'number' && Math.ceil(x) == Math.floor(x));
+    };
+
+    var validPathCheck = function(x) {
+      if (typeof x !== 'string') errorThrow();
+      if (x.indexOf('/') !== 0) errorThrow("must start with '/'");
+    };
+
+    var normalizePath = function(x) {
+      if (x.length === 0) return undefined;
+      return URLParse("http://x" + x).normalize().path;
     };
 
     // a table that specifies manfiest properties, and validation functions
@@ -90,6 +107,8 @@
     //             in manifest as argument, and outputs a value to replace it.
     //  may_overlay: if present and hase a truey value, then this property may be overlaid by
     //               content in the locales map.
+    //  needs: expresses inter-field dependency.  an array of top level field names that become
+    //         required in the presence of the entry in which it appears.
     //
     // returning errors:
     //   validation functions throw objects with two fields:
@@ -119,7 +138,6 @@
         }
       },
       default_locale: {
-        required: true,
         check: nonEmptyStringCheck
       },
       experimental: {
@@ -127,7 +145,7 @@
       },
       description: {
         may_overlay: true,
-        check: nonEmptyStringCheck
+        check: nonEmptyStringWithMaxLengthCheck(1024)
       },
       developer: {
         may_overlay: true,
@@ -147,9 +165,30 @@
           for (var k in x) {
             if (!x.hasOwnProperty(k)) continue;
             if (!k.match(/^[1-9][0-9]*$/)) errorThrow("invalid property name (must be a numeric pixel size): " + k);
-            if (typeof x[k] !== 'string') errorThrow(undefined, k);
-            if (x[k].indexOf('..') != -1) errorThrow(undefined, k);
+            if (x[k].indexOf("data:") != 0) {
+              try {
+                validPathCheck(x[k]);
+              } catch (e) {
+                e.path.unshift(k);
+                throw e;
+              }
+            }
           }
+        },
+        normalize: function(x) {
+          var numIcons = 0;
+          for (var k in x) {
+            if (!x.hasOwnProperty(k)) continue;
+            if (x[k].indexOf("data:") != 0) {
+              x[k] = normalizePath(x[k]);
+              if (x[k] == undefined) {
+                delete x[k];
+                continue;
+              }
+            }
+            numIcons++;
+          }
+          return numIcons !== 0 ? x : undefined;
         }
       },
       installs_allowed_from: {
@@ -186,15 +225,11 @@
       },
       launch_path: {
         may_overlay: true,
-        check: function (x) {
-          if (typeof x !== 'string' || x.indexOf("..") !== -1) errorThrow();
-        },
-        normalize: function(x) {
-          // XXX: can/should we do better normalization than this??
-          return ((x.length > 0) ? x : undefined);
-        }
+        check: validPathCheck,
+        normalize: normalizePath
       },
       locales: {
+        needs: [ "default_locale" ],
         check: function (l) {
           // XXX: we really need a robust parser for language tags
           // to do this correctly:
@@ -222,7 +257,7 @@
       name: {
         may_overlay: true,
         required: true,
-        check: nonEmptyStringCheck
+        check: nonEmptyStringWithMaxLengthCheck(128)
       },
       version: {
         required: false,
@@ -232,8 +267,12 @@
       widget: {
         // a path to an embeddable widget for display in a small iframe
         check: function (x) {
-          if (typeof x.path !== 'string') errorThrow(undefined, "path");
-          if (x.path.indexOf('/') !== 0) errorThrow("must start with '/'", "path");
+          try {
+            validPathCheck(x.path);
+          } catch (e) {
+            e.path.unshift("path");
+            throw e;
+          }
           if (x.width) {
             if (!isInteger(x.width)) errorThrow('must be an integer', "width");
             if (x.width < 10 || x.width > 1000) errorThrow('outside allowed range [10 - 1000]', "width");
@@ -250,9 +289,8 @@
           if (x.width) x.width = Math.floor(x.width);
           if (x.height) x.height = Math.floor(x.height);
 
-          // path normalization, we'll use the URLParse library as it will do nice
-          // thinks, like collapse dots.
-          x.path = URLParse("http://fake" + x.path).normalize().path;
+          // path normalization does nice things, like collapse dots.
+          x.path = normalizePath(x.path);
           return x;
         }
       }
@@ -275,6 +313,15 @@
         var pSpec = manfProps[prop];
         if (onlyOverlaidFields && !pSpec.may_overlay) {
           errorThrow('may not be overridded per-locale', prop);
+        }
+        if (pSpec.needs) {
+          for (var i = 0; i < pSpec.needs.length; i++) {
+            var dep = pSpec.needs[i];
+            console.log(dep + "needed");
+            if (manf[dep] === undefined) {
+              errorThrow("requires the presence of \"" + dep + "\"", prop);
+            }
+          }
         }
         if (typeof pSpec.check === 'function') {
           try {

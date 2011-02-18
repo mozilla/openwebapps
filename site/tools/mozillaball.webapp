@@ -1,8 +1,6 @@
 {
     "name":"MozillaBall",
-    "base_url": "https://mozillaball.mozillalabs.com/",
-    "launch_path": "",
-    "widget": {"path": "", "width": "250", "height": "100"},
+    "widget": {"path": "/", "width": "250", "height": "100"},
     "developer": {
         "name":"Mozilla Labs Demo",
         "url":"http://mozillalabs.com"
