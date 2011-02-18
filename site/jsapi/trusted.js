@@ -155,9 +155,10 @@
                 "as the application repository" ];
     }
 
-    chan.bind('list', function(t, args) {
+    chan.bind('list', function(t) {
         verifyMgmtPermission(t.origin);
-        return Repo.list();
+        t.delayReturn(true);
+        Repo.list(t.complete);
     });
 
     chan.bind('uninstall', function(t, origin) {
@@ -167,12 +168,14 @@
 
     chan.bind('loadState', function(t) {
         verifyMgmtPermission(t.origin);
-        return Repo.loadState(t.origin);
+        t.delayReturn(true);
+        Repo.loadState(t.origin, t.complete);
     });
 
     chan.bind('saveState', function(t, args) {
         verifyMgmtPermission(t.origin);
-        return Repo.saveState(t.origin, args.state);
+        t.delayReturn(true);
+        Repo.saveState(t.origin, args.state, t.complete);
     });
 
     chan.bind('loginStatus', function (t) {
