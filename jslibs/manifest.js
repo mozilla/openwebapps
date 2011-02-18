@@ -73,6 +73,14 @@
       if ((typeof x !== 'string') || x.length === 0) errorThrow();
     };
 
+    var nonEmptyStringWithMaxLength = function(maxLength) {
+      return function(x) {
+        nonEmptyStringCheck(x);
+        if (x.length > maxLength) errorThrow("Larger than maximum length (" + maxLength + ")");
+      };
+    };
+
+
     var stringCheck = function(x) {
       if (typeof x !== 'string') errorThrow();
     };
@@ -127,7 +135,7 @@
       },
       description: {
         may_overlay: true,
-        check: nonEmptyStringCheck
+        check: nonEmptyStringWithMaxLength(1024)
       },
       developer: {
         may_overlay: true,
@@ -222,7 +230,7 @@
       name: {
         may_overlay: true,
         required: true,
-        check: nonEmptyStringCheck
+        check: nonEmptyStringWithMaxLength(128)
       },
       version: {
         required: false,

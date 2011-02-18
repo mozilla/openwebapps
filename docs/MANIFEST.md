@@ -68,9 +68,9 @@ For a discussion of the security and privacy considerations around the applicati
 
 For detailed technical discussion of the manifest, please visit [the wiki](http://wiki.mozilla.org/Labs/Apps/Manifest).  Informally, the meanings of the fields are:
 
-* [**name**](http://wiki.mozilla.org/Labs/Apps/Manifest#name): A human-readable name for the application.
+* [**name**](http://wiki.mozilla.org/Labs/Apps/Manifest#name): A human-readable name for the application (maximum length is 128 characters).
 
-* [**description**](http://wiki.mozilla.org/Labs/Apps/Manifest#description): (optional) A human-readable description of the application.
+* [**description**](http://wiki.mozilla.org/Labs/Apps/Manifest#description): (optional) A human-readable description of the application  (maximum length is 1024 characters).
 
 * [**launch_path**](http://wiki.mozilla.org/Labs/Apps/Manifest#launch_path): (optional) The path within the application's origin which is loaded when an application starts.  If empty or not provided, the application's origin will be treated as the launch URL.
 
