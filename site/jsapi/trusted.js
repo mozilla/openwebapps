@@ -128,12 +128,15 @@
 
     /** Determines which applications are installed *for* the origin domain */
     chan.bind('amInstalled', function(t, args) {
-      return Repo.amInstalled(t.origin);
+        return Repo.amInstalled(t.origin);
     });
 
     /** Determines which applications were installed *by* the origin domain. */
     chan.bind('getInstalledBy', function(t, args) {
-        return Repo.getInstalledBy(t.origin);
+        t.delayReturn(true);
+        Repo.getInstalledBy(t.origin, function(v) {
+            t.complete(v);
+        });
     });
 
     /* Management APIs for dashboards live beneath here */

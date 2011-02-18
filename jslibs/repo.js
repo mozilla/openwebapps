@@ -137,17 +137,19 @@ Repo = (function() {
     }
 
     // Return all installations that were installed by the given origin domain
-    function getInstallsByOrigin(origin)
+    function getInstallsByOrigin(origin, cb)
     {
         var result = [];
 
         iterateApps(function(key, item) {
-            if (urlMatchesDomain(item.install_origin, origin)) {
-                result.push(item);
+            if (key != null && item != null) {
+                if (urlMatchesDomain(item.install_origin, origin)) {
+                    result.push(item);
+                }
+            } else {
+                cb(result);
             }
         });
-
-        return result;
     }
 
     function mayInstall(installOrigin, appOrigin, manifestToInstall)
@@ -290,8 +292,8 @@ Repo = (function() {
     };
 
     /** Determines which applications were installed by the origin domain. */
-    function getInstalledBy(origin) {
-        return getInstallsByOrigin(normalizeOrigin(origin));
+    function getInstalledBy(origin, cb) {
+        getInstallsByOrigin(normalizeOrigin(origin), cb);
     };
 
     /* Management APIs for dashboards live beneath here */
@@ -321,7 +323,7 @@ Repo = (function() {
         appStorage.get(origin, function(item) {
             if (!item)
                 throw [ "noSuchApplication", "no application exists with the origin: " + origin];
-                
+
             appStorage.remove(origin, function() {
                 // nothing to check
                 cb(true);
