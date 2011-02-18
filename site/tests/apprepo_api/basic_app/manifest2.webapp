@@ -1,5 +1,4 @@
 {
   "name": "Wild and Crazy Basic App",
-  "default_locale": "en",
   "installs_allowed_from": [ "*" ]
 }

@@ -7,6 +7,5 @@
     "description":"Got Mozilla on the Brain!?",
     "icons":{
         "128":"/icon.png"
-    },
-    "default_locale": "en"
+    }
 }
