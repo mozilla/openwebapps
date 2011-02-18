@@ -30,7 +30,9 @@ chrome.extension.onConnect.addListener(function(port) {
                     // start with mgmt routines
                 case 'list':
                     verifyMgmtAuthorized(origin);
-                    sendResponse(msg, Repo.list());
+                    Repo.list(function(v) {
+                        sendResponse(msg, v);
+                    });
                     break;
                 case 'setOrigin':
                     // this is our content script calling from an isolated
@@ -41,11 +43,15 @@ chrome.extension.onConnect.addListener(function(port) {
                     break;
                 case 'uninstall':
                     verifyMgmtAuthorized(origin);
-                    sendResponse(msg, Repo.uninstall(msg.args.id));
+                    Repo.uninstall(msg.args.id, function(v) {
+                        sendResponse(msg, v);
+                    });
                     break;
                 case 'loadState':
                     verifyMgmtAuthorized(origin);
-                    sendResponse(msg, Repo.loadState(origin));
+                    Repo.loadState(origin, function(v) {
+                        sendResponse(msg, v);
+                    });
                     break;
                 case 'launch':
                     verifyMgmtAuthorized(origin);
@@ -57,7 +63,9 @@ chrome.extension.onConnect.addListener(function(port) {
                     break;
                 case 'saveState':
                     verifyMgmtAuthorized(origin);
-                    sendResponse(msg, Repo.saveState(origin, msg.args));
+                    Repo.saveState(origin, msg.args, function(v) {
+                        sendResponse(msg, v);
+                    });
                     break;
                     // now routines for stores or apps
                 case 'install':
@@ -66,10 +74,14 @@ chrome.extension.onConnect.addListener(function(port) {
                     });
                     break;
                 case 'amInstalled':
-                    sendResponse(msg, Repo.amInstalled(origin));
+                    Repo.amInstalled(origin, function(v) {
+                        sendResponse(msg, v);
+                    });
                     break;
                 case 'getInstalledBy':
-                    sendResponse(msg, Repo.getInstalledBy(origin));
+                    Repo.getInstalledBy(origin, function(v) {
+                        sendResponse(msg, v);
+                    });
                     break;
                 }
             } catch (e) {

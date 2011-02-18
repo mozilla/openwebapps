@@ -36,120 +36,180 @@
  * ***** END LICENSE BLOCK ***** */
 
 function TypedStorage(browserStorage) {
-    var self = {};
-    browserStorage = browserStorage || window.localStorage;
-    self.open = function (objType) {
-        return TypedStorage.ObjectStore(browserStorage, objType, self);
-    };
-    EventMixin(self);
-    
-    var lastModified = null;
+  var self = {};
+  browserStorage = browserStorage || window.localStorage;
+  self.open = function (objType) {
+    return TypedStorage.ObjectStore(browserStorage, objType, self);
+  };
+  EventMixin(self);
 
-    self.setLastModified = function () {
-        // Danger of clobbering a change here?
-        lastModified = (new Date()).getTime();
-        browserStorage.setItem('typed-storage#last_modified', lastModified);
+  var lastModified = null;
+  var pollPeriod = 1000;
+  var timeoutId = null;
+
+  function changePoller() {
+    try {
+      var storeLastModified = browserStorage.getItem('typed-storage#last_modified');
+      if (storeLastModified) {
+        try {
+          storeLastModified = parseInt(storeLastModified);
+        } catch (e) {
+          storeLastModified = null;
+        }
+      } else {
+        storeLastModified = null;
+      }
+      if (storeLastModified && storeLastModified > lastModified) {
+        lastModified = storeLastModified;
+        self.dispatchEvent('multiplechange', {});
+      }
+    } finally {
+      timeoutId = setTimeout(changePoller, pollPeriod);
     };
-    
-    return self;
+  }
+
+  self.pollForChanges = function (period, types) {
+    if (lastModified === null) {
+      lastModified = (new Date()).getTime();
+    }
+    if (period) {
+      pollPeriod = period;
+    }
+    self.cancelPoll();
+    timeoutId = setTimeout(changePoller, 0);
+  };
+
+  self.cancelPoll = function () {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+  };
+
+  self.setLastModified = function () {
+    // Danger of clobbering a change here?
+    lastModified = (new Date()).getTime();
+    browserStorage.setItem('typed-storage#last_modified', lastModified);
+  };
+
+  self.addEventListener('addEventListener', function (event) {
+    // Automatically start polling for changes if multichange is
+    // being listened for
+    if (event.eventName == 'multiplechange' && ! timeoutId) {
+      self.pollForChanges();
+      // Technically the poll could be cancelled...
+      self.removeEventListener('addEventListener', arguments.callee);
+    }
+  });
+
+  return self;
 }
 
 TypedStorage.ObjectStore = function (storage, objType, typedStorage) {
-    var self = {};
-    self._storage = storage;
-    self._typedStorage = typedStorage;
-    self._objType = objType;
+  var self = {};
+  self._storage = storage;
+  self._typedStorage = typedStorage;
+  self._objType = objType;
 
-    //for a given user-supplied keystring, create a unique storage key "objType#keystring"
-    self.makeKey = function (rawKey) {
-        return (objType + "#" + rawKey);
-    };
+  //for a given user-supplied keystring, create a unique storage key "objType#keystring"
+  self.makeKey = function(rawKey) {
+    return (objType + "#" + rawKey);
+  };
 
-    //break the objType off of the front of the storage key, returning the user-supplied
-    // keystring, or null if the objType doesn't match
-    self.breakKey = function (madeKey) {
-        if (madeKey.indexOf(objType + "#") == 0) {
-            return madeKey.substring(madeKey.indexOf("#") + 1);
-        } else {
-            return null;
-        }
-    };
-
-    //retrieve the object or null stored with a specified key
-    self.get = function (key) {
-        return getObject(self._storage, self.makeKey(key));
-    };
-
-    //store and object under a specified key
-    self.put = function (key, value) {
-        self._typedStorage.dispatchEvent(
-            'change',
-            {target: key, storageType: self, eventType: 'change', value: value});
-        setObject(self._storage, self.makeKey(key), value);
-        self._typedStorage.setLastModified();
-    };
-
-    //remove the object at a specified key
-    self.remove = function (key) {
-        self._typedStorage.dispatchEvent(
-            'delete',
-            {target: key, eventType: 'delete', storageType: self});
-        self._storage.removeItem(self.makeKey(key));
-        self._typedStorage.setLastModified();
-    };
-
-    //remove all objects with our objType from the storage
-    self.clear = function () {
-        //possibly slow, but code reuse for the win
-        var allKeys = self.keys();
-        for (var i=0; i<allKeys.length; i++) {
-            self.remove(allKeys[i]);
-        }
-        self._typedStorage.setLastModified();
-    };
-
-    //do we have an object stored with key?
-    self.has = function (key) {
-        return (self.get(key) !== undefined);
-    };
-
-    //returns an array of all the keys with our objType
-    self.keys = function () {
-        var resultKeys = [];
-        var i;
-        for (i=0; i < self._storage.length; i++) {
-            var nextKey = self.breakKey(self._storage.key(i));
-            if (nextKey) {
-                resultKeys.push(nextKey);
-            }
-        }
-        return resultKeys;
-    };
-
-    //iterate through our objects, applying a callback
-    self.iterate = function (callback) {
-        var keys = self.keys();
-        for (var i=0; i < keys.length; i++) {
-            var result = callback(keys[i], self.get(keys[i]));
-            if (result === false) {
-                return;
-            }
-        }
-    };
-
-    function setObject(storage, key, value) {
-        storage.setItem(key, JSON.stringify(value));
+  //break the objType off of the front of the storage key, returning the user-supplied
+  // keystring, or null if the objType doesn't match
+  self.breakKey = function(madeKey) {
+    if (madeKey.indexOf(objType + "#") == 0) {
+      return madeKey.substring(madeKey.indexOf("#") + 1);
+    } else {
+      return null;
     }
+  };
 
-    function getObject(storage, key) {
-        var value = storage.getItem(key);
-        if (value) {
-            // FIXME: should this ignore parse errors?
-            return JSON.parse(value);
-        } else {
-            return undefined;
-        }
+  //retrieve the object or null stored with a specified key
+  self.get = function(key, cb) {
+    cb(getObject(self._storage, self.makeKey(key)));
+  };
+
+  //store and object under a specified key
+  self.put = function(key, value, cb) {
+    var canceled = ! self._typedStorage.dispatchEvent('change',
+      {target: key, storageType: self, eventType: 'change', value: value});
+    setObject(self._storage, self.makeKey(key), value);
+    self._typedStorage.setLastModified();
+    cb(true);
+  };
+
+  //remove the object at a specified key
+  self.remove = function(key, cb) {
+    var canceled = ! self._typedStorage.dispatchEvent('delete',
+        {target: key, eventType: 'delete', storageType: self});
+    if (! canceled) {
+      delete self._storage.removeItem(self.makeKey(key));
     }
+    self._typedStorage.setLastModified();
+    cb(true);
+  };
 
-    return self;
+  //remove all objects with our objType from the storage
+  self.clear = function(cb) {
+    //possibly slow, but code reuse for the win
+    var allKeys = self.keys();
+    for (var i=0; i<allKeys.length; i++) {
+      self.remove(allKeys[i]);
+    }
+    self._typedStorage.setLastModified();
+    cb(true);
+  };
+
+  //do we have an object stored with key?
+  self.has = function(key, cb) {
+    self.get(key, function(v) {
+      cb(v !== undefined);
+    });
+  };
+
+  //returns an array of all the keys with our objType
+  self.keys = function(cb) {
+    var resultKeys = [];
+    var i;
+    for (i=0; i < self._storage.length; i++) {
+      var nextKey = self.breakKey(self._storage.key(i));
+      if (nextKey) {
+        resultKeys.push(nextKey);
+      }
+    }
+    cb(resultKeys);
+  };
+
+  //iterate through our objects, applying a callback
+  self.iterate = function(cb) {
+      self.keys(function(keys) {
+          for (var i=0; i < keys.length; i++) {
+              self.get(keys[i], (function() {
+                  var _key = keys[i];
+                  return function(app) {
+                      var result = cb(_key, app);
+                  }
+              })());
+          }
+      });
+  };
+
+  function setObject(storage, key, value) {
+    storage.setItem(key, JSON.stringify(value));
+  }
+
+  function getObject(storage, key) {
+    var value = storage.getItem(key);
+    if (value) {
+      // FIXME: should this ignore parse errors?
+      return JSON.parse(value);
+    } else {
+      // FIXME: or normalize to null or undefined?
+      return undefined;
+    }
+  }
+
+  return self;
 };
