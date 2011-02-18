@@ -26,9 +26,9 @@ For a discussion of the security and privacy considerations around the applicati
       },
 
       "icons": {
-        "16": "icon-16.png",
-        "48": "icon-48.png",
-        "128": "icon-128.png"
+        "16": "/images/icon-16.png",
+        "48": "/images/icon-48.png",
+        "128": "/images/icon-128.png"
       },
 
       "developer": {
@@ -72,11 +72,11 @@ For detailed technical discussion of the manifest, please visit [the wiki](http:
 
 * [**description**](http://wiki.mozilla.org/Labs/Apps/Manifest#description): (optional) A human-readable description of the application  (maximum length is 1024 characters).
 
-* [**launch_path**](http://wiki.mozilla.org/Labs/Apps/Manifest#launch_path): (optional) The path within the application's origin which is loaded when an application starts.  If empty or not provided, the application's origin will be treated as the launch URL.
+* [**launch_path**](http://wiki.mozilla.org/Labs/Apps/Manifest#launch_path): (optional) The path within the application's origin which is loaded when an application starts.  If not provided, the application's origin will be treated as the launch URL.  See [Path Handling](#path-handling).
 
 * [**capabilities**](http://wiki.mozilla.org/Labs/Apps/Manifest#capabilities): (optional) an object which expresses advanced web browser capabilities desired by the application.  UAs with native support for openwebapps should prompt the user for permission to grant these capabilities at installation time.
 
-* [**icons**](http://wiki.mozilla.org/Labs/Apps/Manifest#icons): (optional) a map of icon sizes to URLs, which are interpreted relative to the base_url, which should contain square images suitable for use as application icons.  Data URLs are legal values in this object.
+* [**icons**](http://wiki.mozilla.org/Labs/Apps/Manifest#icons): (optional) a map of icon sizes to paths (may be [absolute paths](#path-handling), or data urls).  Each should contain square images which visually represent the application.
 
 * [**developer**](http://wiki.mozilla.org/Labs/Apps/Manifest#developer): (optional) information about the developer of the application, suitable for use in repository and dashboard UIs
 
@@ -94,11 +94,15 @@ For detailed technical discussion of the manifest, please visit [the wiki](http:
 
 * [**widget**](http://wiki.mozilla.org/Labs/Apps/Manifest#widget): (optional) An HTML document that is designed to be rendered inside an iframe to give users an abbreviated view of your app.
 
-    * [**path**](http://wiki.mozilla.org/Labs/Apps/Manifest#widget.path): (required) Must be an absolute path starting with '/', and will be concatenated to the application origin. 
+    * [**path**](http://wiki.mozilla.org/Labs/Apps/Manifest#widget.path): (required) The path to the widget.  See [Path Handling](#path-handling).
 
     * [**width**](http://wiki.mozilla.org/Labs/Apps/Manifest#widget.width): An integer between 10 and 1000 representing the desired rendered width of the widget.
 
     * [**height**](http://wiki.mozilla.org/Labs/Apps/Manifest#widget.width): An integer between 10 and 1000 representing the desired rendered height of the widget.
+
+#### Path Handling <a name="path-handling"></a>
+
+All fields which hold paths in the manifest must be absolute paths (i.e. '/images/myicon.png'), and are served from the same origin as the application.
 
 #### Serving Manifests
 

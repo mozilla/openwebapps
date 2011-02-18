@@ -73,13 +73,12 @@
       if ((typeof x !== 'string') || x.length === 0) errorThrow();
     };
 
-    var nonEmptyStringWithMaxLength = function(maxLength) {
+    var nonEmptyStringWithMaxLengthCheck = function(maxLength) {
       return function(x) {
         nonEmptyStringCheck(x);
         if (x.length > maxLength) errorThrow("Larger than maximum length (" + maxLength + ")");
       };
     };
-
 
     var stringCheck = function(x) {
       if (typeof x !== 'string') errorThrow();
@@ -87,6 +86,16 @@
 
     var isInteger = function(x) {
       return (typeof x === 'number' && Math.ceil(x) == Math.floor(x));
+    };
+
+    var validPathCheck = function(x) {
+      if (typeof x !== 'string') errorThrow();
+      if (x.indexOf('/') !== 0) errorThrow("must start with '/'");
+    };
+
+    var normalizePath = function(x) {
+      if (x.length === 0) return undefined;
+      return URLParse("http://x" + x).normalize().path;
     };
 
     // a table that specifies manfiest properties, and validation functions
@@ -136,7 +145,7 @@
       },
       description: {
         may_overlay: true,
-        check: nonEmptyStringWithMaxLength(1024)
+        check: nonEmptyStringWithMaxLengthCheck(1024)
       },
       developer: {
         may_overlay: true,
@@ -156,9 +165,30 @@
           for (var k in x) {
             if (!x.hasOwnProperty(k)) continue;
             if (!k.match(/^[1-9][0-9]*$/)) errorThrow("invalid property name (must be a numeric pixel size): " + k);
-            if (typeof x[k] !== 'string') errorThrow(undefined, k);
-            if (x[k].indexOf('..') != -1) errorThrow(undefined, k);
+            if (x[k].indexOf("data:") != 0) {
+              try {
+                validPathCheck(x[k]);
+              } catch (e) {
+                e.path.unshift(k);
+                throw e;
+              }
+            }
           }
+        },
+        normalize: function(x) {
+          var numIcons = 0;
+          for (var k in x) {
+            if (!x.hasOwnProperty(k)) continue;
+            if (x[k].indexOf("data:") != 0) {
+              x[k] = normalizePath(x[k]);
+              if (x[k] == undefined) {
+                delete x[k];
+                continue;
+              }
+            }
+            numIcons++;
+          }
+          return numIcons !== 0 ? x : undefined;
         }
       },
       installs_allowed_from: {
@@ -195,13 +225,8 @@
       },
       launch_path: {
         may_overlay: true,
-        check: function (x) {
-          if (typeof x !== 'string' || x.indexOf("..") !== -1) errorThrow();
-        },
-        normalize: function(x) {
-          // XXX: can/should we do better normalization than this??
-          return ((x.length > 0) ? x : undefined);
-        }
+        check: validPathCheck,
+        normalize: normalizePath
       },
       locales: {
         needs: [ "default_locale" ],
@@ -232,7 +257,7 @@
       name: {
         may_overlay: true,
         required: true,
-        check: nonEmptyStringWithMaxLength(128)
+        check: nonEmptyStringWithMaxLengthCheck(128)
       },
       version: {
         required: false,
@@ -242,8 +267,12 @@
       widget: {
         // a path to an embeddable widget for display in a small iframe
         check: function (x) {
-          if (typeof x.path !== 'string') errorThrow(undefined, "path");
-          if (x.path.indexOf('/') !== 0) errorThrow("must start with '/'", "path");
+          try {
+            validPathCheck(x.path);
+          } catch (e) {
+            e.path.unshift("path");
+            throw e;
+          }
           if (x.width) {
             if (!isInteger(x.width)) errorThrow('must be an integer', "width");
             if (x.width < 10 || x.width > 1000) errorThrow('outside allowed range [10 - 1000]', "width");
@@ -260,9 +289,8 @@
           if (x.width) x.width = Math.floor(x.width);
           if (x.height) x.height = Math.floor(x.height);
 
-          // path normalization, we'll use the URLParse library as it will do nice
-          // thinks, like collapse dots.
-          x.path = URLParse("http://fake" + x.path).normalize().path;
+          // path normalization does nice things, like collapse dots.
+          x.path = normalizePath(x.path);
           return x;
         }
       }

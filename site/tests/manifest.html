@@ -126,20 +126,18 @@ Error: (description) Larger than maximum length (1024)
 $ var m = {
 >   name: "SimplestPossibleManifest",
 >   description: "Well, not the simplest *possible*, really",
->   launch_path: "index.html",
+>   launch_path: "/index.html",
 >   default_locale: "en"
 > };
 > writeln(null !== Manifest.validate(m));
 true
 $ m.launch_path = "../index.html"; // not allowed!
 > Manifest.validate(m);
-Error: (launch_path) invalid value: ../index.html
+Error: (launch_path) must start with '/'
 $ m.launch_path = "/"; // meaningless?  normalization will handle this.
 > null !== Manifest.validate(m);
 true
-$ m.launch_path = ""; // will be removed
-> undefined === Manifest.validate(m).launch_path;
-$ m.launch_path = "foo/bar/index.html";
+$ m.launch_path = "/foo/../index.html";
 > Manifest.validate(m) !== null;
 true
 </pre>
@@ -174,20 +172,19 @@ true
 $ var m = {
 >   name: "SimplestPossibleManifest",
 >   icons: {
->     16:  "images/icon_16.png",
->     48:  "images/icon_48.png",
->     128: "images/icon_128.png"
->   },
->   default_locale: "en"
+>     16:  "/images/icon_16.png",
+>     48:  "/images/icon_48.png",
+>     128: "/images/icon_128.png"
+>   }
 > };
 > writeln(null !== Manifest.validate(m));
 true
-$ m.icons = { 16: "foo/../../outta_my_scope.png" };
+$ m.icons = { 16: "/foo/../../outta_my_scope.png" };
 > Manifest.validate(m);
-Error: (icons/16) invalid value: foo/../../outta_my_scope.png
+{icons: {16: "/outta_my_scope.png"}, name: "SimplestPossibleManifest"}
 $ m.icons = { };
-> writeln(null !== Manifest.validate(m));
-true
+> Manifest.validate(m);
+{name: "SimplestPossibleManifest"}
 $ m.icons["16"] = [ ];
 > Manifest.validate(m);
 Error: (icons/16) invalid value: 
