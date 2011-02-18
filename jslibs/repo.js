@@ -124,19 +124,7 @@ Repo = (function() {
         return false;
     }
 
-    // Return all installations that belong to the given origin domain
-    function appForOrigin(origin)
-    {
-        var rv = null;
-        iterateApps(function(key, item) {
-            if (applicationMatchesDomain(item.origin, origin)) {
-                rv = item;
-            }
-        });
-        return rv;
-    }
-
-    // Return all installations that were installed by the given origin domain
+    // Return all installations that were installed by the given origin
     function getInstallsByOrigin(origin, cb)
     {
         var result = [];
@@ -286,9 +274,21 @@ Repo = (function() {
         }
     };
 
-    /** Determines which applications are installed for the origin domain */
-    function amInstalled(origin) {
-        return appForOrigin(normalizeOrigin(origin));
+    /** Determines if an application is installed for the calling site */
+    function amInstalled(origin, cb) {
+        origin = normalizeOrigin(origin)
+        var done = false;
+        iterateApps(function(key, item) {
+            if (!done && item) {
+                if (applicationMatchesDomain(item.origin, origin)) {
+                    done = true;
+                    cb(item);
+                }
+            }
+            if (item == null && key == null && !done) {
+                cb(null);
+            }
+        });
     };
 
     /** Determines which applications were installed by the origin domain. */
