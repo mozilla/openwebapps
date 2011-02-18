@@ -321,13 +321,14 @@ Repo = (function() {
     function uninstall(origin, cb) {
         origin = normalizeOrigin(origin);
         appStorage.get(origin, function(item) {
-            if (!item)
-                throw [ "noSuchApplication", "no application exists with the origin: " + origin];
-
-            appStorage.remove(origin, function() {
-                // nothing to check
-                cb(true);
-            });
+            if (!item) {
+                cb({error: [ "noSuchApplication", "no application exists with the origin: " + origin ]});
+            } else {
+                appStorage.remove(origin, function() {
+                    // nothing to check
+                    cb(true);
+                });
+            }
         });
     };
 

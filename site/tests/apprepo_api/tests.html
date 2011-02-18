@@ -143,6 +143,20 @@ apps.mgmt.loadState({apps: ["are", "super", "awesome"], open: "web"})
 <h3>Install missing required arguments will throw</h3>
 
 <pre class="doctest">
+$ navigator.apps.mgmt.uninstall("http://not.really.installed", 
+>      Spy('uninstall/success', {wait: false, wrapArgs: true}),
+>      Spy('uninstall/failure', {wait: true, wrapArgs: true}));
+uninstall/failure({
+  code: "noSuchApplication",
+  message: "no application exists with the origin: http://not.really.installed"
+})
+</pre>
+</div>
+
+<div class="test">
+<h3>Install missing required arguments will throw</h3>
+
+<pre class="doctest">
 $ navigator.apps.install();
 Error: install missing required url argument
 </pre>

@@ -170,7 +170,15 @@
     chan.bind('uninstall', function(t, origin) {
         verifyMgmtPermission(t.origin);
         t.delayReturn(true);
-        Repo.uninstall(origin, t.complete);
+        Repo.uninstall(origin, function(r) {
+            if (r === true) {
+                t.complete(true);
+            } else if (typeof r.error === 'object' && typeof r.error.length === 'number' && r.error.length === 2) {
+                t.error(r.error[0], errorRepr(r.error[1]));
+            } else {
+                t.error("internalError", "unknown internal error during uninstall: " + errorRepr(r));
+            }
+        });
     });
 
     chan.bind('loadState', function(t) {
