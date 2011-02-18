@@ -35,7 +35,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 // Singleton instance of the Apps object:
-var gApps = null;
+var gApps = {};
 
 //the list filter string
 var gFilterString = "";
@@ -62,9 +62,7 @@ function saveDashboardState( callback ) {
 // I have chose base32, in particular Crockford's version.  It is found in js/base32.js
 
 function findInstallForID(appID32) {
-  for ( var i = 0; i < gApps.length; i++ ) {
-    if (gApps[i].id == decode(appID32)) return gApps[i];
-  }
+  return gApps[decode(appID32)];
   return null;
 }
 
@@ -190,8 +188,6 @@ function infoCold() {
 //************** document.ready()
 
 $(document).ready(function() {
-    //temporarily set the repository origin to localhost
-    navigator.apps.setRepoOrigin("..");
 
     $("#dock").droppable({ accept: ".dockItem", over: dragOver, out: dragOut,  
                         drop: function(event, ui) {
@@ -231,7 +227,7 @@ function updateDashboard( completionCallback ) {
     //both the app list and dashboard data functions are asynchronous, so we need to do everything in the cal
       navigator.apps.mgmt.list( function (listOfInstalledApps) {
           gApps = listOfInstalledApps;
-          gApps.sort( function(a,b) { return (a.name > b.name);  });
+//          gApps.sort( function(a,b) { return (a.name > b.name);  });
 
           //now, in the callback, load the dashboard state
           navigator.apps.mgmt.loadState( function (dashState) {
@@ -257,14 +253,18 @@ function updateDashboard( completionCallback ) {
 // launch the app into it.
 function makeOpenAppTabFn(id32)
 {
+  try {
     return function(evt) {
          if ($(this).hasClass("ui-draggable-dragged")) {
              $(this).removeClass("ui-draggable-dragged");
              return false;
          }
-
+        if (typeof console !== "undefined") console.log("trying to launch: " + decode(id32));
         navigator.apps.mgmt.launch(decode(id32));
     }
+  } catch (e) {
+      if (typeof console !== "undefined") console.log("error launching: " + e);
+  }
 }
 
 //here is where I cache the base32 version of the app id into the app
@@ -273,14 +273,15 @@ function renderList() {
   var appList = $("#list");
   $('.app').remove();
   
-  for ( var i = 0; i < gApps.length; i++ ) {
+//  for ( var i = 0; i < gApps.length; i++ ) {
+  for (origin in gApps) {
     try {
-      var install = gApps[i];
+      var install = gApps[origin];
       
       //BASE32 ENCODE HERE ONLY
-      if ( ! install.id32) { install.id32 = encode(install.id); };
+      if ( ! install.id32) { install.id32 = encode(install.origin); };
       
-      if (gFilterString.length == 0 || gFilterString == install.name.substr(0,gFilterString.length).toLowerCase() ) {
+      if (gFilterString.length == 0 || gFilterString == install.manifest.name.substr(0,gFilterString.length).toLowerCase() ) {
         var icon = createAppListItem(install);
         //check for no icon here, and supply a default one
         appList.append(icon);
@@ -302,7 +303,7 @@ function updateWidgets( )  {
         var widgetSpace = $("#widgets");
         
         //first, walk the list of apps, adding/removing any widgets that should be displayed, but aren't currently (enabled button was toggled, app was added, etc.)
-        gApps.forEach(function(install) {
+        for (install in gApps) {
             try {
               //does the app specify a widget?  if so, check to see if we already have one
               if (install.widgetURL) {      
@@ -345,7 +346,7 @@ function updateWidgets( )  {
           } catch (e) {
               if (typeof console !== "undefined") console.log("Error while creating widget for app : " + e);
           }
-        });
+        };
           
       //then, walk the list of widgets, and remove any that belong to apps that have been deleted
       
@@ -405,7 +406,7 @@ function updateDock()
 function getBigIcon(minifest) {
   //see if the minifest has any icons, and if so, return the largest one
   if (minifest.icons) {
-  //prefer 32
+  //prefer 64
     if (minifest.icons["64"]) return minifest.icons["64"];
     
     var bigSize = 0;
@@ -464,20 +465,19 @@ function createAppListItem(install)
 
 
   var clickyIcon = $("<div/>").addClass("icon");
-  var iconImg = getSmallIcon(install);
+  var iconImg = getSmallIcon(install.manifest);
 
 
 //this clips properly in  FF 3.6 , but not in 4
     clickyIcon.css({
-    "background-image": "url(\"" + iconImg + "\")",
+    "background-image": "url(\"" + install.origin + iconImg + "\")",
     "-moz-background-size": 32
     });
 
-//   appContainer.click(makeOpenAppTabFn(install.id));
   appContainer.append(clickyIcon);
 
   var appName = $("<div/>").addClass("listLabel glowy-blue-text");
-  appName.text(install.name);  
+  appName.text(install.manifest.name);  
   appName.disableSelection();
   
   appName.click(makeOpenAppTabFn(install.id32));
@@ -516,11 +516,11 @@ function createDockItem(appID32, existingDiv)  //if you pass in an existing div,
   dockContainer.attr("id", appID32);
   
   var clickyIcon = $("<div/>").addClass("dockIcon");
-  var iconImg = getBigIcon(installRecord);
+  var iconImg = getBigIcon(installRecord.manifest);
   
 //this clips the image properly in FF 3.6, but not in 4
   clickyIcon.css({
-    "background-image": "url(\"" + iconImg + "\")",
+    "background-image": "url(\"" + installRecord.origin + iconImg + "\")",
     "-moz-background-size": 64
     });
 
@@ -766,7 +766,7 @@ function createAppInfoPane(appID32) {
       var install = findInstallForID(appID32);
 
       var appIcon = $("<div/>").addClass("dockIcon");
-      var iconImg = getBigIcon(install);
+      var iconImg = getBigIcon(install.manifest);
       
     //this clips the image properly in FF 3.6, but not in 4
       appIcon.css({
@@ -822,131 +822,6 @@ function createAppInfoPane(appID32) {
 }
 
 
-
-// function renderAppInfo(selectedBox)
-// {
-//     $( "#" + getInfoId ).remove();
-// 
-//     // Set up Info starting location
-//     var info = document.createElement("div");
-//     info.id = getInfoId;
-//     info.className = getInfoId;
-// 
-//     var badge = elem("div", "appBadge");
-//     var appIcon = elem("div", "icon");
-// 
-//     var icon = getSmallIcon(gSelectedInstall);
-// 
-//     if (icon) {
-//         appIcon.setAttribute("style",
-//                              "background:url(\"" + icon + "\") no-repeat; background-size:100%");
-//     }
-// 
-//     $(appIcon).css("position", "absolute").css("top", -3).css("left", 9);
-// 
-//     var label = elem("div", "appBadgeName");
-//     label.appendChild(document.createTextNode(gSelectedInstall.name));
-// 
-//     badge.appendChild(appIcon);
-//     badge.appendChild(label);
-//     info.appendChild(badge);
-// 
-// 
-//     var off = $(selectedBox).offset();
-//     $(info).css("postion", "absolute").css("top", off.top + -4).css("left", off.left + -8);
-//     $(info).width(110).height(128).animate({
-//         width: 300,
-//         height: 320
-//     }, 200, function() {
-//         var data = elem("div", "appData");
-//         function makeColumn(label, value) {
-//             var boxDiv = elem("div", "appDataBox");
-//             var labelDiv = elem("div", "appDataLabel");
-//             var valueDiv = elem("div", "appDataValue");
-//             labelDiv.appendChild(document.createTextNode(label));
-//             if (typeof value == "string") {
-//                 valueDiv.appendChild(document.createTextNode(value));
-//             } else {
-//                 valueDiv.appendChild(value);
-//             }
-//             boxDiv.appendChild(labelDiv);
-//             boxDiv.appendChild(valueDiv);
-//             return boxDiv;
-//         }
-//         var dev = elem("div", "developerName");
-//         if (gSelectedInstall.developer) {
-//           if (gSelectedInstall.developer.url) {
-//             var a = elem("a");
-//             a.setAttribute("href", gSelectedInstall.developer.url);
-//             a.setAttribute("target", "_blank");
-//             a.appendChild(document.createTextNode(gSelectedInstall.developer.name));
-//             dev.appendChild(a);
-//             data.appendChild(dev);
-// 
-//             var linkbox = elem("div", "developerLink");
-//             a = elem("a");
-//             a.setAttribute("href", gSelectedInstall.developer.url);
-//             a.setAttribute("target", "_blank");
-//             a.appendChild(document.createTextNode(gSelectedInstall.developer.url));
-//             linkbox.appendChild(a);
-//             data.appendChild(linkbox);
-// 
-//           } else {
-//             if (gSelectedInstall.developer.name) {
-//                 dev.appendChild(document.createTextNode(gSelectedInstall.developer.name));
-//                 data.appendChild(dev);
-//             } else {
-//                 dev.appendChild(document.createTextNode("No developer info"));
-//                 $(dev).addClass("devUnknown");
-//                 data.appendChild(dev);
-//             }
-//           }
-//         }
-// 
-//         info.appendChild(data);
-// 
-//         var desc = elem("div", "desc");
-//         desc.appendChild(document.createTextNode(gSelectedInstall.description));
-//         info.appendChild(desc);
-// 
-//         var props = elem("div", "appProperties");
-// 
-//         props.appendChild(makeColumn("Install Date", formatDate(gSelectedInstall.installTime)));
-//         props.appendChild(makeColumn("Installed From", gSelectedInstall.installURL));
-// 
-//         info.appendChild(props);
-// 
-//         // finally, a delete link and action
-//         $("<div/>").text("Delete this application.").addClass("deleteText").appendTo(info).click(function() {
-//             navigator.apps.mgmt.remove(gSelectedInstall.id,
-//                                         function() {
-//                                                      retrieveInstalledApps();
-//                                                   });
-//             gSelectedInstall = null;
-//             gDisplayMode = ROOT;
-//             render();
-// 
-//             // let's now create a synthetic click to the document to cause the info dialog to get dismissed and
-//             // cleaned up properly
-//             $(document).click();
-// 
-//             return false;
-//         });
-// 
-//         $(info).click(function() {return false;});
-//     });
-// 
-//     $("body").append(info);
-// 
-//     // Dismiss box when user clicks anywhere else
-//     setTimeout( function() { // Delay for Mozilla
-//         $(document).click(function() {
-//             $(document).unbind('click');
-//             $(info).fadeOut(100, function() { $("#"+getInfoId).remove(); });
-//             return false;
-//         });
-//     }, 0);
-// }
 
 
 

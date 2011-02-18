@@ -745,7 +745,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
 
             for (var i = 0; i < _lastListResults.length; i++) {
                 if (_lastListResults[i].id === id) {
-                    window.open(_lastListResults[i].launchURL, "openwebapp_" + id);
+                    window.open(_lastListResults[i].origin + (_lastListResults[i].launchURL !== undefined? _lastListResults[i].launchURL : ""), "openwebapp_" + id);
                     if (onsuccess) setTimeout(function() { onsuccess(true); }, 0);
                     return;
                 }
