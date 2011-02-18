@@ -1,11 +1,10 @@
 {
-    "name":"MozillaBall",
-    "launch_path": "",
+    "name":"MozillaHead",
     "developer": {
         "name":"Mozilla Labs Demo",
         "url":"http://mozillalabs.com"
     },
-    "description":"Fast and furious Open Web development game play!\n\nScore points by implementing Open Web features.\n\nWin powerups by upgrading your JavaScript engine, adding security features, and hardware acceleration.",
+    "description":"Got Mozilla on the Brain!?",
     "icons":{
         "128":"/icon.png"
     },
