@@ -240,10 +240,9 @@ function displayInstallPrompt(installOrigin, appOrigin, manifest, isUpdate, clie
       if (!icon)
         icon = manifest.icons[last];
     }
+    if (icon.indexOf("data:") !== 0) icon = appOrigin + icon;
     document.getElementById("appicon").src = icon;
-
   }
-
 
   // now that the content is setup, message untrusted javascript to display us
   ClientBridge.showDialog();
