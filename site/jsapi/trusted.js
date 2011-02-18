@@ -169,7 +169,8 @@
 
     chan.bind('uninstall', function(t, origin) {
         verifyMgmtPermission(t.origin);
-        return Repo.uninstall(origin);
+        t.delayReturn(true);
+        Repo.uninstall(origin, t.complete);
     });
 
     chan.bind('loadState', function(t) {
