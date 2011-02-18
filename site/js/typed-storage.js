@@ -164,7 +164,9 @@ TypedStorage.ObjectStore = function (storage, objType, typedStorage) {
 
   //do we have an object stored with key?
   self.has = function(key, cb) {
-    cb(self.get(key) !== undefined);
+    self.get(key, function(v) {
+      cb(v !== undefined);
+    });
   };
 
   //returns an array of all the keys with our objType
