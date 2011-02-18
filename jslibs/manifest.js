@@ -275,7 +275,6 @@
               throw e;
             }
           }
-          
           if (x.width) {
             if (!isInteger(x.width)) errorThrow('must be an integer', "width");
             if (x.width < 10 || x.width > 1000) errorThrow('outside allowed range [10 - 1000]', "width");
@@ -293,7 +292,7 @@
           if (x.height) x.height = Math.floor(x.height);
 
           // path normalization does nice things, like collapse dots.
-          x.path = normalizePath(x.path);
+          if (x.path) x.path = normalizePath(x.path);
           return x;
         }
       }

@@ -269,7 +269,6 @@ function makeOpenAppTabFn(origin32)
              $(this).removeClass("ui-draggable-dragged");
              return false;
          }
-        if (typeof console !== "undefined") console.log("trying to launch: " + decode(origin32));
         navigator.apps.mgmt.launch(decode(origin32));
     }
   } catch (e) {
@@ -352,9 +351,6 @@ function updateWidgets( )  {
 
                   }
 
-              }
-              else {
-                  if (typeof console !== "undefined") console.log("no widget defined for app : " + gApps[app].manifest.name);
               }
               
           } catch (e) {
