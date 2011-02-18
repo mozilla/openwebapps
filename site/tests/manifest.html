@@ -33,19 +33,12 @@ true
 <pre class="doctest">
 $ writeln(null !== Manifest.validate({
 > }));
-Error: missing "default_locale" property
-</pre>
-
-<pre class="doctest">
-$ writeln(null !== Manifest.validate({
->   default_locale: "en"
-> }));
 Error: missing "name" property
 </pre>
 
+
 <pre class="doctest">
 $ writeln(null !== Manifest.validate({
->   default_locale: "en",
 >   name: "AManifestBooYah"
 > }));
 true
@@ -227,6 +220,14 @@ Error: (developer/url) invalid value: null
 <h3>Property: locales</h3>
 
 <pre class="doctest">
+$ var m = {
+>   name: "SimplestPossibleManifest",
+>   locales: {
+>     bg: { developer: { name: "Mozilla Labs, екстра!"} }
+>   }
+> };
+> writeln(null !== Manifest.validate(m));
+Error: (locales) requires the presence of "default_locale"
 $ var m = {
 >   name: "SimplestPossibleManifest",
 >   developer: {

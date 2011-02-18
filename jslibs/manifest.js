@@ -98,6 +98,8 @@
     //             in manifest as argument, and outputs a value to replace it.
     //  may_overlay: if present and hase a truey value, then this property may be overlaid by
     //               content in the locales map.
+    //  needs: expresses inter-field dependency.  an array of top level field names that become
+    //         required in the presence of the entry in which it appears.
     //
     // returning errors:
     //   validation functions throw objects with two fields:
@@ -127,7 +129,6 @@
         }
       },
       default_locale: {
-        required: true,
         check: nonEmptyStringCheck
       },
       experimental: {
@@ -203,6 +204,7 @@
         }
       },
       locales: {
+        needs: [ "default_locale" ],
         check: function (l) {
           // XXX: we really need a robust parser for language tags
           // to do this correctly:
@@ -283,6 +285,15 @@
         var pSpec = manfProps[prop];
         if (onlyOverlaidFields && !pSpec.may_overlay) {
           errorThrow('may not be overridded per-locale', prop);
+        }
+        if (pSpec.needs) {
+          for (var i = 0; i < pSpec.needs.length; i++) {
+            var dep = pSpec.needs[i];
+            console.log(dep + "needed");
+            if (manf[dep] === undefined) {
+              errorThrow("requires the presence of \"" + dep + "\"", prop);
+            }
+          }
         }
         if (typeof pSpec.check === 'function') {
           try {
