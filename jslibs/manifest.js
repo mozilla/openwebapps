@@ -267,12 +267,15 @@
       widget: {
         // a path to an embeddable widget for display in a small iframe
         check: function (x) {
-          try {
-            validPathCheck(x.path);
-          } catch (e) {
-            e.path.unshift("path");
-            throw e;
+          if (x.path) {
+            try {
+              validPathCheck(x.path);
+            } catch (e) {
+              e.path.unshift("path");
+              throw e;
+            }
           }
+          
           if (x.width) {
             if (!isInteger(x.width)) errorThrow('must be an integer', "width");
             if (x.width < 10 || x.width > 1000) errorThrow('outside allowed range [10 - 1000]', "width");

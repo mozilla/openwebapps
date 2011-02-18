@@ -8,6 +8,6 @@
     "icons":{
         "128":"/icon.png"
     },
-    "widget": {"path": "", "width": "250", "height": "100"},
+    "widget": { "width": 250, "height": 100},
     "default_locale": "en"
 }

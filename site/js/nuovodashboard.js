@@ -613,7 +613,7 @@ function createWidget(install, top, left, height, width, zIndex) {
     
     var clientFrame = $("<iframe id=\"" + install.origin32 + "client\" />").addClass("clientframe");
 
-    clientFrame.attr("src", install.manifest.widget.path);
+    clientFrame.attr("src", install.origin + install.manifest.widget.path);
     clientFrame.attr("scrolling", "no");
     
     clientFrame.css({
