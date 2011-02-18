@@ -281,7 +281,6 @@ $ // normalization test
 <pre class="doctest">
 $ var m = {
 >   name: "WidgetyManifest",
->   default_locale: "en",
 >   widget: {
 >     height: 100,
 >     width: 200,
@@ -294,15 +293,15 @@ $ delete m.widget.height; // height and width are optional
 > delete m.widget.width;
 > writeln(null !== Manifest.validate(m));
 true
-$ delete m.widget.path; // but path is required...
-> Manifest.validate(m);
-Error: (widget/path) invalid value: undefined
+$ delete m.widget.path; // path is not required...
+> writeln(null !== Manifest.validate(m));
+true
 $ m.widget.path = "needsslash.html"; // ...and must start with a slash
 > Manifest.validate(m);
 Error: (widget/path) must start with '/'
 $ m.widget.path = "/foo/../needsslash.html"; // ...but we'll normalize!
 > Manifest.validate(m);
-{default_locale: "en", name: "WidgetyManifest", widget: {path: "/needsslash.html"}}
+{name: "WidgetyManifest", widget: {path: "/needsslash.html"}}
 $ m.widget.width = "100"; // width must be a number...
 > Manifest.validate(m);
 Error: (widget/width) must be an integer
@@ -311,7 +310,7 @@ $ m.widget.width = 7777; // ... must be in range ...
 Error: (widget/width) outside allowed range [10 - 1000]
 $ m.widget.width = 100.00; // ... but we'll normalize!
 > Manifest.validate(m);
-{default_locale: "en", name: "WidgetyManifest", widget: {path: "/needsslash.html", width: 100}}
+{name: "WidgetyManifest", widget: {path: "/needsslash.html", width: 100}}
 $ m.widget.height = "100"; // height must be a number...
 > Manifest.validate(m);
 Error: (widget/height) must be an integer
@@ -320,10 +319,14 @@ $ m.widget.height = 7777; // ... must be in range ...
 Error: (widget/height) outside allowed range [10 - 1000]
 $ m.widget.height = 100.00; // ... but we'll normalize!
 > Manifest.validate(m);
-{default_locale: "en", name: "WidgetyManifest", widget: {height: 100, path: "/needsslash.html", width: 100}}
+{name: "WidgetyManifest", widget: {height: 100, path: "/needsslash.html", width: 100}}
 $ m.widget.speshul = "very"; // we allow props we don't understand 
 > writeln(null !== Manifest.validate(m));
 true
+$ m.widget = { }; // there are NO required args to widget.  wild.
+> Manifest.validate(m);
+{name: "WidgetyManifest", widget: {}}
+
 </pre>
 
 <h3>Bogus properties</h3>
