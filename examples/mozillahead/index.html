@@ -107,8 +107,8 @@ $(document).ready(function() {
                   onsuccess: function() {
                     $("#install_button").text("INSTALLED!").unbind('click');
                   },
-                  onerror: function(reason) {
-                    // FIXME: note the error somehow
+                  onerror: function(errObj) {
+                    alert("Couldn't install (" + errObj.code + ") " + errObj.message);
                   }
                 });
             });
