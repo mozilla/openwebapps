@@ -293,7 +293,7 @@
           if (x.height) x.height = Math.floor(x.height);
 
           // path normalization does nice things, like collapse dots.
-          x.path = normalizePath(x.path);
+          if (x.path) x.path = normalizePath(x.path);
           return x;
         }
       }

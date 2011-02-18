@@ -94,7 +94,7 @@ For detailed technical discussion of the manifest, please visit [the wiki](http:
 
 * [**widget**](http://wiki.mozilla.org/Labs/Apps/Manifest#widget): (optional) An HTML document that is designed to be rendered inside an iframe to give users an abbreviated view of your app.
 
-    * [**path**](http://wiki.mozilla.org/Labs/Apps/Manifest#widget.path): (required) The path to the widget.  See [Path Handling](#path-handling).
+    * [**path**](http://wiki.mozilla.org/Labs/Apps/Manifest#widget.path): The path to the widget.  See [Path Handling](#path-handling).  If not present, the widget URL will be assumed to be the same as the application origin.
 
     * [**width**](http://wiki.mozilla.org/Labs/Apps/Manifest#widget.width): An integer between 10 and 1000 representing the desired rendered width of the widget.
 
