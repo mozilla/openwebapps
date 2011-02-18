@@ -140,6 +140,20 @@ apps.mgmt.loadState({apps: ["are", "super", "awesome"], open: "web"})
 </div>
 
 <div class="test">
+<h3>Uninstall non-existant app should fail</h3>
+
+<pre class="doctest">
+$ navigator.apps.mgmt.uninstall("http://not.really.installed", 
+>      Spy('uninstall/success', {wait: false, wrapArgs: true}),
+>      Spy('uninstall/failure', {wait: true, wrapArgs: true}));
+uninstall/failure({
+  code: "noSuchApplication",
+  message: "no application exists with the origin: http://not.really.installed"
+})
+</pre>
+</div>
+
+<div class="test">
 <h3>Install missing required arguments will throw</h3>
 
 <pre class="doctest">
@@ -160,14 +174,14 @@ $ navigator.apps.install(
 apps.install()
 $ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true, wrapArgs: true}));
 apps.mgmt.list({
-  http://127.0.0.1:...: {
-    install_origin: "http://127.0.0.1:...",
+  http://...:...: {
+    install_origin: "http://...:...",
     install_time: ...,
     manifest: {
       installs_allowed_from: ["*"],
       name: "Super Crazy Basic App"
     },
-    origin: "http://127.0.0.1:..."
+    origin: "http://...:..."
   }
 })
 </pre>
@@ -185,14 +199,14 @@ $ navigator.apps.install(
 apps.install()
 $ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true, wrapArgs: true}));
 apps.mgmt.list({
-  http://127.0.0.1:...: {
-    install_origin: "http://127.0.0.1:...",
+  http://...:...: {
+    install_origin: "http://...:...",
     install_time: ...,
     manifest: {
       installs_allowed_from: ["*"],
       name: "Wild and Crazy Basic App"
     },
-    origin: "http://127.0.0.1:..."
+    origin: "http://...:..."
   }
 })
 </pre>
@@ -203,10 +217,10 @@ apps.mgmt.list({
 $ navigator.apps.getInstalledBy(Spy('apps.getInstalledBy', {wait: true}));
 apps.getInstalledBy([
   {
-    install_origin: "http://127.0.0.1:...",
+    install_origin: "http://...:...",
     install_time: ...,
     manifest: {installs_allowed_from: ["*"], name: "Wild and Crazy Basic App"},
-    origin: "http://127.0.0.1:..."
+    origin: "http://...:..."
   }
 ])
 </pre>
@@ -224,10 +238,10 @@ apps.amInstalled(null)
 $ var chan = embedIFrameAndStartChannel(SERVERS['basic_app'] + "/include.html");
 > chan.call(buildJSChanArgs("amInstalled", true));
 success({
-  install_origin: "http://127.0.0.1:...",
+  install_origin: "http://...:...",
   install_time: ...,
   manifest: {installs_allowed_from: ["*"], name: "Wild and Crazy Basic App"},
-  origin: "http://127.0.0.1:..."
+  origin: "http://...:..."
 })
 </pre>
 
@@ -242,7 +256,7 @@ $ navigator.apps.install(
 >    onsuccess: Spy('apps.install.success', {wait: false}),
 >    onerror: Spy('apps.install.error', {wait: true})
 >   });
-apps.install.error({code: "manifestParseError", message: "couldn't parse manifest JSON from http://127.0.0.1:.../manifest.webapp"})
+apps.install.error({code: "manifestParseError", message: "couldn't parse manifest JSON from http://...:.../manifest.webapp"})
 </pre>
 
 </div>
@@ -287,7 +301,7 @@ $ navigator.apps.install(
 >    onsuccess: Spy('apps.install.success', {wait: false}),
 >    onerror: Spy('apps.install.error', {wait: true})
 >   });
-apps.install.error({code: "permissionDenied", message: "origin 'http://127.0.0.1:...' may not install this app"})
+apps.install.error({code: "permissionDenied", message: "origin 'http://...:...' may not install this app"})
 </pre>
 
 </div>
@@ -313,19 +327,19 @@ $ hideIFrame(SERVERS['no_delegated_install']);
 > // now getInstalled should show that we're installed
 > chan.call(buildJSChanArgs("amInstalled", true));
 success({
-  install_origin: "http://127.0.0.1:...",
+  install_origin: "http://...:...",
   install_time: ...,
   manifest: {name: "An application which does not grant permission for any other origin to install it"},
-  origin: "http://127.0.0.1:..."
+  origin: "http://...:..."
 })
 $ // and getInstalledBy should show that same result
 > chan.call(buildJSChanArgs("getInstalledBy", true));
 success([
   {
-    install_origin: "http://127.0.0.1:...",
+    install_origin: "http://...:...",
     install_time: ...,
     manifest: {name: "An application which does not grant permission for any other origin to install it"},
-    origin: "http://127.0.0.1:..."
+    origin: "http://...:..."
   }
 ])
 </pre>
@@ -336,10 +350,10 @@ success([
 $ navigator.apps.getInstalledBy(Spy('apps.getInstalledBy', {wait: true}));
 apps.getInstalledBy([
   {
-    install_origin: "http://127.0.0.1:...",
+    install_origin: "http://...:...",
     install_time: ...,
     manifest: {installs_allowed_from: ["*"], name: "Wild and Crazy Basic App"},
-    origin: "http://127.0.0.1:..."
+    origin: "http://...:..."
   }
 ])
 </pre>
@@ -406,13 +420,13 @@ $ navigator.apps.mgmt.uninstall(SERVERS['basic_app']);
 > wait(100);
 $ navigator.apps.mgmt.list(Spy('list', {wait: true, wrapArgs: true}));
 list({
-  http://127.0.0.1:...: {
-    install_origin: "http://127.0.0.1:...",
+  http://...:...: {
+    install_origin: "http://...:...",
     install_time: ...,
     manifest: {
       name: "An application which does not grant permission for any other origin to install it"
     },
-    origin: "http://127.0.0.1:..."
+    origin: "http://...:..."
   }
 })
 </pre>

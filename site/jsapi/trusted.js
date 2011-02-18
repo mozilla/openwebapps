@@ -128,12 +128,18 @@
 
     /** Determines which applications are installed *for* the origin domain */
     chan.bind('amInstalled', function(t, args) {
-      return Repo.amInstalled(t.origin);
+        t.delayReturn(true);
+        Repo.amInstalled(t.origin, function(v) {
+            t.complete(v);
+        });
     });
 
     /** Determines which applications were installed *by* the origin domain. */
     chan.bind('getInstalledBy', function(t, args) {
-        return Repo.getInstalledBy(t.origin);
+        t.delayReturn(true);
+        Repo.getInstalledBy(t.origin, function(v) {
+            t.complete(v);
+        });
     });
 
     /* Management APIs for dashboards live beneath here */
@@ -155,24 +161,36 @@
                 "as the application repository" ];
     }
 
-    chan.bind('list', function(t, args) {
+    chan.bind('list', function(t) {
         verifyMgmtPermission(t.origin);
-        return Repo.list();
+        t.delayReturn(true);
+        Repo.list(t.complete);
     });
 
     chan.bind('uninstall', function(t, origin) {
         verifyMgmtPermission(t.origin);
-        return Repo.uninstall(origin);
+        t.delayReturn(true);
+        Repo.uninstall(origin, function(r) {
+            if (r === true) {
+                t.complete(true);
+            } else if (typeof r.error === 'object' && typeof r.error.length === 'number' && r.error.length === 2) {
+                t.error(r.error[0], errorRepr(r.error[1]));
+            } else {
+                t.error("internalError", "unknown internal error during uninstall: " + errorRepr(r));
+            }
+        });
     });
 
     chan.bind('loadState', function(t) {
         verifyMgmtPermission(t.origin);
-        return Repo.loadState(t.origin);
+        t.delayReturn(true);
+        Repo.loadState(t.origin, t.complete);
     });
 
     chan.bind('saveState', function(t, args) {
         verifyMgmtPermission(t.origin);
-        return Repo.saveState(t.origin, args.state);
+        t.delayReturn(true);
+        Repo.saveState(t.origin, args.state, t.complete);
     });
 
     chan.bind('loginStatus', function (t) {
