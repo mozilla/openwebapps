@@ -153,7 +153,7 @@ function createServer(port) {
           var mimeType = exts[ext] || "application/octet-stream";
 
           data = data.replace(/https?:\/\/(stage\.)?myapps\.mozillalabs\.com/ig,
-                              "http://127.0.0.1:" + PRIMARY_PORT);
+                              "http://" + PRIMARY_HOST + ":" + PRIMARY_PORT);
 
           response.writeHead(200, {"Content-Type": mimeType});
           response.write(data, "binary");
@@ -191,7 +191,7 @@ function createServer(port) {
       serveFileIndex(filename);
     }
   });
-  myserver.listen(port, "localhost");
+  myserver.listen(port, PRIMARY_HOST);
   return myserver;
 };
 
@@ -226,6 +226,19 @@ console.log("Starting test apps:");
 // be the place from which tests are run, and it's the repository host
 // for the purposes of testing.
 var PRIMARY_PORT = 60172;
+
+// The interface address to bind, and will appear in all urls
+var PRIMARY_HOST = "127.0.0.1";
+
+// extract '-ip' argument if present
+for (var i = 0; i < process.argv.length; i++) {
+  if (process.argv[i] === "-ip" && i < process.argv.length) {
+    PRIMARY_HOST = process.argv[i+1];
+    break;
+  }
+}
+
+
 boundServers.push({
   name: "_primary",
   server: createServer(PRIMARY_PORT)
