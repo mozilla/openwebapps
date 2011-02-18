@@ -92,18 +92,17 @@ function ObjectStore(objType)
 ObjectStore.prototype = {
     get: function(key, cb)
     {
-        let value;
-        let returned = false;
         let getStatement = this._dbConn.createStatement(
-            "SELECT data FROM " + this._objType + " WHERE key = :key"
+            "SELECT data FROM " + this._objType + " WHERE key = :key LIMIT 1"
         );
         getStatement.params.key = key;
         getStatement.executeAsync({
             handleResult: function(result) {
-                value = result.getNextRow();
+                let value = result.getNextRow();
                 if (value) {
                     cb(JSON.parse(value.getResultByName("data")));
-                    returned = true;
+                } else {
+                    cb(undefined);
                 }
             },
             handleError: function(error) {
@@ -114,10 +113,9 @@ ObjectStore.prototype = {
                 );
             },
             handleCompletion: function(reason) {
+                getStatement.reset();
                 if (reason != Ci.mozIStorageStatementCallback.REASON_FINISHED)
                     console.log("Get query canceled or aborted! " + reason);
-                else if (returned === false)
-                    cb(undefined);
             }
         });
     },
@@ -130,51 +128,14 @@ ObjectStore.prototype = {
         );
         setStatement.params.key = key;
         setStatement.params.data = JSON.stringify(value);
-        
-        setStatement.executeAsync({
-            handleResult: function(result) {
-                
-            },
-            handleError: function(error) {
-                console.log(
-                    "Error while updating table " + this._objType + ": " + error
-                    + "; " + this._dbConn.lastErrorString
-                    + " (" + this._dbConn.lastError + ")"
-                );
-            },
-            handleCompletion: function(reason) {
-                if (reason != Ci.mozIStorageStatementCallback.REASON_FINISHED)
-                    console.log("Put query canceled or aborted! " + reason);
-                else
-                    cb(true);
-            }
-        });
+        this._doAsyncExecute(setStatement, cb);
     },
     
     remove: function(key, cb) {
         let removeStatement = this._dbConn.createStatement(
             "DELETE FROM " + this._objType + " WHERE key = :key"
         );
-        
-        removeStatement.params.key = key;
-        removeStatement.executeAsync({
-            handleResult: function(result) {
-                
-            },
-            handleError: function(error) {
-                console.log(
-                    "Error while removing value from " + this._objType + ": " + error
-                    + "; " + this._dbConn.lastErrorString
-                    + " (" + this._dbConn.lastError + ")"
-                );
-            },
-            handleCompletion: function(reason) {
-                if (reason != Ci.mozIStorageStatementCallback.REASON_FINISHED)
-                    console.log("Remove query canceled or aborted! " + reason);
-                else
-                    cb(true);
-            }
-        });
+        this._doAsyncExecute(removeStatement, cb);
     },
     
     clear: function(cb)
@@ -182,25 +143,7 @@ ObjectStore.prototype = {
         let clearStatement = this._dbConn.createStatement(
             "DELETE FROM " + this._objType
         );
-        
-        clearStatement.executeAsync({
-            handleResult: function(result) {
-                
-            },
-            handleError: function(error) {
-                console.log(
-                    "Error while clearing values from " + this._objType + ": " + error
-                    + "; " + this._dbConn.lastErrorString
-                    + " (" + this._dbConn.lastError + ")"
-                );
-            },
-            handleCompletion: function(reason) {
-                if (reason != Ci.mozIStorageStatementCallback.REASON_FINISHED)
-                    console.log("Clear query canceled or aborted! " + reason);
-                else
-                    cb(true);
-            }
-        });
+        this._doAsyncExecute(clearStatement, cb);
     },
     
     has: function(key, cb)
@@ -219,7 +162,8 @@ ObjectStore.prototype = {
         
         keyStatement.executeAsync({
             handleResult: function(result) {
-                for (let row = result.getNextRow(); row; row = result.getNextRow()) {
+                let row;
+                while ((row = result.getNextRow())) {
                     resultKeys.push(row.getResultByName("key"));
                 }
             },
@@ -231,6 +175,7 @@ ObjectStore.prototype = {
                 );
             },
             handleCompletion: function(reason) {
+                keyStatement.reset();
                 if (reason != Ci.mozIStorageStatementCallback.REASON_FINISHED)
                     console.log("Keys query canceled or aborted! " + reason);
                 else
@@ -249,6 +194,29 @@ ObjectStore.prototype = {
                     if (result === false)
                         return;
                 });
+            }
+        });
+    },
+    
+    // Helper function for async execute with no results
+    _doAsyncExecute: function(statement, cb) {
+        statement.executeAsync({
+            handleResult: function(result) {
+            },
+            handleError: function(error) {
+                console.log(
+                    "Error while executing " + statement +
+                    "on" + this._objType + ": " + error
+                    + "; " + this._dbConn.lastErrorString
+                    + " (" + this._dbConn.lastError + ")"
+                );
+            },
+            handleCompletion: function(reason) {
+                statement.reset();
+                if (reason != Ci.mozIStorageStatementCallback.REASON_FINISHED)
+                    console.log("Clear query canceled or aborted! " + reason);
+                else
+                    cb(true);
             }
         });
     }

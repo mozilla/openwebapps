@@ -325,8 +325,8 @@ Repo = (function() {
                 cb({error: [ "noSuchApplication", "no application exists with the origin: " + origin ]});
             } else {
                 appStorage.remove(origin, function() {
-                    // nothing to check
-                    cb(true);
+                    if (cb && typeof(cb) == "function")
+                        cb(true);
                 });
             }
         });
