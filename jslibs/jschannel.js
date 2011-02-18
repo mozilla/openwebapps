@@ -82,11 +82,11 @@
         delete s_boundChans[origin][scope];
         // possibly leave a empty object around.  whatevs.
     }
-    
+
     function s_isArray(obj) {
       if (Array.isArray) return Array.isArray(obj);
       else {
-        return (Object.prototype.toString(obj) === "[object Array]");
+        return (obj.constructor.toString().indexOf("Array") != -1);
       }
     }
 
@@ -315,7 +315,7 @@
                         try {
                             // callback handling.  we'll magically create functions inside the parameter list for each
                             // callback
-                            if (m.callbacks && m.callbacks instanceof Array && m.callbacks.length > 0) {
+                            if (m.callbacks && s_isArray(m.callbacks) && m.callbacks.length > 0) {
                                 for (var i = 0; i < m.callbacks.length; i++) {
                                     var path = m.callbacks[i];
                                     var obj = m.params;
@@ -345,7 +345,7 @@
                             } else if (typeof e === 'object') {
                                 // either an array or an object
                                 // * if its an array of length two, then  array[0] is the code, array[1] is the error message
-                                if (e && s_isArray(e) && e.length == 2) { // e instanceof Array && e.length == 2) {
+                                if (e && s_isArray(e) && e.length == 2) {
                                     error = e[0];
                                     message = e[1];
                                 }

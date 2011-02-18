@@ -33,18 +33,18 @@
  * ***** END LICENSE BLOCK ***** */
 
 /**
-  2010-07-14
-  First version of app client code
-  -Michael Hanson. Mozilla
+   2010-07-14
+   First version of app client code
+   -Michael Hanson. Mozilla
 
-  2010-10-29
-  Major revision of app client code, using jschannel for cross
-  document communication.
-  -Lloyd Hilaiel. Mozilla
+   2010-10-29
+   Major revision of app client code, using jschannel for cross
+   document communication.
+   -Lloyd Hilaiel. Mozilla
 **/
 
 // inject into navigator.apps if it doesn't exist
-if (!navigator.apps) navigator.apps = {};
+    if (!navigator.apps) navigator.apps = {};
 
 // inject if navigator.apps.install isn't defined or if
 // navigator.apps.html5Implementation is true  (this latter check
@@ -102,6 +102,13 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
             function s_removeBoundChan(origin, scope) {
                 delete s_boundChans[origin][scope];
                 // possibly leave a empty object around.  whatevs.
+            }
+
+            function s_isArray(obj) {
+                if (Array.isArray) return Array.isArray(obj);
+                else {
+                    return (obj.constructor.toString().indexOf("Array") != -1);
+                }
             }
 
             // No two outstanding outbound messages may have the same id, period.  Given that, a single table
@@ -174,6 +181,9 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
              *                prepended to message names.  local and remote endpoints
              *                of a single channel must agree upon scope. Scope may
              *                not contain double colons ('::').
+             *   cfg.debugOutput - A boolean value.  If true and window.console.log is
+             *                a function, then debug strings will be emitted to that
+             *                function.
              *   cfg.debugOutput - A boolean value.  If true and window.console.log is
              *                a function, then debug strings will be emitted to that
              *                function.
@@ -326,7 +336,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
                                 try {
                                     // callback handling.  we'll magically create functions inside the parameter list for each
                                     // callback
-                                    if (m.callbacks && m.callbacks instanceof Array && m.callbacks.length > 0) {
+                                    if (m.callbacks && s_isArray(m.callbacks) && m.callbacks.length > 0) {
                                         for (var i = 0; i < m.callbacks.length; i++) {
                                             var path = m.callbacks[i];
                                             var obj = m.params;
@@ -356,7 +366,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
                                     } else if (typeof e === 'object') {
                                         // either an array or an object
                                         // * if its an array of length two, then  array[0] is the code, array[1] is the error message
-                                        if (e && e instanceof Array && e.length == 2) {
+                                        if (e && s_isArray(e) && e.length == 2) {
                                             error = e[0];
                                             message = e[1];
                                         }
@@ -395,9 +405,10 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
                             } else {
                                 // XXX: what if client code raises an exception here?
                                 if (m.error) {
-                                    outTbl[m.id].error(m.error, m.message);
+                                    (1,outTbl[m.id].error)(m.error, m.message);
                                 } else {
-                                    outTbl[m.id].success(m.result);
+                                    if (m.result !== undefined) (1,outTbl[m.id].success)(m.result);
+                                    else (1,outTbl[m.id].success)();
                                 }
                                 delete outTbl[m.id];
                                 delete s_transIds[m.id];
