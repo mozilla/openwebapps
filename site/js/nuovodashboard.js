@@ -317,7 +317,7 @@ function updateWidgets( )  {
         for (app in gApps) {
             try {
               //does the app specify a widget?  if so, check to see if we already have one
-              if (gApps[app].manifest && gApps[app].manifest.widgetURL) {      
+              if (gApps[app].manifest && gApps[app].manifest.widget) {      
                   var existingWidget = widgetSpace.children( "#" + gApps[app].origin32 );
                   
                   if (existingWidget[0]) {
@@ -334,8 +334,8 @@ function updateWidgets( )  {
                             // the widget the first time.  from then on, we use the outer frame as the thing to measure the size of
                             gDashboardState.widgetPositions[gApps[app].origin32] = {"top": 0,
                                                                             "left": 0, 
-                                                                            "height": ((gApps[app].manifest.widgetHeight ? gApps[app].manifest.widgetHeight : 120) + 16),
-                                                                            "width": ((gApps[app].manifest.widgetWidth ? gApps[app].manifest.widgetWidth : 200) + 16),
+                                                                            "height": ((gApps[app].manifest.widget.height ? gApps[app].manifest.widget.height : 120) + 16),
+                                                                            "width": ((gApps[app].manifest.widget.width ? gApps[app].manifest.widget.width : 200) + 16),
                                                                             "zIndex" : 0
                                                                              };
                             //save state, since we added something
@@ -613,7 +613,7 @@ function createWidget(install, top, left, height, width, zIndex) {
     
     var clientFrame = $("<iframe id=\"" + install.origin32 + "client\" />").addClass("clientframe");
 
-    clientFrame.attr("src", install.manifest.widgetURL);
+    clientFrame.attr("src", install.manifest.widget.path);
     clientFrame.attr("scrolling", "no");
     
     clientFrame.css({
@@ -686,6 +686,7 @@ function removeWidget(origin32) {
 
 
 function toggleWidgetVisibility(origin32) {
+  if (!gDashboardState.widgetPositions[origin32]) return;
   if (gDashboardState.widgetPositions[origin32].disabled) {
     delete gDashboardState.widgetPositions[origin32].disabled;
   } else {
@@ -836,10 +837,12 @@ function createAppInfoPane(origin32) {
                                                                                                   hideModal('modalPage')}  )  });
       infoBox.append(delButton);
       
-      var widgetButton = $("<div/>").addClass("widgetToggleButton glowy-red-text");
-      widgetButton.text("WIDGET");
-      widgetButton.click( function() { toggleWidgetVisibility(install.origin32); updateWidgets(); });
-      infoBox.append(widgetButton);
+      if (install.manifest.widget) {
+        var widgetButton = $("<div/>").addClass("widgetToggleButton glowy-red-text");
+        widgetButton.text("WIDGET");
+        widgetButton.click( function() { toggleWidgetVisibility(install.origin32); updateWidgets(); });
+        infoBox.append(widgetButton);
+      }
 
       return infoBox;
 }
