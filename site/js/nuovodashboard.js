@@ -297,7 +297,7 @@ function renderList() {
         appList.append(icon);
       }
     } catch (e) {
-      if (typeof console !== "undefined") console.log("Error while creating list icon for app " + i + ": " + e);
+      if (typeof console !== "undefined") console.log("Error while creating list icon for app " + origin + ": " + e);
     }
   }
 }
@@ -478,13 +478,8 @@ function createAppListItem(install)
 
   var clickyIcon = $("<div/>").addClass("icon");
   var iconImg = getSmallIcon(install.manifest);
-
-
-//this clips properly in  FF 3.6 , but not in 4
-    clickyIcon.css({
-    "background-image": "url(\"" + install.origin + iconImg + "\")",
-    "-moz-background-size": 32
-    });
+    
+  clickyIcon.append($('<img width="32" height="32"/>').attr('src', install.origin + iconImg));
 
   appContainer.append(clickyIcon);
 
@@ -530,11 +525,7 @@ function createDockItem(origin32, existingDiv)  //if you pass in an existing div
   var clickyIcon = $("<div/>").addClass("dockIcon");
   var iconImg = getBigIcon(installRecord.manifest);
   
-//this clips the image properly in FF 3.6, but not in 4
-  clickyIcon.css({
-    "background-image": "url(\"" + installRecord.origin + iconImg + "\")",
-    "-moz-background-size": 64
-    });
+  clickyIcon.append($('<img width="64" height="64"/>').attr('src', installRecord.origin + iconImg));
 
   dockContainer.click(makeOpenAppTabFn(origin32));
   dockContainer.append(clickyIcon);

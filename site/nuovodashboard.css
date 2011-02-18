@@ -259,8 +259,6 @@ body {
 	width: 32px;
 	height: 32px;
 
-	background-image: url('img/default-icon.png');
-
 	-moz-border-radius: 4px;
 	-webkit-border-radius: 4px;
 	border-radius: 4px;
@@ -281,6 +279,7 @@ body {
 		rgba(0, 0, 0, 0.1) 0px 2px 12px,
 		rgba(0, 0, 0, 0.5) 0px 2px 1px;
 
+    background-color: rgba(150,230,255,0.5);
 }
 
 .dockIcon {
@@ -307,6 +306,8 @@ body {
 		inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
 		rgba(0, 0, 0, 0.1) 0px 2px 12px,
 		rgba(0, 0, 0, 0.5) 0px 2px 1px;
+
+    background-color: rgba(140,255,210,0.5);
 
 }
 
