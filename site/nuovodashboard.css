@@ -20,9 +20,11 @@ html {
 }
 
 body {
+/*
 	font-family: Tahoma, sans-serif !important;
+*/
 	background: rgba(25,25,35,1);
-	font-size:13px;
+	font-size:14px;
 }
 
 @font-face{
@@ -117,6 +119,25 @@ body {
 
   cursor:default;
 }
+
+.glowy-green-text {
+	font-family: 'Museo';
+	color: rgba(170, 255, 200 , 0.65);
+  background-color: rgba(0,0,0,0);
+
+  -moz-text-shadow: 
+		rgba(100, 255, 120,  0.75) 0 0 12px,
+		rgba(100, 255, 120, 1) 0 0 4px;
+	-webkit-text-shadow:
+		rgba(100, 255, 120, 0.75) 0 0 12px,
+		rgba(100, 255, 120, 1) 0 0 4px;
+	text-shadow:
+		rgba(100, 255, 120, 0.75) 0 0 12px,
+		rgba(100, 255, 120, 1) 0 0 4px;
+
+  cursor:default;
+}
+
 
 /* ---------------------------  */
 /* ------- HEADER -------  */
@@ -215,7 +236,7 @@ body {
   margin-right: 8px;
 }
 
-.hot {
+.clearButtonHot {
   margin-right: 6px;
   margin-top: 6px;
 
@@ -223,7 +244,7 @@ body {
  	width: 30px;
 }
 
-.infohot {
+.infoButtonHot {
   margin-right: 6px;
   margin-top: -1px;
 
@@ -333,6 +354,9 @@ body {
 
 }
 
+
+/* modal dialog stuff here */
+
 .app {
   position: relative;
 	margin-left: 8px;
@@ -350,8 +374,11 @@ body {
 }
 
 .labelBox {
-      width: 220px;
-      padding-left: 76px;
+      position: absolute;
+      top: 12px;
+      left: 80px;
+      float: right;
+      width: 150px;
       }
       
 .infoLabel {
@@ -375,26 +402,38 @@ body {
       overflow: hidden;
 }
 
+
+
 .deleteAppButton {
-      padding-top: 30px;
-      padding-left: 20px;
-      width: 85px;
-      height: 30px;
+      text-align: center;
+      padding-top: 8px;
+      margin-top: 24px;
+      margin-left: 8px;
+      margin-bottom: 4px;
+      
+      width: 100px;
+      height: 24px;
       float: left;
 }
 
 .widgetToggleButton {
-      padding-top: 30px;
-      padding-right: 20px;
-      width: 85px;
-      height: 30px;
+      text-align: center;
+      padding-top: 8px;
+      margin-top: 24px;
+      margin-right: 8px;
+      margin-bottom: 4px;
+      
+      width: 100px;
+      height: 24px;
       float: right;
-      text-align: right;
 }
 
+.modalButtonHot
+{
+      padding-top:5px;
+    	font-size:20px;
+}
 
-
-/* modal dialog stuff here */
 
 #modalPage
 {
@@ -424,3 +463,4 @@ body {
     height: 240px;
     padding: 10px;
 }
+

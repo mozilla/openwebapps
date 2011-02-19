@@ -60,7 +60,6 @@ function saveDashboardState( callback ) {
 
 function findInstallForID(origin32) {
   return gApps[decode(origin32)];
-  return null;
 }
 
 
@@ -158,21 +157,17 @@ function removeAppFromDock(removedOrigin32) {
           curApp = gDashboardState.appsInDock[i];
           
           //clean out this app, and also any other cruft we find
-          if ( (removedOrigin32 != curApp)  && ( findInstallForID(curApp)  ) ) {
-             newDockList.push[curApp];          
+          if ( (removedOrigin32 != curApp)  && (findInstallForID(curApp) ) ) {
+             newDockList.push(curApp);          
            };
     };
+      
+      if (typeof console !== "undefined") console.log("new dock list: " + newDockList);
+
     gDashboardState.appsInDock = newDockList;
 };
 
 
-function buttonHot() {
-  $(this).addClass("hot");
-};
-
-function buttonCold() {
-  $(this).removeClass("hot");
-};
 
 function infoHot() {
   $(this).addClass("infohot");
@@ -192,15 +187,15 @@ $(document).ready(function() {
                         drop: function(event, ui) {
                           gOverDock = false;
                           removePlaceholder();
-                          var newAppInDock = createDockItem(ui.draggable.context.id);
+                          var newAppInDock = createDockItem(ui.draggable.context.id, ui.helper);
                           insertAppInDock(newAppInDock, event);
                         }
                    });
  
  
   $("#clearButton").click( function() { gFilterString = ""; $("#filter").attr("value", gFilterString); renderList(); });
-  $("#clearButton").mouseenter(buttonHot).mouseleave(buttonCold);
-  
+  $("#clearButton").mouseenter(function() { $("#clearButton").addClass("clearButtonHot") }).mouseleave(function() {$("#clearButton").removeClass("clearButtonHot") });
+
   // can this user use myapps?
    var w = window;
    if (w.JSON && w.postMessage) {
@@ -473,7 +468,7 @@ function createAppListItem(install)
   appContainer.append(infoButton);
   
   infoButton.click( function() {showAppInfo(install.origin32); });
-  infoButton.mouseenter(infoHot).mouseleave(infoCold);
+  infoButton.mouseenter(function() { infoButton.addClass("infoButtonHot") }).mouseleave(function() {infoButton.removeClass("infoButtonHot") });
 
 
   var clickyIcon = $("<div/>").addClass("icon");
@@ -671,15 +666,24 @@ function removeWidget(origin32) {
       $(" #widgets > #" + origin32).remove();
 };
 
+function isWidgetVisible(origin32) {
+  if (!gDashboardState.widgetPositions[origin32] || gDashboardState.widgetPositions[origin32].disabled) return false;
+  return true;
+  }
+  
 
 function toggleWidgetVisibility(origin32) {
-  if (!gDashboardState.widgetPositions[origin32]) return;
+  var isOn = false;
+  if (!gDashboardState.widgetPositions[origin32]) return isOn;
   if (gDashboardState.widgetPositions[origin32].disabled) {
     delete gDashboardState.widgetPositions[origin32].disabled;
+    isOn = true;
   } else {
     gDashboardState.widgetPositions[origin32].disabled = "YES";
+    isOn = false
   }
   saveDashboardState();
+  return isOn;
 };
 
 
@@ -776,15 +780,9 @@ function createAppInfoPane(origin32) {
       var infoBox = $("<div/>").addClass("appinfobox");
       var install = findInstallForID(origin32);
 
-      var appIcon = $("<div/>").addClass("dockIcon");
-      var iconImg = getBigIcon(install.manifest);
-      
-    //this clips the image properly in FF 3.6, but not in 4
-      appIcon.css({
-        "background-image": "url(\"" + iconImg + "\")",
-        "-moz-background-size": 64,
-        "float" : "left"
-        });
+      var appIcon = $('<div width="64" height="64"/>').addClass("dockIcon");
+      var iconImg = getBigIcon(install.manifest);        
+      appIcon.append($('<img width="64" height="64"/>').attr('src', install.origin + iconImg));
       infoBox.append(appIcon);
       
       
@@ -817,17 +815,41 @@ function createAppInfoPane(origin32) {
 
       var delButton = $("<div/>").addClass("deleteAppButton glowy-red-text");
       delButton.text("DELETE");
+      delButton.disableSelection();
+      delButton.mouseenter(function() {delButton.animate({ "font-size": 20 + "px", "padding-top": "5px"}, 50) });
+      delButton.mouseleave(function() {delButton.text("DELETE"); delButton.animate({ "font-size": 14 + "px", "padding-top": "8px"}, 50) });
+
+
       //this really needs to be moved out into a function
-      delButton.click( function() {  navigator.apps.mgmt.uninstall( install.origin,  function() { removeAppFromDock(install.origin32);
-                                                                                                  removeWidget(install.origin32);
-                                                                                                  saveDashboardState( function () {updateDashboard();} );
-                                                                                                  hideModal('modalPage')}  )  });
+      delButton.click( function() { if (delButton.text() == "DELETE") {
+                                          delButton.text("DELETE ?");
+                                        } else {
+      
+                                          navigator.apps.mgmt.uninstall( install.origin, function() { 
+                                                                                            removeAppFromDock(install.origin32);
+                                                                                            removeWidget(install.origin32);
+                                                                                            saveDashboardState( function () {updateDashboard();} );
+                                                                                            hideModal('modalPage')
+                                                                                        }  
+                                                                        ) }});
       infoBox.append(delButton);
       
       if (install.manifest.widget) {
         var widgetButton = $("<div/>").addClass("widgetToggleButton glowy-red-text");
         widgetButton.text("WIDGET");
-        widgetButton.click( function() { toggleWidgetVisibility(install.origin32); updateWidgets(); });
+        widgetButton.disableSelection();
+        if (isWidgetVisible(origin32)) {
+          widgetButton.addClass("glowy-green-text");
+        }
+        widgetButton.click( function() { if (toggleWidgetVisibility(install.origin32)) {
+                                            widgetButton.addClass("glowy-green-text");
+                                          } else {
+                                            widgetButton.removeClass("glowy-green-text");
+                                          }; 
+                                         updateWidgets(); });
+                                         
+        widgetButton.mouseenter(function() {widgetButton.animate({ "font-size": 20 + "px", "padding-top": "5px"}, 50) });
+        widgetButton.mouseleave(function() {widgetButton.animate({ "font-size": 14 + "px", "padding-top": "8px"}, 50) });
         infoBox.append(widgetButton);
       }
 
@@ -835,20 +857,3 @@ function createAppInfoPane(origin32) {
 }
 
 
-
-
-
-
-
-//this doesn't clip properly in either FF 3.6 or FF 4
-//   if (iconImg) {
-//     var imgelem = $("<img/>"); 
-//     imgelem.attr({
-//       "src" : iconImg,
-//       "width": 64,
-//       "height": 64
-//     });
-//     
-//     clickyIcon.append(imgelem);
-//   }
-  
