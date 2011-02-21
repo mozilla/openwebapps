@@ -756,7 +756,12 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
 
             for (var origin in _lastListResults) {
                 if (origin === id) {
-                    window.open(origin + (_lastListResults[origin].launchURL !== undefined ? _lastListResults[origin].launchURL : ""), "openwebapp_" + id);
+                    var url = origin + (_lastListResults[origin].launchURL !== undefined ? _lastListResults[origin].launchURL : "/");
+                    // generate a deterministic and portable name for the "name" of the launced window. 
+                    // this will prevent multiple launches of the same app from opening new windows.
+                    // (NOTE: IE is fairly restrictive on what characters may occur in the window name argument)
+                    var name = ("openwebapp_" + id).replace(/[.:]/g, "_").replace(/[^a-zA-Z0-9_]/g, "");
+                    window.open(url, name);
                     if (onsuccess) setTimeout(function() { onsuccess(true); }, 0);
                     return;
                 }
