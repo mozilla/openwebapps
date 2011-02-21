@@ -5,172 +5,124 @@
 <title>Install Apps</title>
 <style type="text/css" media="screen">
 
-html
-{
-  background-color:   #aaaaaa;
-  overflow: hidden;
+html {
+    background-color:   #aaaaaa;
+    overflow: hidden;
 }
 
 body
 {
-  font-family:sans-serif;
+    font-family:sans-serif;
+    margin: 0px;
+    padding: 0px;
 }
 
-
-#contentwrapper
-{
+#contentwrapper {
+    position:fixed;
 	border: 1px solid #aaaaaa;
  	-moz-border-radius: 8px;
-  -webkit-border-radius: 8px;
-  border-radius: 8px;
-  background-color: white;
+    -webkit-border-radius: 8px;
+    border-radius: 8px 8px 8px 8px;
+    background-color: white;
+    margin: 8px;
 }
 
-
-#header
-{
- height:80;
+#header {
+    height:80px;
 }
 
-#maincontent
-{
-  height:120;
-  margin-left:10;
-  margin-right:10;
-  background-color: #f0f0f0;
-  -moz-border-radius: 1em;
-  -webkit-border-radius: 1em;
-  border-radius: 1em;
-
-  border: 1px solid rgba(0,0,0,0.3);
-
-  -moz-box-shadow:
-    inset rgba(255, 255, 255, 0.5) 0 1px 0px,
-    inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
-    rgba(0, 0, 0, 0.1) 0px 2px 0px;
-  -webkit-box-shadow:
-    inset rgba(255, 255, 255, 0.5) 0 1px 0px,
-    inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
-    rgba(0, 0, 0, 0.1) 0px 2px 0px;
-  box-shadow:
-    inset rgba(255, 255, 255, 0.5) 0 1px 0px,
-    inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
-    rgba(0, 0, 0, 0.1) 0px 2px 0px;
-  white-space: nowrap;
-  position:relative;
+#maincontent {
+    height:120px;
+    margin-left:10px;
+    margin-right:10px;
+    background-color: #f0f0f0;
+    -moz-border-radius: 1em;
+    -webkit-border-radius: 1em;
+    border-radius: 1em 1em 1em 1em;
+    border: 1px solid rgba(0,0,0,0.3);
+    white-space: nowrap;
+    position:relative;
 }
 
-#footer
-{
- height:112;
+#footer {
+   height:112px;
 }
 
-#storelogo {
-  width:48;
-  height:48;
-  float:left;
-  padding:12;
-  padding-right:20;
+#repologo {
+    width:48px;
+    height:48px;
+    float:left;
+    padding:12px;
+    padding-right:20px;
 }
 
 #installrequest
 {
-  font-size: 12pt;
-  font-weight: bold;
-  padding:20;
+    font-size: 12pt;
+    font-weight: bold;
+    padding:20px;
 }
-
 
 #appicon
 {
-  position:absolute;
-  left:20px;
-  top:11px;
+    position:absolute;
+    left:20px;
+    top:11px;
 }
 
 #apptitle
 {
-  position:absolute;
-  font-size: 14pt;
-  font-weight: bold;
-  left:136px;
-  top:20px;
+    position:absolute;
+    font-size: 14pt;
+    font-weight: bold;
+    left:136px;
+    top:20px;
 }
 
 #base_url
 {
-  font-size: 9pt;
-  position:absolute;
-  left:136px;
-  top: 44px;
-  width:225px;
-  word-wrap:break-word;
-  white-space:normal;
+    font-size: 9pt;
+    position:absolute;
+    left:136px;
+    top: 44px;
+    width:225px;
+    word-wrap:break-word;
+    white-space:normal;
 }
 
 #warning
 {
-  font-size: 12pt;
-  padding:20;
+    font-size: 12pt;
+    padding:20px;
 }
 
-
-
 #site {
-  color: #F00;
+    color: #F00;
+}
+
+.button {
+    -moz-border-radius:0.5em 0.5em 0.5em 0.5em;
+    -webkit-border-radius:0.5em 0.5em 0.5em 0.5em;
+    border-radius:0.5em 0.5em 0.5em 0.5em;
+    height:12px;
+    width:100px;
+    font:bold 10pt Helvetica, arial;
+    color:white;
+    cursor:pointer;
+    padding:8px 8px 8px 8px;
+    text-align:center;
+    margin-left:12px;
+    margin-right:12px;
 }
 
 .yesbutton {
-  -moz-border-radius:0.5em 0.5em 0.5em 0.5em;
-  -webkit-border-radius:0.5em 0.5em 0.5em 0.5em;
-  -moz-box-shadow:0 -3px 0 rgba(0, 0, 0, 0.1) inset, 0 -3px 12px rgba(240, 240, 240, 0.3) inset, 0 20px 40px rgba(240, 240, 240, 0.3) inset, 0 2px 0 rgba(200, 200, 200, 0.3);
-  box-shadow:0 -3px 0 rgba(0, 0, 0, 0.1) inset, 0 -3px 12px rgba(240, 240, 240, 0.3) inset, 0 20px 40px rgba(240, 240, 240, 0.3) inset, 0 2px 0 rgba(200, 200, 200, 0.3);
-  -webkit-box-shadow:0 -3px 0 rgba(0, 0, 0, 0.1) inset, 0 -3px 12px rgba(240, 240, 240, 0.3) inset, 0 20px 40px rgba(240, 240, 240, 0.3) inset, 0 2px 0 rgba(200, 200, 200, 0.3);
-  background-color:#6bc246;
-  background-image:-moz-linear-gradient(center top , #6BC246 0%, #3C831E 100%);
-  background-image:-webkit-gradient(
-    linear,
-    left top,
-    left bottom,
-    color-stop(0, rgb(5,202,51)),
-    color-stop(1, rgb(6,188,36)));
-  height:12px;
-  width:100px;
-  font:bold 10pt Helvetica, arial;
-  color:white;
-  cursor:pointer;
-  padding:8px 8px 8px 8px;
-  text-align:center;
-  margin-left:12;
-  margin-right:12;
-  float:right;
+    background-color:rgb(6,188,36);
+    float:right;
 }
 
 .nobutton {
-  -moz-border-radius:0.5em 0.5em 0.5em 0.5em;
-  -webkit-border-radius:0.5em 0.5em 0.5em 0.5em;
-  -moz-box-shadow:0 -3px 0 rgba(0, 0, 0, 0.1) inset, 0 -3px 12px rgba(240, 240, 240, 0.3) inset, 0 20px 40px rgba(240, 240, 240, 0.3) inset, 0 2px 0 rgba(200, 200, 200, 0.3);
-  box-shadow:0 -3px 0 rgba(0, 0, 0, 0.1) inset, 0 -3px 12px rgba(240, 240, 240, 0.3) inset, 0 20px 40px rgba(240, 240, 240, 0.3) inset, 0 2px 0 rgba(200, 200, 200, 0.3);
-  -webkit-box-shadow:0 -3px 0 rgba(0, 0, 0, 0.1) inset, 0 -3px 12px rgba(240, 240, 240, 0.3) inset, 0 20px 40px rgba(240, 240, 240, 0.3) inset, 0 2px 0 rgba(200, 200, 200, 0.3);
-  background-color:#6bc246;
-  background-image:-moz-linear-gradient(center top , #b26f48 0%, #833C1E 100%);
-  background-image:-webkit-gradient(
-    linear,
-    left top,
-    left bottom,
-    color-stop(0, rgb(202,5,51)),
-    color-stop(1, rgb(188,6,36)));
-  height:12px;
-  width:100px;
-  font:bold 10pt Helvetica, arial;
-  color:white;
-  cursor:pointer;
-  padding:8px 8px 8px 8px;
-  text-align:center;
-  margin-left:12;
-  margin-right:12;
-
-  float:left;
+    background-color:rgb(188,6,36);
+    float:left;
 }
 
 </style>
@@ -178,18 +130,17 @@ body
 <body>
 <div id="contentwrapper">
 <div id="header">
-  <div id="storelogo"><img src="logo.png"></div>
+  <div id="repologo"><img src="logo.png"></div>
 
   <div id="installrequest">
   <span id="site"></span> wants to <span id="install_verb">install</span> the application:
   </div>
 </div>
 
-<div id="maincontent" >
-  <img id="appicon"  width="96" height="96">
-  <div id="apptitle"><span id="appname"></span></div>
-  <div id="base_url"></div>
-  <div id="warnings"></div>
+<div id="maincontent">
+  <img id="appicon" width="96" height="96">
+  <div id="apptitle"><span id="appname">XXX</span></div>
+  <div id="base_url">YYY</div>
 </div>
 
 <div id="footer">
@@ -197,9 +148,8 @@ body
     You should only approve the <span id="install_noun">installation</span> if you trust this site.
   </div>
 
-  <div id="cancelButton" class="nobutton">Cancel</div>
-  <div id="installButton" class="yesbutton">Install</div>
-
+  <div id="cancelButton" class="nobutton button">Cancel</div>
+  <div id="installButton" class="yesbutton button">Install</div>
 </div>
 </div>
 <script>
@@ -212,13 +162,18 @@ function displayInstallPrompt(installOrigin, appOrigin, manifest, isUpdate, clie
     ClientBridge.hideDialog(); clientCB(r);
   };
 
-  document.getElementById("site").textContent = installOrigin;
+  var textAttrName = "textContent";
+  if (!document.getElementById("site").textContent) textAttrName = "innerText";
 
-  document.getElementById("appname").textContent = manifest.name;
-  document.getElementById("base_url").textContent = appOrigin;
+  document.getElementById("site")[textAttrName] = installOrigin;
 
-  document.getElementById("install_verb").textContent = isUpdate ? "update" : "install";
-  document.getElementById("install_noun").textContent = isUpdate ? "update" : "installation";
+  document.getElementById("appname")[textAttrName] = manifest.name;
+  document.getElementById("base_url")[textAttrName] = appOrigin;
+
+  document.getElementById("install_verb")[textAttrName] = isUpdate ? "update" : "install";
+  document.getElementById("install_noun")[textAttrName] = isUpdate ? "update" : "installation";
+
+  var iconURL = "default_app_icon.png";
 
   if (manifest.icons) {
 
@@ -241,8 +196,9 @@ function displayInstallPrompt(installOrigin, appOrigin, manifest, isUpdate, clie
         icon = manifest.icons[last];
     }
     if (icon.indexOf("data:") !== 0) icon = appOrigin + icon;
-    document.getElementById("appicon").src = icon;
+    iconURL = icon;
   }
+  document.getElementById("appicon").src = iconURL;
 
   // now that the content is setup, message untrusted javascript to display us
   ClientBridge.showDialog();
