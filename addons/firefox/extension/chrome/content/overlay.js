@@ -639,20 +639,7 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
       return function (key, callback, onerror) {
         repo.verifyMgmtPermission(contentWindowRef.location);
         // FIXME: this should do a permission check on gBrowser.contentDocument.location
-        try {
-          repo.uninstall(key, callback);
-        } catch (e) {
-          let errorResult;
-          if (e.length && e.length == 2) {
-            // Then it's code/message
-            errorResult = {code: e[0], message: e[1]};
-          } else {
-            errorResult = {code: "exception", message: ''+e};
-          }
-          if (onerror) {
-            onerror(errorResult);
-          }
-        }
+        repo.uninstall(key, callback, onerror);
       };
   }});
   injector.registerAction(function() {

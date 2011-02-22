@@ -146,7 +146,21 @@ FFRepoImpl.prototype = {
             }
         );
     },
-
+    
+    uninstall: function(key, onsuccess, onerror)
+    {
+        Repo.uninstall(key, function(result) {
+            if (typeof result.error != result) {
+                onerror({
+                    'code':result['error'][0],
+                    'message':result['error'][1]
+                });
+            } else {
+                onsuccess(result);
+            }
+        });
+    },
+    
     /* a function to check that an invoking page has "management" permission
      * all this means today is that the invoking page (dashboard) is served
      * from the same domain as the application repository. */
