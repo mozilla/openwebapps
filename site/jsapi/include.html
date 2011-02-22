@@ -162,7 +162,7 @@ function displayInstallPrompt(installOrigin, appOrigin, manifest, isUpdate, clie
   };
 
   var textAttrName = "textContent";
-  if (!document.getElementById("site").textContent) textAttrName = "innerText";
+  if (undefined === document.getElementById("site").textContent) textAttrName = "innerText";
 
   document.getElementById("site")[textAttrName] = installOrigin;
 
