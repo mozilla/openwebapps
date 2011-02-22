@@ -58,20 +58,15 @@ Repo = (function() {
     var stateStorage = TypedStorage().open("state");
 
     // iterates over all stored applications manifests and passes them to a
-    // callback function.    This function should be used instead of manual
+    // callback function. This function should be used instead of manual
     // iteration as it will parse manifests and purge any that are invalid.
     function iterateApps(callback)
     {
         // we'll automatically clean up malformed installation records as we go
         var toRemove = [];
+        var toReturn = {};
         
         appStorage.keys(function(appKeys) {
-            if (appKeys.length === 0) {
-                // signifies end of iteration, callback will not be called again
-                callback(null, null);
-                return;
-            }
-
             // manually iterating the apps (rather than using appStorage.iterate() allows
             // us to differentiate between a corrupt application (for purging), and
             // an error inside the caller provided callback function
@@ -80,11 +75,7 @@ Repo = (function() {
                 try {
                     appStorage.get(aKey, function(install) {
                         install.manifest = Manifest.validate(install.manifest);
-                        try {
-                            callback(aKey, install);
-                        } catch (e) {
-                            console.log("Error inside iterateApps callback: " + e);
-                        }
+                        toReturn[aKey] = install;
                     });
                 } catch (e) {
                     console.log("invalid application detected: " + e);
@@ -98,8 +89,7 @@ Repo = (function() {
                 });
             }
             
-            // signifies end of iteration, callback will not be called again
-            callback(null, null);
+            callback(toReturn);
         });
     };
 
@@ -128,16 +118,14 @@ Repo = (function() {
     function getInstallsByOrigin(origin, cb)
     {
         var result = [];
-
-        iterateApps(function(key, item) {
-            if (key != null && item != null) {
-                if (urlMatchesDomain(item.install_origin, origin)) {
-                    result.push(item);
+        iterateApps(function(items) {
+            for (var key in items) {
+                if (urlMatchesDomain(items[key].install_origin, origin)) {
+                    result.push(items[key]);
                 }
-            } else {
-                if (cb && typeof cb == 'function')
-                    cb(result);
             }
+            if (cb && typeof cb == 'function')
+                cb(result);
         });
     }
 
@@ -283,16 +271,17 @@ Repo = (function() {
         if (typeof cb != 'function')
             return;
             
-        iterateApps(function(key, item) {
-            if (!done && item) {
-                if (applicationMatchesDomain(item.origin, origin)) {
-                    done = true;
-                    cb(item);
+        iterateApps(function(items) {
+            for (var key in items) {
+                if (!done) {
+                    if (applicationMatchesDomain(items[key].origin, origin)) {
+                        done = true;
+                        cb(items[key]);
+                    }
                 }
             }
-            if (item == null && key == null && !done) {
+            if (!done)
                 cb(null);
-            }
         });
     };
 
@@ -313,14 +302,8 @@ Repo = (function() {
     }
 
     function list(cb) {
-        var installed = {};
-        iterateApps(function(key, item) {
-            if (key != null && item != null) {
-                installed[key] = item;
-            } else if (cb && typeof(cb) == 'function') {
-                cb(installed);
-            }
-        });
+        if (cb && typeof cb == 'function')
+            iterateApps(cb);
     };
 
     function uninstall(origin, cb) {

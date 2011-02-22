@@ -84,14 +84,6 @@ FFRepoImpl.prototype = {
                 installConfirmationFinishFn(false);
             };
 
-            /* old doorhanger deprecated in favor of new styling
-            let nb = window.gBrowser.getNotificationBox();
-            nb.appendNotification(
-                message, "openwebapps-install-notification",
-                "chrome://openwebapps/skin/install.png"
-                null,
-                nb.PRIORITY_INFO_HIGH, [ acceptButton, declineButton ]);
-            */
             let ret = window.PopupNotifications.show(
                 window.gBrowser.selectedBrowser,
                 "openwebapps-install-notification",
@@ -121,10 +113,9 @@ FFRepoImpl.prototype = {
         }
 
         return Repo.install(location, args, displayPrompt, fetchManifest,
-            function(result) {
+            function (result) {
                 // install is complete
                 // TODO: implement notifications
-
                 if (result !== true) {
                     if (args.onerror) {
                         let errorResult;
