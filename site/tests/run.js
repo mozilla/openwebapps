@@ -146,7 +146,9 @@ function createServer(port) {
             ".js":   "text/javascript",
             ".css":  "text/css",
             ".html": "text/html",
-            ".webapp": "application/x-web-app-manifest+json"
+            ".webapp": "application/x-web-app-manifest+json",
+            ".png": "image/png",
+            ".ico": "image/x-icon"
           };
 
           var ext = path.extname(filename);

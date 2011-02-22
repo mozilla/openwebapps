@@ -1,60 +1,49 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
-  <meta http-equiv="X-UA-Compatible" content="IE=8"/>
   <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
-  <title>Application Dashboard</title>
-  <link rel="shortcut icon" href="favicon.png" type="image/png">
-  <link rel="stylesheet" href="dashboard.css" type="text/css" title="screen">
-  <link rel="stylesheet" href="details.css" type="text/css" title="screen">
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <title>Demo Dashboard</title>
 
+  <link rel="stylesheet" href="css/dashboard.css" type="text/css" title="screen" />
 
-  <link rel="stylesheet" type="text/css" href="js/jquery-ui.css"/>
+  <link rel="stylesheet" type="text/css" href="js/jquery-ui-1.8.9.custom/css/smoothness/jquery-ui-1.8.9.custom.css"/>
+
+  <script type="text/javascript" src="js/base32.js"></script>
   <script type="text/javascript" src="js/jquery-1.4.2.min.js"></script>
-  <script type="text/javascript" src="js/jquery-ui-1.8.6.custom.min.js"></script>
-
-  <script type="text/javascript" src="js/compat.js"></script>
-  <script type="text/javascript" src="js/jschannel.js"></script>
+  <script type="text/javascript" src="js/jquery-ui-1.8.9.custom/js/jquery-ui-1.8.9.custom.min.js"></script>
   <script type="text/javascript" src="jsapi/include.js"></script>
   <script type="text/javascript" src="js/dashboard.js"></script>
-
-<link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.1/themes/base/jquery-ui.css"/>
-
 </head>
 
 <body>
 
-<div id="container">
-  <div id="header"><img src="img/logo.png"><span class="headerText">App Dashboard</span></div>
-  <div id="login">
-    <span id="login-link" style="display: none"><a href="">sign in</a></span>
-    <span id="signed-in" style="display: none"><span id="username"></span> <a href="/logout">sign out</a></span>
-  </div>
-  <div id="content">
-    <div id="maincontentmenu">
-      <div class="maincontentmenuItemOn"><a href="">Applications</a></div>
-      <div id="demobutton" class="button"><a href="https://apps.mozillalabs.com/"></a>Get Demo Apps</div>
+<div id="topContainer">
+
+  <div id="header"><span class="headerText glowy-blue-text">Demonstration Dashboard</span></div>
+  <div class="horiz-divider glowy-blue-frame"></div>
+
+  <div class="dashContent">
+    <div class="appDock glowy-blue-outline" id="dock"></div>
+    <div id="filterAndListBox">
+      <div class="appFilter glowy-blue-outline"><input id="filter" type="search" onKeyUp="filterAppList(event)" class="filterText glowy-blue-text" />
+      <img id="clearButton" class="glowButton topMargin8" src="img/clearButton.png"/></div>
+      <div class="appList glowy-blue-outline" id="list"></div>
     </div>
-    
-    <div class="appList" id="page1"></div>
-    
-    <div id="footer">a Mozilla Labs project - <a href="http://www.mozilla.com/en-US/privacy-policy.html">Privacy Policy</a> and <a href="http://www.mozilla.com/en-US/about/legal.html">Legal Notices</a> </div>
-  </div>
-</div>
-<div id="unsupportedBrowser">
-  <div id="unsupportedBrowserContent">
-    <div><img src="img/logo-192.png"></div>
-    <p>
-      This Mozilla Labs technology demo requires features that are not present in your browser.  Please consider upgrading
-      to a modern browser!  There are <a href="http://www.whatbrowser.org/en/browser/">many free browsers to choose from</a>.
-    </p>
+    <div class="widgetSpace glowy-blue-outline" id="widgets"></div>
   </div>
 </div>
 
-<div id="dialog-confirm" style="display:none">
-	<p>Would you like to install the Web App Dashboard, which makes finding, installing, managing and launching your Web Applications fun?</p>
+
+<!-- modal dialog stuff below here -->
+
+<div id="modalPage">
+    <div class="modalBackground" onclick="hideModal('modalPage')">
+    </div>
+        <div class="modal glowy-red-outline"  id="appinfo">
+                <!-- contents go here -->
+        </div>
 </div>
 
 </body>
-
 </html>

@@ -1,1 +1,0 @@
-Copied from: http://crypto-js.googlecode.com/svn/branches/2.0.x

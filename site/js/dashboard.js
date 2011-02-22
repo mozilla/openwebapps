@@ -11,14 +11,13 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * The Original Code is App Dashboard, dashboard.js
+ * The Original Code is Nuovo Dashboard, nuovodashboard.js
  *
  * The Initial Developer of the Original Code is Mozilla.
  * Portions created by the Initial Developer are Copyright (C) 2010
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
- *  Michael Hanson <mhanson@mozilla.com>
  *  Dan Walkowski <dwalkowski@mozilla.com>
  *
  * Alternatively, the contents of this file may be used under the terms of
@@ -35,558 +34,657 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-
-
 // Singleton instance of the Apps object:
-var gApps = null;
+var gApps = {};
 
-// The selected app
-var gSelectedInstall = null;
+//the list filter string
+var gFilterString = "";
 
-// Display mode:
-var ROOT = 1;
-var APP_INFO = 2;
-var gDisplayMode = ROOT;
 var gDashboardState = {};
-
-var minAppListHeight = 0;
-var minAppListWidth = 0;
-
-var getInfoId = "getInfo";
+gDashboardState.appsInDock = [];
+gDashboardState.widgetPositions = {};
 
 
-function showInstallDialog(browserType, installFunc) {
-		// a workaround for a flaw in the demo system (http://dev.jqueryui.com/ticket/4375), ignore!
-		$( "#dialog:ui-dialog" ).dialog( "destroy" );
 
-		$( "#dialog-confirm" ).dialog( {
-		  title: "Install " + browserType + " Add-On",
-			resizable: false,
-			modal: true,
-			width: 400,
-			position: [100, 100],
-			buttons: {
-				"Install": function() {
-					$( this ).dialog( "close" );
-					installFunc();
-				},
-				"No Thank You": function() {
-					$( this ).dialog( "close" );
-				}
-			}
-		} );
-	}
+var gOverDock = false;
 
-
-function retrieveInstalledApps()
-{
-  var listOfApps;
-  navigator.apps.mgmt.list(function (listOfInstalledApps) {
-    (function () {
-      gApps = listOfInstalledApps;
-      gDisplayMode = ROOT;
-      render();
-    })();
-  });
-
-
+function saveDashboardState( callback ) {
+  navigator.apps.mgmt.saveState(gDashboardState, callback);
 }
 
 
-function addonIsInstalled() {
-  if(navigator.apps.html5Implementation) {
-    return false;
-  }
-  return true;
+//giant pain:  we have only one unique identifying piece of data per app, and it's a url.
+// urls cannot be used for css/dom ids, as they contain disallowed characters.
+// we must construct a 1-1 mapping unique string that only contains allowed characters.
+// I have chose base32, in particular Crockford's version.  It is found in js/base32.js
+
+function findInstallForID(origin32) {
+  return gApps[Base32.decode(origin32)];
 }
 
-var one_hour = 1000 * 60 * 60;
-var three_days = 72 * one_hour;
 
-function shouldBotherUser()
-{
-  //check to see if we should bother the user about installing the addon this time
-  //question, where do we keep this setting?  localStorage?  for what domain?
-  var now = Date.now();
-  var nextBother = window.localStorage.getItem("addon-bother-timestamp");
-
-  if (nextBother) {
-    if (nextBother == -1) return false;       //never bother them again.
-
-    if (nextBother < now) {
-      nextBother = now + three_days;
-      window.localStorage.setItem("addon-bother-timestamp", nextBother);
-      return true;
-    }
-    else return false;
-
-  } else {  //first time
-      nextBother = now;
-      window.localStorage.setItem("addon-bother-timestamp", nextBother);
-      return false;
-  }
+function getWindowHeight() {
+  if(window.innerHeight) return window.innerHeight;
+  if (document.body.clientHeight) return document.body.clientHeight;
 }
 
-function recommendAddon() {
-  if (!addonIsInstalled() && shouldBotherUser()) {
-      var agent = navigator.userAgent.toLowerCase();
-      if (agent.indexOf("firefox") != -1) {
-          //present UI asking the user if they want to install the firefox plugin
-          showInstallDialog("Firefox", ( function () { document.location = "installFFX-addon.html"; } ));
+function resizeAppList() {
+  var listPos = $("#list").position();
+  $("#list").height(getWindowHeight() - (listPos.top + 16));
+}
 
-      } else if (agent.indexOf("chrome") != -1) {
-          //present UI asking the user if they want to install the chrome plugin
-          showInstallDialog("Chrome", ( function () { document.location = "installCHRM-addon.html"; } ));
-
-      }
-    }
-  }
+function resizeWidgetArea() {
+  var widgePos = $("#widgets").position();
+  $("#widgets").height(getWindowHeight() - (widgePos.top + 16));
+}
 
 
+window.onload = function() {
+  resizeAppList();
+  resizeWidgetArea();
+}
+
+window.onresize = function() {
+  resizeAppList();
+  resizeWidgetArea();
+}
+
+
+function filterAppList(event) {
+    //get the current contents of the text field, and only show the ones in the list that match
+    gFilterString = $("#filter").val().toLowerCase();
+    renderList();
+  };
+
+function computeSlot(event) {
+      //determine what slot they are over
+      var appCount =  $("#dock").children().length;
+      var newAppSlot = Math.floor((event.pageX - 20) / 80);
+      if (newAppSlot > (appCount -1)) { newAppSlot = appCount; }
+      return newAppSlot;
+}
+  
+function displayPlaceholder(event) {
+        if (!gOverDock) { return; };
+        removePlaceholder();
+        var slot = computeSlot(event);
+        //insert a placeholder
+        var dockIcons = $("#dock").children();
+
+        //shortcut
+        if (slot >= dockIcons.length) {
+          $("#dock").append($("<div/>").addClass("appInDockDrop glowy-blue-outline"));
+          return;
+        }
+
+        for (var i=0; i<dockIcons.length; i++)
+        {
+          var currApp = dockIcons[i];
+          $(currApp).detach();
+          if (i == slot) { $("#dock").append($("<div/>").addClass("appInDockDrop glowy-blue-outline")) };
+          if ($(dockIcons[i]).hasClass("appInDock")) { $("#dock").append(dockIcons[i]) };
+        }
+}
+
+function removePlaceholder( ) {
+    $("#dock > .appInDockDrop").remove();
+}
+
+
+
+function dragOver(event, ui) { gOverDock = true; };
+
+
+function dragOut(event, ui) { gOverDock = false;
+                              removePlaceholder();
+                              };
+
+
+
+function insertAppInDock(newApp, event) {
+    var newAppSlot = computeSlot(event);
+    gDashboardState.appsInDock.splice(newAppSlot, 0, newApp.attr("id"));
+    saveDashboardState();
+    updateDock();
+};
+
+
+//called when an app is deleted, so we don't build up cruft in the dock list
+function removeAppFromDock(removedOrigin32) {
+    var newDockList = [];
+    var curApp;
+    for ( var i = 0; i < gDashboardState.appsInDock.length; i++ ) {
+          curApp = gDashboardState.appsInDock[i];
+          
+          //clean out this app, and also any other cruft we find
+          if ( (removedOrigin32 != curApp)  && (findInstallForID(curApp) ) ) {
+             newDockList.push(curApp);          
+           };
+    };
+      
+      if (typeof console !== "undefined") console.log("new dock list: " + newDockList);
+
+    gDashboardState.appsInDock = newDockList;
+};
+
+
+
+function infoHot() {
+  $(this).addClass("infohot");
+}
+
+function infoCold() {
+  $(this).removeClass("infohot");
+}
+
+//************** document.ready()
 
 $(document).ready(function() {
     //temporarily set the repository origin to localhost
-    navigator.apps.setRepoOrigin("..");
+   // navigator.apps.setRepoOrigin("..");
 
-  $('#page1').resizable({"handles":'s', "stop": function(event, ui) {saveDashSize();} });
+    $("#dock").droppable({ accept: ".dockItem", over: dragOver, out: dragOut,  
+                        drop: function(event, ui) {
+                          gOverDock = false;
+                          removePlaceholder();
+                          var newAppInDock = createDockItem(ui.draggable.context.id, ui.helper);
+                          insertAppInDock(newAppInDock, event);
+                        }
+                   });
+ 
+ 
+  $("#clearButton").click( function() { gFilterString = ""; $("#filter").attr("value", gFilterString); renderList(); });
+  $("#clearButton").mouseenter(function() { $("#clearButton").addClass("clearButtonHot") }).mouseleave(function() {$("#clearButton").removeClass("clearButtonHot") });
 
   // can this user use myapps?
    var w = window;
    if (w.JSON && w.postMessage) {
        try {
-           // Construct our Apps handle
-             retrieveInstalledApps();
-             navigator.apps.mgmt.loadState( ( function (s) {
-                 gDashboardState = s;
-                 if (!gDashboardState) {
-                     gDashboardState = {};
-                 } else {
-                     // re-render dashboard now that state has been fetched
-                     render();
-                 }
-             }));
-           } catch (e) {
-           if (typeof console !== "undefined") console.log(e);
-       }
-
-       // figure out which browser we are on, and whether the addon has been installed and enabled, and whether we should pester them if not.
-      self.recommendAddon();
+                gFilterString = $("#filter").val().toLowerCase();
+                updateDashboard();
+                
+            } catch (e) {
+            
+                 if (typeof console !== "undefined") console.log(e);
+            }
 
    } else {
        $("#unsupportedBrowser").fadeIn(500);
    }
-
-   updateLoginStatus();
 });
 
 
-function updateMinDashSize()
-{
-  minAppListHeight = 0;
-  minAppListWidth = 0;
+function checkSavedData(save) {
+  //do a basic structure check on our saved data
+  var emptyState = {};
+  emptyState.appsInDock = [];
+  emptyState.widgetPositions = {};
 
-  $('.app').each(function(index, elem) {
-      var ePos = $(elem).position();
-      var h = $(elem).height();
-      var w = $(elem).width();
-      if (ePos.top + h + 6 > minAppListHeight)  minAppListHeight = ePos.top + h + 6;
-      if (ePos.left + w + 6 > minAppListWidth)  minAppListWidth = ePos.left + w + 6;
-    });
-
-  $('#page1').resizable( "option", "minHeight", minAppListHeight );
-  $('#page1').resizable( "option", "minWidth", minAppListWidth );
-}
-
-
-function resizeDash(h,w)
-{
-    $('#page1').top = 0;
-    $('#page1').left = 0;
-
-    $('#page1').height(h);
-    //$('#page1').width(w);
-}
-
-
-function loadDashSize () {
-  //load the last saved size of the dash
-  if (gDashboardState.dashSize) {
-    resizeDash(gDashboardState.dashSize.height, gDashboardState.dashSize.width);
+  if (save && ($.isPlainObject(save))) {
+    if (save.appsInDock && $.isArray(save.appsInDock) && save.widgetPositions && $.isPlainObject(save.widgetPositions)) return save;
   }
-}
-
-function saveDashSize () {
-  //save size of the dash
-    gDashboardState.dashSize = {"height":$('#page1').height(), "width":$('#page1').width()};
-    navigator.apps.mgmt.saveState(gDashboardState);
+  return emptyState;
 }
 
 
 
-function elem(type, clazz) {
- var e = document.createElement(type);
-  if (clazz) e.setAttribute("class", clazz);
-  return e;
+//this is the primary UI function.  It loads the latest app list from disk, the latest dashboard state from disk,
+// and then proceeds to bring the visual depiction into synchrony with the data, with the least visual interruption.
+function updateDashboard( completionCallback ) {
+    //both the app list and dashboard data functions are asynchronous, so we need to do everything in the cal
+      navigator.apps.mgmt.list( function (listOfInstalledApps) {
+          
+          gApps = listOfInstalledApps;
+
+          //now, in the list callback, load the dashboard state
+          navigator.apps.mgmt.loadState( function (dashState) {
+              gDashboardState = checkSavedData(dashState);
+              
+              //now, in the loadState callback, update everything.
+              //I'm rebuilding the entire app list and dock list for now, since it is likely not the bottleneck. they can be updated later, if they become a performance problem
+              // I -am- carefully adding/removing widgets only where necessary, as it is quite expensive, since they contain iframes.
+              renderList();
+              updateDock();
+              updateWidgets();
+  
+              //and call the dream within a dream within a dream callback.  if it exists.
+              if (completionCallback) { completionCallback(); };
+           });                      
+      });
 }
 
-// Creates an opener for an app tab.  The usual behavior
-// applies - if the app is already running, we switch to it.
-// If the app is not running, we create a new app tab and
-// launch the app into it.
-function makeOpenAppTabFn(app, id)
+
+
+// launch the app into a tab.  we'd like it to just switch to it if it already exists. I think that needs to be handled in launch()
+function makeOpenAppTabFn(origin32)
 {
+  try {
     return function(evt) {
-        if ($(this).hasClass("ui-draggable-dragged")) {
-            $(this).removeClass("ui-draggable-dragged");
-            return false;
-        }
-
-        navigator.apps.mgmt.launch(id);
+         if ($(this).hasClass("ui-draggable-dragged")) {
+             $(this).removeClass("ui-draggable-dragged");
+             return false;
+         }
+        navigator.apps.mgmt.launch(Base32.decode(origin32));
     }
+  } catch (e) {
+      if (typeof console !== "undefined") console.log("error launching: " + e);
+  }
 }
 
-// Render the contents of the "apps" element by creating canvases
-// and labels for all apps.
-function render()
-{
-  var box = $("#page1");
-
-  //clear out the the app nodes.  WARNING: this kills all of them everywhere, I think,
-  // so if we had multiple pages of apps, this might cause them all to refresh.
+//create the full app list, and sort them for display
+// here is also where I cache the base32 version of the origin into the app
+function renderList() {
+  if (!gApps) return;
+  var appList = $("#list");
   $('.app').remove();
-
-  var selectedBox = null;
-  for ( var i = 0; i < gApps.length; i++ ) {
+  
+  for (origin in gApps) {
     try {
-      var install = gApps[i];
-
-      var icon = createAppIcon(install);
-      //check for no icon here, and supply a default one
-      if (!icon) {
-        //use some default icon here
+      var install = gApps[origin];
+      
+      //BASE32 ENCODE HERE ONLY
+      if ( ! install.origin32) { install.origin32 = Base32.encode(install.origin); };
+      
+      //TO DO: need to sort these
+      if (gFilterString.length == 0 || gFilterString == install.manifest.name.substr(0,gFilterString.length).toLowerCase() ) {
+        var icon = createAppListItem(install);
+        //check for no icon here, and supply a default one
+        appList.append(icon);
       }
-
-      if (install === gSelectedInstall) {
-        selectedBox = icon;
-      }
-      box.append(icon);
     } catch (e) {
-
-      if (typeof console !== "undefined") console.log("Error while creating application icon for app " + i + ": " + e);
+      if (typeof console !== "undefined") console.log("Error while creating list icon for app " + origin + ": " + e);
     }
   }
-
-
-
-
-  //lay out the apps
-  if (gDisplayMode == APP_INFO) {
-      // kick back to "ROOT" display mode if there's no
-      // selected application for which to display an info pane
-      if (selectedBox) {
-          renderAppInfo(selectedBox);
-      } else {
-          gDisplayMode == ROOT;
-      }
-  }
-
-  //load the saved dash size
-  loadDashSize();
-
-  //determine smallest size that can contain the apps
-  updateMinDashSize();
-
-
-  //then resize it if necessary
-  if ($('#page1').height() < (minAppListHeight)) {
-     $('#page1').height(minAppListHeight);
-   }
-
-   if ($('#page1').width() < (minAppListWidth)) {
-     $('#page1').width(minAppListWidth);
-   }
-
-
 }
 
 
-function getBiggestIcon(minifest) {
-  //see if the minifest has any icons, and if so, return the largest one
-  if (minifest.icons) {
-    var biggest = 0;
-    for (z in minifest.icons) {
-      var size = parseInt(z, 10);
-      if (size > biggest) biggest = size;
+
+//reloading the widgets is very expensive, so we only want to fix up the widgets, not reload them all
+function updateWidgets( )  {
+      
+        //if we have no apps, bail out
+        if (!gApps) return;
+
+        var widgetSpace = $("#widgets");
+        
+        //first, walk the list of apps, adding/removing any widgets that should be displayed, but aren't currently (enabled button was toggled, app was added, etc.)
+        for (app in gApps) {
+            try {
+              //does the app specify a widget?  if so, check to see if we already have one
+              if (gApps[app].manifest && gApps[app].manifest.widget) {      
+                  var existingWidget = widgetSpace.children( "#" + gApps[app].origin32 );
+                  
+                  if (existingWidget[0]) {
+                      //if we already have a widget, but its enabled flag is set to 'NO', then delete it, and continue to next install
+                      if (gDashboardState.widgetPositions[gApps[app].origin32].disabled) {
+                        $(" #widgets > #" + gApps[app].origin32).remove();
+                      }
+                  } else {
+                      //if we don't have a widget, and its enable flag is set to 'YES' (or no dashboard state), then create it, create the dashboard state for it, and continue to next install
+                      
+                      //if it has no dashboard state, give it a default one
+                        if (!gDashboardState.widgetPositions[gApps[app].origin32])  {
+                            //make a new one, and put it in the save state.  NOTE: we add some padding for the frame, but only when we create and save
+                            // the widget the first time.  from then on, we use the outer frame as the thing to measure the size of
+                            gDashboardState.widgetPositions[gApps[app].origin32] = {"top": 0,
+                                                                            "left": 0, 
+                                                                            "height": ((gApps[app].manifest.widget.height ? gApps[app].manifest.widget.height : 120) + 16),
+                                                                            "width": ((gApps[app].manifest.widget.width ? gApps[app].manifest.widget.width : 200) + 16),
+                                                                            "zIndex" : 0
+                                                                             };
+                            //save state, since we added something
+                            saveDashboardState();
+                      }
+                      
+                      if (gDashboardState.widgetPositions[gApps[app].origin32].disabled) { return; }
+
+
+                      //NOTE: this takes the size of the outer widget frame, so pad it the first time if you want some specific content size
+                       var widgetPos = gDashboardState.widgetPositions[gApps[app].origin32];
+                       var widget = createWidget(gApps[app], widgetPos.top, widgetPos.left, widgetPos.height, widgetPos.width, widgetPos.zIndex);  
+                       widgetSpace.append(widget);
+
+                  }
+
+              }
+              
+          } catch (e) {
+              if (typeof console !== "undefined") console.log("Error while creating widget for app : " + e);
+          }
+        };
+          
+      //then, walk the list of widgets, and remove any that belong to apps that have been deleted
+      
+      $("#widgets > .widgetFrame").each( function() {
+          var app = findInstallForID(this.id);  //the dom element id contains the origin32 of the app it belongs to
+
+          if (!app) {
+              //delete the widget
+              $(" #widgets > #" + this.id).remove();
+          } else {
+              //update the widget position
+              var wPos = gDashboardState.widgetPositions[this.id];
+               $(this).css({"zIndex": wPos.zIndex});  //can'tbe animated
+               $(this).animate( {"top": wPos.top + "px",
+                                  "left": wPos.left + "px", 
+                                  "height": wPos.height + 16 + "px", 
+                                  "width": wPos.width + 16 + "px"
+                                  } );
+                          
+              var selectorString = "#" + this.id + "client, #" + this.id + "hider";
+              $(this).children(selectorString).animate({"height": wPos.height, "width": wPos.width});
+          };
+      
+      });
+      
+}
+
+
+
+
+function updateDock()
+{
+  if (!gApps) return;
+
+  $('.appInDock').remove();
+  var newDockList = [];
+  
+  for ( var i = 0; i < gDashboardState.appsInDock.length; i++ ) {
+    try {
+        var origin32 = gDashboardState.appsInDock[i];
+        var dockItem = createDockItem(origin32);
+        
+        if ( ! dockItem ) { 
+            //cruft left in array.  should have been cleaned up
+            if (typeof console !== "undefined") console.log("no app found for dock item with origin:  " + Base32.decode(origin32));
+            continue; 
+        };
+        
+        $("#dock").append(dockItem);
+    } catch (e) {
+      if (typeof console !== "undefined") console.log("Error while creating dock icon for app " + i + ": " + e);
     }
-    if (biggest !== 0) return minifest.icons[biggest];
+  }
+}
+
+
+
+function getBigIcon(manifest) {
+  //see if the manifest has any icons, and if so, return a 64px one if possible
+  if (manifest.icons) {
+  //prefer 64
+    if (manifest.icons["64"]) return manifest.icons["64"];
+    
+    var bigSize = 0;
+    for (z in manifest.icons) {
+      var size = parseInt(z, 10);
+      if (size > bigSize) bigSize = size;
+    }
+    if (bigSize !== 0) return manifest.icons[bigSize];
   }
   return null;
 }
 
-function renderAppInfo(selectedBox)
-{
-    $( "#" + getInfoId ).remove();
 
-    // Set up Info starting location
-    var info = document.createElement("div");
-    info.id = getInfoId;
-    info.className = getInfoId;
 
-    var badge = elem("div", "appBadge");
-    var appIcon = elem("div", "icon");
-
-    var icon = getBiggestIcon(gSelectedInstall);
-
-    if (icon) {
-        appIcon.setAttribute("style",
-                             "background:url(\"" + icon + "\") no-repeat; background-size:100%");
+function getSmallIcon(manifest) {
+  //see if the manifest has any icons, and if so, return a 32px one if possible
+  if (manifest.icons) {
+  //prefer 32
+    if (manifest.icons["32"]) return manifest.icons["32"];
+    
+    var smallSize = 1000;
+    for (z in manifest.icons) {
+      var size = parseInt(z, 10);
+      if (size < smallSize) smallSize = size;
     }
-
-    $(appIcon).css("position", "absolute").css("top", -3).css("left", 9);
-
-    var label = elem("div", "appBadgeName");
-    label.appendChild(document.createTextNode(gSelectedInstall.name));
-
-    badge.appendChild(appIcon);
-    badge.appendChild(label);
-    info.appendChild(badge);
-
-
-    var off = $(selectedBox).offset();
-    $(info).css("postion", "absolute").css("top", off.top + -4).css("left", off.left + -8);
-    $(info).width(110).height(128).animate({
-        width: 300,
-        height: 320
-    }, 200, function() {
-        var data = elem("div", "appData");
-        function makeColumn(label, value) {
-            var boxDiv = elem("div", "appDataBox");
-            var labelDiv = elem("div", "appDataLabel");
-            var valueDiv = elem("div", "appDataValue");
-            labelDiv.appendChild(document.createTextNode(label));
-            if (typeof value == "string") {
-                valueDiv.appendChild(document.createTextNode(value));
-            } else {
-                valueDiv.appendChild(value);
-            }
-            boxDiv.appendChild(labelDiv);
-            boxDiv.appendChild(valueDiv);
-            return boxDiv;
-        }
-        var dev = elem("div", "developerName");
-        if (gSelectedInstall.developer) {
-          if (gSelectedInstall.developer.url) {
-            var a = elem("a");
-            a.setAttribute("href", gSelectedInstall.developer.url);
-            a.setAttribute("target", "_blank");
-            a.appendChild(document.createTextNode(gSelectedInstall.developer.name));
-            dev.appendChild(a);
-            data.appendChild(dev);
-
-            var linkbox = elem("div", "developerLink");
-            a = elem("a");
-            a.setAttribute("href", gSelectedInstall.developer.url);
-            a.setAttribute("target", "_blank");
-            a.appendChild(document.createTextNode(gSelectedInstall.developer.url));
-            linkbox.appendChild(a);
-            data.appendChild(linkbox);
-
-          } else {
-            if (gSelectedInstall.developer.name) {
-                dev.appendChild(document.createTextNode(gSelectedInstall.developer.name));
-                data.appendChild(dev);
-            } else {
-                dev.appendChild(document.createTextNode("No developer info"));
-                $(dev).addClass("devUnknown");
-                data.appendChild(dev);
-            }
-          }
-        }
-
-        info.appendChild(data);
-
-        var desc = elem("div", "desc");
-        desc.appendChild(document.createTextNode(gSelectedInstall.description));
-        info.appendChild(desc);
-
-        var props = elem("div", "appProperties");
-
-        props.appendChild(makeColumn("Install Date", formatDate(gSelectedInstall.installTime)));
-        props.appendChild(makeColumn("Installed From", gSelectedInstall.installURL));
-
-        info.appendChild(props);
-
-        // finally, a delete link and action
-        $("<div/>").text("Delete this application.").addClass("deleteText").appendTo(info).click(function() {
-            navigator.apps.mgmt.remove(gSelectedInstall.id,
-                                        function() {
-                                                     retrieveInstalledApps();
-                                                  });
-            gSelectedInstall = null;
-            gDisplayMode = ROOT;
-            render();
-
-            // let's now create a synthetic click to the document to cause the info dialog to get dismissed and
-            // cleaned up properly
-            $(document).click();
-
-            return false;
-        });
-
-        $(info).click(function() {return false;});
-    });
-
-    $("body").append(info);
-
-    // Dismiss box when user clicks anywhere else
-    setTimeout( function() { // Delay for Mozilla
-        $(document).click(function() {
-            $(document).unbind('click');
-            $(info).fadeOut(100, function() { $("#"+getInfoId).remove(); });
-            return false;
-        });
-    }, 0);
-}
-
-//other words for widget:
-// sketch, recap, clipping, nutshell, aperture, channel, spout,
-// beacon, buzz, meter, crux, ticker, ...
-
-function createAppIcon(install)
-{
-  //we will make an 'appDiv', which contains all the parts.
-  // it will have an icon and a title, in default mode.
-  // if the app has a widget enabled, it will be larger, visible, and have an iframe
-  // next to the app icon and title.  the iframe has a default size, but can be
-  // made larger if the widget specifies it, up to some reasonable maximum
-
-  var appContainer = elem("div", "app");
-  appContainer.setAttribute("id", install.id);
-
-  
-  var clickyIcon = $("<div/>").addClass("icon");
-  var iconImg = getBiggestIcon(install);
-  if (iconImg) {
-      clickyIcon.css({
-          background: "url(\"" + iconImg + "\") no-repeat #FFFFFF",
-          backgroundSize: "100%"
-      });
+    if (smallSize !== 1000) return manifest.icons[smallSize];
   }
-  clickyIcon.onclick = makeOpenAppTabFn(install, install.id);
-  $(appContainer).append(clickyIcon);
-
-  var appName = elem("div", "appName");
-  appName.appendChild(document.createTextNode(install.name));
-  
-  appName.style.left = "10px";
-  $(appContainer).append(appName);
-
-  //now set the container size depending on whether they have a widget or not.
-  // probably if there's no widget, we should  make it transparent
-   if (install.widgetURL) {
-   //make the appContainer large, with rounded corners and a white background
-    var width = (install.widgetWidth ? install.widgetWidth : 300);
-    var height = (install.widgetHeight ? install.widgetHeight : 164);
-    
-    appContainer.style.width = width + (96 + 20 + 10);
-    appContainer.style.height = height + 20;
-    appContainer.style.background = "white";
-    appContainer.style.opacity = "1";
-    appContainer.style.border = "1px solid black";
-
-    appContainer.style.MozBorderRadius = "1em";
-    appContainer.style.WebkitBorderRadius = "1em";
-    appContainer.style.borderRadius = "1em";
-    
-    var widget = createWidget(install.widgetURL, 10, ( 96 + 20), height, width);
-    $(widget).addClass("widget");
-    
-    $(appContainer).append(widget);
-   } else {
-      //make sure it's invisible?
-   }
-
-  $(appContainer).draggable({ handle: clickyIcon, containment: "#page1", scroll: false, stop: function(event, ui) {
-                          //store the new position in the dashboard meta-data
-                          var newPos = ui.position;
-                          gDashboardState[install.id] = newPos;
-                          navigator.apps.mgmt.saveState(gDashboardState);
-                          $(this).addClass("ui-draggable-dragged");
-                          updateMinDashSize();
-                        }
-                      });
-
-
-
-
-
-
-    var moreInfo = $("<div/>").addClass("moreInfo").appendTo(clickyIcon);
-    $("<a/>").appendTo(clickyIcon);
-
-    // Set up the hover handler.  Only fade in after the user hovers for
-    // 500ms.
-    var tHandle;
-    $(clickyIcon).hover(function() {
-        var self = $(this);
-        tHandle = setTimeout(function() {
-            self.find(".moreInfo").fadeIn();
-        }, 500);
-    }, function() {
-        $(this).find(".moreInfo").hide();
-        clearTimeout(tHandle);
-    });
-
-    // bring up detail display when user clicks on info icon
-    moreInfo.click(function(e) {
-        for (var i = 0; i < gApps.length; i++) {
-          if (install.id == gApps[i].id) {
-            gSelectedInstall = gApps[i];
-            break;
-          }
-        }
-        if (!gSelectedInstall) return;
-
-        gDisplayMode = APP_INFO;
-        render();
-        return false;
-    });
-
-    if (gDashboardState) {
-      var appPos = gDashboardState[install.id];
-      if (appPos) {
-          $(appContainer).css("position", "absolute").css("top", appPos.top).css("left", appPos.left);
-          }
-    }
-
-    return appContainer;
+  return null;
 }
+
+
+function showAppInfo(origin32) {
+  //gray out the screen, put up a modal dialog with the application info.
+  //  items in the dialog:
+  //  * app info, with links to origin, etc.
+  //  * delete button
+  //  * widget enable button
+  //  * thingie to dismiss the dialog
+  
+  $("#appinfo").append(createAppInfoPane(origin32));
+  revealModal("modalPage");
+}
+
+function createAppListItem(install)
+{
+  var appContainer = $("<div/>").addClass("app dockItem");
+  appContainer.attr("id", install.origin32);
+  
+  //the info button
+  var infoButton = $("<img/>").addClass("glowButton");
+  infoButton.attr("src", "img/appinfo.png");
+  infoButton.attr("id", install.origin32);
+  appContainer.append(infoButton);
+  
+  infoButton.click( function() {showAppInfo(install.origin32); });
+  infoButton.mouseenter(function() { infoButton.addClass("infoButtonHot") }).mouseleave(function() {infoButton.removeClass("infoButtonHot") });
+
+
+  var clickyIcon = $("<div/>").addClass("icon");
+  var iconImg = getSmallIcon(install.manifest);
+    
+  clickyIcon.append($('<img width="32" height="32"/>').attr('src', install.origin + iconImg));
+
+  appContainer.append(clickyIcon);
+
+  var appName = $("<div/>").addClass("listLabel glowy-blue-text");
+  appName.text(install.manifest.name);  
+  appName.disableSelection();
+  
+  appName.click(makeOpenAppTabFn(install.origin32));
+
+  appContainer.append(appName);
+
+  //TO DO: make a large icon helper here, instead of using the image of the list item.  it needs to look like a dock item.
+  appContainer.draggable({revert : "invalid", 
+                          zIndex: 1000,
+                          helper : "clone", 
+                          opacity: "0.5",
+                          stop: function(event, ui) {
+                            appContainer.addClass("ui-draggable-dragged");
+                          },
+                          
+                          drag: function(event) { 
+                                                  displayPlaceholder(event); 
+                                                }
+
+                          });
+                        
+
+  return appContainer;
+}
+
+
+function createDockItem(origin32, existingDiv)  //if you pass in an existing div, it will fill it instead of making a new one
+{
+  var installRecord = findInstallForID(origin32);
+  if (!installRecord) return null;
+  
+  var dockContainer = existingDiv ? existingDiv : $("<div/>");
+  dockContainer.removeClass("app");
+  dockContainer.removeClass("ui-draggable");
+  dockContainer.addClass("appInDock dockItem");
+  dockContainer.attr("id", origin32);
+  
+  var clickyIcon = $("<div/>").addClass("dockIcon");
+  var iconImg = getBigIcon(installRecord.manifest);
+  
+  clickyIcon.append($('<img width="64" height="64"/>').attr('src', installRecord.origin + iconImg));
+
+  dockContainer.click(makeOpenAppTabFn(origin32));
+  dockContainer.append(clickyIcon);
+  
+  dockContainer.draggable({ 
+                          zIndex: 1000,
+                          helper : "clone", 
+                          opacity: "0.5",
+                          start: function(event, ui) { 
+                                var which = computeSlot(event);
+                                gDashboardState.appsInDock.splice(which, 1);
+                                $(this).detach();
+                          },
+                          
+                          stop: function(event, ui) {
+                              saveDashboardState();
+                              dockContainer.addClass("ui-draggable-dragged");
+                          },
+                          
+                          drag: function(event) { 
+                                                  displayPlaceholder(event); 
+                                                }
+
+                          });
+
+  return dockContainer;
+}
+
+function restackWidgets(widget) {
+        var highest = 0;
+        $.each( gDashboardState.widgetPositions, function(n, v) {
+          highest = Math.max(highest, v.zIndex);
+          });
+          
+          $(widget).css({"zIndex" : highest+1});
+           gDashboardState.widgetPositions[widget.id].zIndex = highest+1;
+}
+
 
 
 //create the optional iframe to hold the widget version of the app
-function createWidget(path, top, left, height, width) {
+function createWidget(install, top, left, height, width, zIndex) {
 
-    iframe = document.createElement("iframe");
-    //frame keyed on widget path
-    iframe.id = path;
-    iframe.style.position = "absolute";
+    var widgetSpace = $("#widgets");
     
-    iframe.style.top = top;
-    iframe.style.left = left;
-    iframe.style.width = width;
-    iframe.style.height = height;
+    var widgetFrame = $("<div/>").addClass("widgetFrame glowy-blue-outline");
+    widgetFrame.attr("id", install.origin32);
+            
+    widgetFrame.css({"top" : top + "px",
+                      "left" : left + "px",
+                      "width" : (width + 16) + "px",
+                      "height" : (height + 16) + "px",
+                      "zIndex" : zIndex
+                      });
+                          
+    widgetFrame.click( function() {
+       restackWidgets(this);
+       saveDashboardState();
+    });
+                          
+    //this is a transparent overlay we move to the top of the widget when dragging or resizing, otherwise the iframe starts grabbing the events,
+    // and it gets very laggy and broken
+    var hider = $("<div id=\"" + install.origin32 + "hider\" />").addClass("framehider").css({
+                          "top" : "8px",
+                          "left":"8px",
+                          "width" : (width) + "px",
+                          "height" : (height) + "px",
+                          "zIndex" : "-1000",
+                          "position" : "absolute",
+                          });
+    widgetFrame.append(hider);
+    
+    var clientFrame = $("<iframe id=\"" + install.origin32 + "client\" />").addClass("clientframe");
 
-    iframe.style.border = "0px solid white";
+    clientFrame.attr("src", install.origin + install.manifest.widget.path);
+    clientFrame.attr("scrolling", "no");
+    
+    clientFrame.css({
+      "width" : width + "px",
+      "height" : height + "px",
+    }); 
+  
+    widgetFrame.append(clientFrame);
+    
+//TO DO: this didn't work.  I wanted a neon green triangle at the bottom right corner as the resize element.  I got it to
+// draw there, but it didn't work for resizing
+//     var resizeHandle = $("<img/>");
+//     resizeHandle.attr("src", "img/resize_handle.png");
+//     resizeHandle.attr("id", install.origin32 + "resize");
+//     resizeHandle.css({"position" : "absolute", "left": (width + 4) + "px", "top" : (height + 4) + "px"});
+//   
+//     widgetFrame.append(resizeHandle);
 
-    iframe.style.background = "white";
-    iframe.style.opacity = "1";
-    iframe.scrolling = "no";
+    
+    widgetFrame.draggable({containment: widgetSpace,  zIndex: 1000, stack : ".widgetFrame", 
+                //unfortunately, iframes steal, or at least borrow, mouse drag events, and so we need to create defensive shields
+                // to cover all our iframes when we are doing any mouse dragging.  we hide it behind the view we care about when 
+                // we don't need it, and then bring it forward, as you see below, during drags
+                 start: function(event, ui) {
+                        $(".framehider").css({"zIndex" : 1000});
+                   },
 
-    iframe.src = path;
-    return iframe;
+                stop: function(event, ui) {
+                    //store the new position in the dashboard meta-data
+                    gDashboardState.widgetPositions[install.origin32] = {"top": ui.helper.position().top,  "left": ui.helper.position().left,  "height": ui.helper.height() -16, "width": ui.helper.width() -16, "zIndex" : ui.helper.zIndex() };
+                    //hide the defensive shield
+                    $(".framehider").css({"zIndex" : -1000});
+                    saveDashboardState();
+                  }
+          });
+                  
+     var selectorString = "#" + install.origin32 + "client, #" + install.origin32 + "hider";
+     widgetFrame.resizable({containment: widgetSpace, handles:'se', alsoResize: selectorString, minHeight:  64, minWidth: 64, maxHeight: 400, maxWidth: 400,
+     
+                //unfortunately, iframes steal, or at least borrow, mouse drag events, and so we need to create defensive shields
+                // to cover all our iframes when we are doing any mouse dragging.  we hide it behind the view we care about when 
+                // we don't need it, and then bring it forward, as you see below, during drags
+                 start: function(event, ui) {
+                        restackWidgets(this);
+                        saveDashboardState();
+                        $(".framehider").css({"zIndex" : 1000});
+                   },
+
+                stop: function(event, ui) {
+                      //store the new position in the dashboard meta-data
+                      gDashboardState.widgetPositions[install.origin32] = {"left": ui.helper.position().left, "top": ui.helper.position().top, "height": ui.helper.height() -16 , "width": ui.helper.width() -16, "zIndex" : ui.helper.zIndex() };
+                      //hide the defensive shield
+                      $(".framehider").css({"zIndex" : -1000});
+                      saveDashboardState();                
+                  }
+                   
+          });
+
+      //resizable changes it to position:relative, so we override it again, or our coordinates are all screwed up
+      widgetFrame.css("position", "absolute");
+
+    return widgetFrame;
 }
 
+function removeWidget(origin32) {
+      //remove the widget and position info for this dead app, and any other cruft we find
+      delete gDashboardState.widgetPositions[origin32];
+      $(" #widgets > #" + origin32).remove();
+};
 
+function isWidgetVisible(origin32) {
+  if (!gDashboardState.widgetPositions[origin32] || gDashboardState.widgetPositions[origin32].disabled) return false;
+  return true;
+  }
+  
+
+function toggleWidgetVisibility(origin32) {
+  var isOn = false;
+  if (!gDashboardState.widgetPositions[origin32]) return isOn;
+  if (gDashboardState.widgetPositions[origin32].disabled) {
+    delete gDashboardState.widgetPositions[origin32].disabled;
+    isOn = true;
+  } else {
+    gDashboardState.widgetPositions[origin32].disabled = "YES";
+    isOn = false
+  }
+  saveDashboardState();
+  return isOn;
+};
 
 
 function formatDate(dateStr)
@@ -631,11 +729,7 @@ function onMessage(event)
 
 function onFocus(event)
 {
-  if (gApps) {
-    gDisplayMode = ROOT;
-    retrieveInstalledApps();
-    render();
-  }
+  updateDashboard( ) ;
 }
 
 function updateLoginStatus() {
@@ -663,3 +757,103 @@ if (window.addEventListener) {
 } else if(window.attachEvent) {
     window.attachEvent('onfocus', onFocus);
 }
+
+
+///////////////////////////////////////////////
+//modal dialog handling code below here
+
+function revealModal(divID)
+{
+    window.onscroll = function () { document.getElementById(divID).style.top = document.body.scrollTop; };
+    document.getElementById(divID).style.display = "block";
+    document.getElementById(divID).style.top = document.body.scrollTop;
+}
+
+function hideModal(divID)
+{
+    $("#appinfo").empty();
+    document.getElementById(divID).style.display = "none";
+}
+
+
+function createAppInfoPane(origin32) {
+      var infoBox = $("<div/>").addClass("appinfobox");
+      var install = findInstallForID(origin32);
+
+      var appIcon = $('<div width="64" height="64"/>').addClass("dockIcon");
+      var iconImg = getBigIcon(install.manifest);        
+      appIcon.append($('<img width="64" height="64"/>').attr('src', install.origin + iconImg));
+      infoBox.append(appIcon);
+      
+      
+      var labelBox = $("<div class='labelBox glowy-blue-text'/>");
+      
+      var appName = $("<div/>").addClass("infoLabel ");
+      appName.text(install.manifest.name);  
+      appName.disableSelection();
+      labelBox.append(appName);
+
+      if (install.manifest.developer && install.manifest.developer.name) {
+        var devName = $("<div/>").addClass("infoLabelSmall");
+        devName.text(install.manifest.developer.name);  
+        devName.disableSelection();
+        labelBox.append(devName);
+      }
+      
+      if (install.manifest.developer && install.manifest.developer.url) {
+        var devLink = $("<a/>").addClass("infoLabelSmall glowy-blue-text");
+        devLink.attr("href", install.manifest.developer.url);
+        devLink.attr("target" , "_blank");
+        devLink.text(install.manifest.developer.url);
+        labelBox.append(devLink);
+      }
+      infoBox.append(labelBox);
+
+      var descBox = $("<div/>").addClass("descriptionBox glowy-blue-text");
+      descBox.text(install.manifest.description);
+      infoBox.append(descBox);
+
+      var delButton = $("<div/>").addClass("deleteAppButton glowy-red-text");
+      delButton.text("DELETE");
+      delButton.disableSelection();
+      delButton.mouseenter(function() {delButton.animate({ "font-size": 20 + "px", "padding-top": "5px"}, 50) });
+      delButton.mouseleave(function() {delButton.text("DELETE"); delButton.animate({ "font-size": 14 + "px", "padding-top": "8px"}, 50) });
+
+
+      //this really needs to be moved out into a function
+      delButton.click( function() { if (delButton.text() == "DELETE") {
+                                          delButton.text("DELETE ?");
+                                        } else {
+      
+                                          navigator.apps.mgmt.uninstall( install.origin, function() { 
+                                                                                            removeAppFromDock(install.origin32);
+                                                                                            removeWidget(install.origin32);
+                                                                                            saveDashboardState( function () {updateDashboard();} );
+                                                                                            hideModal('modalPage')
+                                                                                        }  
+                                                                        ) }});
+      infoBox.append(delButton);
+      
+      if (install.manifest.widget) {
+        var widgetButton = $("<div/>").addClass("widgetToggleButton glowy-red-text");
+        widgetButton.text("WIDGET");
+        widgetButton.disableSelection();
+        if (isWidgetVisible(origin32)) {
+          widgetButton.addClass("glowy-green-text");
+        }
+        widgetButton.click( function() { if (toggleWidgetVisibility(install.origin32)) {
+                                            widgetButton.addClass("glowy-green-text");
+                                          } else {
+                                            widgetButton.removeClass("glowy-green-text");
+                                          }; 
+                                         updateWidgets(); });
+                                         
+        widgetButton.mouseenter(function() {widgetButton.animate({ "font-size": 20 + "px", "padding-top": "5px"}, 50) });
+        widgetButton.mouseleave(function() {widgetButton.animate({ "font-size": 14 + "px", "padding-top": "8px"}, 50) });
+        infoBox.append(widgetButton);
+      }
+
+      return infoBox;
+}
+
+
