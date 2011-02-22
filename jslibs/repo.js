@@ -70,26 +70,31 @@ Repo = (function() {
             // manually iterating the apps (rather than using appStorage.iterate() allows
             // us to differentiate between a corrupt application (for purging), and
             // an error inside the caller provided callback function
-            for (var i = 0; i < appKeys.length; i++) {
-                var aKey = appKeys[i];
-                try {
-                    appStorage.get(aKey, function(install) {
-                        install.manifest = Manifest.validate(install.manifest);
-                        toReturn[aKey] = install;
-                    });
-                } catch (e) {
-                    console.log("invalid application detected: " + e);
-                    toRemove.push(aKey);
-                }
-            }
-
-            for (var j = 0; j < toRemove.length; j++) {
-                appStorage.remove(toRemove[j], function() {
-                    // nothing to check
-                });
+            var count = appKeys.length;
+            if (count == 0) {
+                callback(toReturn);
+                return;
             }
             
-            callback(toReturn);
+            for (var i = 0; i < appKeys.length; i++) {
+                var aKey = appKeys[i];
+                appStorage.get(aKey, function(install) {
+                    try {
+                        install.manifest = Manifest.validate(install.manifest);
+                        toReturn[aKey] = install;
+                    } catch (e) {
+                        toRemove.push(aKey)
+                    } finally {
+                        count--;
+                        if (count == 0) {
+                            for (var j = 0; j < toRemove.length; j++) {
+                                appStorage.remove(toRemove[j], function() {});
+                            }
+                            callback(toReturn);
+                        }
+                    }
+                });
+            }
         });
     };
 
