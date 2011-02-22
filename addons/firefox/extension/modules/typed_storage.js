@@ -92,17 +92,16 @@ function ObjectStore(objType)
 ObjectStore.prototype = {
     get: function(key, cb)
     {
+        let value = undefined;
         let getStatement = this._dbConn.createStatement(
             "SELECT data FROM " + this._objType + " WHERE key = :key LIMIT 1"
         );
         getStatement.params.key = key;
         getStatement.executeAsync({
             handleResult: function(result) {
-                let value = result.getNextRow();
-                if (value) {
-                    cb(JSON.parse(value.getResultByName("data")));
-                } else {
-                    cb(undefined);
+                let row = result.getNextRow();
+                if (row) {
+                    value = JSON.parse(row.getResultByName("data"));
                 }
             },
             handleError: function(error) {
@@ -116,6 +115,8 @@ ObjectStore.prototype = {
                 getStatement.reset();
                 if (reason != Ci.mozIStorageStatementCallback.REASON_FINISHED)
                     console.log("Get query canceled or aborted! " + reason);
+                else
+                    cb(value);
             }
         });
     },

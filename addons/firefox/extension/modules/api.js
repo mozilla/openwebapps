@@ -150,12 +150,12 @@ FFRepoImpl.prototype = {
     uninstall: function(key, onsuccess, onerror)
     {
         Repo.uninstall(key, function(result) {
-            if (typeof result.error != result) {
+            if (typeof result == 'object' && 'error' in result) {
                 onerror({
                     'code':result['error'][0],
                     'message':result['error'][1]
                 });
-            } else {
+            } else if (typeof onsuccess == 'function') {
                 onsuccess(result);
             }
         });

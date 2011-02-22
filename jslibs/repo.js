@@ -135,7 +135,8 @@ Repo = (function() {
                     result.push(item);
                 }
             } else {
-                cb(result);
+                if (cb && typeof cb == 'function')
+                    cb(result);
             }
         });
     }
@@ -276,8 +277,12 @@ Repo = (function() {
 
     /** Determines if an application is installed for the calling site */
     function amInstalled(origin, cb) {
-        origin = normalizeOrigin(origin)
         var done = false;
+        origin = normalizeOrigin(origin);
+        
+        if (typeof cb != 'function')
+            return;
+            
         iterateApps(function(key, item) {
             if (!done && item) {
                 if (applicationMatchesDomain(item.origin, origin)) {
@@ -340,7 +345,7 @@ Repo = (function() {
         // storing undefined purges state
         if (state === undefined) {
             stateStorage.remove(JSON.stringify(id), cb);
-        } else    {
+        } else {
             stateStorage.put(JSON.stringify(id), state, cb);
         }
     };
