@@ -569,16 +569,14 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
     apibase: "navigator.apps", name: "amInstalled", script: null,
     getapi: function (contentWindowRef) {
       return function (callback) {
-        var result = repo.amInstalled(contentWindowRef.location);
-        if (callback && typeof(callback) === 'function') callback(result);
+        repo.amInstalled(contentWindowRef.location, callback);
       };
   }});
   injector.register({
     apibase: "navigator.apps", name: "getInstalledBy", script: null,
     getapi: function (contentWindowRef) {
       return function (callback) {
-        var result = repo.getInstalledBy(contentWindowRef.location);
-        if (callback && typeof(callback) === 'function') callback(result);
+        repo.getInstalledBy(contentWindowRef.location, callback);
       };
   }});
   injector.register({
