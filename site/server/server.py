@@ -44,6 +44,8 @@ class GetManifestHandler(tornado.web.RequestHandler):
       # TODO Validate manifest schema?
       # TODO Should we reserialize or pass through verbatim?  Verbatim allows hashing
       # but might allow sneaky content encoding trickery.
+      if "Content-Type" in response.headers:
+        self.set_header("Content-Type", response.headers["Content-Type"])
       self.write(json.dumps(manifest))
     except Exception, e:
       logging.exception(e)
