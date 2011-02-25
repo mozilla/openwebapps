@@ -1,0 +1,12 @@
+{
+  "name": "Manifest Checker",
+  "description": "A development tool and demonstration app that helps you check your open web app manifests.",
+  "launch_path": "/",
+  "icons": {
+    "128": "/img/logo_128.png"
+  },
+  "developer": {
+    "name": "Mozilla Labs",
+    "url": "http://mozillalabs.com"
+  }
+}

@@ -8,18 +8,62 @@ body {
     margin: 0 auto;
 }
 
-#title {
+#header .title {
+    position: relative;
+    left: -50px;
+    padding-top: 60px;
     font-family: georgia, 'bitstream vera serif', serif;
     font-size: 300%;
     font-weight: bold;
     letter-spacing: -4px;
 }
 
-#subtitle {
+#header .subtitle {
     position: relative;
+    left: -30px;
     top: -4px;
     font-size: 100%;
     font-style: italic;
+}
+
+#header .logo {
+    float: left;
+}
+
+#header .upsell {
+    float: right;
+    background-color: #3f3f3f;
+    color: #ddd;
+    padding: 20px;
+    width: 10em;
+    margin-right: 70px;
+    margin-top: 30px;
+    -moz-border-radius: 10px;
+    -webkit-border-radius: 10px;
+    border-radius: 10px;
+    text-align: center;
+    display:none;
+    z-index: 10;
+    position: relative;
+    font-size: .9em;
+}
+
+#header .upsell a {
+    color: #fff;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+#header .upsell a:hover {
+    text-decoration: underline;
+}
+
+#header .upsell span span {
+    font-weight: bold;
+}
+
+#header div.upsell:hover {
+    background-color: #555;
 }
 
 #content {
@@ -55,3 +99,4 @@ body {
     scroll: auto;
     padding: 10px;
 }
+

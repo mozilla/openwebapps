@@ -3,7 +3,7 @@
 <head>
   <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
   <link rel="shortcut icon" href="/img/favicon.ico" />
-  <title>The Manifest Molder</title>
+  <title>The Manifest Checker</title>
 
   <script type="text/javascript" src="jquery-1.4.4.min.js"></script>
   <script type="text/javascript" src="urlmatch.js"></script>
@@ -13,61 +13,35 @@
   <link id="bespin_base" href="bespin">
   <link rel="stylesheet" type="text/css" href="bespin/BespinEmbedded.css">
   <script type="text/javascript" src="bespin/BespinEmbedded.js"></script>
+  <script type="text/javascript" src="https://stage.myapps.mozillalabs.com/jsapi/include.js"></script>
 
   <link rel="stylesheet" type="text/css" href="style.css" />
 </head>
 <body>
   <div id="pageContent">
     <div id="header">
-      <div id="title">The Manifest Molder</div>
-      <div id="subtitle">You can write that JSON, we can help.</div>
+      <div class="logo"><img src="img/logo_128.png" /></div>
+      <div class="upsell"></div>
+      <div class="title">The Manifest Checker</div>
+      <div class="subtitle">An online validator for <a href="https://developer.mozilla.org/en/OpenWebApps/The_manifest">open web app manifests</a>...</div>
     </div>
     <div id="content">
       <div id="main">
 <div id="editor" class="bespin" data-bespinoptions='{ "settings": { "tabstop": 4 }, "syntax": "js", "stealFocus": true }'>{
-  "version": "1.0",
-  "name": "MozillaBall",
-  "description": "Exciting Open Web development action!",
-  "launch_path": "",
-  "capabilities": {
-    "geolocation": true,
-    "navigation_consolidation": true
-  },
+  "name": "Manifest Checker",
+  "description": "A development tool and demonstration app that helps you check your open web app manifests.",
+  "launch_path": "/",
   "icons": {
-    "16": "icon-16.png",
-    "48": "icon-48.png",
-    "128": "icon-128.png"
-  },
-  "widget": {
-    "path": "/widget.html",
-    "width": 100,
-    "height": 200
+    "128": "/img/logo_128.png"
   },
   "developer": {
     "name": "Mozilla Labs",
     "url": "http://mozillalabs.com"
-  },
-  "installs_allowed_from": [
-    "https://appstore.mozillalabs.com"
-  ],
-  "locales": {
-    "es": {
-      "description": "¡Acción abierta emocionante del desarrollo del Web!",
-      "developer": {
-        "url": "http://es.mozillalabs.com/"
-      }
-    },
-    "it": {
-      "description": "Azione aperta emozionante di sviluppo di fotoricettore!",
-      "developer": {
-        "url": "http://it.mozillalabs.com/"
-      }
-    }
-  },
-  "default_locale": "en"
-}</div>
+  }
+}
+</div>
 
-<p>And if you dare, try to <input type="button" id="normalize" value="normalize"> this manifest.</p>
+<p>Copy and paste your manifest into the editor above to get started (and we <input type="button" id="normalize" value="normalize"> too).</p>
 
 <div id="output">
 </div>

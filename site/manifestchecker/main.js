@@ -57,3 +57,31 @@ window.onBespinLoad = function() {
 
     validate();
 };
+
+$(document).ready(function() {
+    function izInstalled() {
+        $(".upsell").unbind('click').html("I'm installed!  You can check me out on your <a href='https://stage.myapps.mozillalabs.com'>dashboard</a>.");
+    }
+
+    navigator.apps.amInstalled(function(data) {
+        if (data) {
+            izInstalled();
+        } else {
+            var contents = $("<span>Wanna <span>install me</span>?  Then click!</span>");
+            $(".upsell").append(contents).click(function() {
+                navigator.apps.install({
+                    url: "/manifest.webapp",
+                    onsuccess: function() {
+                        izInstalled();
+                    },
+                    onerror: function(errObj) {
+                        alert("oh noes!  Couldn't install this bugger: (" + errObj.code + ") - " + errObj.message);
+                    }
+                });
+
+            });
+
+        }
+        $(".upsell").show(400);
+    });
+});
