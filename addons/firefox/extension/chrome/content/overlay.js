@@ -592,7 +592,7 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
     getapi: function (contentWindowRef) {
       return function (args) {
         repo.verifyMgmtPermission(contentWindowRef.location);
-        repo.launch(window, contentWindowRef.location, args);
+        repo.launch(args);
       };
   }});
   injector.register({
