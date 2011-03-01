@@ -180,9 +180,17 @@ function infoCold() {
 //************** document.ready()
 
 $(document).ready(function() {
-    //temporarily set the repository origin to localhost
-   // navigator.apps.setRepoOrigin("..");
 
+
+					$("#filter").focus(function () {
+					    //hide placeholder item
+  					}).blur(function () {
+						if (this.value == '') {
+						  //show placeholder item
+						}
+					});
+										
+  
     $("#dock").droppable({ accept: ".dockItem", over: dragOver, out: dragOut,  
                         drop: function(event, ui) {
                           gOverDock = false;
@@ -220,8 +228,8 @@ function checkSavedData(save) {
   emptyState.appsInDock = [];
   emptyState.widgetPositions = {};
 
-  if (save && ($.isPlainObject(save))) {
-    if (save.appsInDock && $.isArray(save.appsInDock) && save.widgetPositions && $.isPlainObject(save.widgetPositions)) return save;
+  if (save && (typeof save == 'object')) {
+    if (save.appsInDock && $.isArray(save.appsInDock) && save.widgetPositions && (typeof save.widgetPositions == 'object')) return save;
   }
   return emptyState;
 }
@@ -275,24 +283,33 @@ function makeOpenAppTabFn(origin32)
 // here is also where I cache the base32 version of the origin into the app
 function renderList() {
   if (!gApps) return;
-  var appList = $("#list");
+  //clear the list
   $('.app').remove();
+  
+  var results = [];
   
   for (origin in gApps) {
     try {
-      var install = gApps[origin];
       
       //BASE32 ENCODE HERE ONLY
-      if ( ! install.origin32) { install.origin32 = Base32.encode(install.origin); };
+      if ( ! gApps[origin].origin32) { gApps[origin].origin32 = Base32.encode(origin); };
       
       //TO DO: need to sort these
-      if (gFilterString.length == 0 || gFilterString == install.manifest.name.substr(0,gFilterString.length).toLowerCase() ) {
-        var icon = createAppListItem(install);
-        //check for no icon here, and supply a default one
-        appList.append(icon);
+      if (gFilterString.length == 0 || gFilterString == gApps[origin].manifest.name.substr(0,gFilterString.length).toLowerCase() ) {
+        results.push(gApps[origin]);
       }
     } catch (e) {
       if (typeof console !== "undefined") console.log("Error while creating list icon for app " + origin + ": " + e);
+    }
+  }
+  
+  results.sort(function(a,b) {return (a.manifest.name > b.manifest.name) });
+  
+  for ( var i = 0; i < results.length; i++ ) {
+    try {
+        $("#list").append(createAppListItem(results[i]));
+    } catch (e) {
+      if (typeof console !== "undefined") console.log("Error while inserting list icon for app " + results[i].origin + ": " + e);
     }
   }
 }
@@ -326,10 +343,16 @@ function updateWidgets( )  {
                         if (!gDashboardState.widgetPositions[gApps[app].origin32])  {
                             //make a new one, and put it in the save state.  NOTE: we add some padding for the frame, but only when we create and save
                             // the widget the first time.  from then on, we use the outer frame as the thing to measure the size of
+                            var wH = ((gApps[app].manifest.widget.height ? gApps[app].manifest.widget.height : 120) + 16);
+                            var wW = ((gApps[app].manifest.widget.width ? gApps[app].manifest.widget.width : 200) + 16);
+                            //I'm enforcing a max size of 800x800 for now.  
+                            if (wH > 800) wH = 800;
+                            if (wW > 800) wW = 800;
+
                             gDashboardState.widgetPositions[gApps[app].origin32] = {"top": 0,
                                                                             "left": 0, 
-                                                                            "height": ((gApps[app].manifest.widget.height ? gApps[app].manifest.widget.height : 120) + 16),
-                                                                            "width": ((gApps[app].manifest.widget.width ? gApps[app].manifest.widget.width : 200) + 16),
+                                                                            "height": wH,
+                                                                            "width": wW,
                                                                             "zIndex" : 0
                                                                              };
                             //save state, since we added something
@@ -462,7 +485,7 @@ function createAppListItem(install)
   appContainer.attr("id", install.origin32);
   
   //the info button
-  var infoButton = $("<img/>").addClass("glowButton");
+  var infoButton = $("<img/>").addClass("infoButton");
   infoButton.attr("src", "img/appinfo.png");
   infoButton.attr("id", install.origin32);
   appContainer.append(infoButton);
@@ -471,20 +494,34 @@ function createAppListItem(install)
   infoButton.mouseenter(function() { infoButton.addClass("infoButtonHot") }).mouseleave(function() {infoButton.removeClass("infoButtonHot") });
 
 
+  var displayBox = $("<div/>").addClass("appClickBox");
+  appContainer.append(displayBox);
+
   var clickyIcon = $("<div/>").addClass("icon");
   var iconImg = getSmallIcon(install.manifest);
-    
-  clickyIcon.append($('<img width="32" height="32"/>').attr('src', install.origin + iconImg));
+  
+  clickyIcon.append($('<img width="32" height="32"/>').attr('src', install.origin + iconImg));  
+  
+  displayBox.append(clickyIcon);
 
-  appContainer.append(clickyIcon);
-
+  
+  //TODO: size text to fit
   var appName = $("<div/>").addClass("listLabel glowy-blue-text");
   appName.text(install.manifest.name);  
   appName.disableSelection();
-  
-  appName.click(makeOpenAppTabFn(install.origin32));
+  displayBox.click(makeOpenAppTabFn(install.origin32));
 
-  appContainer.append(appName);
+  displayBox.append(appName);
+
+//   var rszDiv = $("<div/>").addClass("listLabel glowy-blue-text resizerDiv");
+//   
+//   rszDiv.text(install.manifest.name);  
+//   var fSize = 18;
+//   while (rszDiv.width() > appName.width()) {
+//     rszDiv.css("font-size", --fSize + "px");
+//   }
+//   appName.css("font-size", fSize + "px");
+  
 
   //TO DO: make a large icon helper here, instead of using the image of the list item.  it needs to look like a dock item.
   appContainer.draggable({revert : "invalid", 
@@ -595,7 +632,7 @@ function createWidget(install, top, left, height, width, zIndex) {
     
     var clientFrame = $("<iframe id=\"" + install.origin32 + "client\" />").addClass("clientframe");
 
-    clientFrame.attr("src", install.origin + install.manifest.widget.path);
+    clientFrame.attr("src", install.origin + (install.manifest.widget.path?install.manifest.widget.path:''));
     clientFrame.attr("scrolling", "no");
     
     clientFrame.css({
@@ -633,7 +670,7 @@ function createWidget(install, top, left, height, width, zIndex) {
           });
                   
      var selectorString = "#" + install.origin32 + "client, #" + install.origin32 + "hider";
-     widgetFrame.resizable({containment: widgetSpace, handles:'se', alsoResize: selectorString, minHeight:  64, minWidth: 64, maxHeight: 400, maxWidth: 400,
+     widgetFrame.resizable({containment: widgetSpace, handles:'se', alsoResize: selectorString, minHeight:  64, minWidth: 64, maxHeight: 800, maxWidth: 800,
      
                 //unfortunately, iframes steal, or at least borrow, mouse drag events, and so we need to create defensive shields
                 // to cover all our iframes when we are doing any mouse dragging.  we hide it behind the view we care about when 
@@ -816,8 +853,8 @@ function createAppInfoPane(origin32) {
       var delButton = $("<div/>").addClass("deleteAppButton glowy-red-text");
       delButton.text("DELETE");
       delButton.disableSelection();
-      delButton.mouseenter(function() {delButton.animate({ "font-size": 20 + "px", "padding-top": "5px"}, 50) });
-      delButton.mouseleave(function() {delButton.text("DELETE"); delButton.animate({ "font-size": 14 + "px", "padding-top": "8px"}, 50) });
+      delButton.mouseenter(function() {delButton.animate({ "font-size": 20 + "px", "padding-top": "6px", "padding-bottom": "2px"}, 50) });
+      delButton.mouseleave(function() {delButton.text("DELETE"); delButton.animate({ "font-size": 14 + "px", "padding-top": "8px", "padding-bottom":"0px"}, 50) });
 
 
       //this really needs to be moved out into a function
@@ -848,8 +885,8 @@ function createAppInfoPane(origin32) {
                                           }; 
                                          updateWidgets(); });
                                          
-        widgetButton.mouseenter(function() {widgetButton.animate({ "font-size": 20 + "px", "padding-top": "5px"}, 50) });
-        widgetButton.mouseleave(function() {widgetButton.animate({ "font-size": 14 + "px", "padding-top": "8px"}, 50) });
+        widgetButton.mouseenter(function() {widgetButton.animate({ "font-size": 20 + "px", "padding-top": "6px", "padding-bottom": "2px"}, 50) });
+        widgetButton.mouseleave(function() {widgetButton.animate({ "font-size": 14 + "px", "padding-top": "8px", "padding-bottom": "0px"}, 50) });
         infoBox.append(widgetButton);
       }
 

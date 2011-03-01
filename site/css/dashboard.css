@@ -226,28 +226,34 @@ body {
 }
 
 .topMargin8 {
+  
+}
+
+.clearButton {
+  height: 25px;
+  width: 25px;
+  float: right;
+  margin-right: 8px;
   margin-top: 8px;
 }
 
-.glowButton {
+.clearButtonHot {
+  margin-right: 6px;
+  margin-top: 6px;
+ 	height: 30px;
+ 	width: 30px;
+}
+
+.infoButton {
   height: 25px;
   width: 25px;
   float: right;
   margin-right: 8px;
 }
 
-.clearButtonHot {
-  margin-right: 6px;
-  margin-top: 6px;
-
- 	height: 30px;
- 	width: 30px;
-}
-
 .infoButtonHot {
-  margin-right: 6px;
+  margin-right: 5px;
   margin-top: -1px;
-
  	height: 30px;
  	width: 30px;
 }
@@ -269,6 +275,13 @@ body {
   margin-bottom: 8px;
 }
 
+.resizerDiv {
+  position: absolute;
+  visibility: hidden;
+  white-space: nowrap;
+  font-size: 18px;
+
+}
 
 
 /* ---------------------  */
@@ -365,12 +378,18 @@ body {
 	height: 32px;
 }
 
+.appClickBox {
+  width: 258px;
+}
+
+
 .listLabel {
-    font-size: 18px;
+      font-size: 18px;
       line-height: 36px;
       margin-left: 44px;
       letter-spacing: 1px;
-      width: 188px;
+      width: 214px;
+      white-space: nowrap;
 }
 
 .labelBox {
