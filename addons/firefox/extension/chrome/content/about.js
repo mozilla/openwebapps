@@ -63,7 +63,7 @@ function render()
         
         function renderValue(parent, key, val, aBox) {
           if (parent == "icons") {
-            aBox.setAttribute("style", "margin:4px;width:" + key + "px;height:" + key+ "px;background-image:url(\"" + val + "\")");
+            aBox.setAttribute("style", "margin:4px;width:" + key + "px;height:" + key+ "px;background-image:url(\"" + theApp.origin + val + "\")");
 
           } else if (key == "installTime") {
             aBox.appendChild(document.createTextNode("" + new Date(val) + " - " + val));
@@ -184,7 +184,8 @@ function render()
       appCfg.appendChild(viewSrcLink);
      
       // Detail
-      appIcon.setAttribute("style", "background-image:url(\"" + getBiggestIcon(theApp.manifest) + "\")");
+      var iconUrl = theApp.origin + getBiggestIcon(theApp.manifest);
+      appIcon.setAttribute("style", "background-image:url(\"" + iconUrl + "\")");
       appName.appendChild(document.createTextNode(theApp.manifest.name));
       
       var installationDomain;

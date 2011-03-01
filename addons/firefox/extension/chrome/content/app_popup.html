@@ -263,7 +263,6 @@ function createAppIcon(installRecord)
   }
   clickyIcon.onclick = function() {
     var url = installRecord.origin;
-    if ('launch_path' in app) url = app['launch_path'];
     repo.launch(url);
   };
   appContainer.appendChild(clickyIcon);

@@ -255,7 +255,7 @@ FFRepoImpl.prototype = {
                 if (app == id) {
                     let url = apps[app]['origin'];
                     if ('launch_path' in apps[app]['manifest'])
-                        url = apps[app]['manifest']['launch_path'];
+                        url += apps[app]['manifest']['launch_path'];
                     openAppURL(url);
                     found = true;
                 }
