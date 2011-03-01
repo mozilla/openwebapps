@@ -76,6 +76,9 @@ BODY {
   background-size: cover;
   box-shadow: 4px 4px 3px rgba(0,0,0,0.2);
 }
+.app .icon:hover {
+  box-shadow: 4px 4px 3px rgba(0,0,255,0.3);
+}
 
 .app a {
   color:#45569a;
@@ -89,6 +92,9 @@ BODY {
 .app .configure button {
   display:block;
   margin-top:8px;
+}
+.app .configure a {
+  display:block;
 }
 .app .services {
   margin-top:4px;

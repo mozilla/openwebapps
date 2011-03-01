@@ -34,7 +34,6 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-dump("Hi, I'm the OWA about handler!\n");
 EXPORTED_SYMBOLS = ["OpenWebAppsAboutHandler"];
 
 Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");

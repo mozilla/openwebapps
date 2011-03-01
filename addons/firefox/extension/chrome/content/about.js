@@ -155,9 +155,16 @@ function render()
     }
 
     var appListContainer = document.getElementById("applist");
+    appListContainer.innerHTML = "";
     
-    for (var appID in appDict)
+    for (let appID in appDict)
     {
+      function makeLaunchFn(appID) {
+        return function() {
+          repo.launch(appID);
+        }
+      }
+      
       var appRow = elem("div", "app");
       var appCfg = elem("div", "configure");
       var appIcon = elem("div", "icon");
@@ -182,20 +189,39 @@ function render()
       viewSrcLink.href = "about:apps?viewsrc=1&appid=" + appID;
       viewSrcLink.appendChild(document.createTextNode("View Manifest"));
       appCfg.appendChild(viewSrcLink);
+      var deleteLink = elem("a");
+      deleteLink.href = "#";
+      deleteLink.onclick = function() {
+        repo.uninstall(appID, 
+          function() {
+            repo.list(function(aDict) {
+              appDict = aDict;
+              render();
+        })});
+        return false;
+      }
+      deleteLink.appendChild(document.createTextNode("Delete"));
+      appCfg.appendChild(deleteLink);
+
      
       // Detail
       var iconUrl = theApp.origin + getBiggestIcon(theApp.manifest);
       appIcon.setAttribute("style", "background-image:url(\"" + iconUrl + "\")");
+      appIcon.onclick = makeLaunchFn(appID);
+      
       appName.appendChild(document.createTextNode(theApp.manifest.name));
-      
-      var installationDomain;
+      appReceipt.appendChild(document.createTextNode("Installed " + formatDate(theApp.install_time) + ", "));
+
       if (theApp.install_origin == "chrome://openwebapps") {
-        installationDomain = "directly from the site";
+        appReceipt.appendChild(document.createTextNode("directly from the site"));
       } else{
-        installationDomain = "from " + theApp.install_origin;
+        var domainLink = elem("a");
+        domainLink.href = theApp.install_origin;
+        domainLink.target = "_blank";
+        domainLink.appendChild(document.createTextNode(theApp.install_origin));
+        appReceipt.appendChild(document.createTextNode("from "));
+        appReceipt.appendChild(domainLink);
       }
-      
-      appReceipt.appendChild(document.createTextNode("Installed " + formatDate(theApp.install_time) + ", "+ installationDomain));
       appListContainer.appendChild(appRow);
     }
   }
