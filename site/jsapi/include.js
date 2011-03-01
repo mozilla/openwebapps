@@ -620,20 +620,22 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
             var doc = win.document;
             iframe = document.createElement("iframe");
             iframe.id = dialogId;
-            iframe.style.position = "absolute";
-            iframe.style.left = "140px";
-            iframe.style.top = "0px";
+            iframe.style.position = "fixed";
+            iframe.style.left = "50%";
+            iframe.style.top = "50%";
             iframe.style.width = "410px";
+            iframe.style.marginLeft = "-205px"; // half of the previous value
             iframe.style.height = "332px";
+            iframe.style.marginTop = "-166px"; // half of the previous value
             iframe.style.zIndex ="999";
             iframe.style.opacity = "1";
 
             iframe.style.border = "2px solid #aaaaaa";
             iframe.style.borderTop = "10px solid #aaaaaa";
 
-            iframe.style.MozBorderRadius = "0px 0px 8px 8px";
-            iframe.style.WebkitBorderRadius = "0px 0px 8px 8px";
-            iframe.style.borderRadius = "0px 0px 8px 8px";
+            iframe.style.MozBorderRadius = "8px";
+            iframe.style.WebkitBorderRadius = "8px";
+            iframe.style.borderRadius = "8px 8px 8px 8px";
 
             // the "hidden" part
             iframe.style.display = "none";
