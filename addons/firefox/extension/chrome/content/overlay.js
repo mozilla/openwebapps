@@ -485,18 +485,19 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
       // Rough estimate of total size:
       // width is 68px per app
       // height is about 96px?
-      let appDict = repo.list();
-      let count =0;
-      for (var key in appDict) count+=1;
+      repo.list(function(appDict) {
+        let count =0;
+        for (var key in appDict) count+=1;
 
-      // figure 5 icons per row?
-      let height = 100 + Math.ceil(count / 5.0) * 100 + (gBrowser.contentDocument.applicationManifest != null ? 180 : 0);
-
-      xulPanel.sizeTo(500,height); // used to be 280
-      let rect = button.getBoundingClientRect();
-      let x = rect.left - 450;
-      let y = rect.bottom;
-      xulPanel.openPopup(null, null, x, y); //button, "before_start", 0, 0);
+        // figure 5 icons per row?
+        let height = 100 + Math.ceil(count / 5.0) * 100 + (gBrowser.contentDocument.applicationManifest != null ? 180 : 0);
+        xulPanel.sizeTo(500,height); // used to be 280
+        
+        let rect = button.getBoundingClientRect();
+        let x = rect.left - 450;
+        let y = rect.bottom;
+        xulPanel.openPopup(null, null, x, y); //button, "before_start", 0, 0);
+      });
     },
 
     onLinkAdded: function onLinkAdded(aEvent) {
