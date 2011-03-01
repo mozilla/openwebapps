@@ -91,9 +91,12 @@ window.onresize = function() {
 
 
 function filterAppList(event) {
+    // if only one is visible and the user presses return, launch it
+    var launch = (event.keyCode == 13);
+
     //get the current contents of the text field, and only show the ones in the list that match
     gFilterString = $("#filter").val().toLowerCase();
-    renderList();
+    renderList(launch);
   };
 
 function computeSlot(event) {
@@ -281,7 +284,7 @@ function makeOpenAppTabFn(origin32)
 
 //create the full app list, and sort them for display
 // here is also where I cache the base32 version of the origin into the app
-function renderList() {
+function renderList(andLaunch) {
   if (!gApps) return;
   //clear the list
   $('.app').remove();
@@ -311,6 +314,10 @@ function renderList() {
     } catch (e) {
       if (typeof console !== "undefined") console.log("Error while inserting list icon for app " + results[i].origin + ": " + e);
     }
+  }
+  if (results.length == 1 && andLaunch)
+  {
+    navigator.apps.mgmt.launch(results[0].origin);
   }
 }
 
@@ -767,6 +774,7 @@ function onMessage(event)
 function onFocus(event)
 {
   updateDashboard( ) ;
+  $("#filter").focus();
 }
 
 function updateLoginStatus() {
