@@ -191,9 +191,9 @@ FFRepoImpl.prototype = {
         return [userInfo, loginInfo];
     },
 
-    launch: function _launch(location, id)
+    launch: function _launch(id)
     {
-        function openAppURL(app)
+        function openAppURL(url)
         {
             let ss = Cc["@mozilla.org/browser/sessionstore;1"]
                     .getService(Ci.nsISessionStore);
@@ -201,7 +201,6 @@ FFRepoImpl.prototype = {
                     .getService(Ci.nsIWindowMediator);
             let bEnum = wm.getEnumerator("navigator:browser");
             let found = false;
-            let url = app.launchURL;
 
             // Do we already have this app running in a tab?    If so, target it.
             while (!found && bEnum.hasMoreElements()) {
@@ -230,8 +229,8 @@ FFRepoImpl.prototype = {
                 }
             }
 
-            // Our URL does not belong to a currently running app.    Create a new
-            // tab for that app and load our URL into it.
+            // Our URL does not belong to a currently running app.
+            // Create a new tab for that app and load our URL into it.
             if (!found) {
                 let recentWindow = wm.getMostRecentWindow("navigator:browser");
                 if (recentWindow) {
@@ -250,16 +249,20 @@ FFRepoImpl.prototype = {
         // FIXME: this is a hack, we are iterating over installed apps to
         // find the one we want since we cannot get to the typed storage
         // via common repo.js
-        let apps = Repo.list();
-        for each (let app in apps) {
-            if (app.id == id) {
-                openAppURL(app);
-                return;
+        Repo.list(function(apps) {
+            let found = false;
+            for (let app in apps) {
+                if (app == id) {
+                    let url = apps[app]['origin'];
+                    if ('launch_path' in apps[app]['manifest'])
+                        url += apps[app]['manifest']['launch_path'];
+                    openAppURL(url);
+                    found = true;
+                }
             }
-        }
-
-        // Could not find specified app
-        throw "Invalid AppID: " + id;
+            if (!found)
+                throw "Invalid AppID: " + id;
+        });
     },
 
     getCurrentPageHasApp: function _getCurrentPageHasApp()

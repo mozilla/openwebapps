@@ -37,20 +37,12 @@ class GetManifestHandler(tornado.web.RequestHandler):
       self.finish()
       return
 
-    # Parse it and make sure it's valid
-    try:
-      logging.error(response.body)
-      manifest = json.loads(response.body)
-      # TODO Validate manifest schema?
-      # TODO Should we reserialize or pass through verbatim?  Verbatim allows hashing
-      # but might allow sneaky content encoding trickery.
-      if "Content-Type" in response.headers:
-        self.set_header("Content-Type", response.headers["Content-Type"])
-      self.write(json.dumps(manifest))
-    except Exception, e:
-      logging.exception(e)
-      self.set_status(500)  # 500 Server Error (not quite right?)
-      self.write("""{"status":"error", "message":"Application manifest is malformed."}""")
+    # passthrough verbatim.  the repository can handle herself.
+    logging.error(response.body)
+    # but might allow sneaky content encoding trickery.
+    if "Content-Type" in response.headers:
+      self.set_header("Content-Type", response.headers["Content-Type"])
+    self.write(response.body)
     self.finish()
 
 settings = {

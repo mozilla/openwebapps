@@ -434,6 +434,19 @@ list({
 
 </div>
 
+<div class="test">
+<h3>Install an app with a UTF-8 BOM in the manifest</h3>
+
+<pre class="doctest">
+$ navigator.apps.install(
+>   {url: SERVERS['manifest_with_bom'] + "/manifest.webapp",
+>    onsuccess: Spy('apps.install', {wait: true}),
+>    onerror: Spy('apps.install.error', {wait: false})
+>   });
+apps.install()
+</pre>
+
+
 </body>
 <script type="text/javascript" src="/servers.js"></script>
 <script type="text/javascript" src="/jsapi/include.js"></script>

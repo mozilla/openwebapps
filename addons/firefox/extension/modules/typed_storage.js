@@ -92,7 +92,7 @@ function ObjectStore(objType)
 ObjectStore.prototype = {
     get: function(key, cb)
     {
-        let value = undefined;
+        let value;
         let getStatement = this._dbConn.createStatement(
             "SELECT data FROM " + this._objType + " WHERE key = :key LIMIT 1"
         );
@@ -136,6 +136,7 @@ ObjectStore.prototype = {
         let removeStatement = this._dbConn.createStatement(
             "DELETE FROM " + this._objType + " WHERE key = :key"
         );
+        removeStatement.params.key = key;
         this._doAsyncExecute(removeStatement, cb);
     },
     
@@ -215,7 +216,7 @@ ObjectStore.prototype = {
             handleCompletion: function(reason) {
                 statement.reset();
                 if (reason != Ci.mozIStorageStatementCallback.REASON_FINISHED)
-                    console.log("Clear query canceled or aborted! " + reason);
+                    console.log("Query canceled or aborted! " + reason);
                 else
                     cb(true);
             }

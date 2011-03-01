@@ -78,3 +78,7 @@
 .autocomplete-richlistitem[type="openwebapps"] .ac-url-box {
     display: none !important;
 }
+
+.popup-notification-icon[popupid="openwebapps-install-notification"] {
+  list-style-image: url("chrome://openwebapps/skin/app-icon.png");
+}

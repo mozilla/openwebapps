@@ -67,6 +67,27 @@ Repo = (function() {
         var toReturn = {};
         
         appStorage.keys(function(appKeys) {
+
+            function makeAddOrRemoveFn(aKey)
+            {
+              return function(install) {
+                try {
+                    install.manifest = Manifest.validate(install.manifest);
+                    toReturn[aKey] = install;
+                } catch (e) {
+                    toRemove.push(aKey)
+                } finally {
+                    count--;
+                    if (count == 0) {
+                        for (var j = 0; j < toRemove.length; j++) {
+                            appStorage.remove(toRemove[j], function() {});
+                        }
+                        callback(toReturn);
+                    }
+                }
+              }
+            }
+        
             // manually iterating the apps (rather than using appStorage.iterate() allows
             // us to differentiate between a corrupt application (for purging), and
             // an error inside the caller provided callback function
@@ -78,22 +99,7 @@ Repo = (function() {
             
             for (var i = 0; i < appKeys.length; i++) {
                 var aKey = appKeys[i];
-                appStorage.get(aKey, function(install) {
-                    try {
-                        install.manifest = Manifest.validate(install.manifest);
-                        toReturn[aKey] = install;
-                    } catch (e) {
-                        toRemove.push(aKey)
-                    } finally {
-                        count--;
-                        if (count == 0) {
-                            for (var j = 0; j < toRemove.length; j++) {
-                                appStorage.remove(toRemove[j], function() {});
-                            }
-                            callback(toReturn);
-                        }
-                    }
-                });
+                appStorage.get(aKey, makeAddOrRemoveFn(aKey));
             }
         });
     };
