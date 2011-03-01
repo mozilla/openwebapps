@@ -519,21 +519,11 @@ function createAppListItem(install)
   displayBox.click(makeOpenAppTabFn(install.origin32));
 
   displayBox.append(appName);
-
-//   var rszDiv = $("<div/>").addClass("listLabel glowy-blue-text resizerDiv");
-//   
-//   rszDiv.text(install.manifest.name);  
-//   var fSize = 18;
-//   while (rszDiv.width() > appName.width()) {
-//     rszDiv.css("font-size", --fSize + "px");
-//   }
-//   appName.css("font-size", fSize + "px");
   
-
-  //TO DO: make a large icon helper here, instead of using the image of the list item.  it needs to look like a dock item.
   appContainer.draggable({revert : "invalid", 
+                          cursorAt: {top: 32, left: 32},
                           zIndex: 1000,
-                          helper : "clone", 
+                          helper : function() {return createDockItem(install.origin32)}, 
                           opacity: "0.5",
                           stop: function(event, ui) {
                             appContainer.addClass("ui-draggable-dragged");

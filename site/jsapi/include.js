@@ -622,7 +622,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
             iframe.id = dialogId;
             iframe.style.position = "fixed";
             iframe.style.left = "50%";
-            iframe.style.top = "50%";
+            iframe.style.top = "40%";
             iframe.style.width = "410px";
             iframe.style.marginLeft = "-205px"; // half of the previous value
             iframe.style.height = "332px";
@@ -631,7 +631,6 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
             iframe.style.opacity = "1";
 
             iframe.style.border = "2px solid #aaaaaa";
-            iframe.style.borderTop = "10px solid #aaaaaa";
 
             iframe.style.MozBorderRadius = "8px";
             iframe.style.WebkitBorderRadius = "8px";

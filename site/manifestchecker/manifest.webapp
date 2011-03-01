@@ -8,5 +8,10 @@
   "developer": {
     "name": "Mozilla Labs",
     "url": "http://mozillalabs.com"
-  }
+  },
+  "installs_allowed_from": [
+    "http://people.mozilla.org",
+    "http://apps.mozillalabs.com",
+    "https://apps.mozillalabs.com"
+  ]
 }
