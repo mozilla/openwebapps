@@ -390,14 +390,18 @@ body {
       letter-spacing: 1px;
       width: 214px;
       white-space: nowrap;
-}
+      overflow: hidden;      
+      }
 
 .labelBox {
       position: absolute;
       top: 12px;
       left: 80px;
       float: right;
-      width: 150px;
+      width: 240px;
+      white-space: nowrap;
+      overflow: hidden;      
+
       }
       
 .infoLabel {
@@ -405,12 +409,18 @@ body {
       line-height: 20px;
       padding-top: 4px;
       letter-spacing: 1px;
+      white-space: nowrap;
+      overflow: hidden;      
+
 }
 
 .infoLabelSmall {
       font-size: 14px;
       line-height: 16px;
       padding-left: 1px;
+      white-space: nowrap;
+      overflow: hidden;      
+
 }
 
 .descriptionBox {
