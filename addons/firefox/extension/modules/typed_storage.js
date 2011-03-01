@@ -136,6 +136,7 @@ ObjectStore.prototype = {
         let removeStatement = this._dbConn.createStatement(
             "DELETE FROM " + this._objType + " WHERE key = :key"
         );
+        removeStatement.params.key = key;
         this._doAsyncExecute(removeStatement, cb);
     },
     
