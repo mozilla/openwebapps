@@ -165,7 +165,6 @@ body {
 .headerText {
 	position: absolute;
 	font-size: 32px;
-	letter-spacing: 3px;
 	margin-left: 10px;
 	margin-top: 2px;
 }
@@ -222,7 +221,6 @@ body {
   font-size: 24px;
   margin-top:4px;
   margin-left:8px;
-  letter-spacing:3px;
 }
 
 .topMargin8 {
@@ -343,6 +341,7 @@ body {
 
     background-color: rgba(140,255,210,0.5);
 
+
 }
 
 
@@ -387,7 +386,6 @@ body {
       font-size: 18px;
       line-height: 36px;
       margin-left: 44px;
-      letter-spacing: 1px;
       width: 214px;
       white-space: nowrap;
       overflow: hidden;      
@@ -408,10 +406,8 @@ body {
       font-size: 18px;
       line-height: 20px;
       padding-top: 4px;
-      letter-spacing: 1px;
       white-space: nowrap;
       overflow: hidden;      
-
 }
 
 .infoLabelSmall {

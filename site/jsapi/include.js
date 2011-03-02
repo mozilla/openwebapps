@@ -757,7 +757,9 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
 
             for (var origin in _lastListResults) {
                 if (origin === id) {
-                    var url = origin + (_lastListResults[origin].launchURL !== undefined ? _lastListResults[origin].launchURL : "/");
+                    var url = origin;
+                    if (_lastListResults[origin].manifest.launch_path !== undefined)
+                        url += _lastListResults[origin].manifest.launch_path;
                     // generate a deterministic and portable name for the "name" of the launced window. 
                     // this will prevent multiple launches of the same app from opening new windows.
                     // (NOTE: IE is fairly restrictive on what characters may occur in the window name argument)
