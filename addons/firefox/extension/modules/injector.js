@@ -135,8 +135,8 @@ let Injector = {
 
 // hook up a seperate listener for each xul window
 function InjectorInit(window) {
-  if (window.injector) return;
-  window.injector = {
+  if (window.appinjector) return;
+  window.appinjector = {
     providers: [],
     actions: [],
     onLoad: function() {
@@ -241,7 +241,8 @@ function InjectorInit(window) {
               event.target.removeEventListener("load", this, false);
               try
               { 
-                // in a pure-JS world, we could just call this:
+                // this is our pure-JS call: to support HTML5 messaging we'll
+                // have to figure out how to wrap this up with postMessage.
                 let result = iframe.contentWindow.wrappedJSObject[theService.suite][theService.method].apply(null, args);
                 
                 // Typecheck: result should be an array.
@@ -259,7 +260,10 @@ function InjectorInit(window) {
 
           // and now target it
           iframe.setAttribute("callerWindow", window);
-          iframe.src = theService.frame;        
+          iframe.src = theService.frame;
+          
+          // Note that the iframe leaks until the window is closed.  This is
+          // obviously quite incorrect and needs to be dealt with.
         } catch (e) {
           dump(e + "\n");
           dump(e.stack + "\n");
@@ -369,6 +373,6 @@ function InjectorInit(window) {
       }
     }
   };
-  window.injector.onLoad();
-  window.addEventListener("unload", function() window.injector.onUnload(), false);
+  window.appinjector.onLoad();
+  window.addEventListener("unload", function() window.appinjector.onUnload(), false);
 }
