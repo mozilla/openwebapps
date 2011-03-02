@@ -243,17 +243,18 @@ body {
 }
 
 .infoButton {
-  height: 25px;
-  width: 25px;
+  height: 26px;
+  width: 26px;
   float: right;
+  margin-top: 2px;
   margin-right: 8px;
 }
 
 .infoButtonHot {
   margin-right: 5px;
-  margin-top: -1px;
- 	height: 30px;
- 	width: 30px;
+  margin-top: 0px;
+ 	height: 32px;
+ 	width: 32px;
 }
 
 
@@ -386,7 +387,7 @@ body {
       font-size: 18px;
       line-height: 36px;
       margin-left: 44px;
-      width: 214px;
+      width: 206px;
       white-space: nowrap;
       overflow: hidden;      
       }
