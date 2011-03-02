@@ -46,6 +46,9 @@ BODY {
   padding:8px;
   position:relative;
   min-height:40px;
+  overflow-y: hidden;
+  -moz-transition-property: height, padding, margin-bottom;
+  -moz-transition-duration: 0.5s;
 }
 .app .detail {
   min-width:360px;

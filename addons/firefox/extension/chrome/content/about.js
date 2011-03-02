@@ -164,6 +164,21 @@ function render()
           repo.launch(appID);
         }
       }
+      function makeDeleteFn(appID, container) {
+        return function() {
+          repo.uninstall(appID, function() {});
+          container.style.minHeight = "0px";
+          container.style.height = container.clientHeight + "px";
+          window.setTimeout(function() {
+            container.style.height = "0px";
+            container.style.paddingTop = 0;
+            container.style.paddingBottom = 0;
+            container.style.marginBottom = 0;
+          }, 0);
+          window.setTimeout(function() {appListContainer.removeChild(container)}, 500);
+          return false;
+        }
+      }
       
       var appRow = elem("div", "app");
       var appCfg = elem("div", "configure");
@@ -191,15 +206,7 @@ function render()
       appCfg.appendChild(viewSrcLink);
       var deleteLink = elem("a");
       deleteLink.href = "#";
-      deleteLink.onclick = function() {
-        repo.uninstall(appID, 
-          function() {
-            repo.list(function(aDict) {
-              appDict = aDict;
-              render();
-        })});
-        return false;
-      }
+      deleteLink.onclick = makeDeleteFn(appID, appRow);
       deleteLink.appendChild(document.createTextNode("Delete"));
       appCfg.appendChild(deleteLink);
 
