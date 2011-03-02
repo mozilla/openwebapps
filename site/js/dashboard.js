@@ -294,8 +294,9 @@ function renderList() {
       //BASE32 ENCODE HERE ONLY
       if ( ! gApps[origin].origin32) { gApps[origin].origin32 = Base32.encode(origin); };
       
-      //TO DO: need to sort these
-      if (gFilterString.length == 0 || gFilterString == gApps[origin].manifest.name.substr(0,gFilterString.length).toLowerCase() ) {
+      /*gFilterString == gApps[origin].manifest.name.substr(0,gFilterString.length).toLowerCase()*/
+      
+      if (gFilterString.length == 0 ||  gApps[origin].manifest.name.toLowerCase().score(gFilterString) > 0) {
         results.push(gApps[origin]);
       }
     } catch (e) {
