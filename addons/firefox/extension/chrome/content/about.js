@@ -157,8 +157,10 @@ function render()
     var appListContainer = document.getElementById("applist");
     appListContainer.innerHTML = "";
     
+    var empty = true;
     for (let appID in appDict)
     {
+      empty = false;
       function makeLaunchFn(appID) {
         return function() {
           repo.launch(appID);
@@ -230,6 +232,11 @@ function render()
         appReceipt.appendChild(domainLink);
       }
       appListContainer.appendChild(appRow);
+    }
+    if (empty) {
+      var emptyObj = elem("div", "empty");
+      emptyObj.appendChild(document.createTextNode("No web applications are installed."));
+      appListContainer.appendChild(emptyObj);
     }
   }
 }
