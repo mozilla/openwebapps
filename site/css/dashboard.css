@@ -145,7 +145,7 @@ body {
 
 #header {
 	position: relative;
-	min-width: 600px;
+	min-width: 728px;
 	height: 41px;
 	margin-bottom: 8px;
 }
@@ -153,7 +153,7 @@ body {
 
 .horiz-divider {
 	position: relative;
-	min-width: 600px;
+	min-width: 728px;
 	height: 2px;
 	margin-bottom: 16px;
 	
@@ -172,8 +172,8 @@ body {
 .appDock {
   position:relative;
   height:80px;
+  min-width: 724px;
   margin-bottom: 16px;
-  padding-left: 0px;
 }
 
 .appInDock {
@@ -182,7 +182,6 @@ body {
   float: left;
   margin-top: 8px;
   margin-left: 8px;
-  margin-right: 8px;
   -moz-border-radius: 8px;
 	-webkit-border-radius: 8px;
 	border-radius: 8px;
@@ -195,8 +194,7 @@ body {
   width: 60px;
   float: left;
   margin-top: 8px;
-  margin-left: 10px;
-  margin-right: 10px;
+  margin-left: 8px;
   -moz-border-radius: 8px;
 	-webkit-border-radius: 8px;
 	border-radius: 8px;
@@ -259,18 +257,16 @@ body {
 
 
 .appList {
-  min-height:100px;
+  min-height:220px;
   width:300px;	
   margin-bottom:8px;
-}
+  }
 
 .widgetSpace {
   position: relative;
-/*
-  min-height:148px;
-*/
+  min-height:272px;
+  min-width: 404px;
   margin-left:320px;
-  max-width:3000;
   margin-bottom: 8px;
 }
 
