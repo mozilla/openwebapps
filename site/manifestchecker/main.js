@@ -60,7 +60,7 @@ window.onBespinLoad = function() {
 
 $(document).ready(function() {
     function izInstalled() {
-        $(".upsell").unbind('click').html("I'm installed!  You can check me out on your <a href='https://stage.myapps.mozillalabs.com'>dashboard</a>.");
+        $(".upsell").unbind('click').html("I'm installed!  You can check me out on your <a href='https://myapps.mozillalabs.com'>dashboard</a>.");
     }
 
     navigator.apps.amInstalled(function(data) {
