@@ -128,7 +128,7 @@ function getMinWidgetsHeight() {
 }
 
 function getMinListHeight() {
-  return  (keyCount(gApps) * 40) + 208 + 8; 
+  return  (keyCount(gApps) * 40) + 220 + 8; 
 }
 
 function keyCount(obj) {
