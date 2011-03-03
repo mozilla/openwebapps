@@ -102,7 +102,7 @@ function resizeDashboard() {
 }
 
 function getMinDockWidth() {
-  return (72 * $("#dock").children().length) + 10;
+  return (72 * $("#dock").children().length) + 12;
 }
 
 
@@ -128,7 +128,7 @@ function getMinWidgetsHeight() {
 }
 
 function getMinListHeight() {
-  return  (keyCount(gApps) * 40) + 4;
+  return  (keyCount(gApps) * 40) + 208 + 8; 
 }
 
 function keyCount(obj) {
