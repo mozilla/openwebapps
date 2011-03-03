@@ -463,7 +463,6 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
     },
 
     onPopupWebAppPanelCommand: function(e) {
-
       // Set up the current-app state:
       repo.setCurrentPageAppURL(gBrowser.contentDocument.applicationManifest);
 
