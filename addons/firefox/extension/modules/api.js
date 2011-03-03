@@ -89,7 +89,15 @@ FFRepoImpl.prototype = {
                 "openwebapps-install-notification",
                 message, null, acceptButton, [declineButton], {
                     "persistence": 1,
-                    "persistWhileVisible": true
+                    "persistWhileVisible": true,
+                    "eventCallback": function(state) {
+                        // If the user dismisses the prompt, we cancel
+                        // installation
+                        if (state == "dismissed") {
+                            installConfirmationFinishFn(false);
+                            ret.remove();
+                        }
+                    }
                 }
             );
         }
