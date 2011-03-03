@@ -68,25 +68,83 @@ function getWindowHeight() {
   if (document.body.clientHeight) return document.body.clientHeight;
 }
 
-function resizeAppList() {
-  var listPos = $("#list").position();
-  $("#list").height(getWindowHeight() - (listPos.top + 16));
+function getWindowWidth() {
+  if(window.innerWidth) return window.innerWidth;
+  if (document.body.clientWidth) return document.body.clientWidth;
 }
 
-function resizeWidgetArea() {
-  var widgePos = $("#widgets").position();
-  $("#widgets").height(getWindowHeight() - (widgePos.top + 16));
+
+//all these hardcoded number suck.  I haven't found an easier way yet.
+function resizeDashboard() {
+  
+  var visibleHeight = getWindowHeight() - 32;
+  var visibleWidth = getWindowWidth() - 40;
+  
+  //check to see if we went too small for some element of the dashboard, and adjust accordingly
+  var minWidgetsWidth = getMinWidgetsWidth();
+  var minWidgetsHeight = getMinWidgetsHeight();
+  var minDockWidth = getMinDockWidth();
+  var minListHeight = getMinListHeight();
+  
+  var dashWidth = Math.max(visibleWidth, minWidgetsWidth, minDockWidth);
+  var dashHeight = Math.max(visibleHeight, minWidgetsHeight, minListHeight);
+  
+  $("#topContainer").height(dashHeight);
+  $("#topContainer").width(dashWidth);
+
+  $("#list").height(dashHeight - 220);
+  $("#widgets").height(dashHeight - 168);
+  $("#widgets").width(dashWidth - 320);         //$("#widgets").attr("margin-left"));
+
+  $("#dock").width(dashWidth - 4);
+  $(".horiz-divider").width(dashWidth);
+
+}
+
+function getMinDockWidth() {
+  return (72 * $("#dock").children().length) + 10;
+}
+
+
+//yes, these should be one function, so we don't iterate the widgets more than once
+function getMinWidgetsWidth() {
+  //iterate over the widgets and find the farthest right point of all of them
+  var maxW = 0;
+  $("#widgets").children().each( function(i, elem) { 
+                                                  if ($(elem).position().left  + $(elem).width() > maxW) 
+                                                      maxW = $(elem).position().left  + $(elem).width(); 
+                                                } ); 
+  return maxW + 4 + 320 ;     //$("#widgets").attr("margin-left"));
+}
+
+function getMinWidgetsHeight() {
+  //iterate over the widgets and find the farthest down point of all of them
+  var maxH = 0;
+  $("#widgets").children().each( function(i, elem) { 
+                                                  if ($(elem).position().top  + $(elem).height() > maxH) 
+                                                      maxH = $(elem).position().top  + $(elem).height(); 
+                                                } ); 
+  return maxH + 4 + 168 ;
+}
+
+function getMinListHeight() {
+  return  (keyCount(gApps) * 40) + 4;
+}
+
+function keyCount(obj) {
+  var n=0;
+  for (var p in obj) 
+      n += Object.prototype.hasOwnProperty.call(obj, p);
+  return n;
 }
 
 
 window.onload = function() {
-  resizeAppList();
-  resizeWidgetArea();
+    resizeDashboard();
 }
 
 window.onresize = function() {
-  resizeAppList();
-  resizeWidgetArea();
+    resizeDashboard();
 }
 
 
@@ -127,6 +185,7 @@ function displayPlaceholder(event) {
           if (i == slot) { $("#dock").append($("<div/>").addClass("appInDockDrop glowy-blue-outline")) };
           if ($(dockIcons[i]).hasClass("appInDock")) { $("#dock").append(dockIcons[i]) };
         }
+        resizeDashboard();
 }
 
 function removePlaceholder( ) {
@@ -140,6 +199,7 @@ function dragOver(event, ui) { gOverDock = true; };
 
 function dragOut(event, ui) { gOverDock = false;
                               removePlaceholder();
+                              resizeDashboard();
                               };
 
 
@@ -149,6 +209,7 @@ function insertAppInDock(newApp, event) {
     gDashboardState.appsInDock.splice(newAppSlot, 0, newApp.attr("id"));
     saveDashboardState();
     updateDock();
+    resizeDashboard();
 };
 
 
@@ -258,6 +319,7 @@ function updateDashboard( completionCallback ) {
               updateDock();
               updateWidgets();
   
+              resizeDashboard();
               //and call the dream within a dream within a dream callback.  if it exists.
               if (completionCallback) { completionCallback(); };
            });                      
