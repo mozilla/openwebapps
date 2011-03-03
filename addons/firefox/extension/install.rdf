@@ -6,6 +6,7 @@
     <em:name>Open Web Apps for Firefox</em:name>
     <em:version>0.1</em:version>
     <em:creator>Mozilla</em:creator>
+    <em:unpack>true</em:unpack>
     <em:contributor></em:contributor>
     <em:homepageURL>http://apps.mozillalabs.com/</em:homepageURL>
     <em:iconURL>chrome://openwebapps/skin/extension-icon.png</em:iconURL>
