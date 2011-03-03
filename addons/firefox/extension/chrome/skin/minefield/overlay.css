@@ -93,3 +93,6 @@
   margin: 5px 0;
 }
 
+.popup-notification-icon[popupid="openwebapps-install-notification"] {
+  list-style-image: url("chrome://openwebapps/skin/app-icon.png");
+}

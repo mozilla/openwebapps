@@ -463,7 +463,6 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
     },
 
     onPopupWebAppPanelCommand: function(e) {
-
       // Set up the current-app state:
       repo.setCurrentPageAppURL(gBrowser.contentDocument.applicationManifest);
 
@@ -471,7 +470,7 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
       let XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
       let xulPanel = document.createElementNS(XUL_NS, 'panel');
       xulPanel.setAttribute("transparent", "transparent");
-      xulPanel.setAttribute("style", "-moz-appearance: none;background-color:transparent");
+      xulPanel.setAttribute("style", "-moz-appearance: none;background-color:transparent;border:none");
       let frame = document.createElementNS(XUL_NS, 'iframe');
       frame.setAttribute('type', 'content');
       frame.setAttribute('flex', '1');

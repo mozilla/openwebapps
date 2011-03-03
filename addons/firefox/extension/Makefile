@@ -120,7 +120,7 @@ build: setup
 	test -d $(stage_dir)/chrome || $(SLINK) $(TOPSRCDIR)/chrome $(stage_dir)/chrome
 	test -d $(stage_dir)/chrome.manifest || $(SLINK) $(TOPSRCDIR)/chrome.manifest $(stage_dir)/chrome.manifest
 	test -d $(stage_dir)/components || $(SLINK) $(TOPSRCDIR)/components $(stage_dir)/components
-	test -d $(stage_dir)/defaults || $(SLINK) $(TOPSRCDIR)/components $(stage_dir)/defaults
+	test -d $(stage_dir)/defaults || $(SLINK) $(TOPSRCDIR)/defaults $(stage_dir)/defaults
 	test -d $(stage_dir)/install.rdf || $(SLINK) $(TOPSRCDIR)/install.rdf $(stage_dir)/install.rdf
 	test -d $(stage_dir)/modules || $(SLINK) $(TOPSRCDIR)/modules $(stage_dir)/modules
 
