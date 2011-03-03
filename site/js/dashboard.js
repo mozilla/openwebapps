@@ -415,9 +415,9 @@ function updateWidgets( )  {
                             // the widget the first time.  from then on, we use the outer frame as the thing to measure the size of
                             var wH = ((gApps[app].manifest.widget.height ? gApps[app].manifest.widget.height : 120) + 16);
                             var wW = ((gApps[app].manifest.widget.width ? gApps[app].manifest.widget.width : 200) + 16);
-                            //I'm enforcing a max size of 800x800 for now.  
-                            if (wH > 800) wH = 800;
-                            if (wW > 800) wW = 800;
+                            //I'm enforcing a max starting size of 200x200 for now.  
+                            if (wH > 200) wH = 200;
+                            if (wW > 200) wW = 200;
 
                             gDashboardState.widgetPositions[gApps[app].origin32] = {"top": 0,
                                                                             "left": 0, 
@@ -730,6 +730,8 @@ function createWidget(install, top, left, height, width, zIndex) {
           });
                   
      var selectorString = "#" + install.origin32 + "client, #" + install.origin32 + "hider";
+     
+     //I'm currently enforcing an 800x800 max widget size.  this is far beyond what I would consider a widget, but whatever
      widgetFrame.resizable({containment: widgetSpace, handles:'se', alsoResize: selectorString, minHeight:  64, minWidth: 64, maxHeight: 800, maxWidth: 800,
      
                 //unfortunately, iframes steal, or at least borrow, mouse drag events, and so we need to create defensive shields
