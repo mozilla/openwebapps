@@ -46,6 +46,9 @@ BODY {
   padding:8px;
   position:relative;
   min-height:40px;
+  overflow-y: hidden;
+  -moz-transition-property: height, padding, margin-bottom;
+  -moz-transition-duration: 0.5s;
 }
 .app .detail {
   min-width:360px;
@@ -182,4 +185,17 @@ BODY {
   position:relative;
   font:10pt Helvetica;
   word-wrap: break-word;
+}
+.empty {
+
+  border:1px solid #e0e0e0;
+  border-radius:0.5em;  
+  background-color:white;
+  font:12pt Helvetica;
+  margin-bottom:12px;
+  padding:8px;
+  position:relative;
+  min-height:40px;
+  overflow-y: hidden;
+
 }

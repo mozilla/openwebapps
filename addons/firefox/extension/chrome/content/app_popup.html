@@ -177,12 +177,17 @@ BODY {
 #manage a:hover {
   text-decoration:underline;
 }
+#empty {
+  float:left;
+  
+}
 
 </style>
 </head>
 <body>
 
 <div id="manage">
+  <div id="empty"></div>
   <a href="about:apps" target="_blank">Manage Apps</a>
 </div>
 
@@ -215,6 +220,7 @@ function renderIconList(appDict)
   var appCount = 0;
   for (var key in appDict) appCount += 1;
   var height  = Math.ceil(appCount / 5.0) * 100 + (repo.getCurrentPageHasApp() ? 180 : 0);
+  if (height < 20) height = 20;
   document.body.style.height = height;
 
   var container = document.getElementById("icon_region");
@@ -230,6 +236,9 @@ function renderIconList(appDict)
       container.appendChild(br);
     }
     count += 1;
+  }
+  if (count == 0) {
+    document.getElementById("empty").appendChild(document.createTextNode("No applications are installed."));
   }
 }
 

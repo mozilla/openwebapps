@@ -34,7 +34,8 @@ var openwebapps;
 var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
 (function () {
 
-  Components.utils.import("resource://openwebapps/modules/injector.js");
+  var Injector = {};
+  Components.utils.import("resource://openwebapps/modules/injector.js", Injector);
   Components.utils.import("resource://openwebapps/modules/api.js");
   Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
 
@@ -547,14 +548,9 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
 
   };
 
-  InjectorInit(window, 
-    function serviceSelectionCallback(suiteName, methodName, serviceList)
-    {
-      
-    }
-  );
+  Injector.InjectorInit(window);
   var repo = FFRepoImplService;
-  injector.register({
+  appinjector.register({
     apibase: "navigator.apps", name: "install", script: null,
     getapi: function (contentWindowRef) {
       return function (args) {
@@ -566,21 +562,21 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
         }
       };
   }});
-  injector.register({
+  appinjector.register({
     apibase: "navigator.apps", name: "amInstalled", script: null,
     getapi: function (contentWindowRef) {
       return function (callback) {
         repo.amInstalled(contentWindowRef.location, callback);
       };
   }});
-  injector.register({
+  appinjector.register({
     apibase: "navigator.apps", name: "getInstalledBy", script: null,
     getapi: function (contentWindowRef) {
       return function (callback) {
         repo.getInstalledBy(contentWindowRef.location, callback);
       };
   }});
-  injector.register({
+  appinjector.register({
     apibase: "navigator.apps", name: "setRepoOrigin", script: null,
     getapi: function () {
       return function (args) {
@@ -588,7 +584,7 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
   }});
   
   // management APIs:
-  injector.register({
+  appinjector.register({
     apibase: "navigator.apps.mgmt", name: "launch", script: null,
     getapi: function (contentWindowRef) {
       return function (args) {
@@ -596,7 +592,7 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
         repo.launch(args);
       };
   }});
-  injector.register({
+  appinjector.register({
     apibase: "navigator.apps.mgmt", name: "list", script: null,
     getapi: function (contentWindowRef) {
       return function (callback) {
@@ -604,7 +600,7 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
         repo.list(callback);
       };
   }});
-  injector.register({
+  appinjector.register({
     apibase: "navigator.apps.mgmt", name: "loginStatus", script: null,
     getapi: function (contentWindowRef) {
       return function (args) {
@@ -612,7 +608,7 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
         return repo.loginStatus(args);
       };
   }});
-  injector.register({
+  appinjector.register({
     apibase: "navigator.apps.mgmt", name: "loadState", script: null,
     getapi: function (contentWindowRef) {
       return function (callback) {
@@ -620,7 +616,7 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
         repo.loadState(contentWindowRef.location, callback);
       };
   }});
-  injector.register({
+  appinjector.register({
     apibase: "navigator.apps.mgmt", name: "saveState", script: null,
     getapi: function (contentWindowRef) {
       return function (state, callback) {
@@ -628,7 +624,7 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
         repo.saveState(contentWindowRef.location, state, callback);
       };
   }});
-  injector.register({
+  appinjector.register({
     apibase: "navigator.apps.mgmt", name: "uninstall", script: null,
     getapi: function (contentWindowRef) {
       return function (key, callback, onerror) {
@@ -637,7 +633,7 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
         repo.uninstall(key, callback, onerror);
       };
   }});
-  injector.registerAction(function() {
+  appinjector.registerAction(function() {
     // Clear out the current page URL on every page load
     let toolbarButton = document.getElementById("openwebapps-toolbar-button");
     if (toolbarButton) {
@@ -647,7 +643,7 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
   });
 
   // Experimental support for web-send:
-  injector.register({
+  appinjector.register({
     apibase: "navigator.introducer", name: "introduce", script: null,
     getapi: function (contentWindowRef) {
       return function (anchor, wanted, introductionCallback) {
@@ -701,7 +697,7 @@ var openwebapps_EXT_ID = "openwebapps@mozillalabs.com";
       };
   }});
 
-  injector.register({
+  appinjector.register({
     apibase: "navigator.introducer", name: "welcome", script: null,
     getapi: function (contentWindowRef) {
       return function (registrants, callback) {
