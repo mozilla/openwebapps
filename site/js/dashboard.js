@@ -81,13 +81,12 @@ function resizeDashboard() {
   var visibleWidth = getWindowWidth() - 40;
   
   //check to see if we went too small for some element of the dashboard, and adjust accordingly
-  var minWidgetsWidth = getMinWidgetsWidth();
-  var minWidgetsHeight = getMinWidgetsHeight();
+  var minWidgetSpace = getMinWidgetSpaceSize();
   var minDockWidth = getMinDockWidth();
   var minListHeight = getMinListHeight();
   
-  var dashWidth = Math.max(visibleWidth, minWidgetsWidth, minDockWidth);
-  var dashHeight = Math.max(visibleHeight, minWidgetsHeight, minListHeight);
+  var dashWidth = Math.max(visibleWidth, minWidgetSpace.width, minDockWidth);
+  var dashHeight = Math.max(visibleHeight, minWidgetSpace.height, minListHeight);
   
   $("#topContainer").height(dashHeight);
   $("#topContainer").width(dashWidth);
@@ -107,24 +106,21 @@ function getMinDockWidth() {
 
 
 //yes, these should be one function, so we don't iterate the widgets more than once
-function getMinWidgetsWidth() {
+function getMinWidgetSpaceSize() {
   //iterate over the widgets and find the farthest right point of all of them
   var maxW = 0;
-  $("#widgets").children().each( function(i, elem) { 
-                                                  if ($(elem).position().left  + $(elem).width() > maxW) 
-                                                      maxW = $(elem).position().left  + $(elem).width(); 
-                                                } ); 
-  return maxW + 4 + 320 ;     //$("#widgets").attr("margin-left"));
-}
-
-function getMinWidgetsHeight() {
-  //iterate over the widgets and find the farthest down point of all of them
-  var maxH = 0;
-  $("#widgets").children().each( function(i, elem) { 
-                                                  if ($(elem).position().top  + $(elem).height() > maxH) 
-                                                      maxH = $(elem).position().top  + $(elem).height(); 
-                                                } ); 
-  return maxH + 4 + 168 ;
+  var maxH = 0
+  
+  $.each( gDashboardState.widgetPositions, function(n, v) {
+          if (v.disabled) return true;
+          maxW = Math.max(maxW, (v.left + v.width));
+          maxH = Math.max(maxH, (v.top + v.height));
+          });
+  
+  maxW += 340;  //left margin
+  maxH += 188;  //top margin
+  return {"width": maxW , "height": maxH};
+  
 }
 
 function getMinListHeight() {
@@ -470,6 +466,7 @@ function updateWidgets( )  {
       
       });
       
+      resizeDashboard();
 }
 
 
@@ -726,6 +723,7 @@ function createWidget(install, top, left, height, width, zIndex) {
                     //hide the defensive shield
                     $(".framehider").css({"zIndex" : -1000});
                     saveDashboardState();
+                    resizeDashboard();
                   }
           });
                   
