@@ -117,6 +117,15 @@
 
         Repo.install(t.origin, args, displayInstallPrompt, fetchManifest, function(r) {
             if (r === true) {
+                // installation was confirmed by the user and successful.  In the case
+                // where the installer is different than the app, we'll launch the user's
+                // dashboard and "emphasize" the application that was just installed.
+                var appURL = URLParse(args.url).normalize();
+                appURL.path = appURL.query = appURL.anchor = undefined;
+                if (!appURL.contains(t.origin)) {
+                    window.open("https://myapps.mozillalabs.com/?emphasize=" +
+                                encodeURIComponent(appURL.toString()), "open_web_app_dashboard");
+                }
                 t.complete();
             } else if (typeof r.error === 'object' && typeof r.error.length === 'number' && r.error.length === 2) {
                 t.error(r.error[0], errorRepr(r.error[1]));
