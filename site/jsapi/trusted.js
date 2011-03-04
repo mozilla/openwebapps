@@ -120,8 +120,7 @@
                 // installation was confirmed by the user and successful.  In the case
                 // where the installer is different than the app, we'll launch the user's
                 // dashboard and "emphasize" the application that was just installed.
-                var appURL = URLParse(args.url).normalize();
-                appURL.path = appURL.query = appURL.anchor = undefined;
+                var appURL = URLParse(args.url).normalize().originOnly();
                 if (!appURL.contains(t.origin)) {
                     window.open("https://myapps.mozillalabs.com/?emphasize=" +
                                 encodeURIComponent(appURL.toString()), "open_web_app_dashboard");
