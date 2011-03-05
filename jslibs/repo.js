@@ -150,9 +150,7 @@ Repo = (function() {
     // given an origin, normalize it (like, http://foo:80 --> http://foo), or
     // https://bar:443 --> https://bar, or even http://baz/ --> http://baz)
     function normalizeOrigin(origin) {
-        var url = URLParse(origin).normalize();
-        url.path = url.query = url.anchor = undefined;
-        return url.toString();
+        return URLParse(origin).normalize().originOnly().toString()
     }
 
 

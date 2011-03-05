@@ -40,6 +40,10 @@
  *
  *     (bool) contains(str) - returns whether the object upon which contains() is called is a
  *        "url prefix" for the passed in string, after normalization.
+ *
+ *     (this) originOnly() - removes everything that would occur after port, including
+ *        path, query, and anchor.
+ *
  */
 
 URLParse = (function() {
@@ -56,6 +60,11 @@ URLParse = (function() {
             if (this.query) str += "?" + this.query;
             if (this.anchor) str += "#" + this.anchor;
             return str;
+        };
+
+        var originOnly = function() {
+            this.path = this.query = this.anchor = undefined;
+            return this;
         };
 
         var validate = function() {
@@ -158,6 +167,7 @@ URLParse = (function() {
             uri.validate = validate;
             uri.normalize = normalize;
             uri.contains = contains;
+            uri.originOnly = originOnly;
             return uri;
         };
 

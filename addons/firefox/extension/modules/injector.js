@@ -180,7 +180,13 @@ function InjectorInit(window) {
       
       // Now construct services based on installed apps
       Components.utils.import("resource://openwebapps/modules/api.js");
-      let apps = FFRepoImplService.list("chrome://openwebapps/modules/injector.js");
+      let self = this;
+      FFRepoImplService.list(function(apps) {
+        self._injectService(aSubject, apps);
+      });
+    },
+    
+    _injectService: function(aSubject, apps) {
       let suiteMap = {};
       
       for (let appKey in apps)

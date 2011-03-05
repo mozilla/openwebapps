@@ -176,8 +176,8 @@ FFRepoImpl.prototype = {
         // this is where we could have a whitelist of acceptable management
         // domains.
         if (origin.host == "127.0.0.1:60172" || /* special case for unit testing: to be removed when we get capability tracking for mgmt! */
-            origin.host == "apps.mozillalabs.com" ||
-            origin.host == "stage.apps.mozillalabs.com")
+            origin.host == "myapps.mozillalabs.com" ||
+            origin.host == "apps.mozillalabs.com")
         {
             return;
         }
