@@ -270,14 +270,6 @@ body {
   margin-bottom: 8px;
 }
 
-.resizerDiv {
-  position: absolute;
-  visibility: hidden;
-  white-space: nowrap;
-  font-size: 18px;
-
-}
-
 
 /* ---------------------  */
 /* ------- APPS -----  */

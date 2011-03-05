@@ -44,7 +44,10 @@ var gDashboardState = {};
 gDashboardState.appsInDock = [];
 gDashboardState.widgetPositions = {};
 
+//prevent wiggling an app more than once
+var gLastInstalledApp = "";
 
+//  https://myapps.mozillalabs.com/?emphasize=http://stillalivejs.t4ils.com
 
 var gOverDock = false;
 
@@ -237,6 +240,49 @@ function infoCold() {
   $(this).removeClass("infohot");
 }
 
+
+function paramValue( name )
+{
+  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+  var regexS = "[\\?&]"+name+"=([^&#]*)";
+  var regex = new RegExp( regexS );
+  var results = regex.exec( window.location.href );
+  if( results == null )
+    return "";
+  else
+    return results[1];
+}
+
+
+function wiggleApp(origin32) {
+
+  if (origin32 == gLastInstalledApp) return;
+
+  //animate the app icon in the dock and/or the list, to indicate it has just been installed
+  //use a combination of transition and window.timeout
+  var dockIcon = $("#dock > #" + origin32);
+  var listIcon = $("#list > #" + origin32 + " > .appClickBox > .icon");
+  
+  var angles = [0, 5, 10, 5, 0, -5, -10, -5];
+  var d = 0;
+  var count = 0;
+    
+  var intervalID = setInterval(function () {
+                                              d = (d + 1) % 9;
+                                              if (dockIcon.length) dockIcon[0].style["MozTransform"] = 'rotate(' + (angles[d]) + 'deg)';
+                                              if (listIcon.length) listIcon[0].style["MozTransform"] = 'rotate(' + (angles[d]) + 'deg)';
+                                              
+                                              count += d?0:1;
+                                              if (count > 6) { 
+                                                    clearInterval(intervalID); 
+                                                    gLastInstalledApp = origin32;  
+                                              };   
+
+                                            }, 
+                                            25 );
+}
+
+
 //************** document.ready()
 
 $(document).ready(function() {
@@ -315,6 +361,10 @@ function updateDashboard( completionCallback ) {
               updateDock();
               updateWidgets();
   
+              var justInstalled = paramValue("emphasize");
+              if (justInstalled.length) {
+                wiggleApp(Base32.encode(justInstalled));
+              }
               resizeDashboard();
               //and call the dream within a dream within a dream callback.  if it exists.
               if (completionCallback) { completionCallback(); };
