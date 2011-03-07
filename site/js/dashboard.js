@@ -363,7 +363,7 @@ function updateDashboard( completionCallback ) {
   
               var justInstalled = paramValue("emphasize");
               if (justInstalled.length) {
-                wiggleApp(Base32.encode(justInstalled));
+                wiggleApp(Base32.encode(unescape(justInstalled)));
               }
               resizeDashboard();
               //and call the dream within a dream within a dream callback.  if it exists.
