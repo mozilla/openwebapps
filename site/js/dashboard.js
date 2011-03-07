@@ -260,26 +260,27 @@ function wiggleApp(origin32) {
 
   //animate the app icon in the dock and/or the list, to indicate it has just been installed
   //use a combination of transition and window.timeout
-  var dockIcon = $("#dock > #" + origin32);
-  var listIcon = $("#list > #" + origin32 + " > .appClickBox > .icon");
-  
   var angles = [0, 5, 10, 5, 0, -5, -10, -5];
   var d = 0;
   var count = 0;
-    
-  var intervalID = setInterval(function () {
-                                              d = (d + 1) % 9;
-                                              if (dockIcon.length) dockIcon[0].style["MozTransform"] = 'rotate(' + (angles[d]) + 'deg)';
-                                              if (listIcon.length) listIcon[0].style["MozTransform"] = 'rotate(' + (angles[d]) + 'deg)';
-                                              
-                                              count += d?0:1;
-                                              if (count > 6) { 
-                                                    clearInterval(intervalID); 
-                                                    gLastInstalledApp = origin32;  
-                                              };   
 
-                                            }, 
-                                            25 );
+  var intervalID = setInterval(function () {
+      d = (d + 1) % 9;
+      var cssText = 'rotate(' + angles[d] + 'deg)';
+      $("div.app").each(function() {
+          if ($(this).attr('id') === origin32) {
+              $(this).css({
+                  "-moz-transform": cssText,
+                  "-webkit-transform": cssText
+              });
+          }
+      });
+      count += d?0:1;
+      if (count > 6) {
+          clearInterval(intervalID);
+          gLastInstalledApp = origin32;
+      };
+  }, 25);
 }
 
 
