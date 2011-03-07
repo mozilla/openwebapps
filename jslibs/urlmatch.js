@@ -135,7 +135,8 @@ URLParse = (function() {
 
         var contains = function(str) {
             try {
-                var prefix = this.validate().normalize().toString();
+                this.validate();
+                var prefix = parseURL(this.toString()).normalize().toString();
                 var url = parseURL(str).validate().normalize().toString();
                 return (url.indexOf(prefix) === 0);
             } catch(e) {
