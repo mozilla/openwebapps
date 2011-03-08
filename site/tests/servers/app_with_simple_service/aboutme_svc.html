@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+
+<script src="/servers.js"></script>
+<script src="jschannel.js"></script>
+<script>
+
+// taken from http://portablecontacts.net/draft-spec.html appendix a.  Thanks guys.
+var myContactInfo = {
+    "displayName": "Mork Hashimoto",
+    "name": {
+        "familyName": "Hashimoto",
+        "givenName": "Mork"
+    },
+    "birthday": "0000-01-16",
+    "gender": "male",
+    "drinker": "heavily",
+    "tags": [
+        "plaxo guy",
+        "favorite"
+    ],
+    "emails": [
+        {
+            "value": "mhashimoto-04@plaxo.com",
+            "type": "work",
+            "primary": "true"
+        },
+        {
+            "value": "mhashimoto-04@plaxo.com",
+            "type": "home"
+        },
+        {
+            "value": "mhashimoto@plaxo.com",
+            "type": "home"
+        }
+    ],
+    "urls": [
+        {
+            "value": "http://www.seeyellow.com",
+            "type": "work"
+        },
+        {
+            "value": "http://www.angryalien.com",
+            "type": "home"
+        }
+    ],
+    "phoneNumbers": [
+        {
+            "value": "KLONDIKE5",
+            "type": "work"
+        },
+        {
+            "value": "650-123-4567",
+            "type": "mobile"
+        }
+    ],
+    "photos": [
+        {
+            "value": "http://sample.site.org/photos/12345.jpg",
+            "type": "thumbnail"
+        }
+    ],
+    "ims": [
+        {
+            "value": "plaxodev8",
+            "type": "aim"
+        }
+    ],
+    "addresses": [
+        {
+            "type": "home",
+            "streetAddress": "742 Evergreen Terrace\nSuite 123",
+            "locality": "Springfield",
+            "region": "VT",
+            "postalCode": "12345",
+            "country": "USA",
+            "formatted": "742 Evergreen Terrace\nSuite 123\nSpringfield, VT 12345 USA"
+        }
+    ],
+    "organizations": [
+        {
+            "name": "Burns Worldwide",
+            "title": "Head Bee Guy"
+        }
+    ],
+    "accounts": [
+        {
+            "domain": "plaxo.com",
+            "userid": "2706"
+        }
+    ]
+};
+
+var chan = Channel.build({window: window.parent, origin: "*", scope: "openwebapps"});
+chan.bind("profile.get", function(trans, s) {
+    var rv = {};
+    if (s) {
+        for (var i = 0; i < s.length; i++) {
+            if (myContactInfo.hasOwnProperty(s[i])) {
+                rv[s[i]] = myContactInfo[s[i]];
+            }
+        }
+    }
+    return rv;
+});
+
+</script>
+</head>
+</html>
+
+</script>
