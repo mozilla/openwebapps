@@ -719,11 +719,11 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
                 method: "invokeService",
                 params: { name: name, args: args },
                 error: function(error, message) {
-                    deliverError(error, message, args.onerror);
+                    deliverError(error, message, onerror);
                 },
                 success: function(v) {
-                    if (args.onsuccess) {
-                        args.onsuccess(v);
+                    if (onsuccess) {
+                        onsuccess(v);
                     }
                 }
             });

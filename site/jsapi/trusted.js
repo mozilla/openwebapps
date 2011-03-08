@@ -134,6 +134,15 @@
         });
     });
 
+    chan.bind("invokeService", function(t, args) {
+        // indicate that response will occur asynchronously, later.
+        t.delayReturn(true);
+
+        console.log("service invocation for: " + args.name);
+
+        t.error("notAvailable", "no services are installed which support: " + args.name);
+    });
+
     /** Determines which applications are installed *for* the origin domain */
     chan.bind('amInstalled', function(t, args) {
         t.delayReturn(true);
