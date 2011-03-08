@@ -16,7 +16,7 @@ function myonload() {
 
     chan.bind("profile.get", function(trans, p) {
         trans.delayReturn(true);
-        navigator.apps.services.call(
+        navigator.apps.invokeService(
             "profile.get", null,
             function(v) { trans.complete(v); },
             function(errObj) { trans.error(errObj.code, errObj.message) }
