@@ -1,39 +1,43 @@
-/* ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1
- *
- * The contents of this file are subject to the Mozilla Public License Version
- * 1.1 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * http://www.mozilla.org/MPL/
- *
- * Software distributed under the License is distributed on an "AS IS" basis,
- * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- * for the specific language governing rights and limitations under the
- * License.
- *
- * The Original Code is Raindrop.
- *
- * The Initial Developer of the Original Code is
- * Mozilla Messaging, Inc..
- * Portions created by the Initial Developer are Copyright (C) 2009
- * the Initial Developer. All Rights Reserved.
- *
- * Contributor(s):
- * */
-
-.openwebapps-frame {
+.openwebapps-frame
+{
   -moz-transition: height 0.2s ease-in;
 }
 
 #openwebapps-toolbar-button
 {
-  list-style-image: url("chrome://openwebapps/skin/toolbar-button.png");
+  list-style-image: url("resource://openwebapps/chrome/skin/toolbar-button.png");
 }
-#openwebapps-toolbar-button > image {
+
+#openwebapps-toolbar-button.highlight
+{
+  -moz-border-radius: 0.25em;
+  border-radius: 0.25em;
+  
+  -moz-box-shadow:
+    inset rgba(255, 255, 255, 0.8) 0 1px 1px,
+    inset rgba(0, 0, 0, 0.1) 0 -2px 0px,
+	inset rgba(0, 156, 237, 0.2) 0 0px 12px,
+	rgba(0, 156, 237, 0.6) 0 0px 12px,
+	rgba(0, 156, 237, 1) 0 0px 4px;
+  box-shadow:
+	inset rgba(255, 255, 255, 0.8) 0 1px 1px,
+	inset rgba(0, 0, 0, 0.1) 0 -2px 0px,
+	inset rgba(0, 156, 237, 0.2) 0 0px 12px,
+	rgba(0, 156, 237, 0.6) 0 0px 12px,
+	rgba(0, 156, 237, 1) 0 0px 4px;
+
+  -moz-transition: all 0.25s ease-out;
+  opacity: 1;
+}
+
+#openwebapps-toolbar-button > image
+{
   width: auto;
   height: auto;
 }
-#openwebapps-popup {
+
+#openwebapps-popup
+{
   -moz-appearance: none;
   -moz-window-shadow: none;
   background-color: transparent;
@@ -45,8 +49,8 @@
   color: lightgrey;
 }
 
-/* factory reset */
-#openwebapps-popup * {
+#openwebapps-popup *
+{
   border: none;
   outline: none;
   margin: 0;
@@ -65,7 +69,12 @@
   list-style-type: none;
 }
 
-#openwebapps-popup description {
+#openwebapps-popup description
+{
   margin: 5px 0;
 }
 
+.popup-notification-icon[popupid="openwebapps-install-notification"]
+{
+  list-style-image: url("resource://openwebapps/chrome/skin/app-icon.png");
+}

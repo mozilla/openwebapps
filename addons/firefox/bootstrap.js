@@ -83,23 +83,20 @@ function openwebapps(win, add)
 {
     this._addon = add;
     this._window = win;
-    this._Injector = {};
     
-    let tmp = {};
-    Cu.import("resource://openwebapps/modules/injector.js", tmp);
-    tmp.InjectorInit(this._window); tmp = {};
-    Cu.import("resource://openwebapps/modules/api.js", tmp);
-    this._repo = tmp.FFRepoImplService;
-    
-    this._inject();
-    this._addToolbarButton();
+    let uri = this._addon.getResourceURI("chrome/content/overlay.xul").spec;
+    this._window.document.loadOverlay(uri, this);
 }
 openwebapps.prototype = {
     _addToolbarButton: function() {
-        /* We clone an existing button, creating a new one from scratch
-         * does not work (are we missing some properties?)
-         */
         let self = this;
+        
+        // Don't add a toolbar button if one is already present
+        if (this._window.document.getElementById("openwebapps-toolbar-button"))
+            return;
+        
+        // We clone an existing button, creating a new one from scratch
+        // does not work (are we missing some properties?)
         let toolbox = this._window.document.getElementById("nav-bar");
         let homeButton = this._window.document.getElementById("home-button");
         let button = homeButton.cloneNode(false);
@@ -107,58 +104,22 @@ openwebapps.prototype = {
         button.id = "openwebapps-toolbar-button";
         button.label = getString("openwebappsToolbarButton.label");
         button.tooltipText = getString("openwebappsToolbarButton.tooltip");
-        button.image = "resource://openwebapps/chrome/skin/toolbar-button.png";
 
         /* Reset click handlers */
         button.ondragexit = button.aboutHomeOverrideTooltip = null;
         button.ondragover = button.ondragenter = button.ondrop = null;
-        button.onclick = function() { self._showPopup(); };
+        button.onclick = function() { self._togglePopup(); };
 
         toolbox.appendChild(button);
+        unloaders.push(function() toolbox.removeChild(button));
     },
     
-    _showPopup: function() {
+    _togglePopup: function() {
         // Set up the current-app state:
         this._repo.setCurrentPageAppURL(
             this._window.gBrowser.contentDocument.applicationManifest
         );
-
-        // Create the panel
-        let doc = this._window.document;
-        let XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
-        let xulPanel = doc.createElementNS(XUL_NS, "panel");
-        xulPanel.setAttribute("transparent", "transparent");
-        xulPanel.setAttribute("style", "-moz-appearance: none;background-color:transparent;border:none");
-
-        let frame = this._window.document.createElementNS(XUL_NS, "iframe");
-        frame.setAttribute("type", "chrome");
-        frame.setAttribute("flex", "1");
-        frame.setAttribute("transparent", "transparent");
-        frame.setAttribute("src", "resource://openwebapps/chrome/content/popup.html");
-        xulPanel.appendChild(frame);
-        doc.getElementById("mainPopupSet").appendChild(xulPanel);
-        let button = doc.getElementById("openwebapps-toolbar-button");
-        
-        // Rough estimate of total size:
-        // width is 68px per app
-        // height is about 96px?
-        let self = this;
-        this._repo.list(function(appDict) {
-            let count = 0;
-            for (let key in appDict) count += 1;
-            
-            // 5 icons per row?
-            let height = 100 + Math.ceil(count / 5.0) * 100 +
-                (self._window.gBrowser.contentDocument.applicationManifest != null ? 180 : 0);
-            xulPanel.sizeTo(500, height); // used to be 280
-
-            let rect = button.getBoundingClientRect();
-            let x = rect.left - 450;
-            let y = rect.bottom;
-
-            dump("got " + count + " apps and height is " + height);
-            xulPanel.openPopup(null, null, x, y);
-        });
+        this._popup.toggle();
     },
     
     _inject: function() {
@@ -262,7 +223,18 @@ openwebapps.prototype = {
     },
     
     observe: function(subject, topic, data) {
-        
+        if (topic == "xul-overlay-merged") {
+            let tmp = {};
+            Cu.import("resource://openwebapps/modules/injector.js", tmp);
+            tmp.InjectorInit(this._window); tmp = {};
+            Cu.import("resource://openwebapps/modules/api.js", tmp);
+            this._repo = tmp.FFRepoImplService; tmp = {};
+            Cu.import("resource://openwebapps/modules/panel.js", tmp);
+            
+            this._inject();
+            this._addToolbarButton();
+            this._popup = new tmp.appPopup(this._window);
+        }
     }
 };
 

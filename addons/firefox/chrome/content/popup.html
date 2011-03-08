@@ -6,7 +6,7 @@
 
 <div id="manage">
     <div id="empty"></div>
-    <a href="about:apps" target="_blank">Manage Apps</a>
+    <a id="about_apps">Manage Apps</a>
 </div>
 
 <div id="offer_region">
@@ -24,107 +24,11 @@
         </div>
     </div>
 </div>
-
 <div id="icon_region"></div>
+</body>
 
 <script>
-Components.utils.import("resource://openwebapps/modules/api.js");
-
-function renderIconList(appDict)
-{
-    var appCount = 0;
-    for (var key in appDict) appCount += 1;
-    var height    = Math.ceil(appCount / 5.0) * 100 + (repo.getCurrentPageHasApp() ? 180 : 0);
-    if (height < 20) height = 20;
-    document.body.style.height = height;
-
-    var container = document.getElementById("icon_region");
-    container.innerHTML = "";
-    
-    var count = 0;
-    for (var appID in appDict) {
-        
-        container.appendChild(createAppIcon(appDict[appID]));
-        if (count && (((count+1) % 5) == 0)) {
-            var br = elem("br");
-            br.setAttribute("clear", "left");
-            container.appendChild(br);
-        }
-        count += 1;
-    }
-    if (count == 0) {
-        document.getElementById("empty").appendChild(document.createTextNode("No applications are installed."));
-    }
-}
-
-
-function elem(type, clazz) {
-    var e = document.createElement(type);
-    if (clazz) e.setAttribute("class", clazz);
-    return e;
-}
-
-function getBiggestIcon(minifest) {
-    //see if the minifest has any icons, and if so, return the largest one
-    if (minifest.icons) {
-        var biggest = 0;
-        for (var z in minifest.icons) {
-            var size = parseInt(z, 10);
-            if (size > biggest) biggest = size;
-        }
-        if (biggest !== 0) return minifest.icons[biggest];
-    }
-    return null;
-}
-
-var wiggleInstalled;
-
-function createAppIcon(installRecord)
-{
-    var app = installRecord.manifest;
-
-    var appContainer = elem("div", "app");
-    var clickyIcon = elem("div", "icon");
-    var iconImg = getBiggestIcon(app);
-    if (iconImg) {
-            var iconUrl = installRecord.origin + iconImg;
-            clickyIcon.style.background = "url(\"" + iconUrl + "\") no-repeat #404040";
-            clickyIcon.style.backgroundSize = "100%";
-
-            if (wiggleInstalled && wiggleInstalled.indexOf(installRecord.origin) == 0) {
-                clickyIcon.style.backgroundSize = "50%";
-                clickyIcon.style.top = "12px";
-                clickyIcon.style.left = "12px";
-                clickyIcon.style.opacity = 0.25;
-                window.setTimeout(function() {
-                    clickyIcon.style.top = "0px";
-                    clickyIcon.style.left = "0px";
-                    clickyIcon.style.backgroundSize="100%"
-                    clickyIcon.style.opacity = 1;
-                }, 10);
-            }
-            
-    }
-    clickyIcon.onclick = function() {
-        var url = installRecord.origin;
-        repo.launch(url);
-    };
-    appContainer.appendChild(clickyIcon);
-    var appName = elem("div", "appName");
-    appName.appendChild(document.createTextNode(app.name));
-    appName.style.left = "10px";
-    appContainer.appendChild(appName);
-    
-    return appContainer;
-}
-
-try {
-
-var repo = FFRepoImplService;
-repo.list(function(appDict) {
-    renderIconList(appDict);
-});
-
+/*
 if (repo.getCurrentPageHasApp())
 {
     repo.getCurrentPageApp(function(currentPageApp) {
@@ -184,11 +88,6 @@ if (repo.getCurrentPageHasApp())
         }
     });
 }
-
-} catch (e) {
-    dump(e + "\n");
-}
-
+*/
 </script>
-</body>
 </html>
