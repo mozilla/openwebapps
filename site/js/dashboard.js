@@ -47,8 +47,6 @@ gDashboardState.widgetPositions = {};
 //prevent wiggling an app more than once
 var gLastInstalledApp = "";
 
-//  https://myapps.mozillalabs.com/?emphasize=http://stillalivejs.t4ils.com
-
 var gOverDock = false;
 
 function saveDashboardState( callback ) {
@@ -61,7 +59,7 @@ function saveDashboardState( callback ) {
 // we must construct a 1-1 mapping unique string that only contains allowed characters.
 // I have chose base32, in particular Crockford's version.  It is found in js/base32.js
 
-function findInstallForID(origin32) {
+function findInstallForOrigin32(origin32) {
   return gApps[Base32.decode(origin32)];
 }
 
@@ -108,7 +106,6 @@ function getMinDockWidth() {
 }
 
 
-//yes, these should be one function, so we don't iterate the widgets more than once
 function getMinWidgetSpaceSize() {
   //iterate over the widgets and find the farthest right point of all of them
   var maxW = 0;
@@ -205,7 +202,7 @@ function dragOut(event, ui) { gOverDock = false;
 
 function insertAppInDock(newApp, event) {
     var newAppSlot = computeSlot(event);
-    gDashboardState.appsInDock.splice(newAppSlot, 0, newApp.attr("id"));
+    gDashboardState.appsInDock.splice(newAppSlot, 0, newApp.attr("origin32"));
     saveDashboardState();
     updateDock();
     resizeDashboard();
@@ -220,7 +217,7 @@ function removeAppFromDock(removedOrigin32) {
           curApp = gDashboardState.appsInDock[i];
           
           //clean out this app, and also any other cruft we find
-          if ( (removedOrigin32 != curApp)  && (findInstallForID(curApp) ) ) {
+          if ( (removedOrigin32 != curApp)  && (findInstallForOrigin32(curApp) ) ) {
              newDockList.push(curApp);          
            };
     };
@@ -238,6 +235,27 @@ function infoHot() {
 
 function infoCold() {
   $(this).removeClass("infohot");
+}
+
+
+
+//courtesy of:
+// http://www.zachstronaut.com/posts/2009/02/17/animate-css-transforms-firefox-webkit.html
+function getTransformProperty(element) {
+    var properties = [
+        'transform',
+        'WebkitTransform',
+        'MozTransform',
+        'msTransform',
+        'OTransform'
+    ];
+    var p;
+    while (p = properties.shift()) {
+        if (typeof element.style[p] != 'undefined') {
+            return p;
+        }
+    }
+    return false;
 }
 
 
@@ -260,17 +278,22 @@ function wiggleApp(origin32) {
 
   //animate the app icon in the dock and/or the list, to indicate it has just been installed
   //use a combination of transition and window.timeout
-  var dockIcon = $("#dock > #" + origin32);
-  var listIcon = $("#list > #" + origin32 + " > .appClickBox > .icon");
+  var dockIcons = $(".appInDock[origin32=" + origin32 + "]");
+  var listIcon = $(".app[origin32=" + origin32 + "] > .appClickBox > .icon");
+  if (!listIcon.length) return;
   
+  var transformProp = getTransformProperty(listIcon[0]);
+
   var angles = [0, 5, 10, 5, 0, -5, -10, -5];
   var d = 0;
   var count = 0;
     
   var intervalID = setInterval(function () {
                                               d = (d + 1) % 9;
-                                              if (dockIcon.length) dockIcon[0].style["MozTransform"] = 'rotate(' + (angles[d]) + 'deg)';
-                                              if (listIcon.length) listIcon[0].style["MozTransform"] = 'rotate(' + (angles[d]) + 'deg)';
+                                              dockIcons.each(function(i, e) {
+                                                e.style[transformProp] = 'rotate(' + (angles[d]) + 'deg)';
+                                              });
+                                              if (listIcon.length) listIcon[0].style[transformProp] = 'rotate(' + (angles[d]) + 'deg)';
                                               
                                               count += d?0:1;
                                               if (count > 6) { 
@@ -301,7 +324,7 @@ $(document).ready(function() {
                         drop: function(event, ui) {
                           gOverDock = false;
                           removePlaceholder();
-                          var newAppInDock = createDockItem(ui.draggable.context.id, ui.helper);
+                          var newAppInDock = createDockItem(ui.draggable.attr("origin32"), ui.helper);
                           insertAppInDock(newAppInDock, event);
                         }
                    });
@@ -404,9 +427,7 @@ function renderList(andLaunch) {
       
       //BASE32 ENCODE HERE ONLY
       if ( ! gApps[origin].origin32) { gApps[origin].origin32 = Base32.encode(origin); };
-      
-      /*gFilterString == gApps[origin].manifest.name.substr(0,gFilterString.length).toLowerCase()*/
-      
+            
       if (gFilterString.length == 0 ||  gApps[origin].manifest.name.toLowerCase().score(gFilterString) > 0) {
         results.push(gApps[origin]);
       }
@@ -445,12 +466,12 @@ function updateWidgets( )  {
             try {
               //does the app specify a widget?  if so, check to see if we already have one
               if (gApps[app].manifest && gApps[app].manifest.widget) {      
-                  var existingWidget = widgetSpace.children( "#" + gApps[app].origin32 );
+                  var existingWidget = $(".widgetFrame[origin32=" + gApps[app].origin32 + "]");
                   
                   if (existingWidget[0]) {
                       //if we already have a widget, but its enabled flag is set to 'NO', then delete it, and continue to next install
                       if (gDashboardState.widgetPositions[gApps[app].origin32].disabled) {
-                        $(" #widgets > #" + gApps[app].origin32).remove();
+                        $(" .widgetFrame[origin32=" + gApps[app].origin32 + "]").remove();
                       }
                   } else {
                       //if we don't have a widget, and its enable flag is set to 'YES' (or no dashboard state), then create it, create the dashboard state for it, and continue to next install
@@ -494,15 +515,15 @@ function updateWidgets( )  {
           
       //then, walk the list of widgets, and remove any that belong to apps that have been deleted
       
-      $("#widgets > .widgetFrame").each( function() {
-          var app = findInstallForID(this.id);  //the dom element id contains the origin32 of the app it belongs to
+      $(".widgetFrame").each( function() {
+          var app = findInstallForOrigin32($(this).attr("origin32")); 
 
           if (!app) {
               //delete the widget
-              $(" #widgets > #" + this.id).remove();
+              $(" .widgetFrame[origin32=" + $(this).attr("origin32") + "]").remove();
           } else {
               //update the widget position
-              var wPos = gDashboardState.widgetPositions[this.id];
+              var wPos = gDashboardState.widgetPositions[$(this).attr("origin32")];
                $(this).css({"zIndex": wPos.zIndex});  //can'tbe animated
                $(this).animate( {"top": wPos.top + "px",
                                   "left": wPos.left + "px", 
@@ -510,7 +531,7 @@ function updateWidgets( )  {
                                   "width": wPos.width + 16 + "px"
                                   } );
                           
-              var selectorString = "#" + this.id + "client, #" + this.id + "hider";
+              var selectorString = ".clientframe[origin32=" + $(this).attr("origin32") + "], .framehider[origin32=" + $(this).attr("origin32") + "]"; 
               $(this).children(selectorString).animate({"height": wPos.height, "width": wPos.width});
           };
       
@@ -599,12 +620,12 @@ function showAppInfo(origin32) {
 function createAppListItem(install)
 {
   var appContainer = $("<div/>").addClass("app dockItem");
-  appContainer.attr("id", install.origin32);
+  appContainer.attr("origin32", install.origin32);
   
   //the info button
   var infoButton = $("<img/>").addClass("infoButton");
   infoButton.attr("src", "img/appinfo.png");
-  infoButton.attr("id", install.origin32);
+  infoButton.attr("origin32", install.origin32);
   appContainer.append(infoButton);
   
   infoButton.click( function() {showAppInfo(install.origin32); });
@@ -652,14 +673,14 @@ function createAppListItem(install)
 
 function createDockItem(origin32, existingDiv)  //if you pass in an existing div, it will fill it instead of making a new one
 {
-  var installRecord = findInstallForID(origin32);
+  var installRecord = findInstallForOrigin32(origin32);
   if (!installRecord) return null;
   
   var dockContainer = existingDiv ? existingDiv : $("<div/>");
   dockContainer.removeClass("app");
   dockContainer.removeClass("ui-draggable");
   dockContainer.addClass("appInDock dockItem");
-  dockContainer.attr("id", origin32);
+  dockContainer.attr("origin32", origin32);
   
   var clickyIcon = $("<div/>").addClass("dockIcon");
   var iconImg = getBigIcon(installRecord.manifest);
@@ -700,7 +721,7 @@ function restackWidgets(widget) {
           });
           
           $(widget).css({"zIndex" : highest+1});
-           gDashboardState.widgetPositions[widget.id].zIndex = highest+1;
+           gDashboardState.widgetPositions[$(widget).attr("origin32")].zIndex = highest+1;
 }
 
 
@@ -711,8 +732,9 @@ function createWidget(install, top, left, height, width, zIndex) {
     var widgetSpace = $("#widgets");
     
     var widgetFrame = $("<div/>").addClass("widgetFrame glowy-blue-outline");
-    widgetFrame.attr("id", install.origin32);
-            
+    widgetFrame.attr("origin32", install.origin32);
+    widgetFrame.attr("id", "WIDGET" + install.origin32);  //draggable and resizable things need a unique id.  we don't use it though.
+
     widgetFrame.css({"top" : top + "px",
                       "left" : left + "px",
                       "width" : (width + 16) + "px",
@@ -727,7 +749,7 @@ function createWidget(install, top, left, height, width, zIndex) {
                           
     //this is a transparent overlay we move to the top of the widget when dragging or resizing, otherwise the iframe starts grabbing the events,
     // and it gets very laggy and broken
-    var hider = $("<div id=\"" + install.origin32 + "hider\" />").addClass("framehider").css({
+    var hider = $("<div />").addClass("framehider").css({
                           "top" : "8px",
                           "left":"8px",
                           "width" : (width) + "px",
@@ -735,9 +757,12 @@ function createWidget(install, top, left, height, width, zIndex) {
                           "zIndex" : "-1000",
                           "position" : "absolute",
                           });
+    hider.attr("origin32", install.origin32);
+    
     widgetFrame.append(hider);
     
-    var clientFrame = $("<iframe id=\"" + install.origin32 + "client\" />").addClass("clientframe");
+    var clientFrame = $("<iframe/>").addClass("clientframe");
+    clientFrame.attr("origin32", install.origin32);
 
     clientFrame.attr("src", install.origin + (install.manifest.widget.path?install.manifest.widget.path:''));
     clientFrame.attr("scrolling", "no");
@@ -777,7 +802,7 @@ function createWidget(install, top, left, height, width, zIndex) {
                   }
           });
                   
-     var selectorString = "#" + install.origin32 + "client, #" + install.origin32 + "hider";
+     var selectorString = ".clientframe[origin32=" + install.origin32 + "], .framehider[origin32=" + install.origin32 + "]"; 
      
      //I'm currently enforcing an 800x800 max widget size.  this is far beyond what I would consider a widget, but whatever
      widgetFrame.resizable({containment: widgetSpace, handles:'se', alsoResize: selectorString, minHeight:  64, minWidth: 64, maxHeight: 800, maxWidth: 800,
@@ -810,7 +835,7 @@ function createWidget(install, top, left, height, width, zIndex) {
 function removeWidget(origin32) {
       //remove the widget and position info for this dead app, and any other cruft we find
       delete gDashboardState.widgetPositions[origin32];
-      $(" #widgets > #" + origin32).remove();
+      $(".widgetFrame[origin32=" + origin32 + "]").remove();
 };
 
 function isWidgetVisible(origin32) {
@@ -926,7 +951,7 @@ function hideModal(divID)
 
 function createAppInfoPane(origin32) {
       var infoBox = $("<div/>").addClass("appinfobox");
-      var install = findInstallForID(origin32);
+      var install = findInstallForOrigin32(origin32);
 
       var appIcon = $('<div width="64" height="64"/>').addClass("dockIcon");
       var iconImg = getBigIcon(install.manifest);        
