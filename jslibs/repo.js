@@ -65,7 +65,7 @@ Repo = (function() {
         // we'll automatically clean up malformed installation records as we go
         var toRemove = [];
         var toReturn = {};
-        
+
         appStorage.keys(function(appKeys) {
 
             function makeAddOrRemoveFn(aKey)
@@ -261,10 +261,10 @@ Repo = (function() {
     function amInstalled(origin, cb) {
         var done = false;
         origin = normalizeOrigin(origin);
-        
+
         if (typeof cb != 'function')
             return;
-            
+
         iterateApps(function(items) {
             for (var key in items) {
                 if (!done) {
@@ -283,7 +283,7 @@ Repo = (function() {
     function getInstalledBy(origin, cb) {
         var result = [];
         origin = normalizeOrigin(origin);
-        
+
         iterateApps(function(items) {
             for (var key in items) {
                 if (urlMatchesDomain(items[key].install_origin, origin)) {
@@ -294,6 +294,72 @@ Repo = (function() {
                 cb(result);
         });
     };
+
+
+    var installedServices = undefined;
+
+    /* update the installedServices map for all currently installed services */
+    function updateServices(cb) {
+        iterateApps(function(apps) {
+            if (installedServices === undefined) installedServices = { };
+            for (var app in apps) {
+                if (apps[app].manifest.experimental && apps[app].manifest.experimental.services) {
+                    var s = apps[app].manifest.experimental.services;
+                    if (typeof s === 'object') {
+                        // key is name of service, value is *path* to it
+                        for (var i = 0; i < s.length; i++) {
+                            // get the first key in obj.
+                            for (var k in s[i]) break;
+
+                            // for now we'll just build up objects which hold data about
+                            // services.  real soon now, they'll become more proper
+                            // abstractions
+                            console.log(app);
+                            var svcObj = {
+                                url: app + s[i][k],
+                                app: app
+                            };
+                            if (!installedServices.hasOwnProperty(k)) {
+                                installedServices[k] = [];
+                            } else {
+                                // does this svc already exist in the list (supports list *update*)?
+                                for (var j = 0; j < installedServices[k].length; j++) {
+                                    if (svcObj.url === installedServices[k].url) {
+                                        break;
+                                    }
+                                }
+                                if (j != installedServices[k].length) continue;
+                            }
+                        }
+                        installedServices[k].push(svcObj);
+                    }
+                }
+            }
+            if (typeof cb === 'function') cb();
+        });
+    }
+
+    /* find all services which match a given service 'name', (i.e. profile.get) */
+    function findServices(name, cb) {
+        function doFind() {
+            var svcs = [];
+            if (installedServices[name]) svcs = installedServices[name];
+            cb(svcs);
+        }
+        if (installedServices === undefined) updateServices(doFind);
+        else setTimeout(doFind, 0);
+    }
+
+    /* remove all services for a given app */
+    function removeServicesForApp(appOrigin) {
+
+    }
+
+    /* render user facing UI to allow the user to select one of several services
+     * that will satisfy the "protocolName" request issued with "args". */
+    function renderChooser(services, protocolName, args, onsuccess, onerror) {
+        onerror("notImplemented", "someone best write this!");
+    }
 
     /* Management APIs for dashboards live beneath here */
 
@@ -345,6 +411,8 @@ Repo = (function() {
         amInstalled: amInstalled,
         getInstalledBy: getInstalledBy,
         loadState: loadState,
-        saveState: saveState
+        saveState: saveState,
+        findServices: findServices,
+        renderChooser: renderChooser
     };
 })();
