@@ -198,12 +198,12 @@ function createServer(port) {
 };
 
 // start up webservers on ephemeral ports for each subdirectory here.
-var dirs = fs.readdirSync(path.join(__dirname, 'apprepo_api')).map(
+var dirs = fs.readdirSync(path.join(__dirname, 'servers')).map(
   function (d) {
     return {
       title: "Tests:",
       name: d,
-      path: path.join(__dirname, 'apprepo_api', d)};
+      path: path.join(__dirname, 'servers', d)};
   });
 
 var examplesCopies = 1;
@@ -277,4 +277,4 @@ dirs.forEach(function(dirObj) {
 });
 
 console.log("\nTesting server started, to run tests go to: "
-            + formatLink("_primary", "/apprepo_api/tests.html"));
+            + formatLink("_primary", "/repo_api.html"));
