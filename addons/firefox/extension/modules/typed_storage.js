@@ -115,8 +115,14 @@ ObjectStore.prototype = {
                 getStatement.reset();
                 if (reason != Ci.mozIStorageStatementCallback.REASON_FINISHED)
                     console.log("Get query canceled or aborted! " + reason);
-                else
+                else {
+                  try {
                     cb(value);
+                  } catch (e) {
+                    console.log("Error in completion callback for ObjectStore.get(): " + e);
+                    console.log(e.stack);
+                  }
+                }
             }
         });
     },
@@ -180,8 +186,13 @@ ObjectStore.prototype = {
                 keyStatement.reset();
                 if (reason != Ci.mozIStorageStatementCallback.REASON_FINISHED)
                     console.log("Keys query canceled or aborted! " + reason);
-                else
+                else {
+                  try {
                     cb(resultKeys);
+                  } catch (e) {
+                    console.log("Error in completion callback for ObjectStore.keys(): " + e);
+                  }
+                }
             }
         });
     },
@@ -217,8 +228,14 @@ ObjectStore.prototype = {
                 statement.reset();
                 if (reason != Ci.mozIStorageStatementCallback.REASON_FINISHED)
                     console.log("Query canceled or aborted! " + reason);
-                else
-                    cb(true);
+                else {
+                  try {
+                    if (cb) cb(true);
+                  } catch (e) {
+                    console.log("Error while invoking callback for " + statement + ": " + e);
+                    console.log(e.stack);
+                  }
+                }
             }
         });
     }
