@@ -350,7 +350,7 @@ Repo = (function() {
             cb(svcs);
         }
         if (installedServices === undefined) updateServices(doFind);
-        else setTimeout(doFind, 0);
+        else doFind();
     }
 
     /* render user facing UI to allow the user to select one of several services
