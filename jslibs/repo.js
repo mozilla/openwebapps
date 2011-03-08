@@ -296,7 +296,11 @@ Repo = (function() {
     };
 
 
+    // a map of service "names" to conduit urls
     var installedServices = undefined;
+
+    // a map of conduit urls to running instances of said conduits (see conduit.js)
+    var runningConduits = { };
 
     /* update the installedServices map for all currently installed services */
     function updateServices(cb) {
@@ -314,7 +318,6 @@ Repo = (function() {
                             // for now we'll just build up objects which hold data about
                             // services.  real soon now, they'll become more proper
                             // abstractions
-                            console.log(app);
                             var svcObj = {
                                 url: app + s[i][k],
                                 app: app
@@ -350,16 +353,25 @@ Repo = (function() {
         else setTimeout(doFind, 0);
     }
 
-    /* remove all services for a given app */
-    function removeServicesForApp(appOrigin) {
-
-    }
-
     /* render user facing UI to allow the user to select one of several services
-     * that will satisfy the "protocolName" request issued with "args". */
-    function renderChooser(services, protocolName, args, onsuccess, onerror) {
-        onerror("notImplemented", "someone best write this!");
-    }
+     * that will satisfy the "serviceName" request issued with "args". */
+    function renderChooser(services, serviceName, args, onsuccess, onerror) {
+        // at some point in the near future, we should actually render
+        // a dialog so the *user* can pick a service.  for now, we'll
+        // pick the first.
+        if (!services || !services.length || services.length <= 0) {
+            if (onerror) onerror("noSuchService", "No application is installed that supports '"+ serviceName + "'");
+            return;
+        }
+
+        var conduitURL = services[0].url;
+
+        if (!runningConduits.hasOwnProperty(conduitURL)) {
+            runningConduits[conduitURL] = new Conduit(conduitURL);
+        }
+
+        runningConduits[conduitURL].invoke(serviceName, args, onsuccess, onerror); 
+   }
 
     /* Management APIs for dashboards live beneath here */
 
