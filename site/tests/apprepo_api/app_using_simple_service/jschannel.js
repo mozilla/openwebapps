@@ -1,1 +1,0 @@
-../../../../jslibs/jschannel.js
