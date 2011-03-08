@@ -125,6 +125,10 @@ openwebapps.prototype = {
     _inject: function() {
         let repo = this._repo;
         let win = this._window;
+<<<<<<< HEAD
+        let self = this;
+=======
+>>>>>>> 4a8fe985df1f5c0fe7f6b80bdfdb95ffb4b6382a
         
         win.appinjector.register({
             apibase: "navigator.apps", name: "install", script: null,
@@ -157,6 +161,18 @@ openwebapps.prototype = {
             }
         });
 
+<<<<<<< HEAD
+        win.appinjector.register({
+            apibase: "navigator.apps", name: "invokeService", script: null,
+            getapi: function (contentWindowRef) {
+                return function (methodName, args, successCB, errorCB) {
+                  self._services.invoke(contentWindowRef, methodName, args, successCB, errorCB);
+                }
+            }
+        });
+
+=======
+>>>>>>> 4a8fe985df1f5c0fe7f6b80bdfdb95ffb4b6382a
         // management APIs:
         win.appinjector.register({
             apibase: "navigator.apps.mgmt", name: "launch", script: null,
@@ -234,6 +250,13 @@ openwebapps.prototype = {
             this._inject();
             this._addToolbarButton();
             this._popup = new tmp.appPopup(this._window);
+<<<<<<< HEAD
+
+            tmp = {};
+            Cu.import("resource://openwebapps/modules/services.js", tmp);
+            this._services = new tmp.serviceInvocationHandler(this._window);
+=======
+>>>>>>> 4a8fe985df1f5c0fe7f6b80bdfdb95ffb4b6382a
         }
     }
 };

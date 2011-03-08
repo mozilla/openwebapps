@@ -72,6 +72,7 @@ $ // We'll show all the methods we're testing
 navigator.apps.amInstalled
 navigator.apps.getInstalledBy
 navigator.apps.install
+navigator.apps.invokeService
 navigator.apps.mgmt.launch
 navigator.apps.mgmt.list
 navigator.apps.mgmt.loadState
@@ -446,6 +447,33 @@ $ navigator.apps.install(
 apps.install()
 </pre>
 
+
+
+<div class="test">
+<h3>Install an application that contains a service</h3>
+
+<pre class="doctest">
+$ navigator.apps.install(
+>   {url: SERVERS['app_with_simple_service'] + "/manifest.webapp",
+>    onsuccess: Spy('apps.install', {wait: true}),
+>    onerror: Spy('apps.install.error', {wait: false})
+>   });
+apps.install()
+</pre>
+</div>
+
+
+<div class="test">
+<h3>Invoke the exposed service</h3>
+
+<pre class="doctest">
+$ navigator.apps.invokeService(
+>   "profile.get", [ "displayName" ],
+>    Spy('success', {wait: true}),
+>    Spy('error', {wait: false})
+> );
+success({displayName: "Mork Hashimoto"})
+</pre>
 
 </body>
 <script type="text/javascript" src="/servers.js"></script>

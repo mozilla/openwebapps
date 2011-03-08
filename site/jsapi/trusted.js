@@ -134,6 +134,23 @@
         });
     });
 
+    chan.bind("invokeService", function(t, args) {
+        // indicate that response will occur asynchronously, later.
+        t.delayReturn(true);
+
+        Repo.findServices(args.name, function(svcs) {
+            if (svcs.length === 0) {
+                t.error("notAvailable", "no services are installed which support: " + args.name);
+            } else {
+                Repo.renderChooser(svcs, args.name, args.args, function(invocationResults) {
+                    t.complete(invocationResults);
+                }, function(errCode, errMessage) {
+                    t.error(errCode, errMessage);
+                });
+            }
+        });
+    });
+
     /** Determines which applications are installed *for* the origin domain */
     chan.bind('amInstalled', function(t, args) {
         t.delayReturn(true);

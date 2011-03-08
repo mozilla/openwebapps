@@ -1,0 +1,42 @@
+<html>
+<head>
+<style>
+BODY {
+  background-color:white;
+}
+</style>
+<script>
+window.addEventListener("message", function(event) {
+  if (event.origin == "resource://openwebapps")
+  {
+    document.getElementById("hello").innerHTML = event.data + ": " + event.origin;
+    
+    // go off and configure the service pickers...
+    
+    // at some point they will message back to us.
+    
+  }
+}, false);
+
+function confirm()
+{
+  var result = {foo:"hello world"};
+  var msg = document.createEvent("MessageEvent");
+  msg.initMessageEvent("message", // type
+                       true, true, // bubble, cancelable
+                       JSON.stringify(result),  // data
+                       "resource://openwebapps/service", "", window); // origin, source
+  document.dispatchEvent(msg);
+}
+</script>
+</head>
+<body>
+
+This is the service confirmation pane.
+
+<button onclick="confirm()">Confirm The Thing</button>
+
+<div id="hello"></div>
+
+</body>
+</html>
