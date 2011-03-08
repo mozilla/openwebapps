@@ -1,0 +1,80 @@
+.openwebapps-frame
+{
+  -moz-transition: height 0.2s ease-in;
+}
+
+#openwebapps-toolbar-button
+{
+  list-style-image: url("resource://openwebapps/chrome/skin/toolbar-button.png");
+}
+
+#openwebapps-toolbar-button.highlight
+{
+  -moz-border-radius: 0.25em;
+  border-radius: 0.25em;
+  
+  -moz-box-shadow:
+    inset rgba(255, 255, 255, 0.8) 0 1px 1px,
+    inset rgba(0, 0, 0, 0.1) 0 -2px 0px,
+	inset rgba(0, 156, 237, 0.2) 0 0px 12px,
+	rgba(0, 156, 237, 0.6) 0 0px 12px,
+	rgba(0, 156, 237, 1) 0 0px 4px;
+  box-shadow:
+	inset rgba(255, 255, 255, 0.8) 0 1px 1px,
+	inset rgba(0, 0, 0, 0.1) 0 -2px 0px,
+	inset rgba(0, 156, 237, 0.2) 0 0px 12px,
+	rgba(0, 156, 237, 0.6) 0 0px 12px,
+	rgba(0, 156, 237, 1) 0 0px 4px;
+
+  -moz-transition: all 0.25s ease-out;
+  opacity: 1;
+}
+
+#openwebapps-toolbar-button > image
+{
+  width: auto;
+  height: auto;
+}
+
+#openwebapps-popup
+{
+  -moz-appearance: none;
+  -moz-window-shadow: none;
+  background-color: transparent;
+  margin-top: -4px;
+  margin-left: -13px;
+  padding-right: 35px;  /* not quite 50px but looks very close */
+  min-width: 380px !important;
+  -moz-border-image: url(chrome://browser/skin/hud-panel.png) 26 18 22 50 / 26px 18px 22px 50px repeat;
+  color: lightgrey;
+}
+
+#openwebapps-popup *
+{
+  border: none;
+  outline: none;
+  margin: 0;
+  padding: 0;
+  -moz-padding-start: 0px;
+  -moz-padding-end: 0px;
+  -moz-margin-start: 0px;
+  -moz-margin-end: 0px;
+  -moz-border-radius: 0px;
+  font-family: sans-serif;
+  font-weight: inherit;
+  font-style: inherit;
+  font-size: 100%;
+  vertical-align: middle;
+  -moz-box-sizing: border-box;
+  list-style-type: none;
+}
+
+#openwebapps-popup description
+{
+  margin: 5px 0;
+}
+
+.popup-notification-icon[popupid="openwebapps-install-notification"]
+{
+  list-style-image: url("resource://openwebapps/chrome/skin/app-icon.png");
+}
