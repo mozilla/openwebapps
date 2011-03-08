@@ -1,0 +1,9 @@
+{
+  "name":"Simple App With Service",
+  "experimental": {
+    "services": {
+        "profile": "/aboutme_svc.html"
+      }
+    ]
+  }
+}
