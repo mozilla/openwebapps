@@ -42,6 +42,22 @@
     <key id="key_openwebapps" keycode="" command="cmd_openSharePage"/>
   </keyset>
 
+  <!-- declare the popup for service invocation -->
+  <popupset id="mainPopupSet">
+    <panel id="apps-service-popup"
+           type="arrow"
+           noautohide="true"
+           class="openwebapps-service-panel"
+           level="parent">
+      <browser id="apps-service-browser"
+              type="content"
+              flex="1"
+              src="about:blank"
+              disablehistory="true"
+              class="openwebapps-service-browser"/>
+    </panel>
+  </popupset>
+
   <!--
     Insert ourselves into the Tools menu after Web Search ->
 
