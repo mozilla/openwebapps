@@ -447,6 +447,35 @@ apps.install()
 </pre>
 
 
+
+<div class="test">
+<h3>Install an application that contains a service</h3>
+
+<pre class="doctest">
+$ navigator.apps.install(
+>   {url: SERVERS['app_with_simple_service'] + "/manifest.webapp",
+>    onsuccess: Spy('apps.install', {wait: true}),
+>    onerror: Spy('apps.install.error', {wait: false})
+>   });
+apps.install()
+</pre>
+</div>
+
+
+<div class="test">
+<h3>Invoke that service from a different domain</h3>
+
+<pre class="doctest">
+$ var chan = embedIFrameAndStartChannel(SERVERS['app_using_simple_service'] + "/include.html");
+$ // now for a horrible hack.  when installing from within an iframe, in and HTML5 environment
+> // prompting will occur inside that iframe.  yuck!  We'll temporarily show that iframe
+> // so the testor can click.
+> showIFrame(SERVERS['no_delegated_install']);
+$ chan.call(buildJSChanArgs("profile.get", true));
+success()
+$ hideIFrame(SERVERS['no_delegated_install']);
+</pre>
+
 </body>
 <script type="text/javascript" src="/servers.js"></script>
 <script type="text/javascript" src="/jsapi/include.js"></script>
