@@ -330,6 +330,24 @@ $ m.widget = { }; // there are NO required args to widget.  wild.
 
 </pre>
 
+<h3>Property: services!</h3>
+
+<pre class="doctest">
+$ var m = {
+>   name: "ServicyManifest",
+>   experimental: {
+>     services: [
+>       {
+>         profile: "/aboutme_svc.html"
+>       }
+>     ]
+>   }
+> };
+> writeln(null !== Manifest.validate(m));
+true
+</pre>
+
+
 <h3>Bogus properties</h3>
 
 <pre class="doctest">
