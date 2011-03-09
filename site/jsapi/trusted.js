@@ -142,11 +142,13 @@
             if (svcs.length === 0) {
                 t.error("notAvailable", "no services are installed which support: " + args.name);
             } else {
-                Repo.renderChooser(svcs, args.name, args.args, function(invocationResults) {
-                    t.complete(invocationResults);
-                }, function(errCode, errMessage) {
-                    t.error(errCode, errMessage);
-                });
+                Repo.renderChooser(
+                    t.origin, svcs, args.name, args.args, displayAppChooser,
+                    function(invocationResults) {
+                        t.complete(invocationResults);
+                    }, function(errCode, errMessage) {
+                        t.error(errCode, errMessage);
+                    });
             }
         });
     });

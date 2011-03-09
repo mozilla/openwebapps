@@ -355,7 +355,7 @@ Repo = (function() {
 
     /* render user facing UI to allow the user to select one of several services
      * that will satisfy the "serviceName" request issued with "args". */
-    function renderChooser(services, serviceName, args, onsuccess, onerror) {
+    function renderChooser(origin, services, serviceName, args, selectAppCallback, onsuccess, onerror) {
         // at some point in the near future, we should actually render
         // a dialog so the *user* can pick a service.  for now, we'll
         // pick the first.
@@ -364,14 +364,27 @@ Repo = (function() {
             return;
         }
 
-        var conduitURL = services[0].url;
+        var apps = [];
+        for (var i = 0; i < services.length; i++) apps.push(services[i].app);
 
-        if (!runningConduits.hasOwnProperty(conduitURL)) {
-            runningConduits[conduitURL] = new Conduit(conduitURL);
-        }
+        selectAppCallback(origin, serviceName, apps, function(selection) {
+            // discover which app the user selected 
+            for (var i = 0; i < services.length; i++) {
+                if (services[i].app === selection) break;
+            }
+            if (i === services.length) {
+                onerror("permissionDenied", "user denies access to this services"); 
+            } else {
+                var conduitURL = services[i].url;
 
-        runningConduits[conduitURL].invoke(serviceName, args, onsuccess, onerror); 
-   }
+                if (!runningConduits.hasOwnProperty(conduitURL)) {
+                    runningConduits[conduitURL] = new Conduit(conduitURL);
+                }
+
+                runningConduits[conduitURL].invoke(serviceName, args, onsuccess, onerror); 
+            }
+        }, onerror);
+    }
 
     /* Management APIs for dashboards live beneath here */
 
