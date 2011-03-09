@@ -4,9 +4,8 @@ HTML {
 
 BODY {
     margin: 0 3px; color:white;
-    font: message-box; 
-    background-color: transparent;
-    -moz-border-image: url(resource://openwebapps/chrome/skin/hud-panel.png) 26 50 22 18 / 26px 50px 22px 18px repeat;
+    font: message-box;
+    background: rgba(0, 0, 0, 0.6);
 }
 
 .appList {
