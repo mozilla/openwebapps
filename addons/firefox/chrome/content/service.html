@@ -1,42 +1,266 @@
 <html>
 <head>
+<link rel="stylesheet" type="text/css" href="style.css">
+<script src="jquery-1.4.4.min.js"></script>
+<script src="jquery-ui-1.8.10.custom.min.js"></script>
+<script src="jschannel.js"></script>
 <style>
-BODY {
-  background-color:white;
+.serviceFrame {
+  width:500px;
+  height:128px;
+  border:0px;
 }
+#services {
+  background-image: -moz-linear-gradient(center top , #D4DDE5 0%, #C6D1DA 100%);
+  border-radius:0;
+}
+#confirm {
+  width:484px;
+  height:64px;
+  text-align:right;
+  background-image: -moz-linear-gradient(top, #d4dde5 0%, #c6d1da 100%);
+  padding-top:16px;
+  padding-right:16px;
+}
+
 </style>
 <script>
-window.addEventListener("message", function(event) {
+
+var gServiceList;
+var gServiceChannels = [];
+var gRequestMethod;
+var gArguments;
+
+function makeSuccessFunction(svc)
+{
+  return function(result) {
+    var messageData = {app:svc.app, cmd:"result", result:result};
+    var msg = document.createEvent("MessageEvent");
+    msg.initMessageEvent("message", // type
+                         true, true, // bubble, cancelable
+                         JSON.stringify(messageData),  // data
+                         "resource://openwebapps/service", "", window); // origin, source
+    document.dispatchEvent(msg);
+  }
+}
+
+function getSmallIcon(minifest) {
+  // see if the minifest has any icons, and if so, return the smallest one
+  if (minifest && minifest.icons) {
+      var smallest = 0;
+      for (var z in minifest.icons) {
+          var size = parseInt(z, 10);
+          if (smallest == 0 || size < smallest) smallest = size;
+      }
+      if (smallest !== 0) return minifest.icons[smallest];
+  }
+  return "default_app.png";
+}
+
+function handleMessage(event)
+{
+  dump("services.html got an event: " + event.data.substring(0,100) + " from " + event.origin + "\n");
+
   if (event.origin == "resource://openwebapps")
   {
-    document.getElementById("hello").innerHTML = event.data + ": " + event.origin;
+    var cmdRequest = JSON.parse(event.data);
+   
+    $("#description").
+      append($("<div>Some page is asking for something from you.  Perhaps we could provide some more details about what is being requested here.</div>")).
+      append($("<div>Method name: " + cmdRequest.method + "</div>")).
+      append($("<div>Arguments: " + cmdRequest.args + "</div>"));
+
+    document.getElementById("requestDescription").innerHTML=
+      ("<div>Some page is asking for something from you.  Perhaps we could provide some more details about what is being requested here.</div>") + 
+      ("<div>Method name: " + cmdRequest.method + "</div>") +
+      ("<div>Arguments: " + cmdRequest.args + "</div>");
+         
+    gServiceList = cmdRequest.serviceList;
+    gRequestMethod = cmdRequest.method;
+    gArguments = cmdRequest.args;
     
-    // go off and configure the service pickers...
+    $("#services").empty();
+    $("#services").append($("<ul id='services-tabs'></ul>"));
     
-    // at some point they will message back to us.
-    
+    for (var i=0;i<gServiceList.length;i++)
+    {
+      var svc = gServiceList[i];
+
+      var svcTab = document.createElement("li");
+      var svcTabLink = document.createElement("a");
+      svcTabLink.setAttribute("href", "#svc-tab-" + i);
+      var svcTabImg = document.createElement("img");
+      svcTabImg.setAttribute("src", getSmallIcon(svc.app));
+      svcTabImg.setAttribute("style", "width:24px;height:24px");
+      svcTabLink.appendChild(svcTabImg);
+      //svcTabLink.appendChild(document.createTextNode("Item " + i));
+
+      svcTab.appendChild(svcTabLink);
+      svcTab.appendChild(svcTabLink);
+      $("#services-tabs").append(svcTab);
+
+      var svcDiv = document.createElement("div");
+      svcDiv.setAttribute("id", "svc-tab-" + i);
+      var anIframe = document.createElement("iframe");
+      anIframe.src = svc.url;
+      anIframe.classList.add("serviceFrame");
+      svcDiv.appendChild(anIframe);
+      $("#services").append(svcDiv);
+      
+      var chan = Channel.build({
+          window: anIframe.contentWindow,
+          origin: "*",
+          scope: "aboutme"
+      });
+      chan.call({
+          method: gRequestMethod,
+          params: gArguments,
+          success: function() {} /* perhaps record the fact that it worked? */
+      });
+      gServiceChannels.push(chan);
+    }
+    $("#services").tabs();
   }
-}, false);
+}
+window.addEventListener("message", handleMessage, false);
+
+
+// Testing code:
+if (this.location.href.indexOf("file:///") == 0)
+{
+  window.setTimeout(function() {
+    handleMessage( 
+      { origin: "resource://openwebapps",
+        data: JSON.stringify(
+          { 
+            method:"profile.get", 
+            args:["displayName"],
+            serviceList: [ { 
+              url: "http://localhost:8400/service",
+              app: {
+                name: "about:me",
+                icons: {
+                }
+              }
+            }, { 
+              url: "http://localhost:8400/service",
+              app: {
+                name: "anotherChoice",
+                icons: {
+                }
+              }
+            }
+            ]
+          }
+        )
+      });
+  }, 10);
+}
+
 
 function confirm()
 {
-  var result = {foo:"hello world"};
+  var selected = $("#services").tabs('option', 'selected'); // => 0
+  gServiceChannels[selected].call({
+    method: "confirm",
+    success: function(result) {
+      var messageData = {app:gServiceList[selected].app, cmd:"result", result:result};
+      var msg = document.createEvent("MessageEvent");
+      msg.initMessageEvent("message", // type
+                           true, true, // bubble, cancelable
+                           JSON.stringify(messageData),  // data
+                           "resource://openwebapps/service", "", window); // origin, source
+      document.dispatchEvent(msg);
+    }
+  });
+
+/*  var result = {foo:"hello world"};
   var msg = document.createEvent("MessageEvent");
   msg.initMessageEvent("message", // type
                        true, true, // bubble, cancelable
                        JSON.stringify(result),  // data
                        "resource://openwebapps/service", "", window); // origin, source
-  document.dispatchEvent(msg);
+  document.dispatchEvent(msg);*/
 }
+
 </script>
 </head>
 <body>
 
-This is the service confirmation pane.
+<div id="wrapper">
 
-<button onclick="confirm()">Confirm The Thing</button>
+<header class="hbox">
+  <h1 id="panelHeader" class="boxFlex">Firefox Web Applications</h1>
+  <nav>
+    <ul>
+      <li><a class="configureToggle" target="apps.settings" href="resource://openwebapps/configure">settings</a></li>
+      <li id="closeLink"><span class="close"></span></li>
+    </ul>
+  </nav>
+</header>
 
-<div id="hello"></div>
+<div class="appbox">
+  <div id="requestInfo">
+    <div class="hbox">
+      <div>
+        <div class="thumbnail">
+          <img class="thumb" src="appsLogo.png">
+        </div>
+      </div>
+      <div class="boxFlex1 detailInfo">
+        <div id="requestDescription" class="overflow description">
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="services">
+  </div>
+  
+  <div id="confirm">
+    <button onclick="confirm()">Okay</button>
+  </div>
+</div> <!-- end appbox -->
+
+</div> <!-- end wrapper -->
 
 </body>
 </html>
+
+
+<!--
+  else
+  {
+    for (var i=0;i < gServiceList.length;i++)
+    {
+      dump("services.html is checking event origin against " + gServiceList[i].url + "\n");
+      if (gServiceList[i].url == event.origin)
+      {
+        dump("services.html got a match; checking event message");
+        var message = JSON.parse(event.data);
+        if (message.type == "hello") {
+          // hi there - time to send down request
+          gServiceIFrames[i].contentWindow.postMessage(
+            JSON.stringify(
+            {
+              cmd: "request",
+              method: gRequestMethod,
+              args: gArguments
+            }),
+            "*"); // XX use right domain
+
+        } else if (message.type == "result") {
+          // let the service know about it
+          var theService = gServiceList[i];
+          var result = {app:theService.app, cmd:"result", result:message.result};
+          var msg = document.createEvent("MessageEvent");
+          msg.initMessageEvent("message", // type
+                               true, true, // bubble, cancelable
+                               JSON.stringify(result),  // data
+                               "resource://openwebapps/service", "", window); // origin, source
+          document.dispatchEvent(msg);
+        }
+      }
+    }
+    
+  }
+-->

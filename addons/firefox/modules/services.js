@@ -62,12 +62,14 @@ serviceInvocationHandler.prototype = {
 /*      xulPanel.setAttribute("transparent", "transparent");
       xulPanel.setAttribute("style", "-moz-appearance: none;background-color:transparent;border:none");
 */
-      let frame = doc.createElementNS(XUL_NS, "iframe");
+      // let frame = doc.createElementNS("http://www.w3.org/1999/xhtml", /*XUL_NS,*/ "iframe");
+      let frame = doc.createElementNS(XUL_NS, "browser");      
       frame.setAttribute("flex", "1");
+      frame.setAttribute("type", "content");
       frame.setAttribute("transparent", "transparent");
-      frame.setAttribute("src", "resource://openwebapps/chrome/content/service.html");
       frame.setAttribute("style", "width:484px;height:384px");
       xulPanel.appendChild(frame);
+//      frame.loadURI("resource://openwebapps/chrome/content/service.html", null, null);
       doc.getElementById("mainPopupSet").appendChild(xulPanel);
       
       return [xulPanel, frame];
@@ -99,11 +101,15 @@ serviceInvocationHandler.prototype = {
         thePanel = tmp[0];
         theIFrame = tmp[1];
         this._popups.push( { contentWindow: contentWindowRef, panel: thePanel, iframe: theIFrame} );
-      } 
+        dump("Created new panel\n");
+      } else {
+        theIFrame.contentWindow.location.href = "about:blank";
+        dump("Found already existing panel\n");
+      }
       this.show(thePanel);
 
       // Update the content for the new invocation
-      theIFrame.setAttribute("src", "resource://openwebapps/chrome/content/service.html");
+      theIFrame.contentWindow.location.href = "resource://openwebapps/chrome/content/service.html";
       this._updateContent(thePanel, theIFrame, methodName, args, successCB, errorCB);
       } catch (e) {
         dump(e + "\n");
@@ -119,23 +125,26 @@ serviceInvocationHandler.prototype = {
       // 3. Where to return messages to once it gets confirmation (that would be this)
       
       // Build the candidate list:
+      dump("Triggering service lookup\n");
+      FFRepoImplService.findServices(methodName, function(serviceList) {
+        dump("Found service list; awaiting load event\n");
+        
+        theIFrame.contentDocument.addEventListener("message", function(event) {
+          if (event.origin == "resource://openwebapps/service") {
+            dump("Heard a result message\n");
+            dump("data is " + event.data + "; origin is " + event.origin + "\n");
+            thePanel.hidePopup();
+            successCB(event.data);
+          }
+        }, false);
+
+        theIFrame.contentWindow.addEventListener("load", function() {
+          dump("Service picker loaded; sending request: " + JSON.stringify(serviceList).substring(0,100) + "\n");
+          theIFrame.contentWindow.postMessage(JSON.stringify({method:methodName, args:args, serviceList: serviceList}), "*");
+        }, false);
+        
+      });
       
-      theIFrame.contentDocument.addEventListener("message", function(event) {
-        if (event.origin == "resource://openwebapps/service") {
-          dump("Heard a result message\n");
-          dump("data is " + event.data + "; origin is " + event.origin + "\n");
-          thePanel.hidePopup();
-          successCB(event.data);
-        }
-      }, false);
-
-      theIFrame.contentWindow.addEventListener("load", function() {
-        // once the iframe is loaded, we let it know what's going on
-
-        theIFrame.contentWindow.postMessage("HelloWorld", "*");
-
-      }, false);
-
     }
 };
 
