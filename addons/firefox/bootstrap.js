@@ -83,9 +83,20 @@ function openwebapps(win, add)
 {
     this._addon = add;
     this._window = win;
-    
-    let uri = this._addon.getResourceURI("chrome/content/overlay.xul").spec;
-    this._window.document.loadOverlay(uri, this);
+
+    // Hang on, the window may not be fully loaded yet
+    let self = this;
+    function checkWindow()
+    {
+        if (!win.document.getElementById("nav-bar")) {
+            let timeout = win.setTimeout(checkWindow, 1000);
+            unloaders.push(function() win.clearTimeout(timeout));
+        } else {
+            let uri = self._addon.getResourceURI("chrome/content/overlay.xul").spec;
+            win.document.loadOverlay(uri, self);
+        }
+    }
+    checkWindow();
 }
 openwebapps.prototype = {
     _addToolbarButton: function() {

@@ -36,44 +36,6 @@
   height: auto;
 }
 
-#openwebapps-popup
-{
-  -moz-appearance: none;
-  -moz-window-shadow: none;
-  background-color: transparent;
-  margin-top: -4px;
-  margin-left: -13px;
-  padding-right: 35px;  /* not quite 50px but looks very close */
-  min-width: 380px !important;
-  -moz-border-image: url(chrome://browser/skin/hud-panel.png) 26 18 22 50 / 26px 18px 22px 50px repeat;
-  color: lightgrey;
-}
-
-#openwebapps-popup *
-{
-  border: none;
-  outline: none;
-  margin: 0;
-  padding: 0;
-  -moz-padding-start: 0px;
-  -moz-padding-end: 0px;
-  -moz-margin-start: 0px;
-  -moz-margin-end: 0px;
-  -moz-border-radius: 0px;
-  font-family: sans-serif;
-  font-weight: inherit;
-  font-style: inherit;
-  font-size: 100%;
-  vertical-align: middle;
-  -moz-box-sizing: border-box;
-  list-style-type: none;
-}
-
-#openwebapps-popup description
-{
-  margin: 5px 0;
-}
-
 .popup-notification-icon[popupid="openwebapps-install-notification"]
 {
   list-style-image: url("resource://openwebapps/chrome/skin/app-icon.png");

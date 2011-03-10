@@ -43,13 +43,9 @@ function appPopup(win)
     let doc = win.document;
     let XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
     let xulPanel = doc.createElementNS(XUL_NS, "panel");
-    xulPanel.setAttribute("transparent", "transparent");
-    xulPanel.setAttribute("style", "-moz-appearance: none;background-color:transparent;border:none");
+    xulPanel.setAttribute("type", "arrow");
 
     let frame = doc.createElementNS(XUL_NS, "iframe");
-    //frame.setAttribute("type", "chrome"); does not work with resource://
-    frame.setAttribute("flex", "1");
-    frame.setAttribute("transparent", "transparent");
     frame.setAttribute("src", "resource://openwebapps/chrome/content/popup.html");
     xulPanel.appendChild(frame);
     doc.getElementById("mainPopupSet").appendChild(xulPanel);
@@ -128,9 +124,9 @@ appPopup.prototype = {
         }
         if (count == 0) {
             // FIXME: localize
-            doc.getElementById("empty").appendChild(
-                doc.createTextNode("No applications are installed.")
-            );
+            doc.getElementById("empty").innerHTML = "No applications are installed.";
+        } else {
+            doc.getElementById("empty").innerHTML = "";
         }
     },
     
@@ -146,8 +142,10 @@ appPopup.prototype = {
             // 5 icons per row?
             let height = 100 + Math.ceil(count / 5.0) * 100 +
                 (self._window.gBrowser.contentDocument.applicationManifest != null ? 180 : 0);
-            self._panel.sizeTo(500, height);
-            self._panel.openPopup(self._button, "after_end", 24);
+            self._panel.sizeTo(500, height + 20);
+            self._frame.width = "480px";
+            self._frame.height = height + "px";
+            self._panel.openPopup(self._button, "after_end", -16);
             self._renderIconList(appDict);
         });
     },
