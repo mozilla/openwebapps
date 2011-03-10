@@ -57,6 +57,11 @@ Repo = (function() {
     var appStorage = TypedStorage().open("app");
     var stateStorage = TypedStorage().open("state");
 
+    function invalidateCaches()
+    {
+      installedServices = undefined;
+    }
+
     // iterates over all stored applications manifests and passes them to a
     // callback function. This function should be used instead of manual
     // iteration as it will parse manifests and purge any that are invalid.
@@ -191,6 +196,9 @@ Repo = (function() {
 
                 // Save - blow away any existing value
                 appStorage.put(appOrigin, installation, cb);
+                
+                // and invalidate caches
+                invalidateCaches();
             } else {
                 if (cb) cb({error: ["denied", "User denied installation request"]});
             }

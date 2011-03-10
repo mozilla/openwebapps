@@ -49,10 +49,10 @@
  *
  * http://docs.jquery.com/UI/Tabs#theming
  */
-.ui-tabs { position: relative; padding: .2em; zoom: 1; } /* position: relative prevents IE scroll bug (element with position: relative inside container with overflow: auto appear as "fixed") */
-.ui-tabs .ui-tabs-nav { margin: 0; padding: 2px 2px 0; }
-.ui-tabs .ui-tabs-nav li { list-style: none; float: left; position: relative; top: 1px; margin: 0 2px 1px 0; border-bottom: 0 !important; padding: 0; white-space: nowrap; }
-.ui-tabs .ui-tabs-nav li a { float: left; padding: 0px 0px; text-decoration: none; }
+.ui-tabs { position: relative; padding: 0; zoom: 1; } /* position: relative prevents IE scroll bug (element with position: relative inside container with overflow: auto appear as "fixed") */
+.ui-tabs .ui-tabs-nav { margin: 0; padding: 0 0 0; }
+.ui-tabs .ui-tabs-nav li { list-style: none; float: left; position: relative; top: 1px; margin: 0 0 0 3px; border-bottom: 0 !important; padding: 0; white-space: nowrap; }
+.ui-tabs .ui-tabs-nav li a { float: left; padding: 0px 8px; text-decoration: none; margin-top:auto; margin-bottom:auto }
 .ui-tabs .ui-tabs-nav li.ui-tabs-selected { margin-bottom: 0; padding-bottom: 1px; }
 .ui-tabs .ui-tabs-nav li.ui-tabs-selected a, .ui-tabs .ui-tabs-nav li.ui-state-disabled a, .ui-tabs .ui-tabs-nav li.ui-state-processing a { cursor: text; }
 .ui-tabs .ui-tabs-nav li a, .ui-tabs.ui-tabs-collapsible .ui-tabs-nav li.ui-tabs-selected a { cursor: pointer; } /* first selector in group seems obsolete, but required to overcome bug in Opera applying cursor: text overall if defined elsewhere... */
@@ -132,11 +132,17 @@
 .ui-autocomplete .ui-state-default,
 .ui-widget-content .ui-state-default,
 .ui-widget-header .ui-state-default {
+
+  border: 1px solid #d4dde5; /* same as bg */
+  border-bottom: 1px solid #C6D1DA;
+  background-image: -moz-linear-gradient(top, #c6d1da 0%, #8f99a2 100%);
+  color:#303030;
 }
 .ui-autocomplete .ui-state-default a,
 .ui-state-default a:link,
 .ui-state-default a:visited {
   text-decoration: none;
+  color: black;
 }
 
 .ui-autocomplete .ui-state-hover,
@@ -159,14 +165,14 @@
 .ui-widget-content .ui-state-active,
 .ui-widget-header .ui-state-active {
   border: 1px solid #535F6D;
-  background-color: #535F6D;
-  color: white;
+  /*background-color: #535F6D;*/
+  background: #f0f0f0;
 }
 
 .ui-autocomplete .ui-state-active a,
 .ui-state-active a:link,
 .ui-state-active a:visited {
-  color: white;
+  color: black;
   text-decoration: none;
 }
 
@@ -232,7 +238,7 @@ body {
   font-size: 11px;
   line-height: 110%;
   overflow: hidden;
-  max-width: 500px;
+  max-width: 484px;
   width: 100%;
   height: 100%;
   background-color: #d4dde5;

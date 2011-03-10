@@ -6,13 +6,18 @@
 <script src="jschannel.js"></script>
 <style>
 .serviceFrame {
-  width:500px;
-  height:128px;
+  width:484px;
+  height:177px;
   border:0px;
 }
 #services {
   background-image: -moz-linear-gradient(center top , #D4DDE5 0%, #C6D1DA 100%);
   border-radius:0;
+}
+#services-tabs {
+  background-image: -moz-linear-gradient(center top , #C6D1DA 0%, #C6D1DA 100%);
+  border-radius:0;
+  padding-left:4px;
 }
 #confirm {
   width:484px;
@@ -57,15 +62,23 @@ function getSmallIcon(minifest) {
   return "default_app.png";
 }
 
+function deleteOldChannels() {
+  gServiceChannels = [];
+  $("#services").remove();// this will remove iframes from DOM
+  
+}
+
 function handleMessage(event)
 {
-  dump("services.html got an event: " + event.data.substring(0,100) + " from " + event.origin + "\n");
+  dump("services.html got an event: " + event.data/*.substring(0,100)*/ + " from " + event.origin + "\n");
 
+  // Reconfigure (XX attach a command code)
   if (event.origin == "resource://openwebapps")
   {
+    deleteOldChannels();
     var cmdRequest = JSON.parse(event.data);
    
-    $("#description").
+    $("#requestDescription").
       append($("<div>Some page is asking for something from you.  Perhaps we could provide some more details about what is being requested here.</div>")).
       append($("<div>Method name: " + cmdRequest.method + "</div>")).
       append($("<div>Arguments: " + cmdRequest.args + "</div>"));
@@ -79,7 +92,7 @@ function handleMessage(event)
     gRequestMethod = cmdRequest.method;
     gArguments = cmdRequest.args;
     
-    $("#services").empty();
+    $("#servicebox").append($("<div id='services'></div>"));
     $("#services").append($("<ul id='services-tabs'></ul>"));
     
     for (var i=0;i<gServiceList.length;i++)
@@ -91,9 +104,13 @@ function handleMessage(event)
       svcTabLink.setAttribute("href", "#svc-tab-" + i);
       var svcTabImg = document.createElement("img");
       svcTabImg.setAttribute("src", getSmallIcon(svc.app));
-      svcTabImg.setAttribute("style", "width:24px;height:24px");
+      svcTabImg.setAttribute("style", "width:24px;height:24px;vertical-align:middle");
       svcTabLink.appendChild(svcTabImg);
-      //svcTabLink.appendChild(document.createTextNode("Item " + i));
+      var svcTextDiv = document.createElement("span");
+      svcTextDiv.appendChild(document.createTextNode(svc.manifest.name));
+      svcTextDiv.setAttribute("style", "padding-left:4px;vertical-align:middle;display:inline-block");
+      svcTab.setAttribute("style", "max-width:128px;overflow-x:hidden;color:black;font:small-caption");
+      svcTabLink.appendChild(svcTextDiv);
 
       svcTab.appendChild(svcTabLink);
       svcTab.appendChild(svcTabLink);
@@ -109,8 +126,8 @@ function handleMessage(event)
       
       var chan = Channel.build({
           window: anIframe.contentWindow,
-          origin: "*",
-          scope: "aboutme"
+          origin: "*", // XX get the right origin in here
+          scope: svc.url
       });
       chan.call({
           method: gRequestMethod,
@@ -137,14 +154,16 @@ if (this.location.href.indexOf("file:///") == 0)
             args:["displayName"],
             serviceList: [ { 
               url: "http://localhost:8400/service",
-              app: {
+              app: "http://localhost:8400",
+              manifest: {
                 name: "about:me",
                 icons: {
                 }
               }
             }, { 
-              url: "http://localhost:8400/service",
-              app: {
+              url: "http://localhost:8401/service",
+              app: "http://localhost:8401",
+              manifest: {
                 name: "anotherChoice",
                 icons: {
                 }
@@ -187,7 +206,7 @@ function confirm()
 </head>
 <body>
 
-<div id="wrapper">
+<div id="wrapper"><!-- don't change this name without changing services.js -->
 
 <header class="hbox">
   <h1 id="panelHeader" class="boxFlex">Firefox Web Applications</h1>
@@ -213,7 +232,7 @@ function confirm()
       </div>
     </div>
   </div>
-  <div id="services">
+  <div id="servicebox">
   </div>
   
   <div id="confirm">
