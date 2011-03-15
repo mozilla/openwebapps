@@ -145,7 +145,7 @@ appPopup.prototype = {
             self._panel.sizeTo(500, height + 20);
             self._frame.width = "480px";
             self._frame.height = height + "px";
-            self._panel.openPopup(self._button, "after_end", -16);
+            self._panel.openPopup(self._button, "after_end", -10);
             self._renderIconList(appDict);
         });
     },
