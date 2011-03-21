@@ -1,36 +1,6 @@
-<style>
-#output {
-  padding:6px;
-  margin-top:32px;
-  min-width:400px;
-  min-height:100px;
-  background-color:#f8f8f8;
-  border-radius:1em;
-  border:1px solid #909090;
-  font:9pt "Lucida Granda", Tahoma, sans-serif;
-}
-.previewValue {
-  display:inline-block;
-  width:230px;
-}
-
-.row {
-  min-height:18px;
-  margin-bottom:2px;
-}
-
-.label {
-  display:inline-block;
-  vertical-align:top;
-  font:bold 9pt "lucida grande",tahoma,verdana,arial,sans-serif;
-  width:80px;
-}
-.value {
-  display:inline-block;
-  vertical-align:top;
-  font:9pt "lucida grande",tahoma,verdana,arial,sans-serif;
-}
-</style>
+<html>
+<head>
+<title>invokeService demonstration</title>
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
 <script>
 function doit(args) {
@@ -130,15 +100,45 @@ function renderResult(result)
     }
   } catch (e) {
     console.log(e);
-    dump(e + "\n");
-    console.log(e);
   }
 }
 
-
-
 </script>
+<style>
+#output {
+  padding:6px;
+  margin-top:32px;
+  min-width:400px;
+  min-height:100px;
+  background-color:#f8f8f8;
+  border-radius:1em;
+  border:1px solid #909090;
+  font:9pt "Lucida Granda", Tahoma, sans-serif;
+}
+.previewValue {
+  display:inline-block;
+  width:230px;
+}
 
+.row {
+  min-height:18px;
+  margin-bottom:2px;
+}
+
+.label {
+  display:inline-block;
+  vertical-align:top;
+  font:bold 9pt "lucida grande",tahoma,verdana,arial,sans-serif;
+  width:80px;
+}
+.value {
+  display:inline-block;
+  vertical-align:top;
+  font:9pt "lucida grande",tahoma,verdana,arial,sans-serif;
+}
+</style>
+</head>
+<body>
 <div style="width:500px;margin:auto;padding-top:16px">
 
 <h2>invokeService demonstration</h2>
@@ -166,3 +166,5 @@ API (depending on whether we've implemented that yet).
 <script>
 $("#output").hide()
 </script>
+</body>
+</html>

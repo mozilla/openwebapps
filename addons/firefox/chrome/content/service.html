@@ -70,7 +70,6 @@ function deleteOldChannels() {
 
 function handleMessage(event)
 {
-  dump("services.html got an event: " + event.data/*.substring(0,100)*/ + " from " + event.origin + "\n");
 
   // Reconfigure (XX attach a command code)
   if (event.origin == "resource://openwebapps")

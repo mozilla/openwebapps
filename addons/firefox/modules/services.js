@@ -84,33 +84,30 @@ serviceInvocationHandler.prototype = {
     
     invoke: function(contentWindowRef, methodName, args, successCB, errorCB) {
       try {
-      // Do we already have a panel for this content window?
-      let thePanel, theIFrame;
-      for each (let popupCheck in this._popups) {
-        if (contentWindowRef == popupCheck.contentWindow) {
-          thePanel = popupCheck.panel;
-          theIFrame = popupCheck.iframe;
-          break;
+        // Do we already have a panel for this content window?
+        let thePanel, theIFrame;
+        for each (let popupCheck in this._popups) {
+          if (contentWindowRef == popupCheck.contentWindow) {
+            thePanel = popupCheck.panel;
+            theIFrame = popupCheck.iframe;
+            break;
+          }
         }
-      }
-      // If not, go create one
-      if (!thePanel) {
-        let tmp = this._createPopupPanel();
-        thePanel = tmp[0];
-        theIFrame = tmp[1];
-        this._popups.push( { contentWindow: contentWindowRef, panel: thePanel, iframe: theIFrame} );
-        dump("Created new panel\n");
-      } else {
-        dump("Found already existing panel\n");
-      }
-      this.show(thePanel);
+        // If not, go create one
+        if (!thePanel) {
+          let tmp = this._createPopupPanel();
+          thePanel = tmp[0];
+          theIFrame = tmp[1];
+          this._popups.push( { contentWindow: contentWindowRef, panel: thePanel, iframe: theIFrame} );
+        }
+        this.show(thePanel);
 
-      // Update the content for the new invocation
-      this._updateContent(thePanel, theIFrame, methodName, args, successCB, errorCB);
-      } catch (e) {
-        dump(e + "\n");
-        dump(e.stack + "\n");
-      }
+        // Update the content for the new invocation
+        this._updateContent(thePanel, theIFrame, methodName, args, successCB, errorCB);
+        } catch (e) {
+          dump(e + "\n");
+          dump(e.stack + "\n");
+        }
     },
 
     _updateContent: function(thePanel, theIFrame, methodName, args, successCB, errorCB) {
@@ -134,11 +131,8 @@ serviceInvocationHandler.prototype = {
               var msg = JSON.parse(event.data);
               if (msg.cmd == "result") {
                 try {
-                  dump("services.js: got a result message\n");
-                  dump("services.js: data is " + event.data + "; origin is " + event.origin + "\n");
                   thePanel.hidePopup();
                   successCB(event.data);
-                  dump("services.js: invoked success callback\n");
                 } catch (e) {
                   dump(e + "\n");
                 }
