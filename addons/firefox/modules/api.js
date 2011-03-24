@@ -60,7 +60,14 @@ loader.loadSubScript("resource://openwebapps/modules/repo.js");
 function FFRepoImpl() {}
 FFRepoImpl.prototype = {
     __proto__: Repo,
-
+    
+    get _observer() {
+        if (!this._observer)
+            this._observer = Cc["@mozilla.org/observer-service;1"]
+                             .getService(Ci.nsIObserverService);
+        return this._observer;
+    },
+    
     install: function _install(location, args, window)
     {
         function displayPrompt(installOrigin, appOrigin, manifestToInstall,
@@ -120,10 +127,10 @@ FFRepoImpl.prototype = {
             xhr.send(null);
         }
 
+        let self = this;
         return Repo.install(location, args, displayPrompt, fetchManifest,
             function (result) {
                 // install is complete
-                // TODO: implement notifications
                 if (result !== true) {
                     if (args.onerror) {
                         let errorResult;
@@ -138,6 +145,9 @@ FFRepoImpl.prototype = {
                         (1,args.onerror)(errorResult);
                     }
                 } else {
+                    self._observer.notifyObservers(
+                        null, "openwebapp-installed", null
+                    );
                     if (args.onsuccess) {
                         (1,args.onsuccess)();
                     }
@@ -155,6 +165,9 @@ FFRepoImpl.prototype = {
                     'message':result['error'][1]
                 });
             } else if (typeof onsuccess == 'function') {
+                self._observer.notifyObservers(
+                    null, "openwebapp-uninstalled", null
+                );
                 onsuccess(result);
             }
         });
