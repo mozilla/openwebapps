@@ -60,13 +60,8 @@ loader.loadSubScript("resource://openwebapps/modules/repo.js");
 function FFRepoImpl() {}
 FFRepoImpl.prototype = {
     __proto__: Repo,
-    
-    get _observer() {
-        if (!this._observer)
-            this._observer = Cc["@mozilla.org/observer-service;1"]
-                             .getService(Ci.nsIObserverService);
-        return this._observer;
-    },
+    _observer: Cc["@mozilla.org/observer-service;1"]
+                .getService(Ci.nsIObserverService),
     
     install: function _install(location, args, window)
     {
@@ -158,6 +153,7 @@ FFRepoImpl.prototype = {
     
     uninstall: function(key, onsuccess, onerror)
     {
+        let self = this;
         Repo.uninstall(key, function(result) {
             if (typeof result == 'object' && 'error' in result) {
                 onerror({
