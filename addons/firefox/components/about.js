@@ -47,11 +47,8 @@ OpenWebAppsAboutHandler.prototype = {
                   getService(Components.interfaces.nsIIOService);
 
         var channel = ios.newChannel(
-          "chrome://openwebapps/content/about.html",
-          null,
-          null
+          "chrome://openwebapps/content/about.html", null, null
         );
-
         channel.originalURI = aURI;
         return channel;
     },

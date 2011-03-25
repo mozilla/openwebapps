@@ -35,6 +35,50 @@ const Cc = Components.classes;
 const Ci = Components.interfaces;
 Cu.import("resource://openwebapps/modules/api.js");
 
+function openAndReuseOneTabPerURL(url) {
+  var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"]
+                     .getService(Components.interfaces.nsIWindowMediator);
+  var browserEnumerator = wm.getEnumerator("navigator:browser");
+
+  // Check each browser instance for our URL
+  var found = false;
+  while (!found && browserEnumerator.hasMoreElements()) {
+    var browserWin = browserEnumerator.getNext();
+    var tabbrowser = browserWin.gBrowser;
+
+    // Check each tab of this browser instance
+    var numTabs = tabbrowser.browsers.length;
+    for (var index = 0; index < numTabs; index++) {
+      var currentBrowser = tabbrowser.getBrowserAtIndex(index);
+      if (url == currentBrowser.currentURI.spec) {
+
+        // The URL is already opened. Select this tab.
+        tabbrowser.selectedTab = tabbrowser.tabContainer.childNodes[index];
+
+        // Focus *this* browser-window
+        browserWin.focus();
+
+        found = true;
+        break;
+      }
+    }
+  }
+
+  // Our URL isn't open. Open it now.
+  if (!found) {
+    var recentWindow = wm.getMostRecentWindow("navigator:browser");
+    if (recentWindow) {
+      // Use an existing browser window
+      recentWindow.delayedOpenTab(url, null, null, null, null);
+    }
+    else {
+      // No browser windows are open, so open a new one.
+      window.open(url);
+    }
+  }
+}
+
+
 function appPopup(win)
 {
     this._window = win;
@@ -81,7 +125,12 @@ appPopup.prototype = {
         let iconImg = this._getBiggestIcon(app);
         
         if (iconImg) {
-            let iconUrl = installRecord.origin + iconImg;
+          let iconUrl;
+          if (!iconImg.indexOf("data:") == 0) {
+            iconUrl = installRecord.origin + iconImg;
+          } else {
+            iconUrl = iconImg;
+          }
             clickyIcon.style.background = "url(\"" + iconUrl + "\") no-repeat #404040";
             clickyIcon.style.backgroundSize = "100%";
         }
@@ -147,6 +196,19 @@ appPopup.prototype = {
             self._frame.height = height + "px";
             self._panel.openPopup(self._button, "after_end", -16);
             self._renderIconList(appDict);
+            
+            try {
+              self._frame.contentDocument.getElementById("about_apps").onclick = function()
+              {
+                try {
+                  openAndReuseOneTabPerURL( "about:apps" );
+                } catch (e) {
+                  dump(e + "\n");
+                }
+              }
+            } catch (e) {
+                dump(e + "\n");
+            }
         });
     },
     
