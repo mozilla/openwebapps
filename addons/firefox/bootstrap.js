@@ -245,6 +245,23 @@ openwebapps.prototype = {
     },
     
     observe: function(subject, topic, data) {
+        function registerSyncEngine() {
+            let tmp = {};
+            Cu.import("resource://services-sync/main.js", tmp);
+            Cu.import("resource://openwebapps/modules/sync.js", tmp);
+            tmp.Weave.Engines.register(tmp.AppsEngine);
+            
+            let prefname = "services.sync.engine.apps";
+            if (Services.prefs.getPrefType(prefname) ==
+                Ci.nsIPrefBranch.PREF_INVALID) {
+                Services.prefs.setBoolPref(prefname, true);    
+            }
+            
+            unloaders.push(function() {
+                tmp.Weave.Engines.unregister(tmp.AppsEngine)
+            });
+        }
+        
         if (topic == "xul-overlay-merged") {
             let tmp = {};
             Cu.import("resource://openwebapps/modules/injector.js", tmp);
@@ -260,6 +277,17 @@ openwebapps.prototype = {
             tmp = {};
             Cu.import("resource://openwebapps/modules/services.js", tmp);
             this._services = new tmp.serviceInvocationHandler(this._window);
+
+            tmp = {};
+            Cu.import("resource://services-sync/main.js", tmp);
+            if (tmp.Weave.Status.ready) {
+                registerSyncEngine();
+            } else {
+                Cu.import("resource://services-sync/util.js");
+                Svc.Obs.add("weave:service:ready", this);
+            }
+        } else if (topic == "weave:service:ready") {
+            registerSyncEngine();
         }
     }
 };
