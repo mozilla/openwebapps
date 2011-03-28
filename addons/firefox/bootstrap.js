@@ -38,6 +38,7 @@ const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/AddonManager.jsm");
+Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
 /* l10n support. See https://github.com/Mardak/restartless/examples/l10nDialogs */
 function getString(name, args, plural) {
@@ -291,6 +292,39 @@ openwebapps.prototype = {
     }
 };
 
+
+//----- about:apps implementation
+const AboutAppsUUID = Components.ID("{1DD224F3-7720-4E62-BAE9-30C1DCD6F519}");
+const AboutAppsContract = "@mozilla.org/network/protocol/about;1?what=apps";
+let AboutAppsFactory = {
+  createInstance: function(outer, iid) {
+    if (outer != null)
+      throw Components.resources.NS_ERROR_NO_AGGREGATION;
+    return AboutApps.QueryInterface(iid);
+  }
+};
+let AboutApps = {
+  QueryInterface: XPCOMUtils.generateQI([Components.interfaces.nsIAboutModule]),
+
+  getURIFlags: function(aURI) {
+    return Components.interfaces.nsIAboutModule.ALLOW_SCRIPT;
+  },
+
+  newChannel: function(aURI) {
+    var ios = Components.classes["@mozilla.org/network/io-service;1"].
+              getService(Components.interfaces.nsIIOService);
+
+    var channel = ios.newChannel(
+      "resource://openwebapps/chrome/content/about.html", null, null
+    );
+
+    channel.originalURI = aURI;
+    return channel;
+  }
+};
+//----- end about:apps
+
+
 let unloaders = [];
 function startup(data, reason) AddonManager.getAddonByID(data.id, function(addon) {
     /* Let's register ourselves a resource: namespace */
@@ -300,7 +334,7 @@ function startup(data, reason) AddonManager.getAddonByID(data.id, function(addon
     if (!data.installPath.isDirectory())
         alias = Services.io.newURI("jar:" + alias.spec + "!/", null, null);
     resource.setSubstitution("openwebapps", alias);
-    
+
     /* Setup l10n */
     getString.init(addon);
     
@@ -324,6 +358,10 @@ function startup(data, reason) AddonManager.getAddonByID(data.id, function(addon
     }
     Services.ww.registerNotification(winWatcher);
     unloaders.push(function() Services.ww.unregisterNotification(winWatcher));
+
+    Components.manager.QueryInterface(Components.interfaces.nsIComponentRegistrar).registerFactory(AboutAppsUUID, "About Apps", AboutAppsContract, AboutAppsFactory);
+
+
 })
 
 function shutdown(data, reason)

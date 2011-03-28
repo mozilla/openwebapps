@@ -103,14 +103,14 @@ serviceInvocationHandler.prototype = {
         this.show(thePanel);
 
         // Update the content for the new invocation
-        this._updateContent(thePanel, theIFrame, methodName, args, successCB, errorCB);
+        this._updateContent(contentWindowRef, thePanel, theIFrame, methodName, args, successCB, errorCB);
         } catch (e) {
           dump(e + "\n");
           dump(e.stack + "\n");
         }
     },
 
-    _updateContent: function(thePanel, theIFrame, methodName, args, successCB, errorCB) {
+    _updateContent: function(contentWindowRef, thePanel, theIFrame, methodName, args, successCB, errorCB) {
       // We are going to inject into our iframe (which is pointed at service.html).
       // It needs to know:
       // 1. What method is being invoked (and maybe some nice explanatory text)
@@ -146,7 +146,7 @@ serviceInvocationHandler.prototype = {
           FFRepoImplService.findServices(methodName, function(serviceList) {
             theIFrame.contentWindow.postMessage(
               JSON.stringify(
-                {method:methodName, args:args, serviceList: serviceList}
+                {method:methodName, args:args, serviceList: serviceList, caller:contentWindowRef.location.href}
               ), "*");
 
           });

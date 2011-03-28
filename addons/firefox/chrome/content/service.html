@@ -10,6 +10,10 @@
   height:177px;
   border:0px;
 }
+#servicebox {
+  height:202px;
+}
+
 #services {
   background-image: -moz-linear-gradient(center top , #D4DDE5 0%, #C6D1DA 100%);
   border-radius:0;
@@ -22,12 +26,23 @@
 #confirm {
   width:484px;
   height:64px;
-  text-align:right;
   background-image: -moz-linear-gradient(top, #d4dde5 0%, #c6d1da 100%);
   padding-top:16px;
   padding-right:16px;
 }
-
+#confirmbutton {
+  position:absolute;
+  left: 410px;
+  width:64px;
+}
+#confirmoptions {
+  position:absolute;
+  left: 10px;
+  width:340px;
+}
+#siteID {
+  font-weight:bold;
+}
 </style>
 <script>
 
@@ -77,16 +92,16 @@ function handleMessage(event)
     deleteOldChannels();
     var cmdRequest = JSON.parse(event.data);
    
-    $("#requestDescription").
+    $("#requestDescription").empty().
       append($("<div>Some page is asking for something from you.  Perhaps we could provide some more details about what is being requested here.</div>")).
       append($("<div>Method name: " + cmdRequest.method + "</div>")).
       append($("<div>Arguments: " + cmdRequest.args + "</div>"));
 
-    document.getElementById("requestDescription").innerHTML=
-      ("<div>Some page is asking for something from you.  Perhaps we could provide some more details about what is being requested here.</div>") + 
-      ("<div>Method name: " + cmdRequest.method + "</div>") +
-      ("<div>Arguments: " + cmdRequest.args + "</div>");
-         
+    var siteID = cmdRequest.caller;
+    if (siteID.length > 50) {
+      siteID = siteID.substr(0, 50) + "...";
+    }
+    $("#siteID").text(siteID);
     gServiceList = cmdRequest.serviceList;
     gRequestMethod = cmdRequest.method;
     gArguments = cmdRequest.args;
@@ -151,6 +166,7 @@ if (this.location.href.indexOf("file:///") == 0)
           { 
             method:"profile.get", 
             args:["displayName"],
+            caller:"http://somewhere.com",
             serviceList: [ { 
               url: "http://localhost:8400/service",
               app: "http://localhost:8400",
@@ -235,7 +251,17 @@ function confirm()
   </div>
   
   <div id="confirm">
-    <button onclick="confirm()">Okay</button>
+    <div id="confirmoptions">
+      <div>
+        <div style="display:inline-block;vertical-align:top">
+          <input type="checkbox" id="alwaysAllowSiteCheckbox"> 
+        </div>
+        <div style="display:inline-block;width:300px">
+          Allow <span id="siteID">SiteName</span> to contact this service in the future without asking for confirmation.
+        </div>
+      </div>
+    </div>
+    <div id="confirmbutton"><button onclick="confirm()">Okay</button></div>
   </div>
 </div> <!-- end appbox -->
 
