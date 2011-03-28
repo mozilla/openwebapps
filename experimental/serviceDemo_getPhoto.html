@@ -12,7 +12,9 @@ function doit(args) {
 
   navigator.apps.invokeService(
     "photos.get", 
-    args,
+    {
+      expectURL: true
+    },
   
   function(result) {
     showResult(result);
@@ -24,14 +26,20 @@ function doit(args) {
 
 function showResult(msg)
 {
-  $("#output").hide().text(msg).fadeIn();
-
+  //$("#output").hide().text(msg).fadeIn();
 }
 
 function renderResult(result)
 {
   try {
     var container = $("#output");
+    container.empty();
+    
+    var img = $("<img/>").attr({src:result});
+    img.css({width:"100%"})
+    container.hide();
+    container.append(img);
+    container.fadeIn();
   } catch (e) {
     console.log(e);
   }
@@ -43,37 +51,18 @@ function renderResult(result)
   padding:6px;
   margin-top:32px;
   min-width:400px;
+  max-width:640px;
   min-height:100px;
+  width:640px;
   background-color:#f8f8f8;
   border-radius:1em;
   border:1px solid #909090;
   font:9pt "Lucida Granda", Tahoma, sans-serif;
 }
-.previewValue {
-  display:inline-block;
-  width:230px;
-}
-
-.row {
-  min-height:18px;
-  margin-bottom:2px;
-}
-
-.label {
-  display:inline-block;
-  vertical-align:top;
-  font:bold 9pt "lucida grande",tahoma,verdana,arial,sans-serif;
-  width:80px;
-}
-.value {
-  display:inline-block;
-  vertical-align:top;
-  font:9pt "lucida grande",tahoma,verdana,arial,sans-serif;
-}
 </style>
 </head>
 <body>
-<div style="width:500px;margin:auto;padding-top:16px">
+<div style="width:660px;margin:auto;padding-top:16px">
 
 <h2>invokeService demonstration</h2>
 <p>
