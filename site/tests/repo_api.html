@@ -450,7 +450,7 @@ apps.install()
 
 
 <div class="test">
-<h3>Install an application that contains a service</h3>
+<h3>Install an application that contains a profile provider service</h3>
 
 <pre class="doctest">
 $ navigator.apps.install(
@@ -473,6 +473,35 @@ $ navigator.apps.invokeService(
 >    Spy('error', {wait: false})
 > );
 success({displayName: "Mork Hashimoto"})
+</pre>
+
+<div class="test">
+<h3>Install an application that contains a photo sink service</h3>
+
+<pre class="doctest">
+$ navigator.apps.install(
+>   {url: SERVERS['app_that_eats_photos'] + "/manifest.webapp",
+>    onsuccess: Spy('apps.install', {wait: true}),
+>    onerror: Spy('apps.install.error', {wait: false})
+>   });
+apps.install()
+</pre>
+</div>
+
+<div class="test">
+<h3>push a photo to that app</h3>
+
+<pre class="doctest">
+$ navigator.apps.invokeService(
+>   "photo.send",
+>   {
+>     contentType: "image/png",
+>     data: ""
+>   },
+>   Spy('success', {wait: true}),
+>   Spy('error', {wait: false})
+> );
+XXX
 </pre>
 
 </body>
