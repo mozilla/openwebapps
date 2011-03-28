@@ -49,6 +49,7 @@ AppRec.prototype = {
     _logName: "Record.App",
     
     // Override for plaintext app records
+    /*
     encrypt: function encrypt(keyBundle) {
         this.ciphertext = JSON.stringify(this.cleartext);
         this.cleartext = null;
@@ -72,6 +73,7 @@ AppRec.prototype = {
             
         return this.cleartext;
     }
+    */
 };
 Utils.deferGetSet(AppRec, "cleartext", ["value"]);
 
