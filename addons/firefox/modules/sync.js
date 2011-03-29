@@ -49,7 +49,6 @@ AppRec.prototype = {
     _logName: "Record.App",
     
     // Override for plaintext app records
-    /*
     encrypt: function encrypt(keyBundle) {
         this.ciphertext = JSON.stringify(this.cleartext);
         this.cleartext = null;
@@ -73,7 +72,6 @@ AppRec.prototype = {
             
         return this.cleartext;
     }
-    */
 };
 Utils.deferGetSet(AppRec, "cleartext", ["value"]);
 
@@ -93,7 +91,9 @@ AppStore.prototype = {
     },
     
     getAllIDs: function _getAllIDs() {
-        return {APPS_GUID: true};
+        let allapps = {};
+        allapps[APPS_GUID] = true;
+        return allapps;
     },
     
     changeItemID: function _changeItemID(oldID, newID) {
