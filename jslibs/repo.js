@@ -172,6 +172,13 @@ Repo = (function() {
     //         attempt is complete.
 
     function install(origin, args, promptDisplayFunc, fetchManifestFunc, cb) {
+        // several variables that maintain installation state for the
+        // various functions nested in this closure invoked asynchronously sometime in the
+        // future
+        var manifestToInstall;
+        var installOrigin = origin;
+        var appOrigin = undefined;
+
         origin = normalizeOrigin(origin);
 
         function installConfirmationFinish(allowed)
@@ -189,16 +196,24 @@ Repo = (function() {
                     installation.install_data = args.install_data;
                 }
 
-                // Save - blow away any existing value
-                appStorage.put(appOrigin, installation, cb);
+                // Save the app
+                appStorage.put(
+                    appOrigin, installation,
+                    function (r) {
+                        if (r === true) {
+                            // finally, upon successful installation, we'll update
+                            // the services map
+                            updateServices(function() {
+                                cb(r);
+                            });
+                        } else {
+                            cb(r);
+                        }
+                    });
             } else {
                 if (cb) cb({error: ["denied", "User denied installation request"]});
             }
         }
-
-        var manifestToInstall;
-        var installOrigin = origin;
-        var appOrigin = undefined;
 
         if (!args || !args.url || typeof(args.url) !== 'string') {
             throw "install missing required url argument";

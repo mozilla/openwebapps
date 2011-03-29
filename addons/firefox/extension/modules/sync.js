@@ -27,51 +27,35 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-
-var EXPORTED_SYMBOLS = ['AppsEngine', 'AppRec'];
-
+ 
+const EXPORTED_SYMBOLS = ['AppsEngine'];
 const Cu = Components.utils;
 const Ci = Components.interfaces;
-const APPS_GUID = "apps";
 
 Cu.import("resource://services-sync/util.js");
-Cu.import("resource://services-sync/record.js");
+Cu.import("resource://services-sync/stores.js");
 Cu.import("resource://services-sync/engines.js");
-Cu.import("resource://openwebapps/modules/api.js");
-Cu.import("resource://gre/modules/XPCOMUtils.jsm");
+Cu.import("resource://services-sync/trackers.js");
+Cu.import("resource://services-sync/base_records/crypto.js");
 Cu.import("resource://openwebapps/modules/typed_storage.js");
+
+function AppsEngine() {
+    SyncEngine.call(this, "Apps");
+}
+AppsEngine.prototype = {
+    __proto__: SyncEngine.prototype,
+    _storeObj: AppStore, // lol
+    _trackerObj: AppTracker,
+    _recordObj: AppRec,
+    version: 1
+};
 
 function AppRec(collection, id) {
     CryptoWrapper.call(this, collection, id);
 }
 AppRec.prototype = {
     __proto__: CryptoWrapper.prototype,
-    _logName: "Record.App",
-    
-    // Override for plaintext app records
-    encrypt: function encrypt(keyBundle) {
-        this.ciphertext = JSON.stringify(this.cleartext);
-        this.cleartext = null;
-    },
-    
-    decrypt: function decrypt(keyBundle) {
-        if (!this.ciphertext) {
-            throw "No ciphertext found";
-        }
-        
-        let result = JSON.parse(this.ciphertext);
-        if (result && (result instanceof Object)) {
-            this.cleartext = result;
-            this.ciphertext = null;
-        } else {
-            throw "Decryption failed, result is: " + result;
-        }
-        
-        if (this.cleartext.id != this.id)
-            throw "Record id mismatch: " + [this.cleartext.id, this.id];
-            
-        return this.cleartext;
-    }
+    _logName: "Record.App"
 };
 Utils.deferGetSet(AppRec, "cleartext", ["value"]);
 
@@ -81,34 +65,33 @@ function AppStore(name) {
 AppStore.prototype = {
     __proto__: Store.prototype,
     __store: null,
-    __repo: FFRepoImplService,
-
-    _getAllApps: function _getAllApps() {
-        let values = {};
-        let callback = Utils.makeSyncCallback();
-        this.__repo.list(callback);
-        return Utils.waitForSyncCallback(callback);
+    get __store() {
+        if (!this.__store)
+            this.__store = TypedStorage().open("app");
+        return this.__store;
     },
     
     getAllIDs: function _getAllIDs() {
-        let allapps = {};
-        allapps[APPS_GUID] = true;
-        return allapps;
+        let guids = {};
+        for each (let key in this.__store.keys())
+            guids[key] = true;
+        return guids;
     },
     
     changeItemID: function _changeItemID(oldID, newID) {
-        this._log.trace("AppsStore GUID is constant");
+        // can't really do this
+        this._log.trace("AppIDs are immutable!");
     },
     
     itemExists: function _itemExists(guid) {
-        return (guid == APPS_GUID);
+        return this.__store.has(guid);
     },
     
     createRecord: function _createRecord(guid, collection) {
         let record = new AppRec(collection, guid);
         
-        if (guid == APPS_GUID) {
-            record.value = this._getAllApps();
+        if (this.__store.has(guid)) {
+            record.value = this.__store.get(guid);
         } else {
             record.deleted = true;
         }
@@ -117,79 +100,44 @@ AppStore.prototype = {
     },
     
     create: function _create(record) {
-        this._log.trace("Ignoring create request");
+        this.__store.put(record.id, record.value);
     },
     
     remove: function _remove(record) {
-        this._log.trace("Ignoring remove request");
+        this.__store.remove(record.id);
     },
     
     update: function _update(record) {
-        // XXX: Implement
-        this._log.trace("Ignoring update request, not implemented");
+        // store.put does INSERT or REPLACE
+        // XXX: under what situation does an app manifest change?
+        this.__store.put(record.id, record.value);
     },
     
     wipe: function _wipe(record) {
-        // XXX: Not checking callback
-        TypedStorage().open("app").clear();
-    }
-};
-
-function AppsEngine() {
-    SyncEngine.call(this, "Apps");
-}
-AppsEngine.prototype = {
-    __proto__: SyncEngine.prototype,
-    _storeObj: AppStore,
-    _trackerObj: AppTracker,
-    _recordObj: AppRec,
-    version: 2,
-    
-    getChangedIDs: function getChangedIDs() {
-        let changedIDs = {};
-        if (this._tracker.modified)
-            changedIDs[APPS_GUID] = 0;
-        return changedIDs;
-    },
-    
-    _wipeClient: function _wipeClient() {
-        SyncEngine.prototype._wipeClient.call(this);
-        this.justWiped = true;
-    },
-    
-    _reconcile: function _reconcile(item) {
-        if (this.justWiped) {
-            this.justWiped = false;
-            return true;
-        }
-        return SyncEngine.prototype._reconcile.call(this,  item);
+        this.__store.clear();
     }
 };
 
 function AppTracker(name) {
     Tracker.call(this, name);
-    Svc.Obs.add("openwebapp-installed", this);
-    Svc.Obs.add("openwebapp-uninstalled", this);
     Svc.Obs.add("weave:engine:start-tracking", this);
     Svc.Obs.add("weave:engine:stop-tracking", this);
 }
 AppTracker.prototype = {
-    __proto__: Tracker.prototype,
+    __proto__ = Tracker.prototype,
     QueryInterface: XPCOMUtils.generateQI([Ci.nsIObserver]),
     
     _enabled: false,
     observe: function(aSubject, aTopic, aData) {
         switch (aTopic) {
-        case "openwebapp-installed":
-        case "openwebapp-uninstalled":
-            // 100 points for either changed
-            this.score = 100;
-            this.modified = true;
-            break;
         case "weave:engine:start-tracking":
             if (!this._enabled) {
                 this._enabled = true;
             }
+            // FIXME: app storage has no asynchronous notifications for
+            // when an app has been installed or removed by the user!
+            this.modified = true;
+            this.score += 100;
             break;
         case "weave:engine:stop-tracking":
             if (this._enabled)

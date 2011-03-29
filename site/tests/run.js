@@ -68,7 +68,6 @@ function createServer(port) {
         var siteRequest = client.request('GET',
                                          getURI.pathname + getURI.search,
                                          {host: getURI.host});
-        siteRequest.end();
         siteRequest.on('response', function (siteResponse) {
           if (parsedURI.query.follow
               && siteResponse.statusCode > 300
@@ -87,8 +86,8 @@ function createServer(port) {
             response.end();
           });
         });
-        siteRequest.socket.addListener('error', function(socketException){
-          if (socketException.errno === 61 /*ECONNREFUSED*/) {
+        siteRequest.addListener('error', function(socketException){
+          if (socketException.errno === process.ECONNREFUSED) {
             sys.log('ECONNREFUSED: connection refused to '
                     +request.socket.host
                     +':'
@@ -98,6 +97,7 @@ function createServer(port) {
           }
           fourOhFour(response);
         });
+        siteRequest.end();
       };
       makeRequest(parsedURI.query.url);
       sys.puts("Proxy URL " + parsedURI.query.url);

@@ -1,0 +1,10 @@
+{
+  "name":"Simple Image Vat",
+  "description":"An application that can receive images",
+  "experimental": {
+    "services": [
+      { "image.send": "/image_handler.html" }
+    ]
+  },
+  "installs_allowed_from": [ "*" ]
+}
