@@ -196,8 +196,20 @@ Repo = (function() {
                     installation.install_data = args.install_data;
                 }
 
-                // Save - blow away any existing value
-                appStorage.put(appOrigin, installation, cb);
+                // Save the app
+                appStorage.put(
+                    appOrigin, installation,
+                    function (r) {
+                        if (r === true) {
+                            // finally, upon successful installation, we'll update
+                            // the services map
+                            updateServices(function() {
+                                cb(r);
+                            });
+                        } else {
+                            cb(r);
+                        }
+                    });
             } else {
                 if (cb) cb({error: ["denied", "User denied installation request"]});
             }
