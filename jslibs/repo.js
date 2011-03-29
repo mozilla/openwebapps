@@ -172,6 +172,13 @@ Repo = (function() {
     //         attempt is complete.
 
     function install(origin, args, promptDisplayFunc, fetchManifestFunc, cb) {
+        // several variables that maintain installation state for the
+        // various functions nested in this closure invoked asynchronously sometime in the
+        // future
+        var manifestToInstall;
+        var installOrigin = origin;
+        var appOrigin = undefined;
+
         origin = normalizeOrigin(origin);
 
         function installConfirmationFinish(allowed)
@@ -195,10 +202,6 @@ Repo = (function() {
                 if (cb) cb({error: ["denied", "User denied installation request"]});
             }
         }
-
-        var manifestToInstall;
-        var installOrigin = origin;
-        var appOrigin = undefined;
 
         if (!args || !args.url || typeof(args.url) !== 'string') {
             throw "install missing required url argument";
