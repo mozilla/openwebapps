@@ -322,7 +322,7 @@ let AboutApps = {
     return channel;
   }
 };
-//----- end about:apps
+//----- end about:apps (but see ComponentRegistrar call in startup())
 
 
 let unloaders = [];

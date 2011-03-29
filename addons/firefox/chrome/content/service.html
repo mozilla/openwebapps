@@ -97,11 +97,11 @@ function handleMessage(event)
       append($("<div>Method name: " + cmdRequest.method + "</div>")).
       append($("<div>Arguments: " + cmdRequest.args + "</div>"));
 
-    var siteID = cmdRequest.caller;
+/*    var siteID = cmdRequest.caller;
     if (siteID.length > 50) {
       siteID = siteID.substr(0, 50) + "...";
     }
-    $("#siteID").text(siteID);
+    $("#siteID").text(siteID);*/
     gServiceList = cmdRequest.serviceList;
     gRequestMethod = cmdRequest.method;
     gArguments = cmdRequest.args;
@@ -146,7 +146,18 @@ function handleMessage(event)
       chan.call({
           method: gRequestMethod,
           params: gArguments,
-          success: function() {} /* perhaps record the fact that it worked? */
+          success: function() {}, /* perhaps record the fact that it worked? */
+          error: function(error, message) {
+
+            var messageData = {cmd:"error", error:error, msg:message};
+            var msg = document.createEvent("MessageEvent");
+            msg.initMessageEvent("message", // type
+                                 true, true, // bubble, cancelable
+                                 JSON.stringify(messageData),  // data
+                                 "resource://openwebapps/service", "", window); // origin, source
+            document.dispatchEvent(msg);
+            
+          }
       });
       gServiceChannels.push(chan);
     }
@@ -207,14 +218,6 @@ function confirm()
       document.dispatchEvent(msg);
     }
   });
-
-/*  var result = {foo:"hello world"};
-  var msg = document.createEvent("MessageEvent");
-  msg.initMessageEvent("message", // type
-                       true, true, // bubble, cancelable
-                       JSON.stringify(result),  // data
-                       "resource://openwebapps/service", "", window); // origin, source
-  document.dispatchEvent(msg);*/
 }
 
 </script>
@@ -251,6 +254,7 @@ function confirm()
   </div>
   
   <div id="confirm">
+  <!--
     <div id="confirmoptions">
       <div>
         <div style="display:inline-block;vertical-align:top">
@@ -261,6 +265,7 @@ function confirm()
         </div>
       </div>
     </div>
+-->    
     <div id="confirmbutton"><button onclick="confirm()">Okay</button></div>
   </div>
 </div> <!-- end appbox -->

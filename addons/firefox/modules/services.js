@@ -136,6 +136,8 @@ serviceInvocationHandler.prototype = {
                 } catch (e) {
                   dump(e + "\n");
                 }
+              } else if (msg.cmd == "error") {
+                dump(event.data + "\n");
               }
             }
           }, false);
