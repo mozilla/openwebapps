@@ -4,7 +4,7 @@
 <script src="jschannel.js"></script>
 <script>
 
-var chan = Channel.build({window: window.parent, origin: "*", scope: "openwebapps"});
+var chan = Channel.build({window: window.parent, origin: "*", scope: "openwebapps_conduit"});
 chan.bind("photo.send", function(trans, s) {
     console.log(s);
     return null;

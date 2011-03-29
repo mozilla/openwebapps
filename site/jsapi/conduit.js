@@ -28,8 +28,8 @@ Conduit = function(url) {
 
             _chan = Channel.build({
                 window: _iframe.contentWindow,
-                origin: "*",
-                scope: "openwebapps"
+                origin: URLParse(url).originOnly().toString(),
+                scope: "openwebapps_conduit"
             });
         }
     }
