@@ -162,22 +162,23 @@ body
 </div>
 <script>
 
-function displayInstallPrompt(installOrigin, appOrigin, manifest, isUpdate, clientCB) {
+function displayInstallPrompt(installOrigin, appOrigin, manifest, isUpdate, clientCB)
+{
   document.getElementById("appchooser").style.display = "none";
   document.getElementById("installconfirm").style.display = "inline";
 
   // whenever client's callback is invoked, we should first cleanup (and hide the dialog)
-  cb = function(r) {
-    delete document.getElementById("installButton").onclick;
-    delete document.getElementById("cancelButton").onclick;
-    ClientBridge.hideDialog(); clientCB(r);
+  var cb = function() {
+    document.getElementById("installButton").removeEventListener('click', cb, false);
+    document.getElementById("cancelButton").removeEventListener('click', cb, false);
+    ClientBridge.hideDialog();
+    clientCB(this.id === 'installButton');
   };
 
   var textAttrName = "textContent";
   if (undefined === document.getElementById("site").textContent) textAttrName = "innerText";
 
   document.getElementById("site")[textAttrName] = installOrigin;
-
   document.getElementById("appname")[textAttrName] = manifest.name;
   document.getElementById("base_url")[textAttrName] = appOrigin;
 
@@ -213,8 +214,8 @@ function displayInstallPrompt(installOrigin, appOrigin, manifest, isUpdate, clie
   // now that the content is setup, message untrusted javascript to display us
   ClientBridge.showDialog();
 
-  document.getElementById("installButton").onclick = function() { cb(true); };
-  document.getElementById("cancelButton").onclick = function() { cb(false); };
+  document.getElementById("installButton").addEventListener('click', cb, false);
+  document.getElementById("cancelButton").addEventListener('click', cb, false);
 }
 
 function displayAppChooser(requestor, serviceName, apps, onsuccess, onerror) {
