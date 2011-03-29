@@ -218,13 +218,15 @@ function displayInstallPrompt(installOrigin, appOrigin, manifest, isUpdate, clie
   document.getElementById("cancelButton").addEventListener('click', cb, false);
 }
 
-function displayAppChooser(requestor, serviceName, apps, onsuccess, onerror) {
+function displayAppChooser(requestor, serviceName, apps, onsuccess, onerror)
+{
   document.getElementById("installconfirm").style.display = "none";
   document.getElementById("appchooser").style.display = "inline";
 
   // whenever client's callback is invoked, we should first cleanup (and hide the dialog)
-  cb = function(r) {
-    ClientBridge.hideDialog(); onsuccess(r);
+  var cb = function(r) {
+    ClientBridge.hideDialog();
+    onsuccess(r);
   };
 
   var textAttrName = "textContent";
@@ -235,14 +237,17 @@ function displayAppChooser(requestor, serviceName, apps, onsuccess, onerror) {
   document.getElementById("ac_service_name")[textAttrName] = serviceName;
 
   var ul = document.getElementById("ac_options");
+  while (ul.firstChild) ul.removeChild(ul.firstChild);
 
   for (var i in apps) {
     var e = document.createElement("a");
     e.href = "#";
     e.onclick = (function() {
       var _app = apps[i];
-      return function() {
+      return function(ev) {
+        ev.preventDefault();
         cb(_app);
+        return false;
       }
     })();
     e[textAttrName] = apps[i];
@@ -255,8 +260,10 @@ function displayAppChooser(requestor, serviceName, apps, onsuccess, onerror) {
   var e = document.createElement("a");
   e.href = "#";
   e[textAttrName] = "nothing";
-  e.onclick = function() {
+  e.onclick = function(ev) {
+      ev.preventDefault();
       cb(undefined);
+      return false;
   };
   var li = document.createElement("li");
   li.appendChild(e);
