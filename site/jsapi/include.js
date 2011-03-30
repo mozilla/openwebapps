@@ -705,6 +705,30 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
             });
         }
 
+        function callInvokeService(name, args, onsuccess, onerror) {
+            setupWindow();
+            if (!args) { args = {}; }
+            else {
+                if (typeof(args) !== 'object')  throw "parameter to invokeService() must be an object";
+            }
+            if (typeof(name) !== 'string' || name.length === 0) {
+                throw "invokeService missing required name argument";
+            }
+
+            chan.call({
+                method: "invokeService",
+                params: { name: name, args: args },
+                error: function(error, message) {
+                    deliverError(error, message, onerror);
+                },
+                success: function(v) {
+                    if (onsuccess) {
+                        onsuccess(v);
+                    }
+                }
+            });
+        }
+
         function callAmInstalled(onsuccess, onerror) {
             setupWindow();
             chan.call({
@@ -848,6 +872,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
         // Return AppClient object with exposed API calls
         return {
             install: callInstall,
+            invokeService: callInvokeService,
             amInstalled: callAmInstalled,
             getInstalledBy: callGetInstalledBy,
             mgmt: {

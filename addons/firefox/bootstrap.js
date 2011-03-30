@@ -39,6 +39,7 @@ const NS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/AddonManager.jsm");
+Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
 /* l10n support. See https://github.com/Mardak/restartless/examples/l10nDialogs */
 function getString(name, args, plural) {
@@ -165,6 +166,7 @@ openwebapps.prototype = {
     _inject: function() {
         let repo = this._repo;
         let win = this._window;
+        let self = this;
         
         win.appinjector.register({
             apibase: "navigator.apps", name: "install", script: null,
@@ -194,6 +196,15 @@ openwebapps.prototype = {
             apibase: "navigator.apps", name: "setRepoOrigin", script: null,
             getapi: function () {
                 return function (args) {}
+            }
+        });
+
+        win.appinjector.register({
+            apibase: "navigator.apps", name: "invokeService", script: null,
+            getapi: function (contentWindowRef) {
+                return function (methodName, args, successCB, errorCB) {
+                  self._services.invoke(contentWindowRef, methodName, args, successCB, errorCB);
+                }
             }
         });
 
@@ -262,26 +273,86 @@ openwebapps.prototype = {
         });
     },
     
-    overlay: function() {
-        // not sure how to undo this for unload
-        let pi = this._window.document.createProcessingInstruction(
-            "xml-stylesheet",
-            "href=\"resource://openwebapps/chrome/skin/overlay.css\" type=\"text/css\""
-        );
-        this._window.document.insertBefore(pi, this._window.document.firstChild);
+    observe: function(subject, topic, data) {
+        function registerSyncEngine() {
+            let tmp = {};
+            Cu.import("resource://services-sync/main.js", tmp);
+            Cu.import("resource://openwebapps/modules/sync.js", tmp);
+            tmp.Weave.Engines.register(tmp.AppsEngine);
+            
+            let prefname = "services.sync.engine.apps";
+            if (Services.prefs.getPrefType(prefname) ==
+                Ci.nsIPrefBranch.PREF_INVALID) {
+                Services.prefs.setBoolPref(prefname, true);    
+            }
+            
+            unloaders.push(function() {
+                tmp.Weave.Engines.unregister(tmp.AppsEngine)
+            });
+        }
         
-        let tmp = {};
-        Cu.import("resource://openwebapps/modules/injector.js", tmp);
-        tmp.InjectorInit(this._window); tmp = {};
-        Cu.import("resource://openwebapps/modules/api.js", tmp);
-        this._repo = tmp.FFRepoImplService; tmp = {};
-        Cu.import("resource://openwebapps/modules/panel.js", tmp);
-        
-        this._inject();
-        this._addToolbarButton();
-        this._popup = new tmp.appPopup(this._window);
+        if (topic == "xul-overlay-merged") {
+            let tmp = {};
+            Cu.import("resource://openwebapps/modules/injector.js", tmp);
+            tmp.InjectorInit(this._window); tmp = {};
+            Cu.import("resource://openwebapps/modules/api.js", tmp);
+            this._repo = tmp.FFRepoImplService; tmp = {};
+            Cu.import("resource://openwebapps/modules/panel.js", tmp);
+            
+            this._inject();
+            this._addToolbarButton();
+            this._popup = new tmp.appPopup(this._window);
+
+            tmp = {};
+            Cu.import("resource://openwebapps/modules/services.js", tmp);
+            this._services = new tmp.serviceInvocationHandler(this._window);
+
+            tmp = {};
+            Cu.import("resource://services-sync/main.js", tmp);
+            if (tmp.Weave.Status.ready) {
+                registerSyncEngine();
+            } else {
+                Cu.import("resource://services-sync/util.js");
+                Svc.Obs.add("weave:service:ready", this);
+            }
+        } else if (topic == "weave:service:ready") {
+            registerSyncEngine();
+        }
     }
 };
+
+
+//----- about:apps implementation
+const AboutAppsUUID = Components.ID("{1DD224F3-7720-4E62-BAE9-30C1DCD6F519}");
+const AboutAppsContract = "@mozilla.org/network/protocol/about;1?what=apps";
+let AboutAppsFactory = {
+  createInstance: function(outer, iid) {
+    if (outer != null)
+      throw Components.resources.NS_ERROR_NO_AGGREGATION;
+    return AboutApps.QueryInterface(iid);
+  }
+};
+let AboutApps = {
+  QueryInterface: XPCOMUtils.generateQI([Components.interfaces.nsIAboutModule]),
+
+  getURIFlags: function(aURI) {
+    return Components.interfaces.nsIAboutModule.ALLOW_SCRIPT;
+  },
+
+  newChannel: function(aURI) {
+    var ios = Components.classes["@mozilla.org/network/io-service;1"].
+              getService(Components.interfaces.nsIIOService);
+
+    var channel = ios.newChannel(
+      "resource://openwebapps/chrome/content/about.html", null, null
+    );
+
+    channel.originalURI = aURI;
+    return channel;
+  }
+};
+//----- end about:apps (but see ComponentRegistrar call in startup())
+
 
 let unloaders = [];
 function startup(data, reason) AddonManager.getAddonByID(data.id, function(addon) {
@@ -292,7 +363,7 @@ function startup(data, reason) AddonManager.getAddonByID(data.id, function(addon
     if (!data.installPath.isDirectory())
         alias = Services.io.newURI("jar:" + alias.spec + "!/", null, null);
     resource.setSubstitution("openwebapps", alias);
-    
+
     /* Setup l10n */
     getString.init(addon);
     
@@ -316,6 +387,10 @@ function startup(data, reason) AddonManager.getAddonByID(data.id, function(addon
     }
     Services.ww.registerNotification(winWatcher);
     unloaders.push(function() Services.ww.unregisterNotification(winWatcher));
+
+    Components.manager.QueryInterface(Components.interfaces.nsIComponentRegistrar).registerFactory(AboutAppsUUID, "About Apps", AboutAppsContract, AboutAppsFactory);
+
+
 })
 
 function shutdown(data, reason)

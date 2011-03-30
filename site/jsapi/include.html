@@ -16,7 +16,7 @@ body
     padding: 0px;
 }
 
-#contentwrapper {
+.dialog {
     position:fixed;
     top: 0;
     left: 0;
@@ -130,45 +130,55 @@ body
 </style>
 </head>
 <body>
-<div id="contentwrapper">
-<div id="header">
-  <div id="repologo"><img src="logo.png"></div>
+<div id="installconfirm" class="dialog">
+  <div id="header">
+    <div id="repologo"><img src="logo.png"></div>
 
-  <div id="installrequest">
-  <span id="site"></span> wants to <span id="install_verb">install</span> the application:
-  </div>
-</div>
-
-<div id="maincontent">
-  <img id="appicon" width="96" height="96">
-  <div id="apptitle"><span id="appname"></span></div>
-  <div id="base_url"></div>
-</div>
-
-<div id="footer">
-  <div id="warning">
-    You should only approve the <span id="install_noun">installation</span> if you trust this site.
+    <div id="installrequest">
+      <span id="site"></span> wants to <span id="install_verb">install</span> the application:
+    </div>
   </div>
 
-  <div id="cancelButton" class="nobutton button">Cancel</div>
-  <div id="installButton" class="yesbutton button">Install</div>
+  <div id="maincontent">
+    <img id="appicon" width="96" height="96">
+    <div id="apptitle"><span id="appname"></span></div>
+    <div id="base_url"></div>
+  </div>
+
+  <div id="footer">
+    <div id="warning">
+      You should only approve the <span id="install_noun">installation</span> if you trust this site.
+    </div>
+
+    <div id="cancelButton" class="nobutton button">Cancel</div>
+    <div id="installButton" class="yesbutton button">Install</div>
+  </div>
 </div>
+<div id="appchooser" class="dialog">
+  Do you want to allow <span id="ac_requestor" class="requestor"></span>
+  to "<span id="ac_service_name"></span>" with:
+  <ul id="ac_options">
+  </ul>
 </div>
 <script>
 
-function displayInstallPrompt(installOrigin, appOrigin, manifest, isUpdate, clientCB) {
+function displayInstallPrompt(installOrigin, appOrigin, manifest, isUpdate, clientCB)
+{
+  document.getElementById("appchooser").style.display = "none";
+  document.getElementById("installconfirm").style.display = "inline";
+
   // whenever client's callback is invoked, we should first cleanup (and hide the dialog)
-  cb = function(r) {
-    delete document.getElementById("installButton").onclick;
-    delete document.getElementById("cancelButton").onclick;
-    ClientBridge.hideDialog(); clientCB(r);
+  var cb = function() {
+    document.getElementById("installButton").removeEventListener('click', cb, false);
+    document.getElementById("cancelButton").removeEventListener('click', cb, false);
+    ClientBridge.hideDialog();
+    clientCB(this.id === 'installButton');
   };
 
   var textAttrName = "textContent";
   if (undefined === document.getElementById("site").textContent) textAttrName = "innerText";
 
   document.getElementById("site")[textAttrName] = installOrigin;
-
   document.getElementById("appname")[textAttrName] = manifest.name;
   document.getElementById("base_url")[textAttrName] = appOrigin;
 
@@ -178,7 +188,6 @@ function displayInstallPrompt(installOrigin, appOrigin, manifest, isUpdate, clie
   var iconURL = "default_app_icon.png";
 
   if (manifest.icons) {
-
     // prefer to use 48-pixel icon
     var icon;
     if (manifest.icons["48"]) icon = manifest.icons["48"];
@@ -205,14 +214,62 @@ function displayInstallPrompt(installOrigin, appOrigin, manifest, isUpdate, clie
   // now that the content is setup, message untrusted javascript to display us
   ClientBridge.showDialog();
 
-  document.getElementById("installButton").onclick = function() { cb(true); };
-  document.getElementById("cancelButton").onclick = function() { cb(false); };
+  document.getElementById("installButton").addEventListener('click', cb, false);
+  document.getElementById("cancelButton").addEventListener('click', cb, false);
+}
 
-  // if autodismiss is set to true, this suggests that we're being
-  // driven by a trusted client such as a unit tests.
-  if (window.AUTODISMISS != undefined) {
-    setTimeout(function() { cb(window.AUTODISMISS); }, 0);
+function displayAppChooser(requestor, serviceName, apps, onsuccess, onerror)
+{
+  document.getElementById("installconfirm").style.display = "none";
+  document.getElementById("appchooser").style.display = "inline";
+
+  // whenever client's callback is invoked, we should first cleanup (and hide the dialog)
+  var cb = function(r) {
+    ClientBridge.hideDialog();
+    onsuccess(r);
+  };
+
+  var textAttrName = "textContent";
+  if (undefined === document.getElementById("ac_requestor").textContent) textAttrName = "innerText";
+
+  document.getElementById("ac_requestor")[textAttrName] = requestor;
+
+  document.getElementById("ac_service_name")[textAttrName] = serviceName;
+
+  var ul = document.getElementById("ac_options");
+  while (ul.firstChild) ul.removeChild(ul.firstChild);
+
+  for (var i in apps) {
+    var e = document.createElement("a");
+    e.href = "#";
+    e.onclick = (function() {
+      var _app = apps[i];
+      return function(ev) {
+        ev.preventDefault();
+        cb(_app);
+        return false;
+      }
+    })();
+    e[textAttrName] = apps[i];
+    var li = document.createElement("li");
+    li.appendChild(e);
+    ul.appendChild(li);
   }
+
+  // now add a nothing option
+  var e = document.createElement("a");
+  e.href = "#";
+  e[textAttrName] = "nothing";
+  e.onclick = function(ev) {
+      ev.preventDefault();
+      cb(undefined);
+      return false;
+  };
+  var li = document.createElement("li");
+  li.appendChild(e);
+  ul.appendChild(li);
+
+  ClientBridge.showDialog();
 }
 
 </script>
@@ -226,7 +283,9 @@ function displayInstallPrompt(installOrigin, appOrigin, manifest, isUpdate, clie
 <!-- FIXME: Need to just extract the base64/bytes stuff: -->
 <script src="Crypto.js"></script>
 <script src="sync.js"></script>
+<script src="conduit.js"></script>
 <script src="repo.js"></script>
+
 <script src="trusted.js"></script>
 
 </body>

@@ -1,0 +1,9 @@
+{
+  "name":"Simple App With Service",
+  "experimental": {
+    "services": [
+      { "profile.get": "/aboutme_svc.html" }
+    ]
+  },
+  "installs_allowed_from": [ "*" ]
+}

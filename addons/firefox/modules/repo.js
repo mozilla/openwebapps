@@ -57,6 +57,11 @@ Repo = (function() {
     var appStorage = TypedStorage().open("app");
     var stateStorage = TypedStorage().open("state");
 
+    function invalidateCaches()
+    {
+      installedServices = undefined;
+    }
+
     // iterates over all stored applications manifests and passes them to a
     // callback function. This function should be used instead of manual
     // iteration as it will parse manifests and purge any that are invalid.
@@ -65,7 +70,7 @@ Repo = (function() {
         // we'll automatically clean up malformed installation records as we go
         var toRemove = [];
         var toReturn = {};
-        
+
         appStorage.keys(function(appKeys) {
 
             function makeAddOrRemoveFn(aKey)
@@ -150,9 +155,7 @@ Repo = (function() {
     // given an origin, normalize it (like, http://foo:80 --> http://foo), or
     // https://bar:443 --> https://bar, or even http://baz/ --> http://baz)
     function normalizeOrigin(origin) {
-        var url = URLParse(origin).normalize();
-        url.path = url.query = url.anchor = undefined;
-        return url.toString();
+        return URLParse(origin).normalize().originOnly().toString()
     }
 
 
@@ -193,6 +196,9 @@ Repo = (function() {
 
                 // Save - blow away any existing value
                 appStorage.put(appOrigin, installation, cb);
+                
+                // and invalidate caches
+                invalidateCaches();
             } else {
                 if (cb) cb({error: ["denied", "User denied installation request"]});
             }
@@ -263,10 +269,10 @@ Repo = (function() {
     function amInstalled(origin, cb) {
         var done = false;
         origin = normalizeOrigin(origin);
-        
+
         if (typeof cb != 'function')
             return;
-            
+
         iterateApps(function(items) {
             for (var key in items) {
                 if (!done) {
@@ -285,7 +291,7 @@ Repo = (function() {
     function getInstalledBy(origin, cb) {
         var result = [];
         origin = normalizeOrigin(origin);
-        
+
         iterateApps(function(items) {
             for (var key in items) {
                 if (urlMatchesDomain(items[key].install_origin, origin)) {
@@ -296,6 +302,91 @@ Repo = (function() {
                 cb(result);
         });
     };
+
+
+    // a map of service "names" to conduit urls
+    var installedServices = undefined;
+
+    // a map of conduit urls to running instances of said conduits (see conduit.js)
+    var runningConduits = { };
+
+    /* update the installedServices map for all currently installed services */
+    function updateServices(cb) {
+        iterateApps(function(apps) {
+            if (installedServices === undefined) installedServices = { };
+            for (var app in apps) {
+                if (apps[app].manifest.experimental && apps[app].manifest.experimental.services) {
+                    var s = apps[app].manifest.experimental.services;
+                    if (typeof s === 'object') {
+                        // key is name of service, value is *path* to it
+                        
+                        dump("iterating services of " + apps[app].manifest.name + "\n");
+                        
+                        for (var i = 0; i < s.length; i++) {
+                            // get the first key in obj.
+                            for (var k in s[i]) break;
+                            dump("got key " +k + "\n");
+
+                            // for now we'll just build up objects which hold data about
+                            // services.  real soon now, they'll become more proper
+                            // abstractions
+                            var svcObj = {
+                                url: app + s[i][k],
+                                app: app,
+                                manifest: apps[app].manifest
+                            };
+                            if (!installedServices.hasOwnProperty(k)) {
+                              dump("creating list for " + k + "\n");
+                                installedServices[k] = [];
+                            } else {
+                                // does this svc already exist in the list (supports list *update*)?
+                                for (var j = 0; j < installedServices[k].length; j++) {
+                                    if (svcObj.url === installedServices[k].url) {
+                                        break;
+                                    }
+                                }
+                                if (j != installedServices[k].length) continue;
+                            }
+                            installedServices[k].push(svcObj);
+                        }
+
+                    }
+                }
+            }
+            if (typeof cb === 'function') cb();
+        });
+    }
+
+    /* find all services which match a given service 'name', (i.e. profile.get) */
+    function findServices(name, cb) {
+        function doFind() {
+            var svcs = [];
+            if (installedServices[name]) svcs = installedServices[name];
+            cb(svcs);
+        }
+        if (installedServices === undefined) updateServices(doFind);
+        else doFind();
+    }
+
+    /* render user facing UI to allow the user to select one of several services
+     * that will satisfy the "serviceName" request issued with "args". */
+    function renderChooser(services, serviceName, args, onsuccess, onerror) {
+        // at some point in the near future, we should actually render
+        // a dialog so the *user* can pick a service.  for now, we'll
+        // pick the first.
+        if (!services || !services.length || services.length <= 0) {
+            if (onerror) onerror("noSuchService", "No application is installed that supports '"+ serviceName + "'");
+            return;
+        }
+
+        var conduitURL = services[0].url;
+
+        if (!runningConduits.hasOwnProperty(conduitURL)) {
+            runningConduits[conduitURL] = new Conduit(conduitURL);
+        }
+
+        runningConduits[conduitURL].invoke(serviceName, args, onsuccess, onerror); 
+   }
 
     /* Management APIs for dashboards live beneath here */
 
@@ -347,6 +438,8 @@ Repo = (function() {
         amInstalled: amInstalled,
         getInstalledBy: getInstalledBy,
         loadState: loadState,
-        saveState: saveState
+        saveState: saveState,
+        findServices: findServices,
+        renderChooser: renderChooser
     };
 })();

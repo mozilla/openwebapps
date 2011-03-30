@@ -68,7 +68,6 @@ function createServer(port) {
         var siteRequest = client.request('GET',
                                          getURI.pathname + getURI.search,
                                          {host: getURI.host});
-        siteRequest.end();
         siteRequest.on('response', function (siteResponse) {
           if (parsedURI.query.follow
               && siteResponse.statusCode > 300
@@ -87,8 +86,8 @@ function createServer(port) {
             response.end();
           });
         });
-        siteRequest.socket.addListener('error', function(socketException){
-          if (socketException.errno === 61 /*ECONNREFUSED*/) {
+        siteRequest.addListener('error', function(socketException){
+          if (socketException.errno === process.ECONNREFUSED) {
             sys.log('ECONNREFUSED: connection refused to '
                     +request.socket.host
                     +':'
@@ -98,6 +97,7 @@ function createServer(port) {
           }
           fourOhFour(response);
         });
+        siteRequest.end();
       };
       makeRequest(parsedURI.query.url);
       sys.puts("Proxy URL " + parsedURI.query.url);
@@ -198,12 +198,12 @@ function createServer(port) {
 };
 
 // start up webservers on ephemeral ports for each subdirectory here.
-var dirs = fs.readdirSync(path.join(__dirname, 'apprepo_api')).map(
+var dirs = fs.readdirSync(path.join(__dirname, 'servers')).map(
   function (d) {
     return {
       title: "Tests:",
       name: d,
-      path: path.join(__dirname, 'apprepo_api', d)};
+      path: path.join(__dirname, 'servers', d)};
   });
 
 var examplesCopies = 1;
@@ -277,4 +277,4 @@ dirs.forEach(function(dirObj) {
 });
 
 console.log("\nTesting server started, to run tests go to: "
-            + formatLink("_primary", "/apprepo_api/tests.html"));
+            + formatLink("_primary", "/repo_api.html"));
