@@ -312,7 +312,7 @@ Repo = (function() {
 
     /* update the installedServices map for all currently installed services */
     function updateServices(cb) {
-        iterateApps(function(apps) {
+        this.iterateApps(function(apps) {
             if (installedServices === undefined) installedServices = { };
             for (var app in apps) {
                 if (apps[app].manifest.experimental && apps[app].manifest.experimental.services) {
@@ -335,6 +335,9 @@ Repo = (function() {
                                 app: app,
                                 manifest: apps[app].manifest
                             };
+                            // Fixup for built-ins:
+                            if (s[i][k].indexOf("resource://") == 0) svcObj.url = s[i][k];
+                            
                             if (!installedServices.hasOwnProperty(k)) {
                               dump("creating list for " + k + "\n");
                                 installedServices[k] = [];
@@ -364,7 +367,7 @@ Repo = (function() {
             if (installedServices[name]) svcs = installedServices[name];
             cb(svcs);
         }
-        if (installedServices === undefined) updateServices(doFind);
+        if (installedServices === undefined) this.updateServices(doFind);
         else doFind();
     }
 
@@ -440,6 +443,9 @@ Repo = (function() {
         loadState: loadState,
         saveState: saveState,
         findServices: findServices,
-        renderChooser: renderChooser
+        renderChooser: renderChooser,
+        iterateApps: iterateApps,
+        invalidateCaches: invalidateCaches,
+        updateServices: updateServices
     };
 })();
