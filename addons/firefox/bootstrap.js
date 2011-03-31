@@ -35,7 +35,6 @@
  * ***** END LICENSE BLOCK ***** */
 
 const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
-const NS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/AddonManager.jsm");
@@ -94,7 +93,8 @@ function openwebapps(win, add)
             let timeout = win.setTimeout(checkWindow, 1000);
             unloaders.push(function() win.clearTimeout(timeout));
         } else {
-            self.overlay();
+            let uri = self._addon.getResourceURI("chrome/content/overlay.xul").spec;
+            win.document.loadOverlay(uri, self);
         }
     }
     checkWindow();
@@ -102,57 +102,28 @@ function openwebapps(win, add)
 openwebapps.prototype = {
     _addToolbarButton: function() {
         let self = this;
-        let buttonId = "openwebapps-toolbar-button";
-        let document = this._window.document;
         
-        let toolbox = document.getElementById("navigator-toolbox");
-        let toolbar = document.getElementById("nav-bar");
-        let palette =
-            document.getElementById("BrowserToolbarPalette") ||
-            toolbox.palette;
+        // Don't add a toolbar button if one is already present
+        if (this._window.document.getElementById("openwebapps-toolbar-button"))
+            return;
+        
+        // We clone an existing button, creating a new one from scratch
+        // does not work (are we missing some properties?)
+        let toolbox = this._window.document.getElementById("nav-bar");
+        let homeButton = this._window.document.getElementById("home-button");
+        let button = homeButton.cloneNode(false);
 
-        let button = document.createElementNS(NS_XUL, 'toolbarbutton');
         button.id = "openwebapps-toolbar-button";
-        button.class = "toolbarbutton-1 chromeclass-toolbar-additional";
         button.label = getString("openwebappsToolbarButton.label");
         button.tooltipText = getString("openwebappsToolbarButton.tooltip");
+
+        /* Reset click handlers */
+        button.ondragexit = button.aboutHomeOverrideTooltip = null;
+        button.ondragover = button.ondragenter = button.ondrop = null;
         button.onclick = function() { self._togglePopup(); };
 
-        palette.appendChild(button);
-        
-        // Move button to end of toolbar
-        let curset = toolbar.currentSet.split(",");
-        if (curset.indexOf(buttonId) === -1) {
-            curset.splice(curset.length, 0, buttonId);
-            set = curset.join(",");
-            toolbar.setAttribute("currentset", set);
-            toolbar.currentSet = set;
-            document.persist(toolbar.id, "currentset");
-            try {
-                BrowserToolboxCustomizeDone(true);
-            } catch (e) {}
-        }
-        
-        // we must redeclare our vars in the unload... (?)
-        unloaders.push(function() {
-            let toolbox = document.getElementById("navigator-toolbox");
-            let toolbar = document.getElementById("nav-bar");
-
-            let curset = toolbar.currentSet.split(",");
-            let pos = curset.indexOf(buttonId);
-            if (pos !== -1) {
-                curset.splice(pos, 1)
-                let set = curset.join(",");
-                toolbar.setAttribute("currentset", set);
-                toolbar.currentSet = set;
-                document.persist(toolbar.id, "currentset");
-            }
-            
-            let palette =
-                document.getElementById('BrowserToolbarPalette') ||
-                toolbox.palette;
-            palette.removeChild(button);
-        });
+        toolbox.appendChild(button);
+        unloaders.push(function() toolbox.removeChild(button));
     },
     
     _togglePopup: function() {
