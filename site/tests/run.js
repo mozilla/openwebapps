@@ -263,7 +263,7 @@ console.log('  ' + formatLink("_primary"));
 
 var lastTitle = null;
 dirs.forEach(function(dirObj) {
-  if (!fs.lstatSync(dirObj.path).isDirectory()) return;
+  if (!fs.statSync(dirObj.path).isDirectory()) return;
   if (lastTitle != dirObj.title) {
     console.log('\n' + dirObj.title);
     lastTitle = dirObj.title;
