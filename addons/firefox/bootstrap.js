@@ -384,17 +384,19 @@ openwebapps.prototype = {
             let tmp = {};
             Cu.import("resource://services-sync/main.js", tmp);
             Cu.import("resource://openwebapps/modules/sync.js", tmp);
-            tmp.Weave.Engines.register(tmp.AppsEngine);
+            
+            if (!tmp.Weave.Engines.get("apps")) {
+                tmp.Weave.Engines.register(tmp.AppsEngine);
+                unloaders.push(function() {
+                    tmp.Weave.Engines.unregister("apps");
+                });
+            }
             
             let prefname = "services.sync.engine.apps";
             if (Services.prefs.getPrefType(prefname) ==
                 Ci.nsIPrefBranch.PREF_INVALID) {
                 Services.prefs.setBoolPref(prefname, true);    
             }
-            
-            unloaders.push(function() {
-                tmp.Weave.Engines.unregister(tmp.AppsEngine)
-            });
         }
         
         if (topic == "xul-overlay-merged") {
@@ -424,12 +426,10 @@ openwebapps.prototype = {
             }
             
             if (this.pendingRegistrations) {
-              dump("I'm about to handle pending registrations\n");
-              for each (let reg in this.pendingRegistrations) {
-                this._repo._registerBuiltInApp(reg[0], reg[1], reg[2]);
-              }
-              this.pendingRegistrations = null;
-              dump("I just did pending registrations\n");
+                for each (let reg in this.pendingRegistrations) {
+                    this._repo._registerBuiltInApp(reg[0], reg[1], reg[2]);
+                }
+                this.pendingRegistrations = null;
             }
             
         } else if (topic == "weave:service:ready") {
@@ -461,29 +461,28 @@ openwebapps.prototype = {
 const AboutAppsUUID = Components.ID("{1DD224F3-7720-4E62-BAE9-30C1DCD6F519}");
 const AboutAppsContract = "@mozilla.org/network/protocol/about;1?what=apps";
 let AboutAppsFactory = {
-  createInstance: function(outer, iid) {
-    if (outer != null)
-      throw Components.resources.NS_ERROR_NO_AGGREGATION;
-    return AboutApps.QueryInterface(iid);
-  }
+    createInstance: function(outer, iid) {
+        if (outer != null)
+            throw Components.resources.NS_ERROR_NO_AGGREGATION;
+        return AboutApps.QueryInterface(iid);
+    }
 };
 let AboutApps = {
-  QueryInterface: XPCOMUtils.generateQI([Ci.nsIAboutModule]),
+    QueryInterface: XPCOMUtils.generateQI([Ci.nsIAboutModule]),
 
-  getURIFlags: function(aURI) {
-      return Ci.nsIAboutModule.ALLOW_SCRIPT;
-  },
+    getURIFlags: function(aURI) {
+        return Ci.nsIAboutModule.ALLOW_SCRIPT;
+    },
 
-  newChannel: function(aURI) {
-      let ios = Cc["@mozilla.org/network/io-service;1"].
-                getService(Ci.nsIIOService);
-      let channel = ios.newChannel(
-          "resource://openwebapps/chrome/content/about.html", null, null
-      );
-
-      channel.originalURI = aURI;
-      return channel;
-  }
+    newChannel: function(aURI) {
+        let ios = Cc["@mozilla.org/network/io-service;1"].
+                  getService(Ci.nsIIOService);
+        let channel = ios.newChannel(
+            "resource://openwebapps/chrome/content/about.html", null, null
+        );
+        channel.originalURI = aURI;
+        return channel;
+    }
 };
 //----- end about:apps (but see ComponentRegistrar call in startup())
 
@@ -506,7 +505,7 @@ function startup(data, reason) AddonManager.getAddonByID(data.id, function(addon
                .getService(Ci.nsIWindowMediator)
                .getEnumerator("navigator:browser");
     while (iter.hasMoreElements()) {
-        var aWindow = iter.getNext().QueryInterface(Ci.nsIDOMWindow);
+        let aWindow = iter.getNext().QueryInterface(Ci.nsIDOMWindow);
         aWindow.apps = new openwebapps(aWindow, addon);
     }
     function winWatcher(subject, topic) {
@@ -522,11 +521,15 @@ function startup(data, reason) AddonManager.getAddonByID(data.id, function(addon
     }
     Services.ww.registerNotification(winWatcher);
     unloaders.push(function() Services.ww.unregisterNotification(winWatcher));
-
-    //XX unload about on exit!
+    
     Cm.QueryInterface(Ci.nsIComponentRegistrar).registerFactory(
         AboutAppsUUID, "About Apps", AboutAppsContract, AboutAppsFactory
     );
+    unloaders.push(function() {
+        Cm.QueryInterface(Ci.nsIComponentRegistrar).unregisterFactory(
+            AboutAppsUUID, AboutAppsFactory
+        );
+    });
 
     // Broadcast that we're done, in case anybody is listening
     let observerService = Cc["@mozilla.org/observer-service;1"]
