@@ -137,6 +137,10 @@ Repo = (function() {
         
         // chrome code can always do it:
         if (installOrigin == "chrome://openwebapps") return true;
+        
+        // XXX for demo purposes, we allow http://localhost:8420, which is where
+        // the service directory is running.
+        if (installOrigin == "http://localhost:8420") return true;
 
         // otherwise, when installOrigin != appOrigin, we must check the
         // installs_allowed_from member of the manifest
@@ -246,14 +250,21 @@ Repo = (function() {
                             cb({error: ["permissionDenied", "origin '" + installOrigin + "' may not install this app"]});
                             return;
                         }
-
-                        // if an app with the same origin is currently installed, this is an update
-                        appStorage.has(appOrigin, function(isUpdate) {
-                            promptDisplayFunc(
-                                installOrigin, appOrigin, manifestToInstall,
-                                isUpdate, installConfirmationFinish
-                            );
-                        });
+                        
+                        // if this origin is whitelisted we can proceed without a confirmation
+                        if (installOrigin == "http://localhost:8420") {
+                          installConfirmationFinish(true);
+                        }
+                        else 
+                        {
+                          // if an app with the same origin is currently installed, this is an update
+                          appStorage.has(appOrigin, function(isUpdate) {
+                              promptDisplayFunc(
+                                  installOrigin, appOrigin, manifestToInstall,
+                                  isUpdate, installConfirmationFinish
+                              );
+                          });
+                        }
                     } catch(e) {
                         cb({error: ["invalidManifest", "couldn't validate your manifest: " + e ]});
                     }
@@ -407,7 +418,8 @@ Repo = (function() {
             iterateApps(cb);
     };
 
-    function uninstall(origin, cb) {
+    function uninstall(origin, cb) { 
+      let self = this;
         origin = normalizeOrigin(origin);
         appStorage.get(origin, function(item) {
             if (!item) {
@@ -417,6 +429,7 @@ Repo = (function() {
                     if (cb && typeof(cb) == "function")
                         cb(true);
                 });
+                self.invalidateCaches()
             }
         });
     };

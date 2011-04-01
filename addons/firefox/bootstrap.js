@@ -435,8 +435,11 @@ openwebapps.prototype = {
         } else if (topic == "weave:service:ready") {
             registerSyncEngine();
         } else if (topic == "openwebapp-installed") {
-            this._renderDockIcons(data);
-            this._showDock();
+            var installData = JSON.parse(data)
+            this._renderDockIcons(installData.origin);
+            if (!installData.hidePostInstallPrompt) {
+              this._showDock();
+            }
         
         } else if (topic == "openwebapp-uninstalled") {
             this._renderDockIcons();
@@ -446,10 +449,8 @@ openwebapps.prototype = {
     registerBuiltInApp: function(domain, app, injector) {
         if (!this._repo) {
             if (!this.pendingRegistrations) this.pendingRegistrations = [];
-            //dump("Pushing a builtin\n");
             this.pendingRegistrations.push( [domain, app, injector] );
         } else{
-            //dump("Registering a builtin\n");
             this._repo._registerBuiltInApp(domain, app, injector);
         }
     }

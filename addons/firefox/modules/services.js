@@ -51,6 +51,9 @@ function serviceInvocationHandler(win)
 {
     this._window = win;
     this._popups = []; // save references to popups we've created already
+
+    let observerService = Cc["@mozilla.org/observer-service;1"].getService(Ci.nsIObserverService);
+    observerService.addObserver(this, "openwebapp-installed", false);
 }
 serviceInvocationHandler.prototype = {
 
@@ -82,14 +85,28 @@ serviceInvocationHandler.prototype = {
       }
     },
     
+    observe: function(subject, topic, data) {
+      if (topic == "openwebapp-installed")
+      {
+        // let our panels know, if they are visible
+        for each (let popupCheck in this._popups) {
+          if (popupCheck.panel.state != "closed")
+          {
+            this._updateContent(popupCheck);
+          }
+        }
+      }
+    },
+    
     invoke: function(contentWindowRef, methodName, args, successCB, errorCB) {
       try {
         // Do we already have a panel for this content window?
-        let thePanel, theIFrame;
+        let thePanel, theIFrame, thePanelRecord;
         for each (let popupCheck in this._popups) {
           if (contentWindowRef == popupCheck.contentWindow) {
             thePanel = popupCheck.panel;
             theIFrame = popupCheck.iframe;
+            thePanelRecord = popupCheck;
             break;
           }
         }
@@ -98,19 +115,28 @@ serviceInvocationHandler.prototype = {
           let tmp = this._createPopupPanel();
           thePanel = tmp[0];
           theIFrame = tmp[1];
-          this._popups.push( { contentWindow: contentWindowRef, panel: thePanel, iframe: theIFrame} );
+          thePanelRecord =  { contentWindow: contentWindowRef, panel: thePanel, iframe: theIFrame} ;
+
+          this._popups.push( thePanelRecord );
         }
         this.show(thePanel);
 
-        // Update the content for the new invocation
-        this._updateContent(contentWindowRef, thePanel, theIFrame, methodName, args, successCB, errorCB);
+        // Update the content for the new invocation        
+        thePanelRecord.contentWindow = contentWindowRef;
+        thePanelRecord.methodName = methodName;
+        thePanelRecord.args = args;
+        thePanelRecord.successCB = successCB;
+        thePanelRecord.errorCB = errorCB; 
+        //XX this memory is going to stick around for a long time; consider cleaning it up proactively
+        
+        this._updateContent(thePanelRecord);
         } catch (e) {
           dump(e + "\n");
           dump(e.stack + "\n");
         }
     },
 
-    _updateContent: function(contentWindowRef, thePanel, theIFrame, methodName, args, successCB, errorCB) {
+    _updateContent: function(thePanelRecord) {
       // We are going to inject into our iframe (which is pointed at service.html).
       // It needs to know:
       // 1. What method is being invoked (and maybe some nice explanatory text)
@@ -119,6 +145,12 @@ serviceInvocationHandler.prototype = {
       
       // Hang on, the window may not be fully loaded yet
       let self = this;
+      let { methodName, args, successCB, errorCB } = thePanelRecord;
+      let contentWindowRef = thePanelRecord.contentWindow;
+      let theIFrame = thePanelRecord.iframe;
+      let thePanel = thePanelRecord.panel;
+      
+      
       function updateContentWhenWindowIsReady()
       {
         if (!theIFrame.contentDocument || !theIFrame.contentDocument.getElementById("wrapper")) {
@@ -138,6 +170,9 @@ serviceInvocationHandler.prototype = {
                 }
               } else if (msg.cmd == "error") {
                 dump(event.data + "\n");
+              } else if (msg.cmd == "reconfigure") {
+                dump("services.js: Got a reconfigure event\n");
+                self._updateContent(contentWindowRef, thePanel, theIFrame, methodName, args, successCB, errorCB);
               }
             }
           }, false);
