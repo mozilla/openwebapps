@@ -85,6 +85,15 @@ function openwebapps(win, add)
     this._addon = add;
     this._window = win;
 
+
+    Cc["@mozilla.org/observer-service;1"]
+      .getService(Ci.nsIObserverService)
+          .addObserver( this, "openwebapp-installed", false);
+    Cc["@mozilla.org/observer-service;1"]
+      .getService(Ci.nsIObserverService)
+          .addObserver( this, "openwebapp-uninstalled", false);
+    
+
     // Hang on, the window may not be fully loaded yet
     let self = this;
     function checkWindow()
@@ -99,6 +108,9 @@ function openwebapps(win, add)
     }
     checkWindow();
 }
+
+const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
+
 openwebapps.prototype = {
     _addToolbarButton: function() {
         let self = this;
@@ -120,10 +132,149 @@ openwebapps.prototype = {
         /* Reset click handlers */
         button.ondragexit = button.aboutHomeOverrideTooltip = null;
         button.ondragover = button.ondragenter = button.ondrop = null;
-        button.onclick = function() { self._togglePopup(); };
+//        button.onclick = function() { self._togglePopup(); };
+        button.onclick = function() { self._toggleDock(); };
 
         toolbox.appendChild(button);
         unloaders.push(function() toolbox.removeChild(button));
+    },
+
+    _addDock: function() {
+        let self = this;
+
+        // We will add an hbox before navigator-toolbox;
+        // this should put it above all the tabs.
+        let targetID = "navigator-toolbox";
+        let navigatorToolbox = this._window.document.getElementById(targetID);
+        if (!navigatorToolbox) return;
+        
+        let dock = this._window.document.createElementNS(XUL_NS, "div");
+        dock.style.display = "none";
+        dock.width = "100%";
+        dock.height = "66px";
+        dock.left = "0px";
+        dock.top = "0px";
+        dock.style.paddingLeft = "4px";
+        dock.style.paddingTop = "2px";
+        dock.style.backgroundColor = "rgba(0,0,0,0.2)";
+        dock.style.MozTransition = "5s height ease-in-out";
+        dock.style.overflowY = "hidden";
+        
+        self._dock = dock;
+        try {
+          self._renderDockIcons();
+        } catch (e) {
+          dump(e + "\n");
+          dump(e.stack + "\n");
+        }
+        navigatorToolbox.parentNode.insertBefore(dock, navigatorToolbox);
+        unloaders.push(function() navigatorToolbox.parentNode.removeChild(dock));
+    },
+    
+    _renderDockIcons: function(recentlyInstalledAppKey) {
+      let self= this;
+      while (this._dock.firstChild) {
+        this._dock.removeChild(this._dock.firstChild);
+      }
+      this._repo.list(function(apps) {
+
+        function getBiggestIcon(minifest) {
+          // XXX this should really look for icon that is closest to 48 pixels.
+          
+          //see if the minifest has any icons, and if so, return the largest one
+          if (minifest.icons) {
+            var biggest = 0;
+            for (z in minifest.icons) {
+              var size = parseInt(z, 10);
+              if (size > biggest) biggest = size;
+            }
+            if (biggest !== 0) return minifest.icons[biggest];
+          }
+          return null;
+        }
+
+        for (let k in apps) {
+          let appBox = self._window.document.createElementNS(XUL_NS, "div");
+          appBox.style.display = "inline-block";
+          appBox.width = "64px";
+          appBox.height = "64px";
+          appBox.left = "0px";
+          appBox.top = "0px";
+          appBox.style.padding = "2px";
+
+          dump("k is " + k + "; recentlyInstalledAppKey is " + recentlyInstalledAppKey + "\n");
+          if (k == recentlyInstalledAppKey) {
+            appBox.style.boxShadow = "0 0 1em gold";
+          }
+
+          let icon = self._window.document.createElementNS("http://www.w3.org/1999/xhtml", "div");
+
+          if (apps[k].manifest.icons) {
+            let iconData = getBiggestIcon(apps[k].manifest);
+            if (iconData) {
+              if (iconData.indexOf("data:") == 0) {
+                icon.style.backgroundImage = "url(" + iconData + ")";
+              } else {
+                icon.style.backgroundImage = "url(" + k + iconData + ")";              
+              }
+            } else {
+              // default
+            }
+          } else {
+            // default
+          }
+          icon.style.backgroundSize = "cover";
+          icon.width = "48";
+          icon.height = "48";
+          icon.style.width = "48px";
+          icon.style.height = "48px";
+          icon.style.marginLeft = "6px";
+
+          let label = self._window.document.createElementNS("http://www.w3.org/1999/xhtml", "div");
+          label.width = "60px";
+          label.height = "10px";
+          label.left = "0px";
+          label.top = "50px";
+          label.style.font = "bold 8px Helvetica,Arial,sans-serif";
+          label.style.color = "white";
+          label.style.textAlign = "center";
+          label.style.marginTop = "1px";
+          label.style.textShadow = "black 1px 1px";
+          label.appendChild(self._window.document.createTextNode(apps[k].manifest.name));
+          label.style.overflowX = "hidden";
+
+          let key = k;
+          appBox.onclick = (function() {
+            return function() { 
+              self._repo.launch(key); 
+              self._hideDock();
+            }
+          })();
+
+          appBox.appendChild(icon);
+          appBox.appendChild(label);
+          self._dock.appendChild(appBox);
+        }
+      });
+    },
+
+    _toggleDock: function() {
+      if (this._dock.style.display == "none") {
+        this._showDock();
+      } else {
+        this._hideDock();
+      }
+    },
+    _showDock: function() {
+      let aDock = this._dock;
+      let self = this;
+      aDock.style.height = "66px";
+      aDock.height ="66px";
+      aDock.style.display ="block";
+    },
+    _hideDock: function() {
+      this._dock.style.display ="none";
+      this._dock.height = "0px";
     },
     
     _togglePopup: function() {
@@ -273,6 +424,7 @@ openwebapps.prototype = {
             this._inject();
             this._addToolbarButton();
             this._popup = new tmp.appPopup(this._window);
+            this._addDock();
 
             tmp = {};
             Cu.import("resource://openwebapps/modules/services.js", tmp);
@@ -286,10 +438,40 @@ openwebapps.prototype = {
                 Cu.import("resource://services-sync/util.js");
                 Svc.Obs.add("weave:service:ready", this);
             }
+            
+            if (this.pendingRegistrations) {
+              dump("I'm about to handle pending registrations\n");
+              for each (let reg in this.pendingRegistrations) {
+                this._repo._registerBuiltInApp(reg[0], reg[1], reg[2]);
+              }
+              this.pendingRegistrations = null;
+              dump("I just did pending registrations\n");
+            }
+            
         } else if (topic == "weave:service:ready") {
             registerSyncEngine();
-        }
+        } else if (topic == "openwebapp-installed") {
+            this._renderDockIcons(data);
+            this._showDock();
+        
+        } else if (topic == "openwebapp-uninstalled") {
+            this._renderDockIcons();
+        } 
+    },
+    
+    registerBuiltInApp: function(domain, app, injector)
+    {
+      if (!this._repo) {
+        if (!this.pendingRegistrations) this.pendingRegistrations = [];
+        dump("Pushing a builtin\n");
+        this.pendingRegistrations.push( [domain, app, injector] );
+      } else{
+        dump("Registering a builtin\n");
+      
+        this._repo._registerBuiltInApp(domain, app, injector);
+      }
     }
+
 };
 
 
@@ -322,7 +504,7 @@ let AboutApps = {
     return channel;
   }
 };
-//----- end about:apps
+//----- end about:apps (but see ComponentRegistrar call in startup())
 
 
 let unloaders = [];
@@ -343,7 +525,8 @@ function startup(data, reason) AddonManager.getAddonByID(data.id, function(addon
                .getService(Ci.nsIWindowMediator)
                .getEnumerator("navigator:browser");
     while (iter.hasMoreElements()) {
-        new openwebapps(iter.getNext().QueryInterface(Ci.nsIDOMWindow), addon);
+        var aWindow = iter.getNext().QueryInterface(Ci.nsIDOMWindow);
+        aWindow.apps = new openwebapps(aWindow, addon);
     }
     function winWatcher(subject, topic) {
         if (topic != "domwindowopened")
@@ -352,16 +535,24 @@ function startup(data, reason) AddonManager.getAddonByID(data.id, function(addon
             subject.removeEventListener("load", arguments.callee, false);
             let doc = subject.document.documentElement;
             if (doc.getAttribute("windowtype") == "navigator:browser") {
-                new openwebapps(subject, addon);
+                subject.apps = new openwebapps(subject, addon);
             }
         }, false);
     }
     Services.ww.registerNotification(winWatcher);
     unloaders.push(function() Services.ww.unregisterNotification(winWatcher));
 
+    //XX unload about on exit!
     Components.manager.QueryInterface(Components.interfaces.nsIComponentRegistrar).registerFactory(AboutAppsUUID, "About Apps", AboutAppsContract, AboutAppsFactory);
 
-
+    // Broadcast that we're done, in case anybody is listening
+    dump("Broadcasting openwebapps-startup-complete!\n");
+    let observerService = Cc["@mozilla.org/observer-service;1"]
+               .getService(Ci.nsIObserverService);
+    let tmp = {};
+    Cu.import("resource://openwebapps/modules/api.js", tmp);
+    observerService.notifyObservers(tmp.FFRepoImplService, "openwebapps-startup-complete", "");
+    dump("Done broadcasting openwebapps-startup-complete!\n");
 })
 
 function shutdown(data, reason)

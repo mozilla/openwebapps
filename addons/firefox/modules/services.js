@@ -136,19 +136,49 @@ serviceInvocationHandler.prototype = {
                 } catch (e) {
                   dump(e + "\n");
                 }
+              } else if (msg.cmd == "error") {
+                dump(event.data + "\n");
               }
             }
           }, false);
-
+          
           // Send reconfigure event
           thePanel.successCB = successCB;
           thePanel.errorCB = errorCB;
+          
           FFRepoImplService.findServices(methodName, function(serviceList) {
+    
+            // Make the iframes
+            for (var i=0;i<serviceList.length;i++)
+            {
+              let svc = serviceList[i];
+              let frame = theIFrame.contentDocument.createElement("iframe");
+              frame.src = svc.url;
+              frame.classList.add("serviceFrame");
+              frame.setAttribute("id", "svc-frame-" + i);
+              theIFrame.contentDocument.getElementById("frame-garage").appendChild(frame);
+              theIFrame.addEventListener("DOMContentLoaded", function(event) {
+                dump("The iframe for " + svc.url + " has loaded\n");
+                // XXX this should be a deterministic link based on the call to registerBuiltInApp
+                if (svc.url.indexOf("resource://") == 0) {
+                  dump("Broadcasting openwebapps-service-panel-loaded!\n");
+                  let observerService = Cc["@mozilla.org/observer-service;1"].getService(Ci.nsIObserverService);
+                  observerService.notifyObservers(frame.contentWindow, "openwebapps-service-panel-loaded", "");
+                  dump("Done broadcasting openwebapps-service-panel-loaded!\n");
+
+                }
+              }, false);
+            }
+            
             theIFrame.contentWindow.postMessage(
               JSON.stringify(
-                {method:methodName, args:args, serviceList: serviceList, caller:contentWindowRef.location.href}
+                {cmd:"setup", method:methodName, args:args, serviceList: serviceList, 
+                  caller:contentWindowRef.location.href}
               ), "*");
-
+          
+            theIFrame.contentWindow.postMessage(
+              JSON.stringify( {cmd:"start_channels"}), "*");
+              
           });
         }
       }
