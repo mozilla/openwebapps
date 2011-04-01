@@ -512,7 +512,11 @@ function createAppListItem(install)
   var clickyIcon = $("<div/>").addClass("icon");
   var iconImg = getBigIcon(install.manifest);
   
-  clickyIcon.append($('<img width="64" height="64"/>').attr('src', install.origin + iconImg));  
+  if (iconImg.indexOf('/') === 0) {
+    clickyIcon.append($('<img width="64" height="64"/>').attr('src', install.origin + iconImg));  
+  } else {
+    clickyIcon.append($('<img width="64" height="64"/>').attr('src', iconImg));  
+  }
   
   clickyIcon.mouseenter(function() {clickyIcon.addClass("glowy-blue-frame") });
   clickyIcon.mouseleave(function() {clickyIcon.removeClass("glowy-blue-frame") });
