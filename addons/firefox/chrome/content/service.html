@@ -78,9 +78,11 @@ function getSmallIcon(minifest) {
 }
 
 function deleteOldChannels() {
+  for (var i=0;i<gServiceChannels.length;i++) {
+    gServiceChannels[i].destroy();
+  }
   gServiceChannels = [];
   $("#services").remove();// this will remove iframes from DOM
-  
 }
 
 function handleMessage(event)
@@ -89,79 +91,104 @@ function handleMessage(event)
   // Reconfigure (XX attach a command code)
   if (event.origin == "resource://openwebapps")
   {
-    deleteOldChannels();
     var cmdRequest = JSON.parse(event.data);
-   
-    $("#requestDescription").empty().
-      append($("<div>Some page is asking for something from you.  Perhaps we could provide some more details about what is being requested here.</div>")).
-      append($("<div>Method name: " + cmdRequest.method + "</div>")).
-      append($("<div>Arguments: " + cmdRequest.args + "</div>"));
+    if (cmdRequest.cmd == "setup")
+    {
+      handleSetup(cmdRequest);
+    } 
+    else if (cmdRequest.cmd == "start_channels")
+    {
+      createChannels(cmdRequest);
+    }
+  }
+}
+
+function handleSetup(cmdRequest)
+{
+  deleteOldChannels();
+  $("#requestDescription").empty().
+    append($("<div>Some page is asking for something from you.  Perhaps we could provide some more details about what is being requested here.</div>")).
+    append($("<div>Method name: " + cmdRequest.method + "</div>")).
+    append($("<div>Arguments: " + cmdRequest.args + "</div>"));
 
 /*    var siteID = cmdRequest.caller;
-    if (siteID.length > 50) {
-      siteID = siteID.substr(0, 50) + "...";
-    }
-    $("#siteID").text(siteID);*/
-    gServiceList = cmdRequest.serviceList;
-    gRequestMethod = cmdRequest.method;
-    gArguments = cmdRequest.args;
+  if (siteID.length > 50) {
+    siteID = siteID.substr(0, 50) + "...";
+  }
+  $("#siteID").text(siteID);*/
+  gServiceList = cmdRequest.serviceList;
+  gRequestMethod = cmdRequest.method;
+  gArguments = cmdRequest.args;
+  
+  $("#servicebox").append($("<div id='services'></div>"));
+  $("#services").append($("<ul id='services-tabs'></ul>"));
+  
+  for (var i=0;i<gServiceList.length;i++)
+  {
+    var svc = gServiceList[i];
+
+    var svcTab = document.createElement("li");
+    var svcTabLink = document.createElement("a");
+    svcTabLink.setAttribute("href", "#svc-tab-" + i);
+    var svcTabImg = document.createElement("img");
+    svcTabImg.setAttribute("src", getSmallIcon(svc.app));
+    svcTabImg.setAttribute("style", "width:24px;height:24px;vertical-align:middle");
+    svcTabLink.appendChild(svcTabImg);
+    var svcTextDiv = document.createElement("span");
+    svcTextDiv.appendChild(document.createTextNode(svc.manifest.name));
+    svcTextDiv.setAttribute("style", "padding-left:4px;vertical-align:middle;display:inline-block");
+    svcTab.setAttribute("style", "max-width:128px;overflow-x:hidden;color:black;font:small-caption");
+    svcTabLink.appendChild(svcTextDiv);
+
+    svcTab.appendChild(svcTabLink);
+    svcTab.appendChild(svcTabLink);
+    $("#services-tabs").append(svcTab);
+
+    var svcDiv = document.createElement("div");
+    svcDiv.setAttribute("id", "svc-tab-" + i);
+    var anIframe = document.getElementById("svc-frame-" + i);
+    svcDiv.appendChild(anIframe);
+
+/*      var anIframe = document.createElement("iframe");
+    anIframe.src = svc.url;
+    anIframe.classList.add("serviceFrame");
+    svcDiv.appendChild(anIframe);*/
+    $("#services").append(svcDiv);
+  }
+  $("#services").tabs();
+}
+
+function createChannels(cmdRequest)
+{
+  // XX we shouldn't be creating all the channels at once
+  for (var i=0;i<gServiceList.length;i++)
+  {
+    var svc = gServiceList[i];
+    var anIframe = document.getElementById("svc-frame-" + i);
     
-    $("#servicebox").append($("<div id='services'></div>"));
-    $("#services").append($("<ul id='services-tabs'></ul>"));
+    var chan = Channel.build({
+        window: anIframe.contentWindow,
+        origin: svc.url,
+        scope: "openwebapps_conduit"
+    });
     
-    for (var i=0;i<gServiceList.length;i++)
-    {
-      var svc = gServiceList[i];
+    chan.call({
+        method: gRequestMethod,
+        params: gArguments,
+        success: function() {}, /* perhaps record the fact that it worked? */
+        error: (function() {return function(error, message) {
 
-      var svcTab = document.createElement("li");
-      var svcTabLink = document.createElement("a");
-      svcTabLink.setAttribute("href", "#svc-tab-" + i);
-      var svcTabImg = document.createElement("img");
-      svcTabImg.setAttribute("src", getSmallIcon(svc.app));
-      svcTabImg.setAttribute("style", "width:24px;height:24px;vertical-align:middle");
-      svcTabLink.appendChild(svcTabImg);
-      var svcTextDiv = document.createElement("span");
-      svcTextDiv.appendChild(document.createTextNode(svc.manifest.name));
-      svcTextDiv.setAttribute("style", "padding-left:4px;vertical-align:middle;display:inline-block");
-      svcTab.setAttribute("style", "max-width:128px;overflow-x:hidden;color:black;font:small-caption");
-      svcTabLink.appendChild(svcTextDiv);
-
-      svcTab.appendChild(svcTabLink);
-      svcTab.appendChild(svcTabLink);
-      $("#services-tabs").append(svcTab);
-
-      var svcDiv = document.createElement("div");
-      svcDiv.setAttribute("id", "svc-tab-" + i);
-      var anIframe = document.createElement("iframe");
-      anIframe.src = svc.url;
-      anIframe.classList.add("serviceFrame");
-      svcDiv.appendChild(anIframe);
-      $("#services").append(svcDiv);
-      
-      var chan = Channel.build({
-          window: anIframe.contentWindow,
-          origin: "*", // XX get the right origin in here
-          scope: svc.url
-      });
-      chan.call({
-          method: gRequestMethod,
-          params: gArguments,
-          success: function() {}, /* perhaps record the fact that it worked? */
-          error: function(error, message) {
-
-            var messageData = {cmd:"error", error:error, msg:message};
-            var msg = document.createEvent("MessageEvent");
-            msg.initMessageEvent("message", // type
-                                 true, true, // bubble, cancelable
-                                 JSON.stringify(messageData),  // data
-                                 "resource://openwebapps/service", "", window); // origin, source
-            document.dispatchEvent(msg);
-            
-          }
-      });
-      gServiceChannels.push(chan);
-    }
-    $("#services").tabs();
+          var messageData = {cmd:"error", error:error, msg:message};
+          var msg = document.createEvent("MessageEvent");
+          msg.initMessageEvent("message", // type
+                               true, true, // bubble, cancelable
+                               JSON.stringify(messageData),  // data
+                               "resource://openwebapps/service", "", window); // origin, source
+          document.dispatchEvent(msg);
+          
+        }}())
+    });    
+    gServiceChannels.push(chan);
   }
 }
 window.addEventListener("message", handleMessage, false);
@@ -175,6 +202,7 @@ if (this.location.href.indexOf("file:///") == 0)
       { origin: "resource://openwebapps",
         data: JSON.stringify(
           { 
+            cmd:"setup",
             method:"profile.get", 
             args:["displayName"],
             caller:"http://somewhere.com",
@@ -271,6 +299,8 @@ function confirm()
 </div> <!-- end appbox -->
 
 </div> <!-- end wrapper -->
+
+<div style="display:none" id="frame-garage"></div>
 
 </body>
 </html>

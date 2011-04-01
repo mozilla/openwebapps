@@ -57,11 +57,37 @@ loader.loadSubScript("resource://openwebapps/modules/urlmatch.js");
 // as possible, but we do need to override a few methods.
 loader.loadSubScript("resource://openwebapps/modules/repo.js");
 
-function FFRepoImpl() {}
+function FFRepoImpl() {
+  this._builtInApps = {};
+}
 FFRepoImpl.prototype = {
     __proto__: Repo,
     _observer: Cc["@mozilla.org/observer-service;1"]
                 .getService(Ci.nsIObserverService),
+    
+    _registerBuiltInApp: function(domain, app, injector) {
+      this._builtInApps[domain] = { 
+        manifest:app,
+        origin:domain,
+        install_time: new Date().getTime(),
+        install_origin:domain,
+        injector: injector
+      }
+      this._repo.invalidateCaches();
+    },
+    
+    iterateApps: function(callback)
+    {
+      let that = this;
+      Repo.iterateApps(function(apps) {
+        if (that._builtInApps) {
+          for (var k in that._builtInApps) {
+            apps[k] = that._builtInApps[k];
+          }
+        }
+        callback(apps);
+      });
+    },
     
     install: function _install(location, args, window)
     {
@@ -140,8 +166,9 @@ FFRepoImpl.prototype = {
                         (1,args.onerror)(errorResult);
                     }
                 } else {
+                    var origin = URLParse(args.url).normalize().originOnly().toString();
                     self._observer.notifyObservers(
-                        null, "openwebapp-installed", null
+                        null, "openwebapp-installed", origin
                     );
                     if (args.onsuccess) {
                         (1,args.onsuccess)();
@@ -411,6 +438,7 @@ FFRepoImpl.prototype = {
             dump("Error in websend welcome callback:"    +e + "\n");
         }
     }
+    
 };
 
 
@@ -439,5 +467,7 @@ MessagePort.__defineSetter__("onmessage", function(val) {
 });
 
 // Declare the singleton
-var FFRepoImplService = new FFRepoImpl();
-var EXPORTED_SYMBOLS = ["FFRepoImplService"];
+if (!FFRepoImplService) {
+  var EXPORTED_SYMBOLS = ["FFRepoImplService"];
+  var FFRepoImplService = new FFRepoImpl();
+}
