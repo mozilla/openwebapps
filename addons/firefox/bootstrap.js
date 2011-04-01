@@ -534,7 +534,6 @@ function startup(data, reason) AddonManager.getAddonByID(data.id, function(addon
     let tmp = {};
     Cu.import("resource://openwebapps/modules/api.js", tmp);
     observerService.notifyObservers(tmp.FFRepoImplService, "openwebapps-startup-complete", "");
-    dump("Done broadcasting openwebapps-startup-complete!\n");
 })
 
 function shutdown(data, reason)

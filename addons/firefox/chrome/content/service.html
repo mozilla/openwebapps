@@ -11,7 +11,7 @@
   border:0px;
 }
 #servicebox {
-  height:202px;
+  height:362px;
 }
 
 #services {
@@ -147,7 +147,7 @@ function handleSetup(cmdRequest)
     var svcDiv = document.createElement("div");
     svcDiv.setAttribute("id", "svc-tab-" + i);
     var anIframe = document.getElementById("svc-frame-" + i);
-    svcDiv.appendChild(anIframe);
+    if (anIframe) svcDiv.appendChild(anIframe);
 
 /*      var anIframe = document.createElement("iframe");
     anIframe.src = svc.url;
@@ -265,7 +265,7 @@ function confirm()
 </header>
 
 <div class="appbox">
-  <div id="requestInfo">
+  <div id="requestInfo" style="display:none">
     <div class="hbox">
       <div>
         <div class="thumbnail">

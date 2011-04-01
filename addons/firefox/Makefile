@@ -65,7 +65,7 @@ else
 endif
 
 xpi_name := openwebapps-$(openwebapps_version)-$(xpi_type).xpi
-xpi_files := chrome chrome.manifest components defaults install.rdf modules
+xpi_files := bootstrap.js chrome install.rdf modules
 
 ifeq ($(buildid),)
   date    := $(shell date -u +%Y%m%d%H%M)
@@ -116,6 +116,7 @@ setup:
 
 build: setup
 	mkdir -p $(stage_dir)/components
+	cp bootstrap.js $(stage_dir)
 	cp -r components/* $(stage_dir)/components
 	test -d $(stage_dir)/chrome || $(SLINK) $(TOPSRCDIR)/chrome $(stage_dir)/chrome
 	test -d $(stage_dir)/chrome.manifest || $(SLINK) $(TOPSRCDIR)/chrome.manifest $(stage_dir)/chrome.manifest
