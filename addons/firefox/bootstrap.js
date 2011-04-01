@@ -18,7 +18,7 @@
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
- *	Anant Narayanan <anant@kix.in>
+ *    Anant Narayanan <anant@kix.in>
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -34,7 +34,9 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
+const {manager: Cm, classes: Cc, interfaces: Ci, utils: Cu} = Components;
+const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
+const HTML_NS = "http://www.w3.org/1999/xhtml";
 
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/AddonManager.jsm");
@@ -85,7 +87,6 @@ function openwebapps(win, add)
     this._addon = add;
     this._window = win;
 
-
     Cc["@mozilla.org/observer-service;1"]
       .getService(Ci.nsIObserverService)
           .addObserver( this, "openwebapp-installed", false);
@@ -93,7 +94,6 @@ function openwebapps(win, add)
       .getService(Ci.nsIObserverService)
           .addObserver( this, "openwebapp-uninstalled", false);
     
-
     // Hang on, the window may not be fully loaded yet
     let self = this;
     function checkWindow()
@@ -108,8 +108,6 @@ function openwebapps(win, add)
     }
     checkWindow();
 }
-
-const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
 openwebapps.prototype = {
     _addToolbarButton: function() {
@@ -132,7 +130,7 @@ openwebapps.prototype = {
         /* Reset click handlers */
         button.ondragexit = button.aboutHomeOverrideTooltip = null;
         button.ondragover = button.ondragenter = button.ondrop = null;
-//        button.onclick = function() { self._togglePopup(); };
+        // button.onclick = function() { self._togglePopup(); };
         button.onclick = function() { self._toggleDock(); };
 
         toolbox.appendChild(button);
@@ -148,17 +146,11 @@ openwebapps.prototype = {
         let navigatorToolbox = this._window.document.getElementById(targetID);
         if (!navigatorToolbox) return;
         
-        let dock = this._window.document.createElementNS(XUL_NS, "div");
+        let dock = this._window.document.createElementNS(HTML_NS, "div");
         dock.style.display = "none";
         dock.width = "100%";
-        dock.height = "66px";
-        dock.left = "0px";
-        dock.top = "0px";
-        dock.style.paddingLeft = "4px";
-        dock.style.paddingTop = "2px";
-        dock.style.backgroundColor = "rgba(0,0,0,0.2)";
-        dock.style.MozTransition = "5s height ease-in-out";
-        dock.style.overflowY = "hidden";
+        dock.height = "80px";
+        dock.style.backgroundColor = "rgba(0,0,0,0.3)";
         
         self._dock = dock;
         try {
@@ -176,105 +168,97 @@ openwebapps.prototype = {
       while (this._dock.firstChild) {
         this._dock.removeChild(this._dock.firstChild);
       }
+      
       this._repo.list(function(apps) {
 
         function getBiggestIcon(minifest) {
-          // XXX this should really look for icon that is closest to 48 pixels.
-          
-          //see if the minifest has any icons, and if so, return the largest one
-          if (minifest.icons) {
-            var biggest = 0;
-            for (z in minifest.icons) {
-              var size = parseInt(z, 10);
-              if (size > biggest) biggest = size;
+            // XXX this should really look for icon that is closest to 48 pixels.
+            // see if the minifest has any icons, and if so, return the largest one
+            if (minifest.icons) {
+                let biggest = 0;
+                for (z in minifest.icons) {
+                    let size = parseInt(z, 10);
+                    if (size > biggest) biggest = size;
+                }
+                if (biggest !== 0) return minifest.icons[biggest];
             }
-            if (biggest !== 0) return minifest.icons[biggest];
-          }
-          return null;
+            return null;
         }
 
         for (let k in apps) {
-          let appBox = self._window.document.createElementNS(XUL_NS, "div");
-          appBox.style.display = "inline-block";
-          appBox.width = "64px";
-          appBox.height = "64px";
-          appBox.left = "0px";
-          appBox.top = "0px";
-          appBox.style.padding = "2px";
+            let appBox = self._window.document.createElementNS(HTML_NS, "div");
+            appBox.style.display = "inline-block";
+            appBox.style.width = "72px";
+            appBox.style.height = "100%";
 
-          dump("k is " + k + "; recentlyInstalledAppKey is " + recentlyInstalledAppKey + "\n");
-          if (k == recentlyInstalledAppKey) {
-            appBox.style.boxShadow = "0 0 1em gold";
-          }
+            if (k == recentlyInstalledAppKey) {
+                appBox.style.boxShadow = "0 0 1em gold";
+            }
 
-          let icon = self._window.document.createElementNS("http://www.w3.org/1999/xhtml", "div");
-
-          if (apps[k].manifest.icons) {
-            let iconData = getBiggestIcon(apps[k].manifest);
-            if (iconData) {
-              if (iconData.indexOf("data:") == 0) {
-                icon.style.backgroundImage = "url(" + iconData + ")";
-              } else {
-                icon.style.backgroundImage = "url(" + k + iconData + ")";              
-              }
+            let icon = self._window.document.createElementNS(HTML_NS, "div");
+            if (apps[k].manifest.icons) {
+                let iconData = getBiggestIcon(apps[k].manifest);
+                if (iconData) {
+                    if (iconData.indexOf("data:") == 0) {
+                        icon.style.backgroundImage = "url(" + iconData + ")";
+                    } else {
+                        icon.style.backgroundImage = "url(" + k + iconData + ")";              
+                    }
+                } else {
+                    // default
+                }
             } else {
-              // default
+                // default
             }
-          } else {
-            // default
-          }
-          icon.style.backgroundSize = "cover";
-          icon.width = "48";
-          icon.height = "48";
-          icon.style.width = "48px";
-          icon.style.height = "48px";
-          icon.style.marginLeft = "6px";
+            icon.style.backgroundSize = "cover";
+            icon.style.width = "48px";
+            icon.style.height = "48px";
+            icon.style.marginLeft = "12px";
+            
+            let label = self._window.document.createElementNS(XUL_NS, "label");
+            label.style.width = "62px";
+            
+            // Setting text color is tricky because a persona may make it
+            // unreadable. We optimize for default skin.
+            label.style.font = "bold 9px Helvetica,Arial,sans-serif";
+            label.style.color = "black";
+            label.style.textAlign = "center";
+            label.appendChild(
+                self._window.document.createTextNode(apps[k].manifest.name)
+            );
 
-          let label = self._window.document.createElementNS("http://www.w3.org/1999/xhtml", "div");
-          label.width = "60px";
-          label.height = "10px";
-          label.left = "0px";
-          label.top = "50px";
-          label.style.font = "bold 8px Helvetica,Arial,sans-serif";
-          label.style.color = "white";
-          label.style.textAlign = "center";
-          label.style.marginTop = "1px";
-          label.style.textShadow = "black 1px 1px";
-          label.appendChild(self._window.document.createTextNode(apps[k].manifest.name));
-          label.style.overflowX = "hidden";
+            let key = k;
+            appBox.onclick = (function() {
+                return function() { 
+                    self._repo.launch(key); 
+                    self._hideDock();
+                }
+            })();
 
-          let key = k;
-          appBox.onclick = (function() {
-            return function() { 
-              self._repo.launch(key); 
-              self._hideDock();
-            }
-          })();
-
-          appBox.appendChild(icon);
-          appBox.appendChild(label);
-          self._dock.appendChild(appBox);
+            appBox.appendChild(icon);
+            appBox.appendChild(label);
+            self._dock.appendChild(appBox);
         }
       });
     },
 
     _toggleDock: function() {
-      if (this._dock.style.display == "none") {
-        this._showDock();
-      } else {
-        this._hideDock();
-      }
+        if (this._dock.style.display == "none") {
+            this._showDock();
+        } else {
+            this._hideDock();
+        }
     },
     _showDock: function() {
-      let aDock = this._dock;
-      let self = this;
-      aDock.style.height = "66px";
-      aDock.height ="66px";
-      aDock.style.display ="block";
+        let aDock = this._dock;
+        let self = this;
+        aDock.style.height = "66px";
+        aDock.height ="66px";
+        aDock.style.display ="block";
     },
     _hideDock: function() {
-      this._dock.style.display ="none";
-      this._dock.height = "0px";
+        this._dock.style.display ="none";
+        this._dock.height = "0px";
     },
     
     _togglePopup: function() {
@@ -400,17 +384,19 @@ openwebapps.prototype = {
             let tmp = {};
             Cu.import("resource://services-sync/main.js", tmp);
             Cu.import("resource://openwebapps/modules/sync.js", tmp);
-            tmp.Weave.Engines.register(tmp.AppsEngine);
+            
+            if (!tmp.Weave.Engines.get("apps")) {
+                tmp.Weave.Engines.register(tmp.AppsEngine);
+                unloaders.push(function() {
+                    tmp.Weave.Engines.unregister("apps");
+                });
+            }
             
             let prefname = "services.sync.engine.apps";
             if (Services.prefs.getPrefType(prefname) ==
                 Ci.nsIPrefBranch.PREF_INVALID) {
                 Services.prefs.setBoolPref(prefname, true);    
             }
-            
-            unloaders.push(function() {
-                tmp.Weave.Engines.unregister(tmp.AppsEngine)
-            });
         }
         
         if (topic == "xul-overlay-merged") {
@@ -440,12 +426,10 @@ openwebapps.prototype = {
             }
             
             if (this.pendingRegistrations) {
-              dump("I'm about to handle pending registrations\n");
-              for each (let reg in this.pendingRegistrations) {
-                this._repo._registerBuiltInApp(reg[0], reg[1], reg[2]);
-              }
-              this.pendingRegistrations = null;
-              dump("I just did pending registrations\n");
+                for each (let reg in this.pendingRegistrations) {
+                    this._repo._registerBuiltInApp(reg[0], reg[1], reg[2]);
+                }
+                this.pendingRegistrations = null;
             }
             
         } else if (topic == "weave:service:ready") {
@@ -459,17 +443,15 @@ openwebapps.prototype = {
         } 
     },
     
-    registerBuiltInApp: function(domain, app, injector)
-    {
-      if (!this._repo) {
-        if (!this.pendingRegistrations) this.pendingRegistrations = [];
-        dump("Pushing a builtin\n");
-        this.pendingRegistrations.push( [domain, app, injector] );
-      } else{
-        dump("Registering a builtin\n");
-      
-        this._repo._registerBuiltInApp(domain, app, injector);
-      }
+    registerBuiltInApp: function(domain, app, injector) {
+        if (!this._repo) {
+            if (!this.pendingRegistrations) this.pendingRegistrations = [];
+            //dump("Pushing a builtin\n");
+            this.pendingRegistrations.push( [domain, app, injector] );
+        } else{
+            //dump("Registering a builtin\n");
+            this._repo._registerBuiltInApp(domain, app, injector);
+        }
     }
 
 };
@@ -479,30 +461,28 @@ openwebapps.prototype = {
 const AboutAppsUUID = Components.ID("{1DD224F3-7720-4E62-BAE9-30C1DCD6F519}");
 const AboutAppsContract = "@mozilla.org/network/protocol/about;1?what=apps";
 let AboutAppsFactory = {
-  createInstance: function(outer, iid) {
-    if (outer != null)
-      throw Components.resources.NS_ERROR_NO_AGGREGATION;
-    return AboutApps.QueryInterface(iid);
-  }
+    createInstance: function(outer, iid) {
+        if (outer != null)
+            throw Components.resources.NS_ERROR_NO_AGGREGATION;
+        return AboutApps.QueryInterface(iid);
+    }
 };
 let AboutApps = {
-  QueryInterface: XPCOMUtils.generateQI([Components.interfaces.nsIAboutModule]),
+    QueryInterface: XPCOMUtils.generateQI([Ci.nsIAboutModule]),
 
-  getURIFlags: function(aURI) {
-    return Components.interfaces.nsIAboutModule.ALLOW_SCRIPT;
-  },
+    getURIFlags: function(aURI) {
+        return Ci.nsIAboutModule.ALLOW_SCRIPT;
+    },
 
-  newChannel: function(aURI) {
-    var ios = Components.classes["@mozilla.org/network/io-service;1"].
-              getService(Components.interfaces.nsIIOService);
-
-    var channel = ios.newChannel(
-      "resource://openwebapps/chrome/content/about.html", null, null
-    );
-
-    channel.originalURI = aURI;
-    return channel;
-  }
+    newChannel: function(aURI) {
+        let ios = Cc["@mozilla.org/network/io-service;1"].
+                  getService(Ci.nsIIOService);
+        let channel = ios.newChannel(
+            "resource://openwebapps/chrome/content/about.html", null, null
+        );
+        channel.originalURI = aURI;
+        return channel;
+    }
 };
 //----- end about:apps (but see ComponentRegistrar call in startup())
 
@@ -525,7 +505,7 @@ function startup(data, reason) AddonManager.getAddonByID(data.id, function(addon
                .getService(Ci.nsIWindowMediator)
                .getEnumerator("navigator:browser");
     while (iter.hasMoreElements()) {
-        var aWindow = iter.getNext().QueryInterface(Ci.nsIDOMWindow);
+        let aWindow = iter.getNext().QueryInterface(Ci.nsIDOMWindow);
         aWindow.apps = new openwebapps(aWindow, addon);
     }
     function winWatcher(subject, topic) {
@@ -541,18 +521,22 @@ function startup(data, reason) AddonManager.getAddonByID(data.id, function(addon
     }
     Services.ww.registerNotification(winWatcher);
     unloaders.push(function() Services.ww.unregisterNotification(winWatcher));
-
-    //XX unload about on exit!
-    Components.manager.QueryInterface(Components.interfaces.nsIComponentRegistrar).registerFactory(AboutAppsUUID, "About Apps", AboutAppsContract, AboutAppsFactory);
+    
+    Cm.QueryInterface(Ci.nsIComponentRegistrar).registerFactory(
+        AboutAppsUUID, "About Apps", AboutAppsContract, AboutAppsFactory
+    );
+    unloaders.push(function() {
+        Cm.QueryInterface(Ci.nsIComponentRegistrar).unregisterFactory(
+            AboutAppsUUID, AboutAppsFactory
+        );
+    });
 
     // Broadcast that we're done, in case anybody is listening
-    dump("Broadcasting openwebapps-startup-complete!\n");
     let observerService = Cc["@mozilla.org/observer-service;1"]
                .getService(Ci.nsIObserverService);
     let tmp = {};
     Cu.import("resource://openwebapps/modules/api.js", tmp);
     observerService.notifyObservers(tmp.FFRepoImplService, "openwebapps-startup-complete", "");
-    dump("Done broadcasting openwebapps-startup-complete!\n");
 })
 
 function shutdown(data, reason)

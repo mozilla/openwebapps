@@ -64,11 +64,11 @@ serviceInvocationHandler.prototype = {
       frame.setAttribute("flex", "1");
       frame.setAttribute("type", "content");
       frame.setAttribute("transparent", "transparent");
-      frame.setAttribute("style", "width:484px;height:384px");
+      frame.setAttribute("style", "width:484px;height:484px");
       xulPanel.appendChild(frame);
       doc.getElementById("mainPopupSet").appendChild(xulPanel);
       
-      frame.setAttribute("src", "resource://openwebapps/chrome/content/service.html");
+      frame.setAttribute("src", "resource://openwebapps/chrome/content/service2.html");
 
       return [xulPanel, frame];
     },
@@ -158,14 +158,10 @@ serviceInvocationHandler.prototype = {
               frame.setAttribute("id", "svc-frame-" + i);
               theIFrame.contentDocument.getElementById("frame-garage").appendChild(frame);
               theIFrame.addEventListener("DOMContentLoaded", function(event) {
-                dump("The iframe for " + svc.url + " has loaded\n");
                 // XXX this should be a deterministic link based on the call to registerBuiltInApp
                 if (svc.url.indexOf("resource://") == 0) {
-                  dump("Broadcasting openwebapps-service-panel-loaded!\n");
                   let observerService = Cc["@mozilla.org/observer-service;1"].getService(Ci.nsIObserverService);
                   observerService.notifyObservers(frame.contentWindow, "openwebapps-service-panel-loaded", "");
-                  dump("Done broadcasting openwebapps-service-panel-loaded!\n");
-
                 }
               }, false);
             }
