@@ -212,13 +212,15 @@ function render()
      
       // Detail
       var iconRelative = getBiggestIcon(theApp.manifest);
-      var iconUrl;
-      if (iconRelative.indexOf("data:") == 0) {
-        iconUrl = iconRelative;
-      } else {
-        iconUrl = theApp.origin + iconRelative;
+      if (iconRelative) {
+        var iconUrl;
+        if (iconRelative.indexOf("data:") == 0) {
+          iconUrl = iconRelative;
+        } else {
+          iconUrl = theApp.origin + iconRelative;
+        }
+        appIcon.setAttribute("style", "background-image:url(\"" + iconUrl + "\")");
       }
-      appIcon.setAttribute("style", "background-image:url(\"" + iconUrl + "\")");
       appIcon.onclick = makeLaunchFn(appID);
       
       appName.appendChild(document.createTextNode(theApp.manifest.name));
