@@ -202,7 +202,6 @@ openwebapps.prototype = {
           appBox.top = "0px";
           appBox.style.padding = "2px";
 
-          dump("k is " + k + "; recentlyInstalledAppKey is " + recentlyInstalledAppKey + "\n");
           if (k == recentlyInstalledAppKey) {
             appBox.style.boxShadow = "0 0 1em gold";
           }
