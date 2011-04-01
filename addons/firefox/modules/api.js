@@ -213,6 +213,7 @@ FFRepoImpl.prototype = {
         // domains.
         if (origin.host == "127.0.0.1:60172" || /* special case for unit testing: to be removed when we get capability tracking for mgmt! */
             origin.host == "myapps.mozillalabs.com" ||
+            origin.host == "stage.myapps.mozillalabs.com" ||
             origin.host == "apps.mozillalabs.com" ||
             origin.toString().substr(0, 10) == "about:apps"
             )
