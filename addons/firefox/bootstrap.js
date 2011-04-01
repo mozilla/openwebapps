@@ -439,19 +439,20 @@ openwebapps.prototype = {
             }
             
             if (this.pendingRegistrations) {
-              dump("I'm about to handle pending registrations\n");
               for each (let reg in this.pendingRegistrations) {
                 this._repo._registerBuiltInApp(reg[0], reg[1], reg[2]);
               }
               this.pendingRegistrations = null;
-              dump("I just did pending registrations\n");
             }
             
         } else if (topic == "weave:service:ready") {
             registerSyncEngine();
         } else if (topic == "openwebapp-installed") {
-            this._renderDockIcons(data);
-            this._showDock();
+            var installData = JSON.parse(data)
+            this._renderDockIcons(installData.origin);
+            if (!installData.hidePostInstallPrompt) {
+              this._showDock();
+            }
         
         } else if (topic == "openwebapp-uninstalled") {
             this._renderDockIcons();
@@ -462,11 +463,8 @@ openwebapps.prototype = {
     {
       if (!this._repo) {
         if (!this.pendingRegistrations) this.pendingRegistrations = [];
-        dump("Pushing a builtin\n");
         this.pendingRegistrations.push( [domain, app, injector] );
       } else{
-        dump("Registering a builtin\n");
-      
         this._repo._registerBuiltInApp(domain, app, injector);
       }
     }
@@ -545,13 +543,11 @@ function startup(data, reason) AddonManager.getAddonByID(data.id, function(addon
     Components.manager.QueryInterface(Components.interfaces.nsIComponentRegistrar).registerFactory(AboutAppsUUID, "About Apps", AboutAppsContract, AboutAppsFactory);
 
     // Broadcast that we're done, in case anybody is listening
-    dump("Broadcasting openwebapps-startup-complete!\n");
     let observerService = Cc["@mozilla.org/observer-service;1"]
                .getService(Ci.nsIObserverService);
     let tmp = {};
     Cu.import("resource://openwebapps/modules/api.js", tmp);
     observerService.notifyObservers(tmp.FFRepoImplService, "openwebapps-startup-complete", "");
-    dump("Done broadcasting openwebapps-startup-complete!\n");
 })
 
 function shutdown(data, reason)
