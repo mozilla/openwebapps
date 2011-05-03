@@ -168,7 +168,10 @@ FFRepoImpl.prototype = {
                 } else {
                     var origin = URLParse(args.url).normalize().originOnly().toString();
                     self._observer.notifyObservers(
-                        null, "openwebapp-installed", origin
+                        null, "openwebapp-installed", JSON.stringify({ 
+                          origin: origin, 
+                          hidePostInstallPrompt: args.hidePostInstallPrompt ? args.hidePostInstallPrompt : false
+                        })
                     );
                     if (args.onsuccess) {
                         (1,args.onsuccess)();

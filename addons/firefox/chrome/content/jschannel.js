@@ -130,6 +130,7 @@
 
         // if it has a method it's either a notification or a request,
         // route using s_boundChans
+        
         if (typeof meth === 'string') {
             if (s_boundChans[o] && s_boundChans[o][s]) {
                 s_boundChans[o][s](o, meth, m);
@@ -209,11 +210,15 @@
             var validOrigin = false;
             if (typeof cfg.origin === 'string') {
                 var oMatch;
-                if (cfg.origin === "*") validOrigin = true;
-                // allow valid domains under http and https.  Also, trim paths off otherwise valid origins.
-                else if (null !== (oMatch = cfg.origin.match(/^https?:\/\/(?:[-a-zA-Z0-9\.])+(?::\d+)?/))) {
-                    cfg.origin = oMatch[0];
-                    validOrigin = true;
+                if (cfg.origin === "*") {
+                  validOrigin = true;
+                } else if (cfg.origin.indexOf("resource://") == 0) {
+                  validOrigin = true;
+                  cfg.origin = "resource://openwebapps-iphoto";
+                } else if (null !== (oMatch = cfg.origin.match(/^https?:\/\/(?:[-a-zA-Z0-9\.])+(?::\d+)?/))) {
+                  // allow valid domains under http and https.  Also, trim paths off otherwise valid origins.
+                  cfg.origin = oMatch[0];
+                  validOrigin = true;
                 }
             }
 
@@ -431,7 +436,6 @@
                             debug("postMessageObserver() raised an exception: " + e.toString());
                         }
                     }
-
                     cfg.window.postMessage(JSON.stringify(msg), cfg.origin);
                 }
             }

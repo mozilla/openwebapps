@@ -368,31 +368,35 @@ function createChannels(cmdRequest)
   for (var i=0;i<gServiceList.length;i++)
   {
     var svc = gServiceList[i];
-    var anIframe = document.getElementById("svc-frame-" + i);
-    
-    var chan = Channel.build({
-        window: anIframe.contentWindow,
-        origin: svc.url,
-        scope: "openwebapps_conduit"
-    });
-    
-    chan.call({
-        method: gRequestMethod,
-        params: gArguments,
-        success: function() {}, /* perhaps record the fact that it worked? */
-        error: (function() {return function(error, message) {
+    try {
+      var anIframe = document.getElementById("svc-frame-" + i);
+      
+      var chan = Channel.build({
+          window: anIframe.contentWindow,
+          origin: svc.url,
+          scope: "openwebapps_conduit"
+      });
+      
+      chan.call({
+          method: gRequestMethod,
+          params: gArguments,
+          success: function() {}, /* perhaps record the fact that it worked? */
+          error: (function() {return function(error, message) {
 
-          var messageData = {cmd:"error", error:error, msg:message};
-          var msg = document.createEvent("MessageEvent");
-          msg.initMessageEvent("message", // type
-                               true, true, // bubble, cancelable
-                               JSON.stringify(messageData),  // data
-                               "resource://openwebapps/service", "", window); // origin, source
-          document.dispatchEvent(msg);
-          
-        }}())
-    });    
-    gServiceChannels.push(chan);
+            var messageData = {cmd:"error", error:error, msg:message};
+            var msg = document.createEvent("MessageEvent");
+            msg.initMessageEvent("message", // type
+                                 true, true, // bubble, cancelable
+                                 JSON.stringify(messageData),  // data
+                                 "resource://openwebapps/service", "", window); // origin, source
+            document.dispatchEvent(msg);
+            
+          }}())
+      });    
+      gServiceChannels.push(chan);
+    } catch (e) {
+      dump("Warning: unable to create channel to " + svc.url + ": " + e + "\n");
+    }
   }
 }
 window.addEventListener("message", handleMessage, false);
