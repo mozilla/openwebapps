@@ -263,22 +263,25 @@ function renderList(andLaunch) {
   var newPage = $("#p1"); 
 
   //first make pages, then fill them afterwards. 
-  for ( var i = 2; i < numPages + 1; i++ ) {
+  for ( var i = 1; i < numPages + 1; i++ ) {
     try { 
-        $("#p1").find(".ui-btn-right").show();
-
-        //create as many additional pages as we need
-        newPage = $("#p1").clone();
-
-        newPage.find(".appList").empty();
-        newPage.removeClass("ui-page-active");
-        newPage.attr("id", "p"+i);
-        newPage.attr("data-url", "p"+i);
-        newPage.find("h1").text("Page "+i); 
-        
-        newPage.find(".ui-btn-left").show();
-        
-        newPage.appendTo($.mobile.pageContainer);
+        //kind of a kludge here, since we already have the first page
+        if (i > 1) {
+          $("#p1").find(".ui-btn-right").show();
+  
+          //create as many additional pages as we need
+          newPage = $("#p1").clone();
+  
+          newPage.find(".appList").empty();
+          newPage.removeClass("ui-page-active");
+          newPage.attr("id", "p"+i);
+          newPage.attr("data-url", "p"+i);
+          newPage.find("h1").text("Page "+i); 
+          
+          newPage.find(".ui-btn-left").show();
+          
+          newPage.appendTo($.mobile.pageContainer);
+        }
         
         //now add in the icons for this page
         var dashDiv = newPage.find(".appList");
