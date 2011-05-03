@@ -60,7 +60,8 @@
   <script type="text/javascript">
     //remove the back button from the first page
     $("#p1").find(".ui-btn-left").hide();
-    
+    $("#p1").find(".ui-btn-right").hide();
+
     //enable swipe handling
     $("div").live("swipeleft", function(e) {
       switchPage($.mobile.activePage.attr('id'), 1);

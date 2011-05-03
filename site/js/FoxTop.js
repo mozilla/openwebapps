@@ -223,12 +223,11 @@ function makeOpenAppTabFn(origin32)
 //create the full app list, and sort them for display
 // here is also where I cache the base32 version of the origin into the app
 function renderList(andLaunch) {
-  if (!gApps) return;
+  //if (!gApps) return;
   //clear the list
   $('.app').remove();
   
   var results = [];
-  var newPage;
   
   for (origin in gApps) {
     try {
@@ -259,28 +258,27 @@ function renderList(andLaunch) {
   var iconsPerPage = iconsAcross * iconsDown;
   
   var numPages = Math.ceil(results.length / iconsPerPage);
-  
-  //first make pages, then fill them afterwards. 
-  for ( var i = 1; i < numPages + 1; i++ ) {
-    try { 
-        // we already have page 1, but we need to be able to remove the back button later, so we ref it here
-        if (i==1) { 
-          newPage = $("#p1"); 
-        } else {
         
-          //now make a new page for each app, just as a test
-          newPage = $("#p1").clone();
-  
-          newPage.find(".appList").empty();
-          newPage.removeClass("ui-page-active");
-          newPage.attr("id", "p"+i);
-          newPage.attr("data-url", "p"+i);
-          newPage.find("h1").text("Page "+i); 
-          
-          newPage.find(".ui-btn-left").show();
-          
-          newPage.appendTo($.mobile.pageContainer);
-        }
+  // we already have page 1, but we need to be able to remove the back button later, so we ref it here
+  var newPage = $("#p1"); 
+
+  //first make pages, then fill them afterwards. 
+  for ( var i = 2; i < numPages + 1; i++ ) {
+    try { 
+        $("#p1").find(".ui-btn-right").show();
+
+        //create as many additional pages as we need
+        newPage = $("#p1").clone();
+
+        newPage.find(".appList").empty();
+        newPage.removeClass("ui-page-active");
+        newPage.attr("id", "p"+i);
+        newPage.attr("data-url", "p"+i);
+        newPage.find("h1").text("Page "+i); 
+        
+        newPage.find(".ui-btn-left").show();
+        
+        newPage.appendTo($.mobile.pageContainer);
         
         //now add in the icons for this page
         var dashDiv = newPage.find(".appList");
