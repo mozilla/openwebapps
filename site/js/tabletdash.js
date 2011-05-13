@@ -350,6 +350,8 @@ function createAppListItem(install)
 //   clickyIcon.mouseenter(function() {clickyIcon.addClass("glowy-blue-frame") });
 //   clickyIcon.mouseleave(function() {clickyIcon.removeClass("glowy-blue-frame") });
 
+  clickyIcon.click(makeOpenAppTabFn(install.origin32));
+
   displayBox.append(clickyIcon);
 
 
@@ -357,7 +359,6 @@ function createAppListItem(install)
   var appName = $("<div/>").addClass("listLabel");
   appName.text(install.manifest.name);  
   appName.disableSelection();
-  displayBox.click(makeOpenAppTabFn(install.origin32));
 
   displayBox.append(appName);
   
@@ -402,10 +403,14 @@ function InitPaging(count, width)
   pageWidth = width;
 	document.onmousedown = OnMouseDown;
 	document.onmouseup = OnMouseUp;
+	document.MozTouchDown = OnMouseDown;
+	document.MozTouchUp = OnMouseUp;
 }
 
 function OnMouseDown(e)
 {	
+  console.log("target class: " + e.target.className + "   target id: " + e.target.id);
+  
   dragStart = e.timeStamp;
   
   //might not need this
@@ -421,7 +426,8 @@ function OnMouseDown(e)
 		
 		// tell our code to start moving the element with the mouse
 		document.onmousemove = OnMouseMove;
-						
+		document.MozTouchMove = OnMouseMove
+	
 		return false;
 	}
 }
@@ -456,7 +462,7 @@ function OnMouseUp(e)
 	{
 	  if (tap) {
 	        console.log("was tapped");
-
+          
 	  
     } else if (flick) {
       //we go to the next page in the direction specified by the flick
@@ -499,6 +505,8 @@ function OnMouseUp(e)
     
 		// reset
 		document.onmousemove = null;
+		document.MozTouchMove = null;
+
 		_dragElement = null;
 		wasDragged = false;
 		dragStart = 0;

@@ -41,8 +41,11 @@ var gApps = {};
 // var gFilterString = "";
 
 var gDashboardState = {};
-gDashboardState.appsInDock = [];
-gDashboardState.widgetPositions = {};
+
+//pages is an array of 'page' objects, (in the order spacified in the array) 
+// each of which are {"name":"<page name>", "apps":[apps]};
+// where the ordering of the apps on the page is also as specified in the array
+gDashboardState.pages = [];
 
 //prevent wiggling an app more than once
 var gLastInstalledApp = "";
@@ -187,9 +190,6 @@ function updateDashboard( completionCallback ) {
           navigator.apps.mgmt.loadState( function (dashState) {
               gDashboardState = checkSavedData(dashState);
               
-              //now, in the loadState callback, update everything.
-              //I'm rebuilding the entire app list and dock list for now, since it is likely not the bottleneck. they can be updated later, if they become a performance problem
-              // I -am- carefully adding/removing widgets only where necessary, as it is quite expensive, since they contain iframes.
               renderList();
   
               var justInstalled = paramValue("emphasize");
@@ -318,11 +318,6 @@ function switchPage(currentPage, minusOneOrPlusOne) {
   }
 }
 
-function nextPage(currentPage) {
-  //either transition to the following page, or do nothing, if this is the last
-
-}
-
 
 function getBigIcon(manifest) {
   //see if the manifest has any icons, and if so, return a 64px one if possible
@@ -342,35 +337,6 @@ function getBigIcon(manifest) {
 
 
 
-function getSmallIcon(manifest) {
-  //see if the manifest has any icons, and if so, return a 32px one if possible
-  if (manifest.icons) {
-  //prefer 32
-    if (manifest.icons["32"]) return manifest.icons["32"];
-    
-    var smallSize = 1000;
-    for (z in manifest.icons) {
-      var size = parseInt(z, 10);
-      if (size < smallSize) smallSize = size;
-    }
-    if (smallSize !== 1000) return manifest.icons[smallSize];
-  }
-  return null;
-}
-
-
-function showAppInfo(origin32) {
-  //gray out the screen, put up a modal dialog with the application info.
-  //  items in the dialog:
-  //  * app info, with links to origin, etc.
-  //  * delete button
-  //  * widget enable button
-  //  * thingie to dismiss the dialog
-  
-  $("#appinfo").append(createAppInfoPane(origin32));
-  revealModal("modalPage");
-}
-
 function createAppListItem(install)
 {
   var appContainer = $("<div/>").addClass("app dockItem");
@@ -380,7 +346,7 @@ function createAppListItem(install)
   appContainer.append(displayBox);
 
   var clickyIcon = $("<div/>").addClass("icon");
-  var iconImg = getSmallIcon(install.manifest);
+  var iconImg = getBigIcon(install.manifest);
   
   if (iconImg.indexOf('/') === 0) {
     clickyIcon.append($('<img width="45" height="45"/>').attr('src', install.origin + iconImg));  
@@ -402,37 +368,6 @@ function createAppListItem(install)
 }
 
 
-
-function formatDate(dateStr)
-{
-  if (!dateStr) return "null";
-
-  var now = new Date();
-  var then = new Date(dateStr);
-
-  if (then.getTime() > now.getTime()) {
-    return "the future";
-  }
-  else if (then.getMonth() != now.getMonth() ||  then.getDate() != now.getDate())
-  {
-     var dayDelta = (new Date().getTime() - then.getTime() ) / 1000 / 60 / 60 / 24 // hours
-     if (dayDelta < 2) str = "yesterday";
-     else if (dayDelta < 7) str = Math.floor(dayDelta) + " days ago";
-     else if (dayDelta < 14) str = "last week";
-     else if (dayDelta < 30) str = Math.floor(dayDelta) + " days ago";
-     else str = Math.floor(dayDelta /30)  + " month" + ((dayDelta/30>2)?"s":"") + " ago";
-  } else {
-      var str;
-      var hrs = then.getHours();
-      var mins = then.getMinutes();
-
-      var hr = Math.floor(Math.floor(hrs) % 12);
-      if (hr == 0) hr =12;
-      var mins = Math.floor(mins);
-      str = hr + ":" + (mins < 10 ? "0" : "") + Math.floor(mins) + " " + (hrs >= 12 ? "P.M." : "A.M.") + " today";
-  }
-  return str;
-}
 
 function onMessage(event)
 {
