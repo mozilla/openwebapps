@@ -318,18 +318,6 @@ function getSmallIcon(manifest) {
 }
 
 
-// function showAppInfo(origin32) {
-//   //gray out the screen, put up a modal dialog with the application info.
-//   //  items in the dialog:
-//   //  * app info, with links to origin, etc.
-//   //  * delete button
-//   //  * widget enable button
-//   //  * thingie to dismiss the dialog
-//   
-//   $("#appinfo").append(createAppInfoPane(origin32));
-//   revealModal("modalPage");
-// }
-
 function createAppListItem(install)
 {
   var appContainer = $("<div/>").addClass("app dockItem");
@@ -339,6 +327,7 @@ function createAppListItem(install)
   appContainer.append(displayBox);
 
   var clickyIcon = $("<div/>").addClass("icon");
+  clickyIcon.attr("origin32", install.origin32);
   var iconImg = getBigIcon(install.manifest);
   
   if (iconImg.indexOf('/') === 0) {
@@ -347,10 +336,7 @@ function createAppListItem(install)
     clickyIcon.append($('<img width="64" height="64"/>').attr('src', iconImg));  
   }
   
-//   clickyIcon.mouseenter(function() {clickyIcon.addClass("glowy-blue-frame") });
-//   clickyIcon.mouseleave(function() {clickyIcon.removeClass("glowy-blue-frame") });
-
-  clickyIcon.click(makeOpenAppTabFn(install.origin32));
+  //clickyIcon.click(makeOpenAppTabFn(install.origin32));
 
   displayBox.append(clickyIcon);
 
@@ -361,22 +347,7 @@ function createAppListItem(install)
   appName.disableSelection();
 
   displayBox.append(appName);
-  
-//   appContainer.draggable({revert : "invalid", 
-//                           cursorAt: {top: 32, left: 32},
-//                           zIndex: 1000,
-//                           helper : function() {return createDockItem(install.origin32)}, 
-//                           opacity: "0.5",
-//                           stop: function(event, ui) {
-//                             appContainer.addClass("ui-draggable-dragged");
-//                           },
-//                           
-//                           drag: function(event) { 
-//                                                   displayPlaceholder(event); 
-//                                                 }
-// 
-//                           });
-                        
+                          
 
   return appContainer;
 }
@@ -384,7 +355,7 @@ function createAppListItem(install)
 
 
 
-/////////////// screen paging code for dsahboard
+/////////////// screen paging code for dashboard
 
 // this is simply a shortcut for the eyes and fingers
 var _startX = 0;			// mouse starting positions
@@ -409,7 +380,7 @@ function InitPaging(count, width)
 
 function OnMouseDown(e)
 {	
-  console.log("target class: " + e.target.className + "   target id: " + e.target.id);
+  console.log("target: " + e.target + "  class: " + e.target.className + "  id: " + e.target.id);
   
   dragStart = e.timeStamp;
   
@@ -462,8 +433,10 @@ function OnMouseUp(e)
 	{
 	  if (tap) {
 	        console.log("was tapped");
-          
-	  
+          if (e.target.parentNode.className == "icon") {
+              var origin32 = $(e.target.parentNode).attr("origin32");
+              navigator.apps.mgmt.launch(Base32.decode(origin32));
+	        }
     } else if (flick) {
       //we go to the next page in the direction specified by the flick
       console.log("was flicked");
@@ -606,86 +579,5 @@ function hideModal(divID)
     $("#appinfo").empty();
     document.getElementById(divID).style.display = "none";
 }
-
-
-// function createAppInfoPane(origin32) {
-//       var infoBox = $("<div/>").addClass("appinfobox");
-//       var install = findInstallForOrigin32(origin32);
-// 
-//       var appIcon = $('<div width="64" height="64"/>').addClass("dockIcon");
-//       var iconImg = getBigIcon(install.manifest);        
-//       appIcon.append($('<img width="64" height="64"/>').attr('src', install.origin + iconImg));
-//       infoBox.append(appIcon);
-//       
-//       
-//       var labelBox = $("<div class='labelBox glowy-blue-text'/>");
-//       
-//       var appName = $("<div/>").addClass("infoLabel ");
-//       appName.text(install.manifest.name);  
-//       appName.disableSelection();
-//       labelBox.append(appName);
-// 
-//       if (install.manifest.developer && install.manifest.developer.name) {
-//         var devName = $("<div/>").addClass("infoLabelSmall");
-//         devName.text(install.manifest.developer.name);  
-//         devName.disableSelection();
-//         labelBox.append(devName);
-//       }
-//       
-//       if (install.manifest.developer && install.manifest.developer.url) {
-//         var devLink = $("<a/>").addClass("infoLabelSmall glowy-blue-text");
-//         devLink.attr("href", install.manifest.developer.url);
-//         devLink.attr("target" , "_blank");
-//         devLink.text(install.manifest.developer.url);
-//         labelBox.append(devLink);
-//       }
-//       infoBox.append(labelBox);
-// 
-//       var descBox = $("<div/>").addClass("descriptionBox glowy-blue-text");
-//       descBox.text(install.manifest.description);
-//       infoBox.append(descBox);
-// 
-//       var delButton = $("<div/>").addClass("deleteAppButton glowy-red-text");
-//       delButton.text("DELETE");
-//       delButton.disableSelection();
-//       delButton.mouseenter(function() {delButton.animate({ "font-size": 20 + "px", "padding-top": "6px", "padding-bottom": "2px"}, 50) });
-//       delButton.mouseleave(function() {delButton.text("DELETE"); delButton.animate({ "font-size": 14 + "px", "padding-top": "8px", "padding-bottom":"0px"}, 50) });
-// 
-// 
-//       //this really needs to be moved out into a function
-//       delButton.click( function() { if (delButton.text() == "DELETE") {
-//                                           delButton.text("DELETE ?");
-//                                         } else {
-//       
-//                                           navigator.apps.mgmt.uninstall( install.origin, function() { 
-//                                                                                             removeAppFromDock(install.origin32);
-//                                                                                             removeWidget(install.origin32);
-//                                                                                             saveDashboardState( function () {updateDashboard();} );
-//                                                                                             hideModal('modalPage')
-//                                                                                         }  
-//                                                                         ) }});
-//       infoBox.append(delButton);
-//       
-//       if (install.manifest.widget) {
-//         var widgetButton = $("<div/>").addClass("widgetToggleButton glowy-red-text");
-//         widgetButton.text("WIDGET");
-//         widgetButton.disableSelection();
-//         if (isWidgetVisible(origin32)) {
-//           widgetButton.addClass("glowy-green-text");
-//         }
-//         widgetButton.click( function() { if (toggleWidgetVisibility(install.origin32)) {
-//                                             widgetButton.addClass("glowy-green-text");
-//                                           } else {
-//                                             widgetButton.removeClass("glowy-green-text");
-//                                           }; 
-//                                          });
-//                                          
-//         widgetButton.mouseenter(function() {widgetButton.animate({ "font-size": 20 + "px", "padding-top": "6px", "padding-bottom": "2px"}, 50) });
-//         widgetButton.mouseleave(function() {widgetButton.animate({ "font-size": 14 + "px", "padding-top": "8px", "padding-bottom": "0px"}, 50) });
-//         infoBox.append(widgetButton);
-//       }
-// 
-//       return infoBox;
-// }
 
 
