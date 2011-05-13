@@ -38,14 +38,73 @@
 // Singleton instance of the Apps object:
 var gApps = {};
 
-//the list filter string
-// var gFilterString = "";
-
+//the saved state (app icon arrangement, mostly) for the dashboard
 var gDashboardState = {};
+//pages is a list of the known pages.  each page contains an array of apps refs.
 gDashboardState.pages = [];
 
-//prevent wiggling an app more than once
-var gLastInstalledApp = "";
+
+function getWindowHeight() {
+  if(window.innerHeight) return window.innerHeight;
+  if (document.body.clientHeight) return document.body.clientHeight;
+}
+
+function getWindowWidth() {
+  if(window.innerWidth) return window.innerWidth;
+  if (document.body.clientWidth) return document.body.clientWidth;
+}
+
+
+
+/////////////////////////////////////////////////////////
+//important page layout global vars
+var screenWidth = 0;
+var screenHeight = 0;
+var appBoxWidth = 0;
+var appBoxHeight = 0;
+var appIconSize = 0;
+var appNameSize = 0;
+
+
+//I'm assuming 4 x 5 or 5 x 4 apps per page
+function computeLayoutVars() {
+  screenWidth = getWindowWidth();
+  screenHeight = getWindowHeight();
+  
+  if (screenWidth > screenHeight)  {
+    appBoxWidth = Math.floor(screenWidth / 5);
+    appBoxHeight = Math.floor(screenHeight / 4);
+  } else {
+    appBoxWidth = Math.floor(screenWidth / 4);
+    appBoxHeight = Math.floor(screenHeight / 5);
+  }
+  
+  appIconSize = Math.floor(Math.min(appBoxWidth, appBoxHeight) / 2);
+  appNameSize = Math.floor(appIconSize * 1.5);
+  
+}
+
+//************** document.ready()
+
+$(document).ready(function() {
+
+
+
+  // can this user use myapps?
+   var w = window;
+   if (w.JSON && w.postMessage) {
+     try  {
+            updateDashboard();
+          } catch (e) {
+            if (typeof console !== "undefined") console.log(e);
+          }
+          
+   } else {
+      if (typeof console !== "undefined") console.log("unsuported browser!");
+   }
+});
+
+
 
 
 function saveDashboardState( callback ) {
@@ -63,24 +122,7 @@ function findInstallForOrigin32(origin32) {
 }
 
 
-function getWindowHeight() {
-  if(window.innerHeight) return window.innerHeight;
-  if (document.body.clientHeight) return document.body.clientHeight;
-}
 
-function getWindowWidth() {
-  if(window.innerWidth) return window.innerWidth;
-  if (document.body.clientWidth) return document.body.clientWidth;
-}
-
-
-
-
-
-
-function getMinListHeight() {
-  return  (keyCount(gApps) * 40) + 220 + 8; 
-}
 
 function keyCount(obj) {
   var n=0;
@@ -89,101 +131,6 @@ function keyCount(obj) {
   return n;
 }
 
-
-
-
-
-
-
-
-//courtesy of:
-// http://www.zachstronaut.com/posts/2009/02/17/animate-css-transforms-firefox-webkit.html
-function getTransformProperty(element) {
-    var properties = [
-        'transform',
-        'WebkitTransform',
-        'MozTransform',
-        'msTransform',
-        'OTransform'
-    ];
-    var p;
-    while (p = properties.shift()) {
-        if (typeof element.style[p] != 'undefined') {
-            return p;
-        }
-    }
-    return false;
-}
-
-
-function paramValue( name )
-{
-  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
-  var regexS = "[\\?&]"+name+"=([^&#]*)";
-  var regex = new RegExp( regexS );
-  var results = regex.exec( window.location.href );
-  if( results == null )
-    return "";
-  else
-    return results[1];
-}
-
-
-function wiggleApp(origin32) {
-
-  if (origin32 == gLastInstalledApp) return;
-
-  //animate the app icon in the dock and/or the list, to indicate it has just been installed
-  //use a combination of transition and window.timeout
-  var dockIcons = $(".appInDock[origin32=" + origin32 + "]");
-  var listIcon = $(".app[origin32=" + origin32 + "] > .appClickBox > .icon");
-  if (!listIcon.length) return;
-  
-  var transformProp = getTransformProperty(listIcon[0]);
-
-  var angles = [0, 5, 10, 5, 0, -5, -10, -5];
-  var d = 0;
-  var count = 0;
-    
-  var intervalID = setInterval(function () {
-                                              d = (d + 1) % 9;
-                                              dockIcons.each(function(i, e) {
-                                                e.style[transformProp] = 'rotate(' + (angles[d]) + 'deg)';
-                                              });
-                                              if (listIcon.length) listIcon[0].style[transformProp] = 'rotate(' + (angles[d]) + 'deg)';
-                                              
-                                              count += d?0:1;
-                                              if (count > 6) { 
-                                                    clearInterval(intervalID); 
-                                                    gLastInstalledApp = origin32;  
-                                              };   
-
-                                            }, 
-                                            25 );
-}
-
-
-//************** document.ready()
-
-$(document).ready(function() {
-
-
-
-  // can this user use myapps?
-   var w = window;
-   if (w.JSON && w.postMessage) {
-       try {
-                updateDashboard();
-                
-            } catch (e) {
-            
-                 if (typeof console !== "undefined") console.log(e);
-            }
-
-   } else {
-       $("#unsupportedBrowser").fadeIn(500);
-   }
-});
 
 
 function checkSavedData(save) {
@@ -203,7 +150,8 @@ function checkSavedData(save) {
 //this is the primary UI function.  It loads the latest app list from disk, the latest dashboard state from disk,
 // and then proceeds to bring the visual depiction into synchrony with the data, with the least visual interruption.
 function updateDashboard( completionCallback ) {
-    //both the app list and dashboard data functions are asynchronous, so we need to do everything in the cal
+    //both the app list and dashboard data functions are asynchronous, so we need to do everything in the callback
+      computeLayoutVars();
       navigator.apps.mgmt.list( function (listOfInstalledApps) {
           
           gApps = listOfInstalledApps;
@@ -214,10 +162,6 @@ function updateDashboard( completionCallback ) {
               
               renderList();
   
-//               var justInstalled = paramValue("emphasize");
-//               if (justInstalled.length) {
-//                 wiggleApp(Base32.encode(unescape(justInstalled)));
-//               }
               //and call the dream within a dream within a dream callback.  if it exists.
               if (completionCallback) { completionCallback(); };
            });                      
@@ -284,10 +228,10 @@ function renderList(andLaunch) {
 
 
 function getBigIcon(manifest) {
-  //see if the manifest has any icons, and if so, return a 64px one if possible
+  //see if the manifest has any icons, and if so, return a 96px one if possible
   if (manifest.icons) {
-  //prefer 64
-    if (manifest.icons["64"]) return manifest.icons["64"];
+  //prefer 96
+    if (manifest.icons["96"]) return manifest.icons["96"];
     
     var bigSize = 0;
     for (z in manifest.icons) {
@@ -320,36 +264,49 @@ function getSmallIcon(manifest) {
 
 function createAppListItem(install)
 {
-  var appContainer = $("<div/>").addClass("app dockItem");
-  appContainer.attr("origin32", install.origin32);
 
-  var displayBox = $("<div/>").addClass("appClickBox");
-  appContainer.append(displayBox);
-
+  var appDisplayFrame = $("<div/>").addClass("appDisplayFrame");
+  appDisplayFrame.css({width: appBoxWidth, height: appBoxHeight});
+  
   var clickyIcon = $("<div/>").addClass("icon");
   clickyIcon.attr("origin32", install.origin32);
+
+  clickyIcon.css({width: appIconSize, 
+                  height: appIconSize, 
+                  marginTop: ((appBoxHeight - appIconSize)/2) + "px", 
+                   marginBottom: ((appBoxHeight - appIconSize)/5) + "px",
+                  marginLeft: ((appBoxWidth - appIconSize)/2) + "px",
+                  marginRight: ((appBoxWidth - appIconSize)/2) + "px" 
+                  });
+
   var iconImg = getBigIcon(install.manifest);
   
+  var appIcon = $("<img width='" + appIconSize + "' height='" + appIconSize + "'/>");
+  
   if (iconImg.indexOf('/') === 0) {
-    clickyIcon.append($('<img width="64" height="64"/>').attr('src', install.origin + iconImg));  
+    appIcon.attr('src', install.origin + iconImg);  
   } else {
-    clickyIcon.append($('<img width="64" height="64"/>').attr('src', iconImg));  
+    appIcon.attr('src', iconImg);  
   }
   
-  //clickyIcon.click(makeOpenAppTabFn(install.origin32));
+  clickyIcon.append(appIcon);
 
-  displayBox.append(clickyIcon);
+  appDisplayFrame.append(clickyIcon);
 
 
   //TODO: size text to fit
   var appName = $("<div/>").addClass("listLabel");
+  appName.css({width: appIconSize * 1.4, 
+              "font-size":  Math.max(Math.ceil(appIconSize/5.5), 10),
+              color: '#ffffff'});
+
   appName.text(install.manifest.name);  
   appName.disableSelection();
 
-  displayBox.append(appName);
+  appDisplayFrame.append(appName);
                           
 
-  return appContainer;
+  return appDisplayFrame;
 }
 
 
