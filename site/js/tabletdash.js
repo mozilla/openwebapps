@@ -60,6 +60,7 @@ function getWindowWidth() {
 //important page layout global vars
 var screenWidth = 0;
 var screenHeight = 0;
+var pageWidth = 0;
 var appBoxWidth = 0;
 var appBoxHeight = 0;
 var appIconSize = 0;
@@ -69,19 +70,28 @@ var appNameSize = 0;
 //I'm assuming 4 x 5 or 5 x 4 apps per page
 function computeLayoutVars() {
   screenWidth = getWindowWidth();
+  pageWidth = screenWidth-4;
   screenHeight = getWindowHeight();
   
   if (screenWidth > screenHeight)  {
-    appBoxWidth = Math.floor(screenWidth / 5);
+    appBoxWidth = Math.floor(pageWidth / 5);
     appBoxHeight = Math.floor(screenHeight / 4);
   } else {
-    appBoxWidth = Math.floor(screenWidth / 4);
+    appBoxWidth = Math.floor(pageWidth / 4);
     appBoxHeight = Math.floor(screenHeight / 5);
   }
   
   appIconSize = Math.floor(Math.min(appBoxWidth, appBoxHeight) / 2);
   appNameSize = Math.floor(appIconSize * 1.5);
   
+  console.log("screenWidth: " + screenWidth);
+  console.log("screenHeight: " + screenHeight);
+  console.log("pageWidth: " + pageWidth);
+  console.log("appBoxWidth: " + appBoxWidth);
+  console.log("appBoxHeight: " + appBoxHeight);
+  console.log("appIconSize: " + appIconSize);
+  console.log("appNameSize: " + appNameSize);
+
 }
 
 //************** document.ready()
@@ -152,6 +162,10 @@ function checkSavedData(save) {
 function updateDashboard( completionCallback ) {
     //both the app list and dashboard data functions are asynchronous, so we need to do everything in the callback
       computeLayoutVars();
+      $(".background").css({width: screenWidth, height: screenHeight});
+      $(".dashboard").css({width: (5 * screenWidth) });
+      $(".page").css({width: pageWidth, height: screenHeight});
+      
       navigator.apps.mgmt.list( function (listOfInstalledApps) {
           
           gApps = listOfInstalledApps;
@@ -169,22 +183,6 @@ function updateDashboard( completionCallback ) {
 }
 
 
-
-// launch the app into a tab.  we'd like it to just switch to it if it already exists. I think that needs to be handled in launch()
-function makeOpenAppTabFn(origin32)
-{
-  try {
-    return function(evt) {
-//          if ($(this).hasClass("ui-draggable-dragged")) {
-//              $(this).removeClass("ui-draggable-dragged");
-//              return false;
-//          }
-        navigator.apps.mgmt.launch(Base32.decode(origin32));
-    }
-  } catch (e) {
-      if (typeof console !== "undefined") console.log("error launching: " + e);
-  }
-}
 
 //create the full app list, and sort them for display
 // here is also where I cache the base32 version of the origin into the app
@@ -274,9 +272,14 @@ function createAppListItem(install)
   clickyIcon.css({width: appIconSize, 
                   height: appIconSize, 
                   marginTop: ((appBoxHeight - appIconSize)/2) + "px", 
-                   marginBottom: ((appBoxHeight - appIconSize)/5) + "px",
+                  marginBottom: ((appBoxHeight - appIconSize)/5) + "px",
                   marginLeft: ((appBoxWidth - appIconSize)/2) + "px",
-                  marginRight: ((appBoxWidth - appIconSize)/2) + "px" 
+                  marginRight: ((appBoxWidth - appIconSize)/2) + "px", 
+                  
+                  "-moz-border-radius": (appIconSize/6) + "px",
+	                "-webkit-border-radius": (appIconSize/6) + "px",
+	                "border-radius": (appIconSize/6) + "px"
+
                   });
 
   var iconImg = getBigIcon(install.manifest);
@@ -320,19 +323,17 @@ var _offsetX = 0;			// current element offset
 var _dragElement;			// needs to be passed from OnMouseDown to OnMouseMove
 
 var numPages = 0;
-var pageWidth = 0;
 var wasDragged = false;
 
 var dragstart = 0;
 
-function InitPaging(count, width)
+function InitPaging(count)
 {
   numPages = count;
-  pageWidth = width;
 	document.onmousedown = OnMouseDown;
 	document.onmouseup = OnMouseUp;
-	document.MozTouchDown = OnMouseDown;
-	document.MozTouchUp = OnMouseUp;
+	document.touchstart = OnMouseDown;
+	document.touchend = OnMouseUp;
 }
 
 function OnMouseDown(e)
@@ -342,19 +343,23 @@ function OnMouseDown(e)
   dragStart = e.timeStamp;
   
   //might not need this
-	_dragElement = $("#dashboard");
+	_dragElement = $(".dashboard");
 	
 	if (e.button == 0)
 	{
 		// grab the mouse position
-		_startX = e.clientX;
+		if (e.clientX != undefined) {
+		  _startX = e.clientX;
+		} else {
+		  _startX = e.touches[0].clientX;
+		}
 		
 		// grab the clicked element's position
 		_offsetX = ExtractNumber(_dragElement.offset().left);
 		
 		// tell our code to start moving the element with the mouse
 		document.onmousemove = OnMouseMove;
-		document.MozTouchMove = OnMouseMove
+		document.touchmove = OnMouseMove
 	
 		return false;
 	}
@@ -369,8 +374,15 @@ function ExtractNumber(value)
 
 function OnMouseMove(e)
 {
+  var  curPos;
+  if (e.clientX != undefined) {
+    curPos = e.clientX;
+  } else {
+    curPos = e.touches[0].clientX;
+  }
+
 	// this is the actual "drag code"
-	var newPos = (_offsetX + e.clientX - _startX) + 'px';
+	var newPos = (_offsetX + curPos - _startX) + 'px';
 	_dragElement.css("left", newPos);
 
   wasDragged = true;
@@ -379,8 +391,15 @@ function OnMouseMove(e)
 
 function OnMouseUp(e)
 {
-  var quick = (e.timeStamp - dragStart < 150);
-  var small = Math.abs(e.clientX - _startX) < 20;
+  var  curPos;
+  if (e.clientX != undefined) {
+    curPos = e.clientX;
+  } else {
+    curPos = e.touches[0].clientX;
+  }
+
+  var quick = (e.timeStamp - dragStart < 200);
+  var small = Math.abs(curPos - _startX) < 20;
   
   var flick = quick && !small;
   var tap = quick && small;
@@ -399,15 +418,15 @@ function OnMouseUp(e)
       console.log("was flicked");
 
       //left or right?
-      var dir = (e.clientX - _startX) > 0;
+      var dir = (curPos - _startX) > 0;
       
       var newPos = _offsetX;
       if (dir) {
-        newPos += pageWidth; 
+        newPos += screenWidth; 
         if (newPos > 0) newPos = 0;
       } else {
         newPos -= pageWidth;
-        if (newPos < ((numPages - 1) * pageWidth * -1)) newPos = ((numPages - 1) * pageWidth * -1);
+        if (newPos < ((numPages - 1) * screenWidth * -1)) newPos = ((numPages - 1) * screenWidth * -1);
       }
           
       _dragElement.animate({left: newPos}, 250);
@@ -419,10 +438,10 @@ function OnMouseUp(e)
       
       if (_dragElement.position().left < 0) {
           var offset = Math.abs(_dragElement.position().left);
-          var snapPage = Math.floor(offset / pageWidth);
-          var remainder = offset - (snapPage * pageWidth);
+          var snapPage = Math.floor(offset / screenWidth);
+          var remainder = offset - (snapPage * screenWidth);
           
-          if ( remainder > Math.floor(pageWidth / 2) ) {
+          if ( remainder > Math.floor(screenWidth / 2) ) {
             snapPage++;
           }
           
@@ -430,7 +449,7 @@ function OnMouseUp(e)
       
       if (snapPage >= numPages) snapPage = numPages - 1;
       
-      _dragElement.animate({left: (snapPage * pageWidth * -1) }, 250);
+      _dragElement.animate({left: (snapPage * screenWidth * -1) }, 250);
     }
     
 		// reset
@@ -444,7 +463,7 @@ function OnMouseUp(e)
 }
 
 //hard coded temporarily
-InitPaging(5, 1280);
+InitPaging(5);
 
 ////////////////
 
