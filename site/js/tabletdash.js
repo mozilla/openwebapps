@@ -330,14 +330,12 @@ var dragstart = 0;
 function InitPaging(count)
 {
   numPages = count;
-	document.onmousedown = OnMouseDown;
-	document.onmouseup = OnMouseUp;
-	document.touchstart = OnMouseDown;
-	document.touchend = OnMouseUp;
+  document.onmousedown = document.ontouchstart = OnMouseDown;
+  document.onmouseup = document.ontouchend = OnMouseUp;
 }
 
 function OnMouseDown(e)
-{	
+{
   console.log("target: " + e.target + "  class: " + e.target.className + "  id: " + e.target.id);
   
   dragStart = e.timeStamp;
@@ -348,18 +346,18 @@ function OnMouseDown(e)
 	if (e.button == 0)
 	{
 		// grab the mouse position
-		if (e.clientX != undefined) {
-		  _startX = e.clientX;
-		} else {
+		if (e.touches && e.touches.length) {
 		  _startX = e.touches[0].clientX;
-		}
+		} else {
+		  _startX = e.clientX;
+        }
 		
 		// grab the clicked element's position
 		_offsetX = ExtractNumber(_dragElement.offset().left);
 		
 		// tell our code to start moving the element with the mouse
 		document.onmousemove = OnMouseMove;
-		document.touchmove = OnMouseMove
+		document.ontouchmove = OnMouseMove;
 	
 		return false;
 	}
@@ -374,11 +372,11 @@ function ExtractNumber(value)
 
 function OnMouseMove(e)
 {
-  var  curPos;
-  if (e.clientX != undefined) {
-    curPos = e.clientX;
-  } else {
+  var curPos;
+  if (e.touches && e.touches.length) {
     curPos = e.touches[0].clientX;
+  } else {
+    curPos = e.clientX;
   }
 
 	// this is the actual "drag code"
@@ -391,11 +389,11 @@ function OnMouseMove(e)
 
 function OnMouseUp(e)
 {
-  var  curPos;
-  if (e.clientX != undefined) {
-    curPos = e.clientX;
-  } else {
+  var curPos;
+  if (e.touches && e.touches.length) {
     curPos = e.touches[0].clientX;
+  } else {
+    curPos = e.clientX;
   }
 
   var quick = (e.timeStamp - dragStart < 200);
@@ -433,7 +431,7 @@ function OnMouseUp(e)
 
     } else { //drag, which may or may not go to the next page
       console.log("was dragged");
-
+      e.preventDefault();
       var snapPage = 0;
       
       if (_dragElement.position().left < 0) {

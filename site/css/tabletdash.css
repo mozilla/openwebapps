@@ -27,7 +27,7 @@ body {
   
   overflow: hidden;
 
-  background-image: url('/img/tabletdash_bg.png');
+  background-image: url('../img/tabletdash_bg.png');
   background-repeat: no-repeat;
 }
 
