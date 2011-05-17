@@ -206,7 +206,8 @@ function renderList(andLaunch) {
   
   results.sort(function(a,b) {return (a.manifest.name > b.manifest.name) });
   
-  for ( var i = 0; i < results.length; i++ ) {
+  //HACK HACK REMOVE REMOVE
+  for ( var i = 0; i < (results.length && i < 20); i++ ) {
     try {
         $(".applist").append(createAppListItem(results[i]));
     } catch (e) {
