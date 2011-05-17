@@ -207,7 +207,7 @@ function renderList(andLaunch) {
   results.sort(function(a,b) {return (a.manifest.name > b.manifest.name) });
   
   //HACK HACK REMOVE REMOVE
-  for ( var i = 0; i < (results.length && i < 20); i++ ) {
+  for ( var i = 0; i < results.length && i < 20; i++ ) {
     try {
         $(".applist").append(createAppListItem(results[i]));
     } catch (e) {
@@ -324,7 +324,6 @@ var _offsetX = 0;			// current element offset
 var _dragElement;			// needs to be passed from OnMouseDown to OnMouseMove
 
 var numPages = 0;
-var wasDragged = false;
 
 var dragstart = 0;
 
@@ -344,15 +343,18 @@ function InitPaging(count)
 
 function OnMouseDown(e)
 {
-  console.log("target: " + e.target + "  class: " + e.target.className + "  id: " + e.target.id);
-  
+  if (e.touches && e.touches.length) 
+    console.log("TOUCH DOWN target: " + e.target + "  class: " + e.target.className + "  id: " + e.target.id);
+  else
+    console.log("MOUSE DOWN target: " + e.target + "  class: " + e.target.className + "  id: " + e.target.id);
+    
   dragStart = e.timeStamp;
   
   //might not need this
 	_dragElement = $(".dashboard");
 	
-	if (e.button == 0)
-	{
+// 	if (e.button == 0)
+// 	{
 		// grab the mouse position
 		if (e.touches && e.touches.length) {
 		  _startX = e.touches[0].clientX;
@@ -364,7 +366,7 @@ function OnMouseDown(e)
 		_offsetX = ExtractNumber(_dragElement.offset().left);
 				
 		return false;
-	}
+// 	}
 }
 
 function ExtractNumber(value)
@@ -376,10 +378,16 @@ function ExtractNumber(value)
 
 function OnMouseMove(e)
 {
+  if (_dragElement == undefined) { console.log("ignored move"); return; }
+  
+  if (e.touches && e.touches.length) 
+    console.log("TOUCH MOVE  _dragElement: " + _dragElement); 
+  else
+    console.log("MOUSE MOVE  _dragElement: " + _dragElement); 
+    
   e.preventDefault();
   
-  if (_dragElement == null) return;
-  
+
   var curPos;
   if (e.touches && e.touches.length) {
     curPos = e.touches[0].clientX;
@@ -391,12 +399,16 @@ function OnMouseMove(e)
 	var newPos = (_offsetX + curPos - _startX) + 'px';
 	_dragElement.css("left", newPos);
 
-  wasDragged = true;
 }
 
 
 function OnMouseUp(e)
 {
+  if (e.touches && e.touches.length) 
+    console.log("TOUCH UP");
+  else
+    console.log("MOUSE UP");
+    
   var curPos;
   if (e.touches && e.touches.length) {
     curPos = e.touches[0].clientX;
@@ -405,10 +417,10 @@ function OnMouseUp(e)
   }
 
   var quick = (e.timeStamp - dragStart < 200);
-  var small = Math.abs(curPos - _startX) < 20;
+  var small = Math.abs(curPos - _startX) < 10;
   
   var flick = quick && !small;
-  var tap = quick && small;
+  var tap =  small;
   var drag = !quick && !small;
     
 	if (_dragElement != null)
@@ -459,7 +471,6 @@ function OnMouseUp(e)
     }
     
 		_dragElement = null;
-		wasDragged = false;
 		dragStart = 0;
 	}
 }
