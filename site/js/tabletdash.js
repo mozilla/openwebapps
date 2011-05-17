@@ -331,9 +331,9 @@ function InitPaging(count)
 {
   numPages = count;
   
-    document.addEventListener("mousedown", OnMouseDown, "true");
-    document.addEventListener("mousemove", OnMouseMove, "true");
-    document.addEventListener("mouseup", OnMouseUp, "true");
+//     document.addEventListener("mousedown", OnMouseDown, "true");
+//     document.addEventListener("mousemove", OnMouseMove, "true");
+//     document.addEventListener("mouseup", OnMouseUp, "true");
 
     document.addEventListener("touchstart", OnMouseDown, "true");
     document.addEventListener("touchmove", OnMouseMove, "true");
