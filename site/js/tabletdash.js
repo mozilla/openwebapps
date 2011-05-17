@@ -207,7 +207,7 @@ function renderList(andLaunch) {
   results.sort(function(a,b) {return (a.manifest.name > b.manifest.name) });
   
   //HACK HACK REMOVE REMOVE
-  for ( var i = 0; i < (results.length && i < 20); i++ ) {
+  for ( var i = 0; i < results.length && i < 20; i++ ) {
     try {
         $(".applist").append(createAppListItem(results[i]));
     } catch (e) {
@@ -339,11 +339,11 @@ function InitPaging(count)
     document.addEventListener("touchstart", OnMouseDown, "true");
     document.addEventListener("touchmove", OnMouseMove, "true");
     document.addEventListener("touchend", OnMouseUp, "true");
-
 }
 
 function OnMouseDown(e)
 {
+  e.preventDefault();
   console.log("target: " + e.target + "  class: " + e.target.className + "  id: " + e.target.id);
   
   dragStart = e.timeStamp;
@@ -376,8 +376,8 @@ function ExtractNumber(value)
 
 function OnMouseMove(e)
 {
-  e.preventDefault();
   
+  e.preventDefault();
   if (_dragElement == null) return;
   
   var curPos;
@@ -397,6 +397,7 @@ function OnMouseMove(e)
 
 function OnMouseUp(e)
 {
+  e.preventDefault();
   var curPos;
   if (e.touches && e.touches.length) {
     curPos = e.touches[0].clientX;
