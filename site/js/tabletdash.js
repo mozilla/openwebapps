@@ -338,7 +338,6 @@ function InitPaging(count)
     document.addEventListener("touchstart", OnMouseDown, "true");
     document.addEventListener("touchmove", OnMouseMove, "true");
     document.addEventListener("touchend", OnMouseUp, "true");
-
 }
 
 function OnMouseDown(e)
@@ -348,6 +347,7 @@ function OnMouseDown(e)
   else
     console.log("MOUSE DOWN target: " + e.target + "  class: " + e.target.className + "  id: " + e.target.id);
     
+  e.preventDefault();
   dragStart = e.timeStamp;
   
   //might not need this
@@ -409,6 +409,8 @@ function OnMouseUp(e)
   else
     console.log("MOUSE UP");
     
+  e.preventDefault();
+
   var curPos;
   if (e.touches && e.touches.length) {
     curPos = e.touches[0].clientX;
