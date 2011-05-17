@@ -341,32 +341,29 @@ function InitPaging(count)
 }
 
 function OnMouseDown(e)
-{
-  if (e.touches && e.touches.length) 
-    console.log("TOUCH DOWN target: " + e.target + "  class: " + e.target.className + "  id: " + e.target.id);
-  else
-    console.log("MOUSE DOWN target: " + e.target + "  class: " + e.target.className + "  id: " + e.target.id);
-    
+{    
   e.preventDefault();
   dragStart = e.timeStamp;
   
   //might not need this
 	_dragElement = $(".dashboard");
 	
-// 	if (e.button == 0)
-// 	{
+ 	if (e.button == 0)
+ 	{
 		// grab the mouse position
 		if (e.touches && e.touches.length) {
 		  _startX = e.touches[0].clientX;
+		  console.log("TOUCHDOWN touch[0].clientX: " + _startX);
 		} else {
 		  _startX = e.clientX;
-        }
+		  console.log("TOUCHDOWN clientX: " + _startX);
+    }
 		
 		// grab the clicked element's position
 		_offsetX = ExtractNumber(_dragElement.offset().left);
 				
 		return false;
-// 	}
+ 	}
 }
 
 function ExtractNumber(value)
@@ -379,11 +376,6 @@ function ExtractNumber(value)
 function OnMouseMove(e)
 {
   if (_dragElement == undefined) { console.log("ignored move"); return; }
-  
-  if (e.touches && e.touches.length) 
-    console.log("TOUCH MOVE  _dragElement: " + _dragElement); 
-  else
-    console.log("MOUSE MOVE  _dragElement: " + _dragElement); 
     
   e.preventDefault();
   
@@ -391,8 +383,10 @@ function OnMouseMove(e)
   var curPos;
   if (e.touches && e.touches.length) {
     curPos = e.touches[0].clientX;
+		console.log("TOUCHMOVE touch[0].clientX: " + curPos);
   } else {
     curPos = e.clientX;
+    console.log("TOUCHMOVE clientX: " + curPos);
   }
 
 	// this is the actual "drag code"
@@ -403,19 +397,16 @@ function OnMouseMove(e)
 
 
 function OnMouseUp(e)
-{
-  if (e.touches && e.touches.length) 
-    console.log("TOUCH UP");
-  else
-    console.log("MOUSE UP");
-    
+{    
   e.preventDefault();
 
   var curPos;
   if (e.touches && e.touches.length) {
     curPos = e.touches[0].clientX;
+    console.log("TOUCHUP touch[0].clientX: " + curPos);
   } else {
     curPos = e.clientX;
+    console.log("TOUCHUP clientX: " + curPos);
   }
 
   var quick = (e.timeStamp - dragStart < 200);
