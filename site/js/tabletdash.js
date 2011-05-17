@@ -330,8 +330,17 @@ var dragstart = 0;
 function InitPaging(count)
 {
   numPages = count;
-  document.onmousedown = document.ontouchstart = OnMouseDown;
-  document.onmouseup = document.ontouchend = OnMouseUp;
+  
+    document.addEventListener("mousedown", OnMouseDown, "true");
+    document.addEventListener("mousemove", OnMouseMove, "true");
+    document.addEventListener("mouseup", OnMouseUp, "true");
+
+    document.addEventListener("touchstart", OnMouseDown, "true");
+    document.addEventListener("touchmove", OnMouseMove, "true");
+    document.addEventListener("touchend", OnMouseUp, "true");
+
+//   document.onmousedown = document.ontouchstart = OnMouseDown;
+//   document.onmouseup = document.ontouchend = OnMouseUp;
 }
 
 function OnMouseDown(e)
@@ -356,9 +365,8 @@ function OnMouseDown(e)
 		_offsetX = ExtractNumber(_dragElement.offset().left);
 		
 		// tell our code to start moving the element with the mouse
-		document.onmousemove = OnMouseMove;
-		document.ontouchmove = OnMouseMove;
-	
+		//document.onmousemove = document.ontouchmove = OnMouseMove;
+		
 		return false;
 	}
 }
@@ -372,6 +380,8 @@ function ExtractNumber(value)
 
 function OnMouseMove(e)
 {
+  if (_dragElement == null) return;
+  
   var curPos;
   if (e.touches && e.touches.length) {
     curPos = e.touches[0].clientX;
@@ -451,8 +461,8 @@ function OnMouseUp(e)
     }
     
 		// reset
-		document.onmousemove = null;
-		document.MozTouchMove = null;
+// 		document.onmousemove = null;
+// 		document.MozTouchMove = null;
 
 		_dragElement = null;
 		wasDragged = false;
