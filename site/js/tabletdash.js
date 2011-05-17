@@ -319,17 +319,20 @@ function createAppListItem(install)
 /////////////// screen paging code for dashboard
 
 // this is simply a shortcut for the eyes and fingers
-var _startX = 0;			// mouse starting positions
-var _offsetX = 0;			// current element offset
-var _dragElement;			// needs to be passed from OnMouseDown to OnMouseMove
+var _startX = 0;			// mouse starting position
+var _startY = 0;
 
+var _offsetX = 0;			// current element offset
+
+var _dragElement = null;
+var dragStartTime = 0;
 var numPages = 0;
 
-var dragstart = 0;
 
-function InitPaging(count)
+function InitPaging(count, pageObject)
 {
   numPages = count;
+  _dragElement = pageObject;
   
 //     document.addEventListener("mousedown", OnMouseDown, "true");
 //     document.addEventListener("mousemove", OnMouseMove, "true");
@@ -343,27 +346,23 @@ function InitPaging(count)
 function OnMouseDown(e)
 {    
   e.preventDefault();
-  dragStart = e.timeStamp;
+  dragStartTime = e.timeStamp;
   
-  //might not need this
-	_dragElement = $(".dashboard");
 	
- 	if (e.button == 0)
- 	{
-		// grab the mouse position
-		if (e.touches && e.touches.length) {
-		  _startX = e.touches[0].clientX;
-		  console.log("TOUCHDOWN touch[0].clientX: " + _startX);
-		} else {
-		  _startX = e.clientX;
-		  console.log("TOUCHDOWN clientX: " + _startX);
-    }
+  // grab the mouse position
+  if (e.touches && e.touches.length) {
+    _startX = e.touches[0].clientX;
+    _startY = e.touches[0].clientY;
+    console.log("TOUCHDOWN touch[0].clientX: " + _startX);
+  } else {
+    console.log("bad touchstart event");
+    return;
+  }
 		
-		// grab the clicked element's position
-		_offsetX = ExtractNumber(_dragElement.offset().left);
+  // grab the clicked element's position
+  _offsetX = ExtractNumber(_dragElement.offset().left);
 				
 		return false;
- 	}
 }
 
 function ExtractNumber(value)
@@ -375,7 +374,7 @@ function ExtractNumber(value)
 
 function OnMouseMove(e)
 {
-  if (_dragElement == undefined) { console.log("ignored move"); return; }
+  if (dragStartTime == 0) { console.log("ignored move"); return; }
     
   e.preventDefault();
   
@@ -400,76 +399,77 @@ function OnMouseUp(e)
 {    
   e.preventDefault();
 
-  var curPos;
-  if (e.touches && e.touches.length) {
-    curPos = e.touches[0].clientX;
-    console.log("TOUCHUP touch[0].clientX: " + curPos);
+  var _endX, _endY;
+  
+  if (e.changedTouches && e.changedTouches.length) {
+    _endX = e.changedTouches[0].clientX;
+    _endY = e.changedTouches[0].clientY;
+
+    console.log("TOUCHUP changedTouches[0].clientX: " + _endX);
   } else {
-    curPos = e.clientX;
-    console.log("TOUCHUP clientX: " + curPos);
+    console.log("bad touchend event");
+    return;
   }
 
-  var quick = (e.timeStamp - dragStart < 200);
-  var small = Math.abs(curPos - _startX) < 10;
+  var quick = (e.timeStamp - dragStartTime < 200);
+  var small = Math.abs(_endX - _startX) < 10;
   
   var flick = quick && !small;
   var tap =  small;
   var drag = !quick && !small;
     
-	if (_dragElement != null)
-	{
-	  if (tap) {
-	        console.log("was tapped");
-          if (e.target.parentNode.className == "icon") {
-              var origin32 = $(e.target.parentNode).attr("origin32");
-              navigator.apps.mgmt.launch(Base32.decode(origin32));
-	        }
-    } else if (flick) {
-      //we go to the next page in the direction specified by the flick
-      console.log("was flicked");
+  if (tap) {
+    //NEED TO CHECK Y OFFSET!  THEY MAY HAVE MOVED OFF ICON
+    console.log("was tapped");
+    if (e.target.parentNode.className == "icon") {
+        var origin32 = $(e.target.parentNode).attr("origin32");
+        navigator.apps.mgmt.launch(Base32.decode(origin32));
+    }
+  } else if (flick) {
+    //we go to the next page in the direction specified by the flick
+    console.log("was flicked");
 
-      //left or right?
-      var dir = (curPos - _startX) > 0;
-      
-      var newPos = _offsetX;
-      if (dir) {
-        newPos += screenWidth; 
-        if (newPos > 0) newPos = 0;
-      } else {
-        newPos -= pageWidth;
-        if (newPos < ((numPages - 1) * screenWidth * -1)) newPos = ((numPages - 1) * screenWidth * -1);
-      }
-          
-      _dragElement.animate({left: newPos}, 250);
+    //left or right?
+    var dir = (_endX - _startX) > 0;
+    
+    var newPos = _offsetX;
+    if (dir) {
+      newPos += screenWidth; 
+      if (newPos > 0) newPos = 0;
+    } else {
+      newPos -= pageWidth;
+      if (newPos < ((numPages - 1) * screenWidth * -1)) newPos = ((numPages - 1) * screenWidth * -1);
+    }
+        
+    _dragElement.animate({left: newPos}, 250);
 
-    } else { //drag, which may or may not go to the next page
-      console.log("was dragged");
-      e.preventDefault();
-      var snapPage = 0;
-      
-      if (_dragElement.position().left < 0) {
-          var offset = Math.abs(_dragElement.position().left);
-          var snapPage = Math.floor(offset / screenWidth);
-          var remainder = offset - (snapPage * screenWidth);
-          
-          if ( remainder > Math.floor(screenWidth / 2) ) {
-            snapPage++;
-          }
-          
-      }
-      
-      if (snapPage >= numPages) snapPage = numPages - 1;
-      
-      _dragElement.animate({left: (snapPage * screenWidth * -1) }, 250);
+  } else { //drag, which may or may not go to the next page
+    console.log("was dragged");
+    e.preventDefault();
+    var snapPage = 0;
+    
+    if (_dragElement.position().left < 0) {
+        var offset = Math.abs(_dragElement.position().left);
+        var snapPage = Math.floor(offset / screenWidth);
+        var remainder = offset - (snapPage * screenWidth);
+        
+        if ( remainder > Math.floor(screenWidth / 2) ) {
+          snapPage++;
+        }
+        
     }
     
-		_dragElement = null;
-		dragStart = 0;
-	}
+    if (snapPage >= numPages) snapPage = numPages - 1;
+    
+    _dragElement.animate({left: (snapPage * screenWidth * -1) }, 250);
+  }
+  
+  _dragElement = null;
+  dragStartTime = 0;
 }
 
 //hard coded temporarily
-InitPaging(5);
+InitPaging(5, $(".dashboard"));
 
 ////////////////
 
