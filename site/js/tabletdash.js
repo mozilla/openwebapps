@@ -336,10 +336,9 @@ function InitPaging(count)
     document.addEventListener("mouseup", OnMouseUp, "true");
 
     document.addEventListener("touchstart", OnMouseDown, "true");
+    document.addEventListener("touchmove", OnMouseMove, "true");
     document.addEventListener("touchend", OnMouseUp, "true");
 
-//   document.onmousedown = document.ontouchstart = OnMouseDown;
-//   document.onmouseup = document.ontouchend = OnMouseUp;
 }
 
 function OnMouseDown(e)
@@ -362,12 +361,7 @@ function OnMouseDown(e)
 		
 		// grab the clicked element's position
 		_offsetX = ExtractNumber(_dragElement.offset().left);
-		
-		document.addEventListener("touchmove", OnMouseMove, "true");
-
-		// tell our code to start moving the element with the mouse
-		//document.onmousemove = document.ontouchmove = OnMouseMove;
-		
+				
 		return false;
 	}
 }
@@ -381,6 +375,8 @@ function ExtractNumber(value)
 
 function OnMouseMove(e)
 {
+  e.preventDefault();
+  
   if (_dragElement == null) return;
   
   var curPos;
@@ -461,12 +457,6 @@ function OnMouseUp(e)
       _dragElement.animate({left: (snapPage * screenWidth * -1) }, 250);
     }
     
-		// reset
-				document.removeEventListener("touchmove", OnMouseMove, "true");
-
-// 		document.onmousemove = null;
-// 		document.MozTouchMove = null;
-
 		_dragElement = null;
 		wasDragged = false;
 		dragStart = 0;
