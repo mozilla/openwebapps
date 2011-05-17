@@ -336,7 +336,6 @@ function InitPaging(count)
     document.addEventListener("mouseup", OnMouseUp, "true");
 
     document.addEventListener("touchstart", OnMouseDown, "true");
-    document.addEventListener("touchmove", OnMouseMove, "true");
     document.addEventListener("touchend", OnMouseUp, "true");
 
 //   document.onmousedown = document.ontouchstart = OnMouseDown;
@@ -364,6 +363,8 @@ function OnMouseDown(e)
 		// grab the clicked element's position
 		_offsetX = ExtractNumber(_dragElement.offset().left);
 		
+		document.addEventListener("touchmove", OnMouseMove, "true");
+
 		// tell our code to start moving the element with the mouse
 		//document.onmousemove = document.ontouchmove = OnMouseMove;
 		
@@ -461,6 +462,8 @@ function OnMouseUp(e)
     }
     
 		// reset
+				document.removeEventListener("touchmove", OnMouseMove, "true");
+
 // 		document.onmousemove = null;
 // 		document.MozTouchMove = null;
 
