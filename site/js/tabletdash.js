@@ -329,10 +329,9 @@ var dragStartTime = 0;
 var numPages = 0;
 
 
-function InitPaging(count, pageObject)
+function InitPaging(count)
 {
   numPages = count;
-  _dragElement = pageObject;
   
 //     document.addEventListener("mousedown", OnMouseDown, "true");
 //     document.addEventListener("mousemove", OnMouseMove, "true");
@@ -348,7 +347,8 @@ function OnMouseDown(e)
   e.preventDefault();
   dragStartTime = e.timeStamp;
   
-	
+	_dragElement = $(".dashboard");
+
   // grab the mouse position
   if (e.touches && e.touches.length) {
     _startX = e.touches[0].clientX;
@@ -469,7 +469,7 @@ function OnMouseUp(e)
 }
 
 //hard coded temporarily
-InitPaging(5, $(".dashboard"));
+InitPaging(5);
 
 ////////////////
 
