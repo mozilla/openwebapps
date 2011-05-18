@@ -40,8 +40,6 @@ var gApps = {};
 
 //the saved state (app icon arrangement, mostly) for the dashboard
 var gDashboardState = {};
-//pages is a list of the known pages.  each page contains an array of apps refs.
-gDashboardState.pages = [];
 
 
 function getWindowHeight() {
@@ -146,14 +144,16 @@ function keyCount(obj) {
 function checkSavedData(save) {
   //do a basic structure check on our saved data
   var emptyState = {};
-  emptyState.appsInDock = [];
-  emptyState.widgetPositions = {};
 
   if (save && (typeof save == 'object')) {
-    if (save.appsInDock && $.isArray(save.appsInDock) && save.widgetPositions && (typeof save.widgetPositions == 'object')) return save;
+    if (save.pages && $.isArray(save.pages)) return save;
   }
   return emptyState;
 }
+
+// window.onresize = function() {
+//     updateDashboard();
+// }
 
 
 
@@ -161,20 +161,52 @@ function checkSavedData(save) {
 // and then proceeds to bring the visual depiction into synchrony with the data, with the least visual interruption.
 function updateDashboard( completionCallback ) {
     //both the app list and dashboard data functions are asynchronous, so we need to do everything in the callback
+    
+      //calculate various sizes of elements based on the window size, and set the background
       computeLayoutVars();
       $(".background").css({width: screenWidth, height: screenHeight});
-      $(".dashboard").css({width: (5 * screenWidth) });
-      $(".page").css({width: pageWidth, height: screenHeight});
       
       navigator.apps.mgmt.list( function (listOfInstalledApps) {
           
           gApps = listOfInstalledApps;
 
+          //tag them
+          for (origin in gApps) {
+            try {
+                //Tag the items with a base32 version of their url to use as an ID if they don't have it already
+                if (gApps[origin].origin32 == undefined) { 
+                  gApps[origin].origin32 = Base32.encode(origin); 
+                }        
+            } catch (e) {
+              if (typeof console !== "undefined") console.log("Error while adding base32 ID to app " + origin + ": " + e);
+            }
+          }
+
+
           //now, in the list callback, load the dashboard state
-          navigator.apps.mgmt.loadState( function (dashState) {
+          navigator.apps.mgmt.loadState( function (dashState) 
+          {
               gDashboardState = checkSavedData(dashState);
               
-              renderList();
+              //if we get an empty dashboard state here, then we will just stuff everything into pages as we find them
+              if (gDashboardState.pages == undefined) {
+              
+                //create the right number of pages to hold everything
+                gDashboardState.pages = [];
+                
+                //put 20 apps into each page, or as many as we have
+                var a=0;
+                for (origin in gApps) {
+                  gApps[origin].origin32 = Base32.encode(origin);
+                  if (gDashboardState.pages[Math.floor(a/20)] == undefined) { gDashboardState.pages[Math.floor(a/20)] = []; }
+                  gDashboardState.pages[Math.floor(a/20)][(a % 20)] = gApps[origin].origin32;
+                  a++;
+                }
+                //save this ias the new state
+                saveDashboardState();
+              }
+              
+              layoutPages();
   
               //and call the dream within a dream within a dream callback.  if it exists.
               if (completionCallback) { completionCallback(); };
@@ -186,37 +218,23 @@ function updateDashboard( completionCallback ) {
 
 //create the full app list, and sort them for display
 // here is also where I cache the base32 version of the origin into the app
-function renderList(andLaunch) {
+function layoutPages() {
   if (!gApps) return;
   //clear the list
-  $('.app').remove();
+  $('.page').remove();
   
-  var results = [];
-  
-  for (origin in gApps) {
-    try {
-      
-      //BASE32 ENCODE HERE ONLY
-      if ( ! gApps[origin].origin32) { gApps[origin].origin32 = Base32.encode(origin); };
-         results.push(gApps[origin]);
-    } catch (e) {
-      if (typeof console !== "undefined") console.log("Error while creating list icon for app " + origin + ": " + e);
+    
+  //now for each page, build zero to 20 app icon items, and put them into the page
+  for (var p = 0; p < gDashboardState.pages.length; p++) {
+    //add the page div
+    var nextPage = $("<div/>").addClass("page").attr("id", "page" + p);
+    $(".dashboard").append(nextPage);
+    
+    //put the apps in
+    for (var a = 0; a < gDashboardState.pages[p].length; a++) {
+        nextPage.append(createAppItem( findInstallForOrigin32(gDashboardState.pages[p][a]) ));
     }
-  }
-  
-  results.sort(function(a,b) {return (a.manifest.name > b.manifest.name) });
-  
-  //HACK HACK REMOVE REMOVE
-  for ( var i = 0; i < results.length && i < 20; i++ ) {
-    try {
-        $(".applist").append(createAppListItem(results[i]));
-    } catch (e) {
-      if (typeof console !== "undefined") console.log("Error while inserting list icon for app " + results[i].origin + ": " + e);
-    }
-  }
-  if (results.length == 1 && andLaunch)
-  {
-    navigator.apps.mgmt.launch(results[0].origin);
+    
   }
 }
 
@@ -261,7 +279,7 @@ function getSmallIcon(manifest) {
 }
 
 
-function createAppListItem(install)
+function createAppItem(install)
 {
 
   var appDisplayFrame = $("<div/>").addClass("appDisplayFrame");
