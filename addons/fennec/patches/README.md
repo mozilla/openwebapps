@@ -4,8 +4,9 @@ this is use mercurial patch queues. To enable mq, add the line
 
     hgext.mq =
 
-to your .hgrc. Subsequently, copy all the patches in this directory to
-.hg/patches/ in your mozilla-central checkout. To apply them:
+to the [extensions] section of your .hgrc. Subsequently, copy all the patches
+in this directory to .hg/patches/ in your mozilla-central checkout.
+To apply them:
 
     hg qpush -a
 
