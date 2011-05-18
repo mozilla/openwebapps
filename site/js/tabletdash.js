@@ -64,6 +64,8 @@ var appBoxHeight = 0;
 var appIconSize = 0;
 var appNameSize = 0;
 
+var numPages = 0;
+
 
 //I'm assuming 4 x 5 or 5 x 4 apps per page
 function computeLayoutVars() {
@@ -95,6 +97,10 @@ function computeLayoutVars() {
 //************** document.ready()
 
 $(document).ready(function() {
+
+    document.addEventListener("touchstart", OnMouseDown, "true");
+    document.addEventListener("touchmove", OnMouseMove, "true");
+    document.addEventListener("touchend", OnMouseUp, "true");
 
 
 
@@ -206,6 +212,9 @@ function updateDashboard( completionCallback ) {
                 saveDashboardState();
               }
               
+              numPages = gDashboardState.pages.length;
+              console.log("numPages: " + numPages);
+
               layoutPages();
   
               //and call the dream within a dream within a dream callback.  if it exists.
@@ -344,21 +353,8 @@ var _offsetX = 0;			// current element offset
 
 var _dragElement = null;
 var dragStartTime = 0;
-var numPages = 0;
 
 
-function InitPaging(count)
-{
-  numPages = count;
-  
-//     document.addEventListener("mousedown", OnMouseDown, "true");
-//     document.addEventListener("mousemove", OnMouseMove, "true");
-//     document.addEventListener("mouseup", OnMouseUp, "true");
-
-    document.addEventListener("touchstart", OnMouseDown, "true");
-    document.addEventListener("touchmove", OnMouseMove, "true");
-    document.addEventListener("touchend", OnMouseUp, "true");
-}
 
 function OnMouseDown(e)
 {    
@@ -486,8 +482,6 @@ function OnMouseUp(e)
   dragStartTime = 0;
 }
 
-//hard coded temporarily
-InitPaging(5);
 
 ////////////////
 
