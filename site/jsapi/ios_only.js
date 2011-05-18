@@ -16,7 +16,7 @@ navigator.apps = (function() {
             }
         };
         }
-        onsuccess(webapps);
+        if (onsuccess) onsuccess(webapps);
     }
 
     function doLaunch(id, onsuccess, onerror) {
@@ -24,11 +24,11 @@ navigator.apps = (function() {
 
     function doSaveState(state, onsuccess) {
         _state = state;
-        onsuccess(true);
+        if (onsuccess) onsuccess(true);
     }
 
     function doLoadState(onsuccess) {
-        onsuccess(_state);
+        if (onsuccess) onsuccess(_state);
     }
 
     return {
