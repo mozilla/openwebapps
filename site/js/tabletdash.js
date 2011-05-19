@@ -70,7 +70,7 @@ var numPages = 0;
 //I'm assuming 4 x 5 or 5 x 4 apps per page
 function computeLayoutVars() {
   screenWidth = getWindowWidth();
-  pageWidth = screenWidth-4;
+  pageWidth = screenWidth;//-4;
   screenHeight = getWindowHeight();
   
   if (screenWidth > screenHeight)  {
@@ -101,6 +101,10 @@ $(document).ready(function() {
     document.addEventListener("touchstart", OnMouseDown, "true");
     document.addEventListener("touchmove", OnMouseMove, "true");
     document.addEventListener("touchend", OnMouseUp, "true");
+
+    document.addEventListener("mousedown", OnMouseDown, "true");
+    document.addEventListener("mousemove", OnMouseMove, "true");
+    document.addEventListener("mouseup", OnMouseUp, "true");
 
 
 
@@ -232,12 +236,17 @@ function layoutPages() {
   //clear the list
   $('.page').remove();
   
+  $('.dashboard').css({width: (gDashboardState.pages.length * screenWidth), height: screenHeight});
     
   //now for each page, build zero to 20 app icon items, and put them into the page
   for (var p = 0; p < gDashboardState.pages.length; p++) {
     //add the page div
     var nextPage = $("<div/>").addClass("page").attr("id", "page" + p);
+    
     $(".dashboard").append(nextPage);
+    nextPage.css({width: screenWidth, height: screenHeight});
+
+    
     
     //put the apps in
     for (var a = 0; a < gDashboardState.pages[p].length; a++) {
@@ -346,12 +355,12 @@ function createAppItem(install)
 /////////////// screen paging code for dashboard
 
 // this is simply a shortcut for the eyes and fingers
-var _startX = 0;			// mouse starting position
-var _startY = 0;
+var downX = 0;			// mouse starting position
+var downY = 0;
 
-var _offsetX = 0;			// current element offset
+var elementLeft = 0;			// current element offset
 
-var _dragElement = null;
+var _dragElement;
 var dragStartTime = 0;
 
 
@@ -361,22 +370,20 @@ function OnMouseDown(e)
   e.preventDefault();
   dragStartTime = e.timeStamp;
   
-	_dragElement = $(".dashboard");
+  if (_dragElement == undefined) _dragElement = $(".dashboard");
 
   // grab the mouse position
   if (e.touches && e.touches.length) {
-    _startX = e.touches[0].clientX;
-    _startY = e.touches[0].clientY;
-    console.log("TOUCHDOWN touch[0].clientX: " + _startX);
+    downX = e.touches[0].clientX;
+    downY = e.touches[0].clientY;
   } else {
-    console.log("bad touchstart event");
-    return;
+    downX = e.clientX;
+    downY = e.clientY;
   }
 		
-  // grab the clicked element's position
-  _offsetX = ExtractNumber(_dragElement.offset().left);
+  // grab the clicked element's offset to begin with
+  elementLeft = ExtractNumber(_dragElement.offset().left);
 				
-		return false;
 }
 
 function ExtractNumber(value)
@@ -396,14 +403,12 @@ function OnMouseMove(e)
   var curPos;
   if (e.touches && e.touches.length) {
     curPos = e.touches[0].clientX;
-		console.log("TOUCHMOVE touch[0].clientX: " + curPos);
   } else {
     curPos = e.clientX;
-    console.log("TOUCHMOVE clientX: " + curPos);
   }
 
 	// this is the actual "drag code"
-	var newPos = (_offsetX + curPos - _startX) + 'px';
+	var newPos = (elementLeft + curPos - downX) + 'px';
 	_dragElement.css("left", newPos);
 
 }
@@ -418,35 +423,31 @@ function OnMouseUp(e)
   if (e.changedTouches && e.changedTouches.length) {
     _endX = e.changedTouches[0].clientX;
     _endY = e.changedTouches[0].clientY;
-
-    console.log("TOUCHUP changedTouches[0].clientX: " + _endX);
   } else {
-    console.log("bad touchend event");
-    return;
+    _endX = e.clientX;
+    _endY = e.clientY;
   }
 
   var quick = (e.timeStamp - dragStartTime < 200);
-  var small = Math.abs(_endX - _startX) < 10;
+  var small = Math.abs(_endX - downX) < 10;
   
   var flick = quick && !small;
   var tap =  small;
-  var drag = !quick && !small;
+  var drag = !quick;
     
-  if (tap) {
+  if (tap && (e.target.parentNode.className == "icon")) {
     //NEED TO CHECK Y OFFSET!  THEY MAY HAVE MOVED OFF ICON
-    console.log("was tapped");
-    if (e.target.parentNode.className == "icon") {
-        var origin32 = $(e.target.parentNode).attr("origin32");
-        navigator.apps.mgmt.launch(Base32.decode(origin32));
-    }
+    console.log("app tapped");
+    var origin32 = $(e.target.parentNode).attr("origin32");
+    navigator.apps.mgmt.launch(Base32.decode(origin32));
   } else if (flick) {
     //we go to the next page in the direction specified by the flick
     console.log("was flicked");
 
     //left or right?
-    var dir = (_endX - _startX) > 0;
+    var dir = (_endX - downX) > 0;
     
-    var newPos = _offsetX;
+    var newPos = elementLeft;
     if (dir) {
       newPos += screenWidth; 
       if (newPos > 0) newPos = 0;
@@ -478,7 +479,7 @@ function OnMouseUp(e)
     _dragElement.animate({left: (snapPage * screenWidth * -1) }, 250);
   }
   
-  _dragElement = null;
+  //_dragElement = null;
   dragStartTime = 0;
 }
 

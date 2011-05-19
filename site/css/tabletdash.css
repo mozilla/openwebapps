@@ -33,16 +33,12 @@ body {
 
 .dashboard {
   position: relative;
-  border: 0px;
-  margin: 0px;
 }
 
 
 .page {
   display: inline-block; 
-  border: 0px;
-  margin: 0px;
-  padding: 0px;
+  vertical-align: top;
 }
 
 
