@@ -98,13 +98,13 @@ function computeLayoutVars() {
 
 $(document).ready(function() {
 
-    document.addEventListener("touchstart", OnMouseDown, "true");
-    document.addEventListener("touchmove", OnMouseMove, "true");
-    document.addEventListener("touchend", OnMouseUp, "true");
+//     document.addEventListener("touchstart", OnMouseDown, "true");
+//     document.addEventListener("touchmove", OnMouseMove, "true");
+//     document.addEventListener("touchend", OnMouseUp, "true");
 
-    document.addEventListener("mousedown", OnMouseDown, "true");
-    document.addEventListener("mousemove", OnMouseMove, "true");
-    document.addEventListener("mouseup", OnMouseUp, "true");
+//     document.addEventListener("mousedown", OnMouseDown, "true");
+//     document.addEventListener("mousemove", OnMouseMove, "true");
+//     document.addEventListener("mouseup", OnMouseUp, "true");
 
 
 
