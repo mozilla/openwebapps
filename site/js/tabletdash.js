@@ -107,6 +107,12 @@ $(document).ready(function() {
 //     document.addEventListener("mousemove", OnMouseMove, "true");
 //     document.addEventListener("mouseup", OnMouseUp, "true");
 
+
+  window.addEventListener("MozOrientation", function(e) {
+      console.log("ROTATION EVENT");
+      updateDashboard(); 
+      }, true);
+
   document.addEventListener("scroll", function(e) {
     console.log("SCROLLED");
   }, false);
@@ -194,6 +200,7 @@ function checkSavedData(save) {
 // and then proceeds to bring the visual depiction into synchrony with the data, with the least visual interruption.
 function updateDashboard( completionCallback ) {
     //both the app list and dashboard data functions are asynchronous, so we need to do everything in the callback
+    console.log("UPDATING DASHBOARD");
     
       //calculate various sizes of elements based on the window size, and set the background
       computeLayoutVars();
@@ -366,7 +373,7 @@ function createAppItem(install)
               color: '#ffffff'});
 
   appName.text(install.manifest.name);  
-  appName.disableSelection();
+//   appName.disableSelection();
 
   appDisplayFrame.append(appName);
                           
