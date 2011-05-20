@@ -66,6 +66,7 @@ var appNameSize = 0;
 
 var numPages = 0;
 
+var currentOffset = 0;
 
 //I'm assuming 4 x 5 or 5 x 4 apps per page
 function computeLayoutVars() {
@@ -91,7 +92,7 @@ function computeLayoutVars() {
   console.log("appBoxHeight: " + appBoxHeight);
   console.log("appIconSize: " + appIconSize);
   console.log("appNameSize: " + appNameSize);
-
+  console.log("FOO win: " + window.innerWidth + "BAR : " + document.width);
 }
 
 //************** document.ready()
@@ -106,8 +107,30 @@ $(document).ready(function() {
 //     document.addEventListener("mousemove", OnMouseMove, "true");
 //     document.addEventListener("mouseup", OnMouseUp, "true");
 
+  document.addEventListener("scroll", function(e) {
+    console.log("SCROLLED");
+  }, false);
 
-
+  document.addEventListener("touchend", function(e) {
+    var currentOffset = window.scrollX;
+    console.log("ENDED! " + currentOffset);
+    e.preventDefault();
+    var snapPage = 0;
+    
+    if (currentOffset > 0) {
+        var snapPage = Math.floor(currentOffset / screenWidth);
+        var remainder = currentOffset - (snapPage * screenWidth);
+        
+        if ( remainder > Math.floor(screenWidth / 2) ) {
+          snapPage++;
+        }
+        
+    }
+    
+    if (snapPage >= numPages) snapPage = numPages - 1;
+    window.scrollTo(snapPage * screenWidth);
+  }, true);
+  
   // can this user use myapps?
    var w = window;
    if (w.JSON && w.postMessage) {
@@ -328,9 +351,11 @@ function createAppItem(install)
   } else {
     appIcon.attr('src', iconImg);  
   }
-  
+ 
+  clickyIcon.click(function() {
+    navigator.apps.mgmt.launch(install.origin);
+  });
   clickyIcon.append(appIcon);
-
   appDisplayFrame.append(clickyIcon);
 
 

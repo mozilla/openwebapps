@@ -31,6 +31,8 @@ body {
 
   background-image: url('../img/tabletdash_bg.png');
   background-repeat: no-repeat;
+  background-attachment: fixed;
+  overflow: scroll;
 }
 
 .dashboard {
