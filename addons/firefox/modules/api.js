@@ -293,17 +293,15 @@ FFRepoImpl.prototype = {
                     // FIXME: let's do this with invisible iframes, not with a new tab
                     
                     // FIXME: get the real email out of the license
-                    dump(JSON.stringify(app.install_data));
                     let parsed_license = jwt.WebTokenParser.parse(app.install_data.license).getJSONObject();
-                    dump(JSON.stringify(parsed_license));
                     var email = parsed_license['user'];
 
-                    // authentication tab
-                    let auth_tab = recentWindow.gBrowser.addTab("resource://openwebapps/chrome/content/preauth.html#" + encodeURIComponent(email));
+                    var preauth_url = "resource://openwebapps/chrome/content/preauth.html#" + encodeURIComponent(email);
 
-                    let get_token_and_go = function() {
-                        let auth_doc = recentWindow.gBrowser.getBrowserForTab(auth_tab).contentDocument;
-                        if (auth_doc) {
+                    // do this in an iframe
+                    utils.create_iframe(recentWindow, preauth_url, function(iframe, channel) {
+                        let auth_doc = iframe.contentDocument;
+                        let get_token_and_go = function() {
                             let token = auth_doc.getElementById('token');
                             // get the token
                             if (token && (token.innerHTML != "")) {
@@ -312,18 +310,16 @@ FFRepoImpl.prototype = {
                                 recentWindow.gBrowser.pinTab(tab);
                                 recentWindow.gBrowser.selectedTab = tab;
                                 ss.setTabValue(tab, "appURL", url);
-
-                                // remove auth tab
-                                // recentWindow.gBrowser.removeTab(auth_tab);
+                                
+                                iframe.close();
                             } else {
                                 recentWindow.setTimeout(get_token_and_go, 250);
                             }
-                        } else {
-                            recentWindow.setTimeout(get_token_and_go, 250);
                         }
-                    }
-
-                    get_token_and_go();
+                        
+                        get_token_and_go();
+                    }, function(error) {
+                    });
 
                 } else {
                     // This is a very odd case: no browser windows are open, so open a new one.
