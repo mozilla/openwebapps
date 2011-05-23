@@ -63,6 +63,7 @@ var appBoxWidth = 0;
 var appBoxHeight = 0;
 var appIconSize = 0;
 var appNameSize = 0;
+var appNameFontSize = 0;
 
 var numPages = 0;
 
@@ -82,8 +83,9 @@ function computeLayoutVars() {
     appBoxHeight = Math.floor(screenHeight / 5);
   }
   
-  appIconSize = Math.floor(Math.min(appBoxWidth, appBoxHeight) / 2);
-  appNameSize = Math.floor(appIconSize * 1.5);
+  appIconSize = Math.floor(Math.min(appBoxWidth, appBoxHeight) / 2.5);
+  appNameSize = Math.floor(appBoxWidth * 0.8);
+  appNameFontSize = Math.max(Math.ceil(appIconSize/6), 10);
   
   console.log("screenWidth: " + screenWidth);
   console.log("screenHeight: " + screenHeight);
@@ -92,35 +94,61 @@ function computeLayoutVars() {
   console.log("appBoxHeight: " + appBoxHeight);
   console.log("appIconSize: " + appIconSize);
   console.log("appNameSize: " + appNameSize);
-  console.log("FOO win: " + window.innerWidth + "BAR : " + document.width);
+  console.log("appNameSize: " + appNameFontSize);
+
 }
 
 //************** document.ready()
 
 $(document).ready(function() {
 
-//     document.addEventListener("touchstart", OnMouseDown, "true");
-//     document.addEventListener("touchmove", OnMouseMove, "true");
-//     document.addEventListener("touchend", OnMouseUp, "true");
+  var downX = 0;
+  var downY = 0;
+  var appHit;
+  
+//   window.addEventListener("MozOrientation", function(e) {
+//       console.log("ROTATION EVENT");
+//       updateDashboard(); 
+//       }, true);
 
-//     document.addEventListener("mousedown", OnMouseDown, "true");
-//     document.addEventListener("mousemove", OnMouseMove, "true");
-//     document.addEventListener("mouseup", OnMouseUp, "true");
+//   document.addEventListener("scroll", function(e) {
+//     console.log("SCROLLED");
+//   }, false);
 
-
-  window.addEventListener("MozOrientation", function(e) {
-      console.log("ROTATION EVENT");
-      updateDashboard(); 
-      }, true);
-
-  document.addEventListener("scroll", function(e) {
-    console.log("SCROLLED");
+  document.addEventListener("touchstart", function(e) {
+    if (e.touches && e.touches.length) {
+      downX = e.touches[0].clientX;
+      downY = e.touches[0].clientY;
+      //now check to see if it hits on an icon, and if so, then highlight it
+      //appHit = <app icon that got touched>
+    } else {
+      downX = 0;
+      downY = 0;
+    } 
   }, false);
 
+  document.addEventListener("touchmove", function(e) {
+    if (appHit == undefined) return;
+    
+    if (e.touches && e.touches.length && downX != 0) {
+      if ( Math.abs(e.touches[0].clientX - downX) > 10) {
+        //un-highlight the tapped app
+        //appHit = <app icon that got touched>
+        appHit = undefined;
+      }
+    }
+  }, false);
+
+
   document.addEventListener("touchend", function(e) {
+  
+    if (appHit != undefined) {
+      //un-highlight the app that was touched
+      appHit = undefined;
+    }
+    
     var currentOffset = window.scrollX;
-    console.log("ENDED! " + currentOffset);
-    e.preventDefault();
+//    e.preventDefault();
     var snapPage = 0;
     
     if (currentOffset > 0) {
@@ -137,6 +165,9 @@ $(document).ready(function() {
     window.scrollTo(snapPage * screenWidth);
   }, true);
   
+  
+  
+//////////////////////////////////////////////////////////////////  
   // can this user use myapps?
    var w = window;
    if (w.JSON && w.postMessage) {
@@ -196,11 +227,11 @@ function checkSavedData(save) {
 
 
 
+
 //this is the primary UI function.  It loads the latest app list from disk, the latest dashboard state from disk,
 // and then proceeds to bring the visual depiction into synchrony with the data, with the least visual interruption.
 function updateDashboard( completionCallback ) {
     //both the app list and dashboard data functions are asynchronous, so we need to do everything in the callback
-    console.log("UPDATING DASHBOARD");
     
       //calculate various sizes of elements based on the window size, and set the background
       computeLayoutVars();
@@ -339,7 +370,7 @@ function createAppItem(install)
   clickyIcon.css({width: appIconSize, 
                   height: appIconSize, 
                   marginTop: ((appBoxHeight - appIconSize)/2) + "px", 
-                  marginBottom: ((appBoxHeight - appIconSize)/5) + "px",
+                  marginBottom: ((appBoxHeight - appIconSize)/8) + "px",
                   marginLeft: ((appBoxWidth - appIconSize)/2) + "px",
                   marginRight: ((appBoxWidth - appIconSize)/2) + "px", 
                   
@@ -368,13 +399,12 @@ function createAppItem(install)
 
   //TODO: size text to fit
   var appName = $("<div/>").addClass("listLabel");
-  appName.css({width: appIconSize * 1.4, 
-              "font-size":  Math.max(Math.ceil(appIconSize/5.5), 10),
+  appName.css({width: appNameSize, 
+              "font-face": "Lucida Bold",
+              "font-size":  appNameFontSize,
               color: '#ffffff'});
 
   appName.text(install.manifest.name);  
-//   appName.disableSelection();
-
   appDisplayFrame.append(appName);
                           
 
