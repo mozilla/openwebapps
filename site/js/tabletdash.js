@@ -98,6 +98,9 @@ function computeLayoutVars() {
 
 }
 
+//call it right away to prime the pump
+computeLayoutVars();
+
 //************** document.ready()
 
 $(document).ready(function() {
@@ -115,12 +118,21 @@ $(document).ready(function() {
 //     console.log("SCROLLED");
 //   }, false);
 
+  document.addEventListener("contextmenu", function(e) {
+    e.preventDefault();
+  }, true);
+
   document.addEventListener("touchstart", function(e) {
     if (e.touches && e.touches.length) {
       downX = e.touches[0].clientX;
       downY = e.touches[0].clientY;
+      
       //now check to see if it hits on an icon, and if so, then highlight it
-      //appHit = <app icon that got touched>
+      var theDiv = $(e.target.parentNode);
+      if (theDiv.hasClass("icon")) {
+            appHit = theDiv;
+            appHit.removeClass("iconFrame");
+      }
     } else {
       downX = 0;
       downY = 0;
@@ -131,10 +143,12 @@ $(document).ready(function() {
     if (appHit == undefined) return;
     
     if (e.touches && e.touches.length && downX != 0) {
-      if ( Math.abs(e.touches[0].clientX - downX) > 10) {
+      if ( Math.abs(e.touches[0].clientX - downX) > 10 || Math.abs(e.touches[0].clientY - downY) > 10) {
         //un-highlight the tapped app
-        //appHit = <app icon that got touched>
-        appHit = undefined;
+        if (appHit != undefined) {
+          appHit.addClass("iconFrame");
+          appHit = undefined;
+        }
       }
     }
   }, false);
@@ -143,26 +157,25 @@ $(document).ready(function() {
   document.addEventListener("touchend", function(e) {
   
     if (appHit != undefined) {
-      //un-highlight the app that was touched
+      appHit.addClass("iconFrame");
       appHit = undefined;
     }
     
-    var currentOffset = window.scrollX;
-//    e.preventDefault();
-    var snapPage = 0;
-    
-    if (currentOffset > 0) {
-        var snapPage = Math.floor(currentOffset / screenWidth);
-        var remainder = currentOffset - (snapPage * screenWidth);
-        
-        if ( remainder > Math.floor(screenWidth / 2) ) {
-          snapPage++;
-        }
-        
-    }
-    
-    if (snapPage >= numPages) snapPage = numPages - 1;
-    window.scrollTo(snapPage * screenWidth);
+//     var currentOffset = window.scrollX;
+//     var snapPage = 0;
+//     
+//     if (currentOffset > 0) {
+//         var snapPage = Math.floor(currentOffset / screenWidth);
+//         var remainder = currentOffset - (snapPage * screenWidth);
+//         
+//         if ( remainder > Math.floor(screenWidth / 2) ) {
+//           snapPage++;
+//         }
+//         
+//     }
+//     
+//     if (snapPage >= numPages) snapPage = numPages - 1;
+//     window.scrollTo(snapPage * screenWidth);
   }, true);
   
   
@@ -364,7 +377,7 @@ function createAppItem(install)
   var appDisplayFrame = $("<div/>").addClass("appDisplayFrame");
   appDisplayFrame.css({width: appBoxWidth, height: appBoxHeight});
   
-  var clickyIcon = $("<div/>").addClass("icon");
+  var clickyIcon = $("<div/>").addClass("icon").addClass("iconFrame");
   clickyIcon.attr("origin32", install.origin32);
 
   clickyIcon.css({width: appIconSize, 
@@ -417,224 +430,169 @@ function createAppItem(install)
 /////////////// screen paging code for dashboard
 
 // this is simply a shortcut for the eyes and fingers
-var downX = 0;			// mouse starting position
-var downY = 0;
-
-var elementLeft = 0;			// current element offset
-
-var _dragElement;
-var dragStartTime = 0;
 
 
-
-function OnMouseDown(e)
-{    
-  e.preventDefault();
-  dragStartTime = e.timeStamp;
-  
-  if (_dragElement == undefined) _dragElement = $(".dashboard");
-
-  // grab the mouse position
-  if (e.touches && e.touches.length) {
-    downX = e.touches[0].clientX;
-    downY = e.touches[0].clientY;
-  } else {
-    downX = e.clientX;
-    downY = e.clientY;
-  }
-		
-  // grab the clicked element's offset to begin with
-  elementLeft = ExtractNumber(_dragElement.offset().left);
-				
-}
-
-function ExtractNumber(value)
-{
-	var n = parseInt(value);
-	
-	return n == null || isNaN(n) ? 0 : n;
-}
-
-function OnMouseMove(e)
-{
-  if (dragStartTime == 0) { console.log("ignored move"); return; }
-    
-  e.preventDefault();
-  
-
-  var curPos;
-  if (e.touches && e.touches.length) {
-    curPos = e.touches[0].clientX;
-  } else {
-    curPos = e.clientX;
-  }
-
-	// this is the actual "drag code"
-	var newPos = (elementLeft + curPos - downX) + 'px';
-	_dragElement.css("left", newPos);
-
-}
-
-
-function OnMouseUp(e)
-{    
-  e.preventDefault();
-
-  var _endX, _endY;
-  
-  if (e.changedTouches && e.changedTouches.length) {
-    _endX = e.changedTouches[0].clientX;
-    _endY = e.changedTouches[0].clientY;
-  } else {
-    _endX = e.clientX;
-    _endY = e.clientY;
-  }
-
-  var quick = (e.timeStamp - dragStartTime < 200);
-  var small = Math.abs(_endX - downX) < 10;
-  
-  var flick = quick && !small;
-  var tap =  small;
-  var drag = !quick;
-    
-  if (tap && (e.target.parentNode.className == "icon")) {
-    //NEED TO CHECK Y OFFSET!  THEY MAY HAVE MOVED OFF ICON
-    console.log("app tapped");
-    var origin32 = $(e.target.parentNode).attr("origin32");
-    navigator.apps.mgmt.launch(Base32.decode(origin32));
-  } else if (flick) {
-    //we go to the next page in the direction specified by the flick
-    console.log("was flicked");
-
-    //left or right?
-    var dir = (_endX - downX) > 0;
-    
-    var newPos = elementLeft;
-    if (dir) {
-      newPos += screenWidth; 
-      if (newPos > 0) newPos = 0;
-    } else {
-      newPos -= pageWidth;
-      if (newPos < ((numPages - 1) * screenWidth * -1)) newPos = ((numPages - 1) * screenWidth * -1);
-    }
-        
-    _dragElement.animate({left: newPos}, 250);
-
-  } else { //drag, which may or may not go to the next page
-    console.log("was dragged");
-    e.preventDefault();
-    var snapPage = 0;
-    
-    if (_dragElement.position().left < 0) {
-        var offset = Math.abs(_dragElement.position().left);
-        var snapPage = Math.floor(offset / screenWidth);
-        var remainder = offset - (snapPage * screenWidth);
-        
-        if ( remainder > Math.floor(screenWidth / 2) ) {
-          snapPage++;
-        }
-        
-    }
-    
-    if (snapPage >= numPages) snapPage = numPages - 1;
-    
-    _dragElement.animate({left: (snapPage * screenWidth * -1) }, 250);
-  }
-  
-  //_dragElement = null;
-  dragStartTime = 0;
-}
-
-
-////////////////
-
-function formatDate(dateStr)
-{
-  if (!dateStr) return "null";
-
-  var now = new Date();
-  var then = new Date(dateStr);
-
-  if (then.getTime() > now.getTime()) {
-    return "the future";
-  }
-  else if (then.getMonth() != now.getMonth() ||  then.getDate() != now.getDate())
-  {
-     var dayDelta = (new Date().getTime() - then.getTime() ) / 1000 / 60 / 60 / 24 // hours
-     if (dayDelta < 2) str = "yesterday";
-     else if (dayDelta < 7) str = Math.floor(dayDelta) + " days ago";
-     else if (dayDelta < 14) str = "last week";
-     else if (dayDelta < 30) str = Math.floor(dayDelta) + " days ago";
-     else str = Math.floor(dayDelta /30)  + " month" + ((dayDelta/30>2)?"s":"") + " ago";
-  } else {
-      var str;
-      var hrs = then.getHours();
-      var mins = then.getMinutes();
-
-      var hr = Math.floor(Math.floor(hrs) % 12);
-      if (hr == 0) hr =12;
-      var mins = Math.floor(mins);
-      str = hr + ":" + (mins < 10 ? "0" : "") + Math.floor(mins) + " " + (hrs >= 12 ? "P.M." : "A.M.") + " today";
-  }
-  return str;
-}
-
-function onMessage(event)
-{
-  // unfreeze request message into object
-  var msg = JSON.parse(event.data);
-  if(!msg) {
-    return;
-  }
-}
-
-function onFocus(event)
-{
-//  updateDashboard( ) ;
-//   $("#filter").focus();
-}
-
-function updateLoginStatus() {
-  navigator.apps.mgmt.loginStatus(function (userInfo, loginInfo) {
-    if (! userInfo) {
-      $('#login-link a').attr('href', loginInfo.loginLink);
-      $('#login-link').show();
-    } else {
-      $('#username').text(userInfo.email);
-      $('#signed-in a').attr('href', loginInfo.logoutLink);
-      $('#signed-in').show();
-    }
-  });
-}
-
-
-if (window.addEventListener) {
-    window.addEventListener('message', onMessage, false);
-} else if(window.attachEvent) {
-    window.attachEvent('onmessage', onMessage);
-}
-
-if (window.addEventListener) {
-    window.addEventListener('focus', onFocus, false);
-} else if(window.attachEvent) {
-    window.attachEvent('onfocus', onFocus);
-}
-
-
-///////////////////////////////////////////////
-//modal dialog handling code below here
-
-function revealModal(divID)
-{
-    window.onscroll = function () { document.getElementById(divID).style.top = document.body.scrollTop; };
-    document.getElementById(divID).style.display = "block";
-    document.getElementById(divID).style.top = document.body.scrollTop;
-}
-
-function hideModal(divID)
-{
-    $("#appinfo").empty();
-    document.getElementById(divID).style.display = "none";
-}
-
-
+// var downX = 0;			// mouse starting position
+// var downY = 0;
+// 
+// var elementLeft = 0;			// current element offset
+// 
+// var _dragElement;
+// var dragStartTime = 0;
+// 
+// 
+// 
+// function OnMouseDown(e)
+// {    
+//   e.preventDefault();
+//   dragStartTime = e.timeStamp;
+//   
+//   if (_dragElement == undefined) _dragElement = $(".dashboard");
+// 
+//   // grab the mouse position
+//   if (e.touches && e.touches.length) {
+//     downX = e.touches[0].clientX;
+//     downY = e.touches[0].clientY;
+//   } else {
+//     downX = e.clientX;
+//     downY = e.clientY;
+//   }
+// 		
+//   // grab the clicked element's offset to begin with
+//   elementLeft = ExtractNumber(_dragElement.offset().left);
+// 				
+// }
+// 
+// function ExtractNumber(value)
+// {
+// 	var n = parseInt(value);
+// 	
+// 	return n == null || isNaN(n) ? 0 : n;
+// }
+// 
+// function OnMouseMove(e)
+// {
+//   if (dragStartTime == 0) { console.log("ignored move"); return; }
+//     
+//   e.preventDefault();
+//   
+// 
+//   var curPos;
+//   if (e.touches && e.touches.length) {
+//     curPos = e.touches[0].clientX;
+//   } else {
+//     curPos = e.clientX;
+//   }
+// 
+// 	// this is the actual "drag code"
+// 	var newPos = (elementLeft + curPos - downX) + 'px';
+// 	_dragElement.css("left", newPos);
+// 
+// }
+// 
+// 
+// function OnMouseUp(e)
+// {    
+//   e.preventDefault();
+// 
+//   var _endX, _endY;
+//   
+//   if (e.changedTouches && e.changedTouches.length) {
+//     _endX = e.changedTouches[0].clientX;
+//     _endY = e.changedTouches[0].clientY;
+//   } else {
+//     _endX = e.clientX;
+//     _endY = e.clientY;
+//   }
+// 
+//   var quick = (e.timeStamp - dragStartTime < 200);
+//   var small = Math.abs(_endX - downX) < 10;
+//   
+//   var flick = quick && !small;
+//   var tap =  small;
+//   var drag = !quick;
+//     
+//   if (tap && (e.target.parentNode.className == "icon")) {
+//     //NEED TO CHECK Y OFFSET!  THEY MAY HAVE MOVED OFF ICON
+//     console.log("app tapped");
+//     var origin32 = $(e.target.parentNode).attr("origin32");
+//     navigator.apps.mgmt.launch(Base32.decode(origin32));
+//   } else if (flick) {
+//     //we go to the next page in the direction specified by the flick
+//     console.log("was flicked");
+// 
+//     //left or right?
+//     var dir = (_endX - downX) > 0;
+//     
+//     var newPos = elementLeft;
+//     if (dir) {
+//       newPos += screenWidth; 
+//       if (newPos > 0) newPos = 0;
+//     } else {
+//       newPos -= pageWidth;
+//       if (newPos < ((numPages - 1) * screenWidth * -1)) newPos = ((numPages - 1) * screenWidth * -1);
+//     }
+//         
+//     _dragElement.animate({left: newPos}, 250);
+// 
+//   } else { //drag, which may or may not go to the next page
+//     console.log("was dragged");
+//     e.preventDefault();
+//     var snapPage = 0;
+//     
+//     if (_dragElement.position().left < 0) {
+//         var offset = Math.abs(_dragElement.position().left);
+//         var snapPage = Math.floor(offset / screenWidth);
+//         var remainder = offset - (snapPage * screenWidth);
+//         
+//         if ( remainder > Math.floor(screenWidth / 2) ) {
+//           snapPage++;
+//         }
+//         
+//     }
+//     
+//     if (snapPage >= numPages) snapPage = numPages - 1;
+//     
+//     _dragElement.animate({left: (snapPage * screenWidth * -1) }, 250);
+//   }
+//   
+//   //_dragElement = null;
+//   dragStartTime = 0;
+// }
+// 
+// 
+// ////////////////
+// 
+// 
+// function onFocus(event)
+// {
+// //  updateDashboard( ) ;
+// //   $("#filter").focus();
+// }
+// 
+// function updateLoginStatus() {
+//   navigator.apps.mgmt.loginStatus(function (userInfo, loginInfo) {
+//     if (! userInfo) {
+//       $('#login-link a').attr('href', loginInfo.loginLink);
+//       $('#login-link').show();
+//     } else {
+//       $('#username').text(userInfo.email);
+//       $('#signed-in a').attr('href', loginInfo.logoutLink);
+//       $('#signed-in').show();
+//     }
+//   });
+// }
+// 
+// 
+// if (window.addEventListener) {
+//     window.addEventListener('message', onMessage, false);
+// } else if(window.attachEvent) {
+//     window.attachEvent('onmessage', onMessage);
+// }
+// 
+// if (window.addEventListener) {
+//     window.addEventListener('focus', onFocus, false);
+// } else if(window.attachEvent) {
+//     window.attachEvent('onfocus', onFocus);
+// }
+// 
