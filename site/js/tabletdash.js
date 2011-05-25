@@ -62,6 +62,7 @@ var pageWidth = 0;
 var appBoxWidth = 0;
 var appBoxHeight = 0;
 var appIconSize = 0;
+var appBorderSize = 0;
 var appNameSize = 0;
 var appNameFontSize = 0;
 
@@ -84,6 +85,7 @@ function computeLayoutVars() {
   }
   
   appIconSize = Math.floor(Math.min(appBoxWidth, appBoxHeight) / 2.5);
+  appBorderSize = Math.floor(appIconSize/8);
   appNameSize = Math.floor(appBoxWidth * 0.8);
   appNameFontSize = Math.max(Math.ceil(appIconSize/6), 10);
   
@@ -128,10 +130,13 @@ $(document).ready(function() {
       downY = e.touches[0].clientY;
       
       //now check to see if it hits on an icon, and if so, then highlight it
-      var theDiv = $(e.target.parentNode);
-      if (theDiv.hasClass("icon")) {
+      // i know this is a bit fragile and ugly
+      var theDiv = $(e.target.parentNode.parentNode);
+      if (theDiv.hasClass("iconWrapper")) {
             appHit = theDiv;
             appHit.addClass("highlighted");
+                  console.log("highlighted");
+
       }
     } else {
       downX = 0;
@@ -148,6 +153,8 @@ $(document).ready(function() {
         if (appHit != undefined) {
           appHit.removeClass("highlighted");
           appHit = undefined;
+                            console.log("UNhighlighted");
+
         }
       }
     }
@@ -159,6 +166,8 @@ $(document).ready(function() {
     if (appHit != undefined) {
       appHit.removeClass("highlighted");
       appHit = undefined;
+                                  console.log("UNhighlighted");
+
     }
     
 //     var currentOffset = window.scrollX;
@@ -291,7 +300,7 @@ function updateDashboard( completionCallback ) {
               }
               
               numPages = gDashboardState.pages.length;
-              console.log("numPages: " + numPages);
+//               console.log("numPages: " + numPages);
 
               layoutPages();
   
@@ -377,15 +386,37 @@ function createAppItem(install)
   var appDisplayFrame = $("<div/>").addClass("appDisplayFrame");
   appDisplayFrame.css({width: appBoxWidth, height: appBoxHeight});
   
-  var clickyIcon = $("<div/>").addClass("icon").addClass("iconFrame");
+  //helpers
+  var borders = appBorderSize * 2;
+  var wrapperSize = appIconSize + borders;
+  var heightRem = appBoxHeight - wrapperSize;
+  var widthRem = appBoxWidth - wrapperSize;
+  
+  var iconWrapper = $("<div/>").addClass("iconWrapper").css({width: wrapperSize, 
+                                                              height: wrapperSize,
+                                                              marginTop: (heightRem/2) + "px", 
+                                                              marginBottom: "0px",
+                                                              marginLeft: (widthRem/2) + "px",
+                                                              marginRight: (widthRem/2) + "px", 
+                                                              
+                                                              "-moz-border-radius": (wrapperSize/6) + "px",
+                                                              "-webkit-border-radius": (wrapperSize/6) + "px",
+                                                              "border-radius": (wrapperSize/6) + "px"
+                                                              
+                                                              
+                                                              });
+  
+  var clickyIcon = $("<div/>").addClass("icon");
   clickyIcon.attr("origin32", install.origin32);
 
   clickyIcon.css({width: appIconSize, 
                   height: appIconSize, 
-                  marginTop: ((appBoxHeight - appIconSize)/2) + "px", 
-                  marginBottom: ((appBoxHeight - appIconSize)/8) + "px",
-                  marginLeft: ((appBoxWidth - appIconSize)/2) + "px",
-                  marginRight: ((appBoxWidth - appIconSize)/2) + "px", 
+                  margin: appBorderSize,
+                  
+//                   marginTop: ((appBoxHeight - appIconSize)/2) + "px", 
+//                   marginBottom: ((appBoxHeight - appIconSize)/8) + "px",
+//                   marginLeft: ((appBoxWidth - appIconSize)/2) + "px",
+//                   marginRight: ((appBoxWidth - appIconSize)/2) + "px", 
                   
                   "-moz-border-radius": (appIconSize/6) + "px",
 	                "-webkit-border-radius": (appIconSize/6) + "px",
@@ -407,15 +438,15 @@ function createAppItem(install)
     navigator.apps.mgmt.launch(install.origin);
   });
   clickyIcon.append(appIcon);
-  appDisplayFrame.append(clickyIcon);
+  
+  iconWrapper.append(clickyIcon);
+  appDisplayFrame.append(iconWrapper);
 
 
   //TODO: size text to fit
   var appName = $("<div/>").addClass("listLabel");
   appName.css({width: appNameSize, 
-              "font-face": "Lucida Bold",
-              "font-size":  appNameFontSize,
-              color: '#ffffff'});
+              "font-size":  appNameFontSize});
 
   appName.text(install.manifest.name);  
   appDisplayFrame.append(appName);
