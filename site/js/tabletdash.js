@@ -131,7 +131,7 @@ $(document).ready(function() {
       var theDiv = $(e.target.parentNode);
       if (theDiv.hasClass("icon")) {
             appHit = theDiv;
-            appHit.removeClass("iconFrame");
+            appHit.addClass("highlighted");
       }
     } else {
       downX = 0;
@@ -146,7 +146,7 @@ $(document).ready(function() {
       if ( Math.abs(e.touches[0].clientX - downX) > 10 || Math.abs(e.touches[0].clientY - downY) > 10) {
         //un-highlight the tapped app
         if (appHit != undefined) {
-          appHit.addClass("iconFrame");
+          appHit.removeClass("highlighted");
           appHit = undefined;
         }
       }
@@ -157,7 +157,7 @@ $(document).ready(function() {
   document.addEventListener("touchend", function(e) {
   
     if (appHit != undefined) {
-      appHit.addClass("iconFrame");
+      appHit.removeClass("highlighted");
       appHit = undefined;
     }
     

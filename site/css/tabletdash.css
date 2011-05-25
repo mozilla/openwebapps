@@ -55,8 +55,11 @@ body {
 }
 
       
-.iconFrame {
-    background-image: -moz-linear-gradient( rgba(245,245,245,1), rgba(175,175,175,1) );
+.highlighted {
+    background-image: none !important;
+/* had to turn this off, it made the icon tapping INCREDIBLY unresponsive */
+/*    box-shadow: 0px 0px 20px 10px orange !important;  */
+
   }
 
 
@@ -84,5 +87,8 @@ body {
 		rgba(0, 0, 0, 0.5) 0px 2px 1px;
 
     background-color: rgb(100,100,100);
+    
+    background-image: -moz-linear-gradient( rgba(245,245,245,1), rgba(175,175,175,1) );
+
 }
 
