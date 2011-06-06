@@ -487,6 +487,36 @@ let AboutApps = {
 };
 //----- end about:apps (but see ComponentRegistrar call in startup())
 
+//----- about:appshome implementation
+const AboutAppsHomeUUID = Components.ID("{C5A1D035-1A11-4152-8C17-7B6126FBA2CD}");
+const AboutAppsHomeContract = "@mozilla.org/network/protocol/about;1?what=appshome";
+let AboutAppsHomeFactory = {
+    createInstance: function(outer, iid) {
+        if (outer != null)
+            throw Components.resources.NS_ERROR_NO_AGGREGATION;
+        return AboutAppsHome.QueryInterface(iid);
+    }
+};
+let AboutAppsHome = {
+    QueryInterface: XPCOMUtils.generateQI([Ci.nsIAboutModule]),
+
+    getURIFlags: function(aURI) {
+        return Ci.nsIAboutModule.ALLOW_SCRIPT;
+    },
+
+    newChannel: function(aURI) {
+        let ios = Cc["@mozilla.org/network/io-service;1"].
+                  getService(Ci.nsIIOService);
+        let channel = ios.newChannel(
+            "resource://openwebapps/chrome/content/home.xhtml", null, null
+        );
+        channel.originalURI = aURI;
+        return channel;
+    }
+};
+//----- end about:apps (but see ComponentRegistrar call in startup())
+
+
 
 let unloaders = [];
 function startup(data, reason) AddonManager.getAddonByID(data.id, function(addon) {
@@ -525,6 +555,9 @@ function startup(data, reason) AddonManager.getAddonByID(data.id, function(addon
     
     Cm.QueryInterface(Ci.nsIComponentRegistrar).registerFactory(
         AboutAppsUUID, "About Apps", AboutAppsContract, AboutAppsFactory
+    );
+    Cm.QueryInterface(Ci.nsIComponentRegistrar).registerFactory(
+        AboutAppsHomeUUID, "About Apps Home", AboutAppsHomeContract, AboutAppsHomeFactory
     );
     unloaders.push(function() {
         Cm.QueryInterface(Ci.nsIComponentRegistrar).unregisterFactory(
