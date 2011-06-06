@@ -214,10 +214,10 @@ FFRepoImpl.prototype = {
 
         // make an exception for local testing, who via postmessage events
         // have an origin of "null"
-        if ((origin === 'null' && origin.protocol === 'file:')) {
+        if ((origin === 'null' || origin.toString().substr(0, 8) == 'file:///')) {
             return;
         }
-        
+
         // this is where we could have a whitelist of acceptable management
         // domains.
         if (origin.host == "127.0.0.1:60172" || /* special case for unit testing: to be removed when we get capability tracking for mgmt! */

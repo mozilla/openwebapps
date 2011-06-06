@@ -419,11 +419,14 @@ openwebapps.prototype = {
         if (topic == "xul-overlay-merged") {
             let tmp = {};
             Cu.import("resource://openwebapps/modules/injector.js", tmp);
-            tmp.InjectorInit(this._window); tmp = {};
+            tmp.InjectorInit(this._window); 
+
+            tmp = {};
             Cu.import("resource://openwebapps/modules/api.js", tmp);
-            this._repo = tmp.FFRepoImplService; tmp = {};
-            Cu.import("resource://openwebapps/modules/panel.js", tmp);
-            
+            this._repo = tmp.FFRepoImplService; 
+
+            tmp = {};
+            Cu.import("resource://openwebapps/modules/panel.js", tmp);            
             this._inject();
             this._addToolbarButton();
             this._popup = new tmp.appPopup(this._window);
@@ -449,6 +452,11 @@ openwebapps.prototype = {
                 this.pendingRegistrations = null;
             }
             
+            // Keep an eye out for LINK headers that contain manifests:
+            var obs = Components.classes["@mozilla.org/observer-service;1"].
+                      getService(Components.interfaces.nsIObserverService);
+            obs.addObserver(this, 'content-document-global-created', false);
+              
         } else if (topic == "weave:service:ready") {
             registerSyncEngine();
         } else if (topic == "openwebapp-installed") {
@@ -460,7 +468,48 @@ openwebapps.prototype = {
         
         } else if (topic == "openwebapp-uninstalled") {
             this._renderDockIcons();
-        } 
+        } else if (topic == "content-document-global-created") {
+          let mainWindow = subject.QueryInterface(Components.interfaces.nsIInterfaceRequestor)
+                         .getInterface(Components.interfaces.nsIWebNavigation)
+                         .QueryInterface(Components.interfaces.nsIDocShellTreeItem)
+                         .rootTreeItem
+                         .QueryInterface(Components.interfaces.nsIInterfaceRequestor)
+                         .getInterface(Components.interfaces.nsIDOMWindow); 
+          if (mainWindow != this._window) {
+            return;
+          }
+          mainWindow.addEventListener("DOMLinkAdded", function(aEvent) {
+            if (aEvent.target.rel == "application-manifest") {
+              try {
+                var page = aEvent.target.baseURI;
+                var href = aEvent.target.href;
+
+                // Annotate the tab with the URL, so we can highlight the button
+                // and display the app when the user views this tab.
+                var ios = Components.classes["@mozilla.org/network/io-service;1"].
+                  getService(Components.interfaces.nsIIOService);
+                // XXX TODO: Should we restrict the href to be associated in a limited way with the page?
+                aEvent.target.ownerDocument.applicationManifest =
+                  ios.newURI(href, null, ios.newURI(page, null, null));
+
+                // If the current browser is this document's browser, update the highlight
+                dump("Setting manifest to " + aEvent.target.ownerDocument.applicationManifest.spec + "\n");
+
+                // whoops, no gBrowser here!  rework this.
+                /*if (gBrowser.contentDocument === aEvent.target.ownerDocument)
+                {
+                  let toolbarButton = document.getElementById("openwebapps-toolbar-button");
+                  if (toolbarButton) {
+                    toolbarButton.classList.add("highlight");
+                  }
+                }*/
+
+              } catch (e) {
+                dump(e + "\n");
+              }
+            }
+          }, false);
+        }
     },
     
     registerBuiltInApp: function(domain, app, injector) {
@@ -504,6 +553,36 @@ let AboutApps = {
 };
 //----- end about:apps (but see ComponentRegistrar call in startup())
 
+//----- about:appshome implementation
+const AboutAppsHomeUUID = Components.ID("{C5A1D035-1A11-4152-8C17-7B6126FBA2CD}");
+const AboutAppsHomeContract = "@mozilla.org/network/protocol/about;1?what=appshome";
+let AboutAppsHomeFactory = {
+    createInstance: function(outer, iid) {
+        if (outer != null)
+            throw Components.resources.NS_ERROR_NO_AGGREGATION;
+        return AboutAppsHome.QueryInterface(iid);
+    }
+};
+let AboutAppsHome = {
+    QueryInterface: XPCOMUtils.generateQI([Ci.nsIAboutModule]),
+
+    getURIFlags: function(aURI) {
+        return Ci.nsIAboutModule.ALLOW_SCRIPT;
+    },
+
+    newChannel: function(aURI) {
+        let ios = Cc["@mozilla.org/network/io-service;1"].
+                  getService(Ci.nsIIOService);
+        let channel = ios.newChannel(
+            "resource://openwebapps/chrome/content/home.xhtml", null, null
+        );
+        channel.originalURI = aURI;
+        return channel;
+    }
+};
+//----- end about:apps (but see ComponentRegistrar call in startup())
+
+
 
 let unloaders = [];
 function startup(data, reason) AddonManager.getAddonByID(data.id, function(addon) {
@@ -543,9 +622,15 @@ function startup(data, reason) AddonManager.getAddonByID(data.id, function(addon
     Cm.QueryInterface(Ci.nsIComponentRegistrar).registerFactory(
         AboutAppsUUID, "About Apps", AboutAppsContract, AboutAppsFactory
     );
+    Cm.QueryInterface(Ci.nsIComponentRegistrar).registerFactory(
+        AboutAppsHomeUUID, "About Apps Home", AboutAppsHomeContract, AboutAppsHomeFactory
+    );
     unloaders.push(function() {
         Cm.QueryInterface(Ci.nsIComponentRegistrar).unregisterFactory(
             AboutAppsUUID, AboutAppsFactory
+        );
+        Cm.QueryInterface(Ci.nsIComponentRegistrar).unregisterFactory(
+            AboutAppsHomeUUID, AboutAppsHomeFactory
         );
     });
 
