@@ -18,13 +18,13 @@ It is not a goal of this proposal to explain how an all-HTML5 application can be
 
 The basic set of concepts required to enable Open Web Applications are:
 
-* [**Application manifests**](manifest.html), which describes the location, requirements, and capabilities of an application.
+* Application manifests, which describes the location, requirements, and capabilities of an application.
 
-* An [**application repository**](app_repo.html), which holds the manifests for all of the user's installed applications.
+* An application repository, which holds the manifests for all of the user's installed applications.
 
-* A [**method to install**](app_repo.html#install-api) an application into a user's repository, which can be used by stores and directories or by an application developer (for self-published applications).
+* A method to install an application into a user's repository, which can be used by stores and directories or by an application developer (for self-published applications).
 
-* A [**application dashboard**](app_repo.html), which is a user interface through which to manage, browse, and launch installed applications.
+* A application dashboard, which is a user interface through which to manage, browse, and launch installed applications.
 
 * An optional network interaction to allow applications to [**confirm the user's ownership**](verification.html) of a paid registration (i.e. from an application store).
 
