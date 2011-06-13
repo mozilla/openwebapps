@@ -50,6 +50,13 @@
 * }
 *
 */
+
+// check if ambient TypedStorage or not
+// by looking for 'require' keyword from jetpack
+if (require) {
+    var {TypedStorage} = require("./typed_storage");
+}
+
 Repo = (function() {
     // A TypedStorage singleton global object is expected to be present
     // Must be provided either by the FF extension, Chrome extension, or in

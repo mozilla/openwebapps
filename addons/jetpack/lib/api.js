@@ -61,13 +61,13 @@ var loader = Cc["@mozilla.org/moz/jssubscript-loader;1"].
 loader.loadSubScript("resource://openwebapps/modules/manifest.js");
 loader.loadSubScript("resource://openwebapps/modules/urlmatch.js");
 */
-require("./manifest");
-require("./urlmatch");
+var {Manifest} = require("./manifest");
+var {URLMatch} = require("./urlmatch");
 
 // We want to use as much from the cross-platform repo implementation
 // as possible, but we do need to override a few methods.
 //loader.loadSubScript("resource://openwebapps/modules/repo.js");
-require("repo");
+var {Repo} = require("repo");
 
 function FFRepoImpl() {
   this._builtInApps = {};
