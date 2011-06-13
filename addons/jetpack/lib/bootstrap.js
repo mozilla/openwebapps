@@ -573,12 +573,13 @@ let AboutAppsHome = {
 let unloaders = [];
 function startup(data, reason) AddonManager.getAddonByID(data.id, function(addon) {
     /* Let's register ourselves a resource: namespace */
-    let resource = Services.io.getProtocolHandler("resource")
+    /*let resource = Services.io.getProtocolHandler("resource")
                    .QueryInterface(Ci.nsIResProtocolHandler);
     let alias = Services.io.newFileURI(data.installPath);
     if (!data.installPath.isDirectory())
         alias = Services.io.newURI("jar:" + alias.spec + "!/", null, null);
     resource.setSubstitution("openwebapps", alias);
+    */
 
     /* Setup l10n */
     getString.init(addon);
