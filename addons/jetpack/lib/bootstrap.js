@@ -52,11 +52,20 @@ var {XPCOMUtils, AddonManager, Services} = tmp;
 /* l10n support. See https://github.com/Mardak/restartless/examples/l10nDialogs */
 function getString(name, args, plural) {
     let str;
+
     try {
         str = getString.bundle.GetStringFromName(name);
     } catch(ex) {
-        str = getString.fallback.GetStringFromName(name);
+        console.log("in exc");
+        try {
+            str = getString.fallback.GetStringFromName(name);
+        } catch(ex2) {
+            console.log("Exc2 " + exc2);
+        }
     }
+
+    console.log("got str: " + str);
+
     if (args != null) {
         if (typeof args == "string" || args.length == null)
             args = [args];
@@ -80,7 +89,7 @@ getString.init = function(get_resource_uri, getAlternate) {
         */
         let propertyFile = get_resource_uri("locale/" + locale + ".properties");
         try {
-            let uniqueFileSpec = propertyFile.spec + "#" + Math.random();
+            let uniqueFileSpec = propertyFile + "#" + Math.random();
             let bundle = Services.strings.createBundle(uniqueFileSpec);
             bundle.getSimpleEnumeration();
             return bundle;
@@ -116,7 +125,6 @@ function openwebapps(win, getUrlCB)
         } else {
             // modified for jetpack
             let uri = self._getUrlCB("overlay.xul") + "";
-            console.log("URI: " + uri);
             win.document.loadOverlay(uri, self);
         }
     }
@@ -140,6 +148,7 @@ openwebapps.prototype = {
         button.id = "openwebapps-toolbar-button";
         button.label = getString("openwebappsToolbarButton.label");
         button.tooltipText = getString("openwebappsToolbarButton.tooltip");
+
 
         /* Reset click handlers */
         button.ondragexit = button.aboutHomeOverrideTooltip = null;
@@ -394,9 +403,12 @@ openwebapps.prototype = {
     },
     
     observe: function(subject, topic, data) {
+        console.log("observing " + topic);
         function registerSyncEngine() {
             let tmp = {};
             Cu.import("resource://services-sync/main.js", tmp);
+
+            // FIXME: for jetpack
             Cu.import("resource://openwebapps/modules/sync.js", tmp);
             
             if (!tmp.Weave.Engines.get("apps")) {
@@ -415,22 +427,24 @@ openwebapps.prototype = {
         
         if (topic == "xul-overlay-merged") {
             let tmp = {};
-            Cu.import("resource://openwebapps/modules/injector.js", tmp);
+            tmp = require("./injector");
+            // Cu.import("resource://openwebapps/modules/injector.js", tmp);
+            console.log("injecting into " + this._window);
             tmp.InjectorInit(this._window); 
 
-            tmp = {};
-            Cu.import("resource://openwebapps/modules/api.js", tmp);
+            tmp = require("./api");
+            // Cu.import("resource://openwebapps/modules/api.js", tmp);
             this._repo = tmp.FFRepoImplService; 
 
-            tmp = {};
-            Cu.import("resource://openwebapps/modules/panel.js", tmp);            
+            tmp = require("./panel");
+            // Cu.import("resource://openwebapps/modules/panel.js", tmp);            
             this._inject();
             this._addToolbarButton();
             this._popup = new tmp.appPopup(this._window);
             this._addDock();
 
-            tmp = {};
-            Cu.import("resource://openwebapps/modules/services.js", tmp);
+            tmp = require("./services");
+            //Cu.import("resource://openwebapps/modules/services.js", tmp);
             this._services = new tmp.serviceInvocationHandler(this._window);
 
             tmp = {};

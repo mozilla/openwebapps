@@ -94,7 +94,7 @@ function appPopup(win)
     xulPanel.setAttribute("type", "arrow");
 
     let frame = doc.createElementNS(XUL_NS, "iframe");
-    frame.setAttribute("src", "resource://openwebapps/chrome/content/popup.html");
+    frame.setAttribute("src", require("self").data.url("popup.html"));
     xulPanel.appendChild(frame);
     doc.getElementById("mainPopupSet").appendChild(xulPanel);
     

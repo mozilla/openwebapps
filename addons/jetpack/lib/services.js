@@ -34,10 +34,13 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
- 
+
+const {Cu, Ci, Cc} = require("chrome"); 
+/*
 const Cu = Components.utils;
 const Cc = Components.classes;
 const Ci = Components.interfaces;
+*/
 //Cu.import("resource://openwebapps/modules/api.js");
 require("api");
 
