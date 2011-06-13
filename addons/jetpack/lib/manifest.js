@@ -361,3 +361,5 @@
     validate: validate
   }
 })();
+
+exports.Manifest = Manifest;

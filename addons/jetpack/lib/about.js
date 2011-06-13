@@ -22,6 +22,8 @@
 * Contributor(s):
 * */
 
+const {Cc, Ci, Cu, Components} = require("chrome");
+
 Components.utils.import("resource://openwebapps/modules/api.js");
 
 function AboutApps(win)
@@ -248,3 +250,5 @@ AboutApps.prototype = {
   }
 };
 var EXPORTED_SYMBOLS = ["AboutApps"];
+
+exports.AboutApps = AboutApps;

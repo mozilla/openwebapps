@@ -33,6 +33,9 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+
+const {Cc, Ci, Cu, Components} = require("chrome");
+
 const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
@@ -473,5 +476,7 @@ MessagePort.__defineSetter__("onmessage", function(val) {
 // Declare the singleton
 if (!FFRepoImplService) {
   var EXPORTED_SYMBOLS = ["FFRepoImplService"];
+  exports.FFRepoImplService = FFRepoImplService;
   var FFRepoImplService = new FFRepoImpl();
 }
+

@@ -39,9 +39,14 @@
 /* Inject the People content API into window.navigator objects. */
 /* Partly based on code in the Geode extension. */
 
+const {Cc, Ci, Cu, Components} = require("chrome");
+
+/*
 const Cc = Components.classes;
 const Ci = Components.interfaces;
 const Cu = Components.utils;
+*/
+
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
 let EXPORTED_SYMBOLS = ["InjectorInit"];
@@ -182,3 +187,5 @@ function InjectorInit(window) {
   window.appinjector.onLoad();
   window.addEventListener("unload", function() window.appinjector.onUnload(), false);
 }
+
+exports.InjectorInit = InjectorInit;
