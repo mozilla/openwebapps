@@ -5,7 +5,7 @@
 
 #openwebapps-toolbar-button
 {
-  list-style-image: url("resource://openwebapps/chrome/skin/toolbar-button.png");
+  list-style-image: url("./toolbar-button.png");
 }
 
 #openwebapps-toolbar-button.highlight

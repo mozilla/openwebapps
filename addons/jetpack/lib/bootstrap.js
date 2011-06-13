@@ -295,10 +295,6 @@ openwebapps.prototype = {
         let win = this._window;
         let self = this;
         
-        console.log("injecting into " + win);
-
-        console.log(win.appinjector);
-
         win.appinjector.register({
             apibase: "navigator.apps", name: "install", script: null,
             getapi: function (contentWindowRef) {
@@ -311,7 +307,6 @@ openwebapps.prototype = {
             apibase: "navigator.apps", name: "amInstalled", script: null,
             getapi: function (contentWindowRef) {
                 return function (callback) {
-                    console.log("calling am Installed");
                     repo.amInstalled(contentWindowRef.location, callback);
                 }
             }
@@ -430,7 +425,6 @@ openwebapps.prototype = {
             let tmp = {};
             tmp = require("./injector");
             // Cu.import("resource://openwebapps/modules/injector.js", tmp);
-            console.log("injecting into " + this._window);
             tmp.InjectorInit(this._window); 
 
             tmp = require("./api");
