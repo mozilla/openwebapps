@@ -38,7 +38,8 @@
 const Cu = Components.utils;
 const Cc = Components.classes;
 const Ci = Components.interfaces;
-Cu.import("resource://openwebapps/modules/api.js");
+//Cu.import("resource://openwebapps/modules/api.js");
+require("api");
 
 /**
  We create a service invocation panel when needed; there is at most one per

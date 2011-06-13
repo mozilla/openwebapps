@@ -463,4 +463,6 @@ Repo = (function() {
     };
 })();
 
-exports.Repo = Repo;
+/* Jetpack specific export */
+if (exports)
+    exports.Repo = Repo;

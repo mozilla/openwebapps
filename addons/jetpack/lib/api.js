@@ -39,8 +39,11 @@ const {Cc, Ci, Cu, Components} = require("chrome");
 const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
-Cu.import("resource://openwebapps/modules/typed_storage.js");
-Cu.import("resource://openwebapps/modules/injector.js");
+/*Cu.import("resource://openwebapps/modules/typed_storage.js");
+Cu.import("resource://openwebapps/modules/injector.js");*/
+
+require("typed_storage");
+require("injector");
 
 var console = {
     log: function(s) {dump(s+"\n");}
@@ -51,14 +54,20 @@ var console = {
 // js modules in the firefox sense). We're okay with using loadSubscript()
 // for them instead because they don't pollute the global namespace, and this
 // is a hack after all ;)
+
+/* Don't need this in jetpack 
 var loader = Cc["@mozilla.org/moz/jssubscript-loader;1"].
              getService(Components.interfaces.mozIJSSubScriptLoader);
 loader.loadSubScript("resource://openwebapps/modules/manifest.js");
 loader.loadSubScript("resource://openwebapps/modules/urlmatch.js");
+*/
+require("manifest");
+require("urlmatch");
 
 // We want to use as much from the cross-platform repo implementation
 // as possible, but we do need to override a few methods.
-loader.loadSubScript("resource://openwebapps/modules/repo.js");
+//loader.loadSubScript("resource://openwebapps/modules/repo.js");
+require("repo");
 
 function FFRepoImpl() {
   this._builtInApps = {};

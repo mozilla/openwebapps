@@ -189,4 +189,6 @@ URLParse = (function() {
     return parseURL;
 })();
 
-exports.URLParse = URLParse;
+/* Jetpack specific export */
+if (exports)
+    exports.URLParse = URLParse;

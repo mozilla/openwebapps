@@ -36,7 +36,8 @@ const Cu = Components.utils;
 const Cc = Components.classes;
 const Ci = Components.interfaces;
 */
-Cu.import("resource://openwebapps/modules/api.js");
+//Cu.import("resource://openwebapps/modules/api.js");
+require("api");
 
 function openAndReuseOneTabPerURL(url) {
   var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"]

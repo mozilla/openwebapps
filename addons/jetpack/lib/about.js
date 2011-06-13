@@ -24,7 +24,7 @@
 
 const {Cc, Ci, Cu, Components} = require("chrome");
 
-Components.utils.import("resource://openwebapps/modules/api.js");
+require("api");
 
 function AboutApps(win)
 {

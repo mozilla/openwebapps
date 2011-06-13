@@ -362,4 +362,6 @@
   }
 })();
 
-exports.Manifest = Manifest;
+/* Jetpack specific export */
+if (exports)
+    exports.Manifest = Manifest;
