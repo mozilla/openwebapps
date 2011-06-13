@@ -542,7 +542,7 @@ let AboutApps = {
         let ios = Cc["@mozilla.org/network/io-service;1"].
                   getService(Ci.nsIIOService);
         let channel = ios.newChannel(
-            "resource://openwebapps/chrome/content/about.html", null, null
+            require("self").data.url("about.html"), null, null
         );
         channel.originalURI = aURI;
         return channel;
@@ -571,7 +571,7 @@ let AboutAppsHome = {
         let ios = Cc["@mozilla.org/network/io-service;1"].
                   getService(Ci.nsIIOService);
         let channel = ios.newChannel(
-            "resource://openwebapps/chrome/content/home.xhtml", null, null
+            require("self").data.url("home.xhtml"), null, null
         );
         channel.originalURI = aURI;
         return channel;
