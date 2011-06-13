@@ -34,16 +34,20 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-const {Cc, Ci, Cm, Cu, Components} = require("chrome");
+const {Cc, Ci, Cm, Cu} = require("chrome");
 
 //const {manager: Cm, classes: Cc, interfaces: Ci, utils: Cu} = Components;
 
 const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 const HTML_NS = "http://www.w3.org/1999/xhtml";
 
-Cu.import("resource://gre/modules/Services.jsm");
-Cu.import("resource://gre/modules/AddonManager.jsm");
-Cu.import("resource://gre/modules/XPCOMUtils.jsm");
+var tmp = {};
+
+Cu.import("resource://gre/modules/Services.jsm", tmp);
+Cu.import("resource://gre/modules/AddonManager.jsm", tmp);
+Cu.import("resource://gre/modules/XPCOMUtils.jsm", tmp);
+
+var {XPCOMUtils, AddonManager, Services} = tmp;
 
 /* l10n support. See https://github.com/Mardak/restartless/examples/l10nDialogs */
 function getString(name, args, plural) {
@@ -63,13 +67,18 @@ function getString(name, args, plural) {
     }
     return str;
 }
-getString.init = function(addon, getAlternate) {
+
+// modified for jetpack
+getString.init = function(get_resource_uri, getAlternate) {
     if (typeof getAlternate != "function")
         getAlternate = function() "en-US";
 
     function getBundle(locale) {
-        let propertyPath = "chrome/locale/" + locale + ".properties";
-        let propertyFile = addon.getResourceURI(propertyPath);
+        /*
+          let propertyPath = "chrome/locale/" + locale + ".properties";
+          let propertyFile = addon.getResourceURI(propertyPath);
+        */
+        let propertyFile = get_resource_uri("locale/" + locale + ".properties");
         try {
             let uniqueFileSpec = propertyFile.spec + "#" + Math.random();
             let bundle = Services.strings.createBundle(uniqueFileSpec);
@@ -85,9 +94,9 @@ getString.init = function(addon, getAlternate) {
     getString.fallback = getBundle("en-US");
 }
 
-function openwebapps(win, add)
+function openwebapps(win, getUrlCB)
 {
-    this._addon = add;
+    this._getUrlCB = getUrlCB;
     this._window = win;
 
     Cc["@mozilla.org/observer-service;1"]
@@ -105,7 +114,9 @@ function openwebapps(win, add)
             let timeout = win.setTimeout(checkWindow, 1000);
             unloaders.push(function() win.clearTimeout(timeout));
         } else {
-            let uri = self._addon.getResourceURI("chrome/content/overlay.xul").spec;
+            // modified for jetpack
+            let uri = self._getUrlCB("overlay.xul") + "";
+            console.log("URI: " + uri);
             win.document.loadOverlay(uri, self);
         }
     }
@@ -571,7 +582,10 @@ let AboutAppsHome = {
 
 
 let unloaders = [];
-function startup(data, reason) AddonManager.getAddonByID(data.id, function(addon) {
+// no longer the original bootstrap signature, modified
+// for jetpack, expecting only a callback to obtain resource URLs
+function startup(getUrlCB) {
+   // AddonManager.getAddonByID(data.id, function(addon) {
     /* Let's register ourselves a resource: namespace */
     /*let resource = Services.io.getProtocolHandler("resource")
                    .QueryInterface(Ci.nsIResProtocolHandler);
@@ -582,7 +596,7 @@ function startup(data, reason) AddonManager.getAddonByID(data.id, function(addon
     */
 
     /* Setup l10n */
-    getString.init(addon);
+    getString.init(getUrlCB);
     
     /* We use winWatcher to create an instance per window (current and future) */
     let iter = Cc["@mozilla.org/appshell/window-mediator;1"]
@@ -590,16 +604,17 @@ function startup(data, reason) AddonManager.getAddonByID(data.id, function(addon
                .getEnumerator("navigator:browser");
     while (iter.hasMoreElements()) {
         let aWindow = iter.getNext().QueryInterface(Ci.nsIDOMWindow);
-        aWindow.apps = new openwebapps(aWindow, addon);
+        aWindow.apps = new openwebapps(aWindow, getUrlCB);
     }
     function winWatcher(subject, topic) {
         if (topic != "domwindowopened")
             return;
+        console.log("OWA one window: " + subject.title);
         subject.addEventListener("load", function() {
             subject.removeEventListener("load", arguments.callee, false);
             let doc = subject.document.documentElement;
             if (doc.getAttribute("windowtype") == "navigator:browser") {
-                subject.apps = new openwebapps(subject, addon);
+                subject.apps = new openwebapps(subject, getUrlCB);
             }
         }, false);
     }
@@ -624,10 +639,10 @@ function startup(data, reason) AddonManager.getAddonByID(data.id, function(addon
     // Broadcast that we're done, in case anybody is listening
     let observerService = Cc["@mozilla.org/observer-service;1"]
                .getService(Ci.nsIObserverService);
-    let tmp = {};
-    Cu.import("resource://openwebapps/modules/api.js", tmp);
+    let tmp = require("api");
+    //Cu.import("resource://openwebapps/modules/api.js", tmp);
     observerService.notifyObservers(tmp.FFRepoImplService, "openwebapps-startup-complete", "");
-})
+}
 
 function shutdown(data, reason)
 {

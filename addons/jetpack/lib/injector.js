@@ -39,7 +39,7 @@
 /* Inject the People content API into window.navigator objects. */
 /* Partly based on code in the Geode extension. */
 
-const {Cc, Ci, Cu, Components} = require("chrome");
+const {Cc, Ci, Cu} = require("chrome");
 
 /*
 const Cc = Components.classes;

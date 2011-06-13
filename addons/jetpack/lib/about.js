@@ -22,7 +22,7 @@
 * Contributor(s):
 * */
 
-const {Cc, Ci, Cu, Components} = require("chrome");
+const {Cc, Ci, Cu} = require("chrome");
 
 require("api");
 

@@ -34,9 +34,9 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-const {Cc, Ci, Cu, Components} = require("chrome");
+const {Cc, Ci, Cu} = require("chrome");
 
-const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
+//const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 /*Cu.import("resource://openwebapps/modules/typed_storage.js");
@@ -61,8 +61,8 @@ var loader = Cc["@mozilla.org/moz/jssubscript-loader;1"].
 loader.loadSubScript("resource://openwebapps/modules/manifest.js");
 loader.loadSubScript("resource://openwebapps/modules/urlmatch.js");
 */
-require("manifest");
-require("urlmatch");
+require("./manifest");
+require("./urlmatch");
 
 // We want to use as much from the cross-platform repo implementation
 // as possible, but we do need to override a few methods.
