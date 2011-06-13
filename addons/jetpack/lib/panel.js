@@ -29,10 +29,13 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
- 
+
+const {Cc, Cu, Ci} = require("chrome");
+/*
 const Cu = Components.utils;
 const Cc = Components.classes;
 const Ci = Components.interfaces;
+*/
 Cu.import("resource://openwebapps/modules/api.js");
 
 function openAndReuseOneTabPerURL(url) {
@@ -222,3 +225,4 @@ appPopup.prototype = {
 };
 
 var EXPORTED_SYMBOLS = ["appPopup"];
+exports.appPopup = appPopup;

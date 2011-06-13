@@ -462,3 +462,5 @@ Repo = (function() {
         updateServices: updateServices
     };
 })();
+
+exports.Repo = Repo;

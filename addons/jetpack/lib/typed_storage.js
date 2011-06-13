@@ -35,7 +35,9 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
+
+const {Cc, Cu, Ci} = require("chrome");
+//const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
@@ -248,3 +250,5 @@ function TypedStorage()
     return TypedStorageImpl;
 }
 var EXPORTED_SYMBOLS = ["TypedStorage"];
+
+exports.TypedStorage = TypedStorage;

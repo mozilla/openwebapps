@@ -218,3 +218,4 @@ serviceInvocationHandler.prototype = {
 };
 
 var EXPORTED_SYMBOLS = ["serviceInvocationHandler"];
+exports.serviceInvocationHandler = serviceInvocationHandler;

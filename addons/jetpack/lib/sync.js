@@ -30,8 +30,11 @@
 
 var EXPORTED_SYMBOLS = ['AppsEngine', 'AppRec'];
 
+const {Cc, Cu, Ci} = require("chrome");
+/*
 const Cu = Components.utils;
 const Ci = Components.interfaces;
+*/
 const APPS_GUID = "apps";
 
 Cu.import("resource://services-sync/util.js");
@@ -198,3 +201,6 @@ AppTracker.prototype = {
         }
     }
 };
+
+exports.AppRec = AppRec;
+exports.AppsEngine = AppsEngine;

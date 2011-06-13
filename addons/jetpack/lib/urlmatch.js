@@ -188,3 +188,5 @@ URLParse = (function() {
 
     return parseURL;
 })();
+
+exports.URLParse = URLParse;
