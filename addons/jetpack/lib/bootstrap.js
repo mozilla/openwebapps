@@ -64,8 +64,6 @@ function getString(name, args, plural) {
         }
     }
 
-    console.log("got str: " + str);
-
     if (args != null) {
         if (typeof args == "string" || args.length == null)
             args = [args];
@@ -297,6 +295,10 @@ openwebapps.prototype = {
         let win = this._window;
         let self = this;
         
+        console.log("injecting into " + win);
+
+        console.log(win.appinjector);
+
         win.appinjector.register({
             apibase: "navigator.apps", name: "install", script: null,
             getapi: function (contentWindowRef) {
@@ -309,6 +311,7 @@ openwebapps.prototype = {
             apibase: "navigator.apps", name: "amInstalled", script: null,
             getapi: function (contentWindowRef) {
                 return function (callback) {
+                    console.log("calling am Installed");
                     repo.amInstalled(contentWindowRef.location, callback);
                 }
             }
@@ -403,13 +406,11 @@ openwebapps.prototype = {
     },
     
     observe: function(subject, topic, data) {
-        console.log("observing " + topic);
         function registerSyncEngine() {
             let tmp = {};
             Cu.import("resource://services-sync/main.js", tmp);
 
-            // FIXME: for jetpack
-            Cu.import("resource://openwebapps/modules/sync.js", tmp);
+            tmp.AppsEngine = require("./sync").AppsEngine;
             
             if (!tmp.Weave.Engines.get("apps")) {
                 tmp.Weave.Engines.register(tmp.AppsEngine);
@@ -623,7 +624,6 @@ function startup(getUrlCB) {
     function winWatcher(subject, topic) {
         if (topic != "domwindowopened")
             return;
-        console.log("OWA one window: " + subject.title);
         subject.addEventListener("load", function() {
             subject.removeEventListener("load", arguments.callee, false);
             let doc = subject.document.documentElement;

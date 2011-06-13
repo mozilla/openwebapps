@@ -55,6 +55,8 @@
 // by looking for 'require' keyword from jetpack
 if (require) {
     var {TypedStorage} = require("./typed_storage");
+    var {URLParse} = require("./urlmatch");
+    var {Manifest} = require("./manifest");
 }
 
 Repo = (function() {
@@ -293,6 +295,7 @@ Repo = (function() {
 
         iterateApps(function(items) {
             for (var key in items) {
+                console.log("iterating " + key);
                 if (!done) {
                     if (applicationMatchesDomain(items[key].origin, origin)) {
                         done = true;

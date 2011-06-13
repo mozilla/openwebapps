@@ -62,7 +62,7 @@ loader.loadSubScript("resource://openwebapps/modules/manifest.js");
 loader.loadSubScript("resource://openwebapps/modules/urlmatch.js");
 */
 var {Manifest} = require("./manifest");
-var {URLMatch} = require("./urlmatch");
+var {URLParse} = require("./urlmatch");
 
 // We want to use as much from the cross-platform repo implementation
 // as possible, but we do need to override a few methods.
@@ -485,7 +485,8 @@ MessagePort.__defineSetter__("onmessage", function(val) {
 // Declare the singleton
 if (!FFRepoImplService) {
   var EXPORTED_SYMBOLS = ["FFRepoImplService"];
-  exports.FFRepoImplService = FFRepoImplService;
   var FFRepoImplService = new FFRepoImpl();
 }
+
+exports.FFRepoImplService = FFRepoImplService;
 

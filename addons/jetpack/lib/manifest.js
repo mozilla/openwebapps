@@ -45,6 +45,12 @@
    Manifest validation re-written for updated specification
 **/
 
+// check if ambient TypedStorage or not
+// by looking for 'require' keyword from jetpack
+if (require) {
+    var {URLParse} = require("./urlmatch");
+}
+
 ;var Manifest = (function() {
 
   // initialize a manifest object from a javascript manifest representation,
