@@ -1,8 +1,8 @@
 {
-  "name": "jetpack",
-  "fullName": "jetpack",
-  "description": "a basic add-on",
-  "author": "",
+  "name": "openwebapps",
+  "fullName": "Open Web Apps",
+  "description": "Open Web Apps as JetPack add-on",
+  "author": "Anant Narayanan and Ben Adida",
   "license": "MPL 1.1/GPL 2.0/LGPL 2.1",
   "version": "0.1"
 }
