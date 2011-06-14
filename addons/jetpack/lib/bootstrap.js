@@ -35,18 +35,13 @@
  * ***** END LICENSE BLOCK ***** */
 
 const {Cc, Ci, Cm, Cu} = require("chrome");
-
-//const {manager: Cm, classes: Cc, interfaces: Ci, utils: Cu} = Components;
-
-const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 const HTML_NS = "http://www.w3.org/1999/xhtml";
+const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
 var tmp = {};
-
 Cu.import("resource://gre/modules/Services.jsm", tmp);
 Cu.import("resource://gre/modules/AddonManager.jsm", tmp);
 Cu.import("resource://gre/modules/XPCOMUtils.jsm", tmp);
-
 var {XPCOMUtils, AddonManager, Services} = tmp;
 
 /* l10n support. See https://github.com/Mardak/restartless/examples/l10nDialogs */
@@ -81,10 +76,6 @@ getString.init = function(get_resource_uri, getAlternate) {
         getAlternate = function() "en-US";
 
     function getBundle(locale) {
-        /*
-          let propertyPath = "chrome/locale/" + locale + ".properties";
-          let propertyFile = addon.getResourceURI(propertyPath);
-        */
         let propertyFile = get_resource_uri("locale/" + locale + ".properties");
         try {
             let uniqueFileSpec = propertyFile + "#" + Math.random();
@@ -122,14 +113,61 @@ function openwebapps(win, getUrlCB)
             unloaders.push(function() win.clearTimeout(timeout));
         } else {
             // modified for jetpack
-            let uri = self._getUrlCB("overlay.xul") + "";
-            win.document.loadOverlay(uri, self);
+            self._overlay();
         }
     }
     checkWindow();
 }
 
 openwebapps.prototype = {
+    _overlay: function() {
+        // Load CSS before adding toolbar button
+        let doc = this._window.document;
+        let pi = doc.createProcessingInstruction(
+            "xml-stylesheet", "href=\"" + this._getUrlCB("skin/overlay.css") +
+            "\" type=\"text/css\""
+        );
+        doc.insertBefore(pi, doc.firstChild);
+
+        let tmp = {};
+        tmp = require("./injector");
+        tmp.InjectorInit(this._window); 
+
+        tmp = require("./api");
+        this._repo = tmp.FFRepoImplService; 
+
+        tmp = require("./panel");
+        this._inject();
+        this._addToolbarButton();
+        this._popup = new tmp.appPopup(this._window);
+        this._addDock();
+
+        tmp = require("./services");
+        this._services = new tmp.serviceInvocationHandler(this._window);
+
+        tmp = {};
+        Cu.import("resource://services-sync/main.js", tmp);
+        if (tmp.Weave.Status.ready) {
+            registerSyncEngine();
+        } else {
+            tmp = {};
+            Cu.import("resource://services-sync/util.js", tmp);
+            tmp.Svc.Obs.add("weave:service:ready", this);
+        }
+            
+        if (this.pendingRegistrations) {
+            for each (let reg in this.pendingRegistrations) {
+                this._repo._registerBuiltInApp(reg[0], reg[1], reg[2]);
+            }
+            this.pendingRegistrations = null;
+        }
+            
+        // Keep an eye out for LINK headers that contain manifests:
+        var obs = Components.classes["@mozilla.org/observer-service;1"].
+                  getService(Components.interfaces.nsIObserverService);
+        obs.addObserver(this, 'content-document-global-created', false);
+    },
+
     _addToolbarButton: function() {
         let self = this;
         
@@ -421,49 +459,7 @@ openwebapps.prototype = {
             }
         }
         
-        if (topic == "xul-overlay-merged") {
-            let tmp = {};
-            tmp = require("./injector");
-            // Cu.import("resource://openwebapps/modules/injector.js", tmp);
-            tmp.InjectorInit(this._window); 
-
-            tmp = require("./api");
-            // Cu.import("resource://openwebapps/modules/api.js", tmp);
-            this._repo = tmp.FFRepoImplService; 
-
-            tmp = require("./panel");
-            // Cu.import("resource://openwebapps/modules/panel.js", tmp);            
-            this._inject();
-            this._addToolbarButton();
-            this._popup = new tmp.appPopup(this._window);
-            this._addDock();
-
-            tmp = require("./services");
-            //Cu.import("resource://openwebapps/modules/services.js", tmp);
-            this._services = new tmp.serviceInvocationHandler(this._window);
-
-            tmp = {};
-            Cu.import("resource://services-sync/main.js", tmp);
-            if (tmp.Weave.Status.ready) {
-                registerSyncEngine();
-            } else {
-                Cu.import("resource://services-sync/util.js");
-                Svc.Obs.add("weave:service:ready", this);
-            }
-            
-            if (this.pendingRegistrations) {
-                for each (let reg in this.pendingRegistrations) {
-                    this._repo._registerBuiltInApp(reg[0], reg[1], reg[2]);
-                }
-                this.pendingRegistrations = null;
-            }
-            
-            // Keep an eye out for LINK headers that contain manifests:
-            var obs = Components.classes["@mozilla.org/observer-service;1"].
-                      getService(Components.interfaces.nsIObserverService);
-            obs.addObserver(this, 'content-document-global-created', false);
-              
-        } else if (topic == "weave:service:ready") {
+        if (topic == "weave:service:ready") {
             registerSyncEngine();
         } else if (topic == "openwebapp-installed") {
             var installData = JSON.parse(data)
