@@ -275,7 +275,7 @@ openwebapps.prototype = {
         let self = this;
 
         // HOWA support
-        Cu.import("resource://openwebapps/modules/howa.js");
+        // Cu.import("resource://openwebapps/modules/howa.js");
         
         win.appinjector.register({
             apibase: "navigator.apps", name: "install", script: null,
