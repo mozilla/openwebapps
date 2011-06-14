@@ -142,15 +142,20 @@ openwebapps.prototype = {
 
         // We will add an hbox before navigator-toolbox;
         // this should put it above all the tabs.
-        let targetID = "navigator-toolbox";
-        let navigatorToolbox = this._window.document.getElementById(targetID);
-        if (!navigatorToolbox) return;
+        let targetID = "addon-bar";
+        let mergePoint = this._window.document.getElementById(targetID);
+        if (!mergePoint) return;
         
         let dock = this._window.document.createElementNS(HTML_NS, "div");
         dock.style.display = "none";
         dock.width = "100%";
-        dock.height = "80px";
-        dock.style.backgroundColor = "rgba(0,0,0,0.3)";
+        dock.height = "90px";
+        dock.style.overflow  = "hidden";
+        dock.style.borderTop = "0.1em solid black";
+
+        dock.style.boxShadow = "inset 0 0 5px 3px rgba(0,0,0,0.3)"
+
+        //dock.style.background = "-moz-linear-gradient(0% 0% 270deg,#8A8A8A, #E9E9E9, #E8E8E8 15%)"
         
         self._dock = dock;
         try {
@@ -159,8 +164,8 @@ openwebapps.prototype = {
           dump(e + "\n");
           dump(e.stack + "\n");
         }
-        navigatorToolbox.parentNode.insertBefore(dock, navigatorToolbox);
-        unloaders.push(function() navigatorToolbox.parentNode.removeChild(dock));
+        mergePoint.parentNode.insertBefore(dock, mergePoint);
+        unloaders.push(function() mergePoint.parentNode.removeChild(dock));
     },
     
     _renderDockIcons: function(recentlyInstalledAppKey) {
@@ -188,8 +193,8 @@ openwebapps.prototype = {
         for (let k in apps) {
             let appBox = self._window.document.createElementNS(HTML_NS, "div");
             appBox.style.display = "inline-block";
-            appBox.style.width = "72px";
-            appBox.style.height = "100%";
+            appBox.style.width = "100px";
+            appBox.style.height = "90px";
 
             if (k == recentlyInstalledAppKey) {
                 appBox.style.boxShadow = "0 0 1em gold";
@@ -211,9 +216,10 @@ openwebapps.prototype = {
                 // default
             }
             icon.style.backgroundSize = "cover";
-            icon.style.width = "48px";
-            icon.style.height = "48px";
-            icon.style.marginLeft = "12px";
+            icon.style.width = "64px";
+            icon.style.height = "64px";
+            icon.style.marginTop = "8px"
+            icon.style.marginLeft = "16px";
             
             let label = self._window.document.createElementNS(XUL_NS, "label");
             label.style.width = "62px";
@@ -250,15 +256,10 @@ openwebapps.prototype = {
         }
     },
     _showDock: function() {
-        let aDock = this._dock;
-        let self = this;
-        aDock.style.height = "66px";
-        aDock.height ="66px";
-        aDock.style.display ="block";
+        this._dock.style.display ="block";
     },
     _hideDock: function() {
         this._dock.style.display ="none";
-        this._dock.height = "0px";
     },
     
     _togglePopup: function() {
