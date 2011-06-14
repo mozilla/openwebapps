@@ -122,6 +122,7 @@ function openwebapps(win, getUrlCB)
 openwebapps.prototype = {
     _overlay: function() {
         // Load CSS before adding toolbar button
+        // XXX: Seems to cause some sort of flicker?
         let doc = this._window.document;
         let pi = doc.createProcessingInstruction(
             "xml-stylesheet", "href=\"" + this._getUrlCB("skin/overlay.css") +
@@ -170,30 +171,34 @@ openwebapps.prototype = {
 
     _addToolbarButton: function() {
         let self = this;
-        
+        let doc = this._window.document;
+        let buttonId = "openwebapps-toolbar-button";
+
         // Don't add a toolbar button if one is already present
-        if (this._window.document.getElementById("openwebapps-toolbar-button"))
+        if (doc.getElementById(buttonId))
             return;
         
-        // We clone an existing button, creating a new one from scratch
-        // does not work (are we missing some properties?)
-        let toolbox = this._window.document.getElementById("nav-bar");
-        let homeButton = this._window.document.getElementById("home-button");
-        let button = homeButton.cloneNode(false);
+        // TODO: make into a generic toolbar button module
+        let button = doc.createElementNS(XUL_NS, "toolbarbutton");
+        let toolbox = doc.getElementById("navigator-toolbox");
+        let palette = doc.getElementById("BrowserToolbarPalette") ||
+            toolbox.palette;
 
-        button.id = "openwebapps-toolbar-button";
-        button.label = getString("openwebappsToolbarButton.label");
-        button.tooltipText = getString("openwebappsToolbarButton.tooltip");
-
-
-        /* Reset click handlers */
-        button.ondragexit = button.aboutHomeOverrideTooltip = null;
-        button.ondragover = button.ondragenter = button.ondrop = null;
-        // button.onclick = function() { self._togglePopup(); };
+        button.setAttribute("id", buttonId);
+        button.setAttribute("label",
+            getString("openwebappsToolbarButton.label"));
+        button.setAttribute("tooltipText",
+            getString("openwebappsToolbarButton.tooltip"));
+        button.setAttribute("class",
+            "toolbarbutton-1 chromeclass-toolbar-additional");
         button.onclick = function() { self._toggleDock(); };
 
-        toolbox.appendChild(button);
-        unloaders.push(function() toolbox.removeChild(button));
+        // Move to location at end
+        let toolbar = doc.getElementById("nav-bar");
+        toolbar.appendChild(button);
+        
+        // FIXME: this will probably not be called because of jetpack
+        unloaders.push(function() toolbar.removeChild(button));
     },
 
     _addDock: function() {
