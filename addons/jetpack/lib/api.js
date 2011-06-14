@@ -33,17 +33,17 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
+
+const {Cc, Ci, Cu} = require("chrome");
+
+//const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
-Cu.import("resource://openwebapps/modules/typed_storage.js");
-Cu.import("resource://openwebapps/modules/injector.js");
+/*Cu.import("resource://openwebapps/modules/typed_storage.js");
+Cu.import("resource://openwebapps/modules/injector.js");*/
 
-// JWT stuff
-Cu.import("resource://openwebapps/modules/jwt.js");
-
-// Ben's experimental library
-Cu.import("resource://openwebapps/modules/utils.js");
+require("typed_storage");
+require("injector");
 
 var console = {
     log: function(s) {dump(s+"\n");}
@@ -54,14 +54,20 @@ var console = {
 // js modules in the firefox sense). We're okay with using loadSubscript()
 // for them instead because they don't pollute the global namespace, and this
 // is a hack after all ;)
+
+/* Don't need this in jetpack 
 var loader = Cc["@mozilla.org/moz/jssubscript-loader;1"].
              getService(Components.interfaces.mozIJSSubScriptLoader);
 loader.loadSubScript("resource://openwebapps/modules/manifest.js");
 loader.loadSubScript("resource://openwebapps/modules/urlmatch.js");
+*/
+var {Manifest} = require("./manifest");
+var {URLParse} = require("./urlmatch");
 
 // We want to use as much from the cross-platform repo implementation
 // as possible, but we do need to override a few methods.
-loader.loadSubScript("resource://openwebapps/modules/repo.js");
+//loader.loadSubScript("resource://openwebapps/modules/repo.js");
+var {Repo} = require("repo");
 
 function FFRepoImpl() {
   this._builtInApps = {};
@@ -249,7 +255,7 @@ FFRepoImpl.prototype = {
 
     launch: function _launch(id)
     {
-        function openAppURL(url, app)
+        function openAppURL(url)
         {
             let ss = Cc["@mozilla.org/browser/sessionstore;1"]
                     .getService(Ci.nsISessionStore);
@@ -290,37 +296,10 @@ FFRepoImpl.prototype = {
             if (!found) {
                 let recentWindow = wm.getMostRecentWindow("navigator:browser");
                 if (recentWindow) {
-                    // FIXME: let's do this with invisible iframes, not with a new tab
-                    
-                    // FIXME: get the real email out of the license
-                    let parsed_license = jwt.WebTokenParser.parse(app.install_data.license).getJSONObject();
-                    var email = parsed_license['user'];
-
-                    var preauth_url = "resource://openwebapps/chrome/content/preauth.html#" + encodeURIComponent(email);
-
-                    // do this in an iframe
-                    utils.create_iframe(recentWindow, preauth_url, function(iframe, channel) {
-                        let auth_doc = iframe.contentDocument;
-                        let get_token_and_go = function() {
-                            let token = auth_doc.getElementById('token');
-                            // get the token
-                            if (token && (token.innerHTML != "")) {
-                                // launch the app tab
-                                let tab = recentWindow.gBrowser.addTab(url + "#" + token.innerHTML);
-                                recentWindow.gBrowser.pinTab(tab);
-                                recentWindow.gBrowser.selectedTab = tab;
-                                ss.setTabValue(tab, "appURL", url);
-                                
-                                iframe.close();
-                            } else {
-                                recentWindow.setTimeout(get_token_and_go, 250);
-                            }
-                        }
-                        
-                        get_token_and_go();
-                    }, function(error) {
-                    });
-
+                    let tab = recentWindow.gBrowser.addTab(url);
+                    recentWindow.gBrowser.pinTab(tab);
+                    recentWindow.gBrowser.selectedTab = tab;
+                    ss.setTabValue(tab, "appURL", url);
                 } else {
                     // This is a very odd case: no browser windows are open, so open a new one.
                     aWindow.open(url);
@@ -339,7 +318,7 @@ FFRepoImpl.prototype = {
                     let url = apps[app]['origin'];
                     if ('launch_path' in apps[app]['manifest'])
                         url += apps[app]['manifest']['launch_path'];
-                    openAppURL(url, apps[app]);
+                    openAppURL(url);
                     found = true;
                 }
             }
@@ -508,3 +487,6 @@ if (!FFRepoImplService) {
   var EXPORTED_SYMBOLS = ["FFRepoImplService"];
   var FFRepoImplService = new FFRepoImpl();
 }
+
+exports.FFRepoImplService = FFRepoImplService;
+

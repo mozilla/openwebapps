@@ -34,22 +34,31 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-const {manager: Cm, classes: Cc, interfaces: Ci, utils: Cu} = Components;
-const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
+const {Cc, Ci, Cm, Cu} = require("chrome");
 const HTML_NS = "http://www.w3.org/1999/xhtml";
+const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
-Cu.import("resource://gre/modules/Services.jsm");
-Cu.import("resource://gre/modules/AddonManager.jsm");
-Cu.import("resource://gre/modules/XPCOMUtils.jsm");
+var tmp = {};
+Cu.import("resource://gre/modules/Services.jsm", tmp);
+Cu.import("resource://gre/modules/AddonManager.jsm", tmp);
+Cu.import("resource://gre/modules/XPCOMUtils.jsm", tmp);
+var {XPCOMUtils, AddonManager, Services} = tmp;
 
 /* l10n support. See https://github.com/Mardak/restartless/examples/l10nDialogs */
 function getString(name, args, plural) {
     let str;
+
     try {
         str = getString.bundle.GetStringFromName(name);
     } catch(ex) {
-        str = getString.fallback.GetStringFromName(name);
+        console.log("in exc");
+        try {
+            str = getString.fallback.GetStringFromName(name);
+        } catch(ex2) {
+            console.log("Exc2 " + exc2);
+        }
     }
+
     if (args != null) {
         if (typeof args == "string" || args.length == null)
             args = [args];
@@ -60,15 +69,16 @@ function getString(name, args, plural) {
     }
     return str;
 }
-getString.init = function(addon, getAlternate) {
+
+// modified for jetpack
+getString.init = function(get_resource_uri, getAlternate) {
     if (typeof getAlternate != "function")
         getAlternate = function() "en-US";
 
     function getBundle(locale) {
-        let propertyPath = "chrome/locale/" + locale + ".properties";
-        let propertyFile = addon.getResourceURI(propertyPath);
+        let propertyFile = get_resource_uri("locale/" + locale + ".properties");
         try {
-            let uniqueFileSpec = propertyFile.spec + "#" + Math.random();
+            let uniqueFileSpec = propertyFile + "#" + Math.random();
             let bundle = Services.strings.createBundle(uniqueFileSpec);
             bundle.getSimpleEnumeration();
             return bundle;
@@ -82,9 +92,9 @@ getString.init = function(addon, getAlternate) {
     getString.fallback = getBundle("en-US");
 }
 
-function openwebapps(win, add)
+function openwebapps(win, getUrlCB)
 {
-    this._addon = add;
+    this._getUrlCB = getUrlCB;
     this._window = win;
 
     Cc["@mozilla.org/observer-service;1"]
@@ -102,39 +112,93 @@ function openwebapps(win, add)
             let timeout = win.setTimeout(checkWindow, 1000);
             unloaders.push(function() win.clearTimeout(timeout));
         } else {
-            let uri = self._addon.getResourceURI("chrome/content/overlay.xul").spec;
-            win.document.loadOverlay(uri, self);
+            // modified for jetpack
+            self._overlay();
         }
     }
     checkWindow();
 }
 
 openwebapps.prototype = {
+    _overlay: function() {
+        // Load CSS before adding toolbar button
+        // XXX: Seems to cause some sort of flicker?
+        let doc = this._window.document;
+        let pi = doc.createProcessingInstruction(
+            "xml-stylesheet", "href=\"" + this._getUrlCB("skin/overlay.css") +
+            "\" type=\"text/css\""
+        );
+        doc.insertBefore(pi, doc.firstChild);
+
+        let tmp = {};
+        tmp = require("./injector");
+        tmp.InjectorInit(this._window); 
+
+        tmp = require("./api");
+        this._repo = tmp.FFRepoImplService; 
+
+        tmp = require("./panel");
+        this._inject();
+        this._addToolbarButton();
+        this._popup = new tmp.appPopup(this._window);
+        this._addDock();
+
+        tmp = require("./services");
+        this._services = new tmp.serviceInvocationHandler(this._window);
+
+        tmp = {};
+        Cu.import("resource://services-sync/main.js", tmp);
+        if (tmp.Weave.Status.ready) {
+            registerSyncEngine();
+        } else {
+            tmp = {};
+            Cu.import("resource://services-sync/util.js", tmp);
+            tmp.Svc.Obs.add("weave:service:ready", this);
+        }
+            
+        if (this.pendingRegistrations) {
+            for each (let reg in this.pendingRegistrations) {
+                this._repo._registerBuiltInApp(reg[0], reg[1], reg[2]);
+            }
+            this.pendingRegistrations = null;
+        }
+            
+        // Keep an eye out for LINK headers that contain manifests:
+        var obs = Components.classes["@mozilla.org/observer-service;1"].
+                  getService(Components.interfaces.nsIObserverService);
+        obs.addObserver(this, 'content-document-global-created', false);
+    },
+
     _addToolbarButton: function() {
         let self = this;
-        
+        let doc = this._window.document;
+        let buttonId = "openwebapps-toolbar-button";
+
         // Don't add a toolbar button if one is already present
-        if (this._window.document.getElementById("openwebapps-toolbar-button"))
+        if (doc.getElementById(buttonId))
             return;
         
-        // We clone an existing button, creating a new one from scratch
-        // does not work (are we missing some properties?)
-        let toolbox = this._window.document.getElementById("nav-bar");
-        let homeButton = this._window.document.getElementById("home-button");
-        let button = homeButton.cloneNode(false);
+        // TODO: make into a generic toolbar button module
+        let button = doc.createElementNS(XUL_NS, "toolbarbutton");
+        let toolbox = doc.getElementById("navigator-toolbox");
+        let palette = doc.getElementById("BrowserToolbarPalette") ||
+            toolbox.palette;
 
-        button.id = "openwebapps-toolbar-button";
-        button.label = getString("openwebappsToolbarButton.label");
-        button.tooltipText = getString("openwebappsToolbarButton.tooltip");
-
-        /* Reset click handlers */
-        button.ondragexit = button.aboutHomeOverrideTooltip = null;
-        button.ondragover = button.ondragenter = button.ondrop = null;
-        // button.onclick = function() { self._togglePopup(); };
+        button.setAttribute("id", buttonId);
+        button.setAttribute("label",
+            getString("openwebappsToolbarButton.label"));
+        button.setAttribute("tooltipText",
+            getString("openwebappsToolbarButton.tooltip"));
+        button.setAttribute("class",
+            "toolbarbutton-1 chromeclass-toolbar-additional");
         button.onclick = function() { self._toggleDock(); };
 
-        toolbox.appendChild(button);
-        unloaders.push(function() toolbox.removeChild(button));
+        // Move to location at end
+        let toolbar = doc.getElementById("nav-bar");
+        toolbar.appendChild(button);
+        
+        // FIXME: this will probably not be called because of jetpack
+        unloaders.push(function() toolbar.removeChild(button));
     },
 
     _addDock: function() {
@@ -142,20 +206,15 @@ openwebapps.prototype = {
 
         // We will add an hbox before navigator-toolbox;
         // this should put it above all the tabs.
-        let targetID = "addon-bar";
-        let mergePoint = this._window.document.getElementById(targetID);
-        if (!mergePoint) return;
+        let targetID = "navigator-toolbox";
+        let navigatorToolbox = this._window.document.getElementById(targetID);
+        if (!navigatorToolbox) return;
         
         let dock = this._window.document.createElementNS(HTML_NS, "div");
         dock.style.display = "none";
         dock.width = "100%";
-        dock.height = "90px";
-        dock.style.overflow  = "hidden";
-        dock.style.borderTop = "0.1em solid black";
-
-        dock.style.boxShadow = "inset 0 0 5px 3px rgba(0,0,0,0.3)"
-
-        //dock.style.background = "-moz-linear-gradient(0% 0% 270deg,#8A8A8A, #E9E9E9, #E8E8E8 15%)"
+        dock.height = "80px";
+        dock.style.backgroundColor = "rgba(0,0,0,0.3)";
         
         self._dock = dock;
         try {
@@ -164,8 +223,8 @@ openwebapps.prototype = {
           dump(e + "\n");
           dump(e.stack + "\n");
         }
-        mergePoint.parentNode.insertBefore(dock, mergePoint);
-        unloaders.push(function() mergePoint.parentNode.removeChild(dock));
+        navigatorToolbox.parentNode.insertBefore(dock, navigatorToolbox);
+        unloaders.push(function() navigatorToolbox.parentNode.removeChild(dock));
     },
     
     _renderDockIcons: function(recentlyInstalledAppKey) {
@@ -193,8 +252,8 @@ openwebapps.prototype = {
         for (let k in apps) {
             let appBox = self._window.document.createElementNS(HTML_NS, "div");
             appBox.style.display = "inline-block";
-            appBox.style.width = "100px";
-            appBox.style.height = "90px";
+            appBox.style.width = "72px";
+            appBox.style.height = "100%";
 
             if (k == recentlyInstalledAppKey) {
                 appBox.style.boxShadow = "0 0 1em gold";
@@ -216,10 +275,9 @@ openwebapps.prototype = {
                 // default
             }
             icon.style.backgroundSize = "cover";
-            icon.style.width = "64px";
-            icon.style.height = "64px";
-            icon.style.marginTop = "8px"
-            icon.style.marginLeft = "16px";
+            icon.style.width = "48px";
+            icon.style.height = "48px";
+            icon.style.marginLeft = "12px";
             
             let label = self._window.document.createElementNS(XUL_NS, "label");
             label.style.width = "62px";
@@ -256,10 +314,15 @@ openwebapps.prototype = {
         }
     },
     _showDock: function() {
-        this._dock.style.display ="block";
+        let aDock = this._dock;
+        let self = this;
+        aDock.style.height = "66px";
+        aDock.height ="66px";
+        aDock.style.display ="block";
     },
     _hideDock: function() {
         this._dock.style.display ="none";
+        this._dock.height = "0px";
     },
     
     _togglePopup: function() {
@@ -274,9 +337,6 @@ openwebapps.prototype = {
         let repo = this._repo;
         let win = this._window;
         let self = this;
-
-        // HOWA support
-        Cu.import("resource://openwebapps/modules/howa.js");
         
         win.appinjector.register({
             apibase: "navigator.apps", name: "install", script: null,
@@ -373,20 +433,6 @@ openwebapps.prototype = {
                 }
             }
         });
-
-        // experimental stuff for Headless OWAs (Ben, 2011-05-31)
-        
-        // setup a bunch of HOWAs for one call
-        win.appinjector.register({
-            apibase: "navigator.apps.howa", name: "setup", script: null,
-            getapi: function (contentWindowRef) {
-                return function (svc_name, callback, onerror) {
-                    HOWA_API.verifyPermission(contentWindowRef.location);
-                    HOWA_API.setup(contentWindowRef, svc_name, callback, onerror);
-                }
-            }
-        });
-
         win.appinjector.registerAction(function() {
             // Clear out the current page URL on every page load
             let toolbarButton = win.document.getElementById("openwebapps-toolbar-button");
@@ -401,7 +447,8 @@ openwebapps.prototype = {
         function registerSyncEngine() {
             let tmp = {};
             Cu.import("resource://services-sync/main.js", tmp);
-            Cu.import("resource://openwebapps/modules/sync.js", tmp);
+
+            tmp.AppsEngine = require("./sync").AppsEngine;
             
             if (!tmp.Weave.Engines.get("apps")) {
                 tmp.Weave.Engines.register(tmp.AppsEngine);
@@ -417,48 +464,7 @@ openwebapps.prototype = {
             }
         }
         
-        if (topic == "xul-overlay-merged") {
-            let tmp = {};
-            Cu.import("resource://openwebapps/modules/injector.js", tmp);
-            tmp.InjectorInit(this._window); 
-
-            tmp = {};
-            Cu.import("resource://openwebapps/modules/api.js", tmp);
-            this._repo = tmp.FFRepoImplService; 
-
-            tmp = {};
-            Cu.import("resource://openwebapps/modules/panel.js", tmp);            
-            this._inject();
-            this._addToolbarButton();
-            this._popup = new tmp.appPopup(this._window);
-            this._addDock();
-
-            tmp = {};
-            Cu.import("resource://openwebapps/modules/services.js", tmp);
-            this._services = new tmp.serviceInvocationHandler(this._window);
-
-            tmp = {};
-            Cu.import("resource://services-sync/main.js", tmp);
-            if (tmp.Weave.Status.ready) {
-                registerSyncEngine();
-            } else {
-                Cu.import("resource://services-sync/util.js");
-                Svc.Obs.add("weave:service:ready", this);
-            }
-            
-            if (this.pendingRegistrations) {
-                for each (let reg in this.pendingRegistrations) {
-                    this._repo._registerBuiltInApp(reg[0], reg[1], reg[2]);
-                }
-                this.pendingRegistrations = null;
-            }
-            
-            // Keep an eye out for LINK headers that contain manifests:
-            var obs = Components.classes["@mozilla.org/observer-service;1"].
-                      getService(Components.interfaces.nsIObserverService);
-            obs.addObserver(this, 'content-document-global-created', false);
-              
-        } else if (topic == "weave:service:ready") {
+        if (topic == "weave:service:ready") {
             registerSyncEngine();
         } else if (topic == "openwebapp-installed") {
             var installData = JSON.parse(data)
@@ -546,7 +552,7 @@ let AboutApps = {
         let ios = Cc["@mozilla.org/network/io-service;1"].
                   getService(Ci.nsIIOService);
         let channel = ios.newChannel(
-            "resource://openwebapps/chrome/content/about.html", null, null
+            require("self").data.url("about.html"), null, null
         );
         channel.originalURI = aURI;
         return channel;
@@ -575,7 +581,7 @@ let AboutAppsHome = {
         let ios = Cc["@mozilla.org/network/io-service;1"].
                   getService(Ci.nsIIOService);
         let channel = ios.newChannel(
-            "resource://openwebapps/chrome/content/home.xhtml", null, null
+            require("self").data.url("home.xhtml"), null, null
         );
         channel.originalURI = aURI;
         return channel;
@@ -586,17 +592,21 @@ let AboutAppsHome = {
 
 
 let unloaders = [];
-function startup(data, reason) AddonManager.getAddonByID(data.id, function(addon) {
+// no longer the original bootstrap signature, modified
+// for jetpack, expecting only a callback to obtain resource URLs
+function startup(getUrlCB) {
+   // AddonManager.getAddonByID(data.id, function(addon) {
     /* Let's register ourselves a resource: namespace */
-    let resource = Services.io.getProtocolHandler("resource")
+    /*let resource = Services.io.getProtocolHandler("resource")
                    .QueryInterface(Ci.nsIResProtocolHandler);
     let alias = Services.io.newFileURI(data.installPath);
     if (!data.installPath.isDirectory())
         alias = Services.io.newURI("jar:" + alias.spec + "!/", null, null);
     resource.setSubstitution("openwebapps", alias);
+    */
 
     /* Setup l10n */
-    getString.init(addon);
+    getString.init(getUrlCB);
     
     /* We use winWatcher to create an instance per window (current and future) */
     let iter = Cc["@mozilla.org/appshell/window-mediator;1"]
@@ -604,7 +614,7 @@ function startup(data, reason) AddonManager.getAddonByID(data.id, function(addon
                .getEnumerator("navigator:browser");
     while (iter.hasMoreElements()) {
         let aWindow = iter.getNext().QueryInterface(Ci.nsIDOMWindow);
-        aWindow.apps = new openwebapps(aWindow, addon);
+        aWindow.apps = new openwebapps(aWindow, getUrlCB);
     }
     function winWatcher(subject, topic) {
         if (topic != "domwindowopened")
@@ -613,7 +623,7 @@ function startup(data, reason) AddonManager.getAddonByID(data.id, function(addon
             subject.removeEventListener("load", arguments.callee, false);
             let doc = subject.document.documentElement;
             if (doc.getAttribute("windowtype") == "navigator:browser") {
-                subject.apps = new openwebapps(subject, addon);
+                subject.apps = new openwebapps(subject, getUrlCB);
             }
         }, false);
     }
@@ -638,10 +648,10 @@ function startup(data, reason) AddonManager.getAddonByID(data.id, function(addon
     // Broadcast that we're done, in case anybody is listening
     let observerService = Cc["@mozilla.org/observer-service;1"]
                .getService(Ci.nsIObserverService);
-    let tmp = {};
-    Cu.import("resource://openwebapps/modules/api.js", tmp);
+    let tmp = require("api");
+    //Cu.import("resource://openwebapps/modules/api.js", tmp);
     observerService.notifyObservers(tmp.FFRepoImplService, "openwebapps-startup-complete", "");
-})
+}
 
 function shutdown(data, reason)
 {
@@ -656,3 +666,6 @@ function install()
 function uninstall()
 {
 }
+
+exports.startup = startup;
+exports.shutdown = shutdown;
