@@ -226,6 +226,8 @@ function handleMessage(event)
     {
       createChannels(cmdRequest);
     }
+  } else {
+    console.log("origin: " + event.origin);
   }
 }
 

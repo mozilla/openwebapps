@@ -75,7 +75,7 @@ serviceInvocationHandler.prototype = {
       xulPanel.appendChild(frame);
       doc.getElementById("mainPopupSet").appendChild(xulPanel);
       
-      frame.setAttribute("src", "resource://openwebapps/chrome/content/service2.html");
+      frame.setAttribute("src", require("self").data.url("service2.html"));
 
       return [xulPanel, frame];
     },
