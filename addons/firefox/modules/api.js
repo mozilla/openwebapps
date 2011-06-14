@@ -39,6 +39,12 @@ Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://openwebapps/modules/typed_storage.js");
 Cu.import("resource://openwebapps/modules/injector.js");
 
+// JWT stuff
+Cu.import("resource://openwebapps/modules/jwt.js");
+
+// Ben's experimental library
+Cu.import("resource://openwebapps/modules/utils.js");
+
 var console = {
     log: function(s) {dump(s+"\n");}
 };
@@ -243,7 +249,7 @@ FFRepoImpl.prototype = {
 
     launch: function _launch(id)
     {
-        function openAppURL(url)
+        function openAppURL(url, app)
         {
             let ss = Cc["@mozilla.org/browser/sessionstore;1"]
                     .getService(Ci.nsISessionStore);
@@ -284,10 +290,37 @@ FFRepoImpl.prototype = {
             if (!found) {
                 let recentWindow = wm.getMostRecentWindow("navigator:browser");
                 if (recentWindow) {
-                    let tab = recentWindow.gBrowser.addTab(url);
-                    recentWindow.gBrowser.pinTab(tab);
-                    recentWindow.gBrowser.selectedTab = tab;
-                    ss.setTabValue(tab, "appURL", url);
+                    // FIXME: let's do this with invisible iframes, not with a new tab
+                    
+                    // FIXME: get the real email out of the license
+                    let parsed_license = jwt.WebTokenParser.parse(app.install_data.license).getJSONObject();
+                    var email = parsed_license['user'];
+
+                    var preauth_url = "resource://openwebapps/chrome/content/preauth.html#" + encodeURIComponent(email);
+
+                    // do this in an iframe
+                    utils.create_iframe(recentWindow, preauth_url, function(iframe, channel) {
+                        let auth_doc = iframe.contentDocument;
+                        let get_token_and_go = function() {
+                            let token = auth_doc.getElementById('token');
+                            // get the token
+                            if (token && (token.innerHTML != "")) {
+                                // launch the app tab
+                                let tab = recentWindow.gBrowser.addTab(url + "#" + token.innerHTML);
+                                recentWindow.gBrowser.pinTab(tab);
+                                recentWindow.gBrowser.selectedTab = tab;
+                                ss.setTabValue(tab, "appURL", url);
+                                
+                                iframe.close();
+                            } else {
+                                recentWindow.setTimeout(get_token_and_go, 250);
+                            }
+                        }
+                        
+                        get_token_and_go();
+                    }, function(error) {
+                    });
+
                 } else {
                     // This is a very odd case: no browser windows are open, so open a new one.
                     aWindow.open(url);
@@ -306,7 +339,7 @@ FFRepoImpl.prototype = {
                     let url = apps[app]['origin'];
                     if ('launch_path' in apps[app]['manifest'])
                         url += apps[app]['manifest']['launch_path'];
-                    openAppURL(url);
+                    openAppURL(url, apps[app]);
                     found = true;
                 }
             }

@@ -273,6 +273,9 @@ openwebapps.prototype = {
         let repo = this._repo;
         let win = this._window;
         let self = this;
+
+        // HOWA support
+        Cu.import("resource://openwebapps/modules/howa.js");
         
         win.appinjector.register({
             apibase: "navigator.apps", name: "install", script: null,
@@ -369,6 +372,20 @@ openwebapps.prototype = {
                 }
             }
         });
+
+        // experimental stuff for Headless OWAs (Ben, 2011-05-31)
+        
+        // setup a bunch of HOWAs for one call
+        win.appinjector.register({
+            apibase: "navigator.apps.howa", name: "setup", script: null,
+            getapi: function (contentWindowRef) {
+                return function (svc_name, callback, onerror) {
+                    HOWA_API.verifyPermission(contentWindowRef.location);
+                    HOWA_API.setup(contentWindowRef, svc_name, callback, onerror);
+                }
+            }
+        });
+
         win.appinjector.registerAction(function() {
             // Clear out the current page URL on every page load
             let toolbarButton = win.document.getElementById("openwebapps-toolbar-button");
