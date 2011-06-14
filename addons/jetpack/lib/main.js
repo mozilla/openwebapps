@@ -35,6 +35,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 const self = require("self");
+const unload = require("unload");
 
 const {Cc, Ci, Cm, Cu} = require("chrome");
 const HTML_NS = "http://www.w3.org/1999/xhtml";
@@ -359,6 +360,7 @@ function startup(getUrlCB) {
     Cm.QueryInterface(Ci.nsIComponentRegistrar).registerFactory(
         AboutAppsHomeUUID, "About Apps Home", AboutAppsHomeContract, AboutAppsHomeFactory
     );
+
     unloaders.push(function() {
         Cm.QueryInterface(Ci.nsIComponentRegistrar).unregisterFactory(
             AboutAppsUUID, AboutAppsFactory
@@ -376,12 +378,18 @@ function startup(getUrlCB) {
     observerService.notifyObservers(tmp.FFRepoImplService, "openwebapps-startup-complete", "");
 }
 
-function shutdown(data, reason)
+function shutdown(why)
 {
-    if (reason == APP_SHUTDOWN) return;
+    // variable why is one of 'uninstall', 'disable', 'shutdown', 'upgrade' or
+    // 'downgrade'. doesn't matter now, but might later
     unloaders.forEach(function(unload) unload && unload());
+
+    // TODO: Hookup things to unload from ui.js module
 }
 
 // Let's go!
 startup(self.data.url);
+
+// Hook up unloaders
+unload.when(shutdown);
 
