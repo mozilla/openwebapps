@@ -264,7 +264,7 @@ FFRepoImpl.prototype = {
             let bEnum = wm.getEnumerator("navigator:browser");
             let found = false;
 
-            // Do we already have this app running in a tab?    If so, target it.
+            // Do we already have this app running in a tab? If so, target it.
             while (!found && bEnum.hasMoreElements()) {
                 let browserWin = bEnum.getNext();
                 let tabbrowser = browserWin.gBrowser;
@@ -297,9 +297,12 @@ FFRepoImpl.prototype = {
                 let recentWindow = wm.getMostRecentWindow("navigator:browser");
                 if (recentWindow) {
                     let tab = recentWindow.gBrowser.addTab(url);
+                    let bar = recentWindow.document.getElementById("nav-bar");
+
                     recentWindow.gBrowser.pinTab(tab);
                     recentWindow.gBrowser.selectedTab = tab;
                     ss.setTabValue(tab, "appURL", url);
+                    bar.setAttribute("collapsed", true);
                 } else {
                     // This is a very odd case: no browser windows are open, so open a new one.
                     aWindow.open(url);
