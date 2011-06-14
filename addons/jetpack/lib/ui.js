@@ -62,18 +62,23 @@ function getString(name, args, plural) {
     }
     return str;
 }
-getString.init = function(get_resource_uri, getAlternate) {
+getString.init = function(getUrlCB, getAlternate) {
     if (typeof getAlternate != "function")
         getAlternate = function() "en-US";
 
     function getBundle(locale) {
-        let propertyFile = get_resource_uri("locale/" + locale + ".properties");
+        let propertyFile = getUrlCB("locale/" + locale + ".properties");
         try {
+            let tmp = {};
+            Cu.import("resource://gre/modules/Services.jsm", tmp);
+
             let uniqueFileSpec = propertyFile + "#" + Math.random();
-            let bundle = Services.strings.createBundle(uniqueFileSpec);
+            let bundle = tmp.Services.strings.createBundle(uniqueFileSpec);
             bundle.getSimpleEnumeration();
             return bundle;
-        } catch(ex) {}
+        } catch (ex) {
+            console.log("getString init: " + ex);
+        }
         return null;
     }
 
@@ -108,31 +113,6 @@ openwebappsUI.prototype = {
         this._addToolbarButton();
         this._popup = new tmp.appPopup(this._window);
         this._addDock();
-
-        tmp = require("./services");
-        this._services = new tmp.serviceInvocationHandler(this._window);
-
-        tmp = {};
-        Cu.import("resource://services-sync/main.js", tmp);
-        if (tmp.Weave.Status.ready) {
-            registerSyncEngine();
-        } else {
-            tmp = {};
-            Cu.import("resource://services-sync/util.js", tmp);
-            tmp.Svc.Obs.add("weave:service:ready", this);
-        }
-            
-        if (this.pendingRegistrations) {
-            for each (let reg in this.pendingRegistrations) {
-                this._repo._registerBuiltInApp(reg[0], reg[1], reg[2]);
-            }
-            this.pendingRegistrations = null;
-        }
-            
-        // Keep an eye out for LINK headers that contain manifests:
-        var obs = Components.classes["@mozilla.org/observer-service;1"].
-                  getService(Components.interfaces.nsIObserverService);
-        obs.addObserver(this, 'content-document-global-created', false);
     },
 
     _addToolbarButton: function() {
@@ -193,13 +173,12 @@ openwebappsUI.prototype = {
     },
     
     _renderDockIcons: function(recentlyInstalledAppKey) {
-      let self= this;
+      let self = this;
       while (this._dock.firstChild) {
         this._dock.removeChild(this._dock.firstChild);
       }
       
       this._repo.list(function(apps) {
-
         function getBiggestIcon(minifest) {
             // XXX this should really look for icon that is closest to 48 pixels.
             // see if the minifest has any icons, and if so, return the largest one

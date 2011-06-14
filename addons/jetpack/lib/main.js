@@ -61,12 +61,37 @@ function openwebapps(win, getUrlCB)
     
     // Base initialization
     let tmp = {};
+    tmp = require("./api");
+    this._repo = tmp.FFRepoImplService;
+
     tmp = require("./injector");
     tmp.InjectorInit(this._window); 
     this._inject();
 
-    tmp = require("./api");
-    this._repo = tmp.FFRepoImplService;
+    tmp = require("./services");
+    this._services = new tmp.serviceInvocationHandler(this._window);
+
+    tmp = {};
+    Cu.import("resource://services-sync/main.js", tmp);
+    if (tmp.Weave.Status.ready) {
+        registerSyncEngine();
+    } else {
+        tmp = {};
+        Cu.import("resource://services-sync/util.js", tmp);
+        tmp.Svc.Obs.add("weave:service:ready", this);
+    }
+            
+    if (this.pendingRegistrations) {
+        for each (let reg in this.pendingRegistrations) {
+            this._repo._registerBuiltInApp(reg[0], reg[1], reg[2]);
+        }
+        this.pendingRegistrations = null;
+    }
+          
+    // Keep an eye out for LINK headers that contain manifests:
+    var obs = Components.classes["@mozilla.org/observer-service;1"].
+              getService(Components.interfaces.nsIObserverService);
+    obs.addObserver(this, 'content-document-global-created', false);
 
     tmp = require("./ui");
     this._ui = new tmp.openwebappsUI(win, getUrlCB, this._repo);
