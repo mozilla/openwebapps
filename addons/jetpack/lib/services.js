@@ -42,7 +42,7 @@ const Cc = Components.classes;
 const Ci = Components.interfaces;
 */
 //Cu.import("resource://openwebapps/modules/api.js");
-require("api");
+var {FFRepoImplService} = require("api");
 
 /**
  We create a service invocation panel when needed; there is at most one per
@@ -75,7 +75,8 @@ serviceInvocationHandler.prototype = {
       xulPanel.appendChild(frame);
       doc.getElementById("mainPopupSet").appendChild(xulPanel);
       
-      frame.setAttribute("src", "resource://openwebapps/chrome/content/service2.html");
+      frame.setAttribute("src", require("self").data.url("service2.html"));
+      console.log("set to service2");
 
       return [xulPanel, frame];
     },
@@ -115,7 +116,9 @@ serviceInvocationHandler.prototype = {
           }
         }
         // If not, go create one
-        if (!thePanel) {
+        // TEMPORARY: always create panel for debugging
+        //if (!thePanel) {
+        if (1) {
           let tmp = this._createPopupPanel();
           thePanel = tmp[0];
           theIFrame = tmp[1];
@@ -157,12 +160,16 @@ serviceInvocationHandler.prototype = {
       
       function updateContentWhenWindowIsReady()
       {
+//        let theIFrame = theIFrame.wrappedJSObject;
         if (!theIFrame.contentDocument || !theIFrame.contentDocument.getElementById("wrapper")) {
           let timeout = self._window.setTimeout(updateContentWhenWindowIsReady, 1000);
         } else {
-
+          console.log(theIFrame.contentDocument);
+          console.log(theIFrame.contentDocument.wrappedJSObject);
+          console.log("ready");
           // Ready to go: attach our response listener
-          theIFrame.contentDocument.addEventListener("message", function(event) {
+          theIFrame.contentDocument.wrappedJSObject.addEventListener("message", function(event) {
+            console.log("message from " + event.origin + " with data " + event.data);
             if (event.origin == "resource://openwebapps/service") {
               var msg = JSON.parse(event.data);
               if (msg.cmd == "result") {
@@ -197,6 +204,7 @@ serviceInvocationHandler.prototype = {
               frame.setAttribute("id", "svc-frame-" + i);
               theIFrame.contentDocument.getElementById("frame-garage").appendChild(frame);
               theIFrame.addEventListener("DOMContentLoaded", function(event) {
+                console.log("domcontentloaded");
                 // XXX this should be a deterministic link based on the call to registerBuiltInApp
                 if (svc.url.indexOf("resource://") == 0) {
                   let observerService = Cc["@mozilla.org/observer-service;1"].getService(Ci.nsIObserverService);
@@ -204,14 +212,17 @@ serviceInvocationHandler.prototype = {
                 }
               }, false);
             }
-            
-            theIFrame.contentWindow.postMessage(
+
+            console.log("messaging the IFRAME: " + theIFrame.contentWindow.wrappedJSObject);
+            theIFrame.contentWindow.wrappedJSObject.postMessage(
               JSON.stringify(
                 {cmd:"setup", method:methodName, args:args, serviceList: serviceList, 
                   caller:contentWindowRef.location.href}
               ), "*");
+
+            console.log("messaging start_channels");
           
-            theIFrame.contentWindow.postMessage(
+            theIFrame.contentWindow.wrappedJSObject.postMessage(
               JSON.stringify( {cmd:"start_channels"}), "*");
               
           });

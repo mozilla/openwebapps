@@ -213,8 +213,14 @@ function deleteOldChannels() {
   $("#services").remove();// this will remove iframes from DOM
 }
 
+$(document).ready(function() {
+  
+});
+                                             
 function handleMessage(event)
 {
+  alert('got message from ' + event.origin);
+
   if (event.origin == "resource://openwebapps")
   {
     var cmdRequest = JSON.parse(event.data);
@@ -226,6 +232,8 @@ function handleMessage(event)
     {
       createChannels(cmdRequest);
     }
+  } else {
+    alert("origin: " + event.origin);
   }
 }
 
@@ -401,7 +409,6 @@ function createChannels(cmdRequest)
 }
 window.addEventListener("message", handleMessage, false);
 
-
 var addServicesManifest =
 {
   manifest: {
@@ -448,7 +455,6 @@ if (this.location.href.indexOf("file:///") == 0)
       });
   }, 10);
 }
-
 
 function confirm()
 {
