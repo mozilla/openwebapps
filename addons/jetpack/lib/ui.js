@@ -152,33 +152,36 @@ openwebappsUI.prototype = {
 
         // We will add an hbox before navigator-toolbox;
         // this should put it above all the tabs.
-        let targetID = "navigator-toolbox";
-        let navigatorToolbox = this._window.document.getElementById(targetID);
-        if (!navigatorToolbox) return;
+        let targetID = "addon-bar";
+        let mergePoint = this._window.document.getElementById(targetID);
+        if (!mergePoint) return;
         
-        let dock = this._window.document.createElementNS(HTML_NS, "div");
-        dock.style.display = "none";
-        dock.width = "100%";
-        dock.height = "80px";
-        dock.style.backgroundColor = "rgba(0,0,0,0.3)";
+        let dock = this._window.document.createElement("hbox");
+        dock.collapsed = true;
+        dock.height = "90px";
+        dock.style.borderTop = "0.1em solid black";
+
+        dock.style.background = "-moz-linear-gradient(15% 0% 270deg,#8A8A8A, #E0E0E0, #E0E0E0 15%,#F8F8F8 85%)"
         
         self._dock = dock;
         try {
-            self._renderDockIcons();
-        } catch (e) {}
-        navigatorToolbox.parentNode.insertBefore(dock, navigatorToolbox);
+          self._renderDockIcons();
+        } catch (e) { }
+        
+        mergePoint.parentNode.insertBefore(dock, mergePoint);
 
         // FIXME: this will probably not be called because of jetpack
-        // unloaders.push(function() navigatorToolbox.parentNode.removeChild(dock));
+        // unloaders.push(function() mergePoint.parentNode.removeChild(dock));
     },
     
     _renderDockIcons: function(recentlyInstalledAppKey) {
-      let self = this;
+      let self= this;
       while (this._dock.firstChild) {
         this._dock.removeChild(this._dock.firstChild);
       }
       
       this._repo.list(function(apps) {
+
         function getBiggestIcon(minifest) {
             // XXX this should really look for icon that is closest to 48 pixels.
             // see if the minifest has any icons, and if so, return the largest one
@@ -194,23 +197,28 @@ openwebappsUI.prototype = {
         }
 
         for (let k in apps) {
-            let appBox = self._window.document.createElementNS(HTML_NS, "div");
-            appBox.style.display = "inline-block";
-            appBox.style.width = "72px";
-            appBox.style.height = "100%";
+            //let appBox = self._window.document.createElementNS(HTML_NS, "div");
+            let appBox = self._window.document.createElement("vbox");
 
-            if (k == recentlyInstalledAppKey) {
-                appBox.style.boxShadow = "0 0 1em gold";
-            }
+            appBox.style.width = "100px";
+            appBox.style.height = "90px";
 
-            let icon = self._window.document.createElementNS(HTML_NS, "div");
+//turned off for now, kinda ugly
+//             if (k == recentlyInstalledAppKey) {
+//                 appBox.style.boxShadow = "0 0 1em gold";
+//             }
+
+            //let icon = self._window.document.createElementNS(HTML_NS, "div");
+            let icon = self._window.document.createElement("image");
+
             if (apps[k].manifest.icons) {
                 let iconData = getBiggestIcon(apps[k].manifest);
                 if (iconData) {
                     if (iconData.indexOf("data:") == 0) {
-                        icon.style.backgroundImage = "url(" + iconData + ")";
+                        icon.setAttribute("src", iconData);
                     } else {
-                        icon.style.backgroundImage = "url(" + k + iconData + ")";              
+                        icon.setAttribute("src", k + iconData);
+
                     }
                 } else {
                     // default
@@ -218,30 +226,41 @@ openwebappsUI.prototype = {
             } else {
                 // default
             }
-            icon.style.backgroundSize = "cover";
-            icon.style.width = "48px";
-            icon.style.height = "48px";
-            icon.style.marginLeft = "12px";
-            
-            let label = self._window.document.createElementNS(XUL_NS, "label");
-            label.style.width = "62px";
-            
-            // Setting text color is tricky because a persona may make it
-            // unreadable. We optimize for default skin.
-            label.style.font = "bold 9px Helvetica,Arial,sans-serif";
-            label.style.color = "black";
-            label.style.textAlign = "center";
-            label.appendChild(
-                self._window.document.createTextNode(apps[k].manifest.name)
-            );
 
+            icon.style.width = "64px";
+            icon.style.height = "64px";
+            icon.style.margin = "18px";
+            icon.style.marginBottom = "2px";
+            icon.style.marginTop = "6px";
+            icon.style.border = "4px solid rgba(30,150,45,0.4)";
+            icon.style.borderRadius = "8px";
+            icon.style.backgroundColor = "white";
+
+            icon.onmouseover = (function() { icon.style.border = "4px solid rgba(30,255,45,1)"; } );
+            icon.onmouseout = (function() { icon.style.border = "4px solid rgba(30,150,45,0.4)"; } );
+            
             let key = k;
-            appBox.onclick = (function() {
+            icon.onclick = (function() {
                 return function() { 
                     self._repo.launch(key); 
                     self._hideDock();
                 }
             })();
+             
+            let label = self._window.document.createElement("label");
+            label.style.width = "90px";
+            
+            label.style.font = "bold 12px Helvetica,Arial,sans-serif";
+            label.style.color = "444444";
+            label.style.overflow = "hidden";
+            label.style.textShadow = "#dddddd 1px 1px, #dddddd -1px -1px, #dddddd -1px 1px, #dddddd 1px -1px";
+            label.style.textAlign = "center";
+            label.style.marginBottom = "6px";
+            
+            label.appendChild(
+                self._window.document.createTextNode(apps[k].manifest.name)
+            );
+            
 
             appBox.appendChild(icon);
             appBox.appendChild(label);
@@ -251,22 +270,19 @@ openwebappsUI.prototype = {
     },
 
     _toggleDock: function() {
-        if (this._dock.style.display == "none") {
+        if (this._dock.collapsed) {
             this._showDock();
         } else {
             this._hideDock();
         }
     },
     _showDock: function() {
-        let aDock = this._dock;
-        let self = this;
-        aDock.style.height = "66px";
-        aDock.height ="66px";
-        aDock.style.display ="block";
+        //this._dock.style.display ="block";
+        this._dock.collapsed = false;
     },
     _hideDock: function() {
-        this._dock.style.display ="none";
-        this._dock.height = "0px";
+        //this._dock.style.display ="none";
+        this._dock.collapsed = true;
     },
     
     _togglePopup: function() {

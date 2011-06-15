@@ -150,6 +150,7 @@ openwebapps.prototype = {
         dock.style.display = "none";
         dock.width = "100%";
         dock.height = "90px";
+        dock.flex = 1;
         dock.style.overflow  = "hidden";
         dock.style.borderTop = "0.1em solid black";
 
