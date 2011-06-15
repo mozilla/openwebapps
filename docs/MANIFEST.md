@@ -17,7 +17,7 @@ Three changes from the production version:
 
 Here's an example:
 
-   {
+    {
         "version": "1.0",
         "name": "MozillaBall",
         "description": "Exciting Open Web development action!",
@@ -58,5 +58,5 @@ Here's an example:
                  "url": "/services/image-send",
             }
         }
-   }
+    }
 
