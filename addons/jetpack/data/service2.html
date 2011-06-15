@@ -178,7 +178,7 @@ function makeSuccessFunction(svc)
     msg.initMessageEvent("message", // type
                          true, true, // bubble, cancelable
                          JSON.stringify(messageData),  // data
-                         "resource://openwebapps/service", "", window); // origin, source
+                         "resource://openwebapps-at-labs-dot-mozilla-dot-com-openwebapps-data/service2.html", "", window); // origin, source
     document.dispatchEvent(msg);
   }
 }
@@ -216,14 +216,9 @@ function deleteOldChannels() {
 $(document).ready(function() {
   
 });
-                                             
-function handleMessage(event)
-{
-  alert('got message from ' + event.origin);
 
-  if (event.origin == "resource://openwebapps")
-  {
-    var cmdRequest = JSON.parse(event.data);
+function handleAdminPostMessage(data) {
+    var cmdRequest = JSON.parse(data);
     if (cmdRequest.cmd == "setup")
     {
       handleSetup(cmdRequest);
@@ -232,8 +227,15 @@ function handleMessage(event)
     {
       createChannels(cmdRequest);
     }
+}
+                          
+function handleMessage(event)
+{
+  if (event.origin == "resource://openwebapps")
+  {
+    handleAdminPostMessage(event.data);
   } else {
-    alert("origin: " + event.origin);
+    //alert("origin: " + event.origin);
   }
 }
 
