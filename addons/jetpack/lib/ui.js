@@ -97,6 +97,7 @@ function openwebappsUI(win, getUrlCB, repo)
     /* Setup l10n */
     getString.init(getUrlCB);
     this._overlay();
+    this._setupTabHandling();
 }
 openwebappsUI.prototype = {
     _overlay: function() {
@@ -113,6 +114,31 @@ openwebappsUI.prototype = {
         this._addToolbarButton();
         this._popup = new tmp.appPopup(this._window);
         this._addDock();
+    },
+
+    _setupTabHandling: function() {
+        // Handle the case of our special app tab being selected so we
+        // can hide the URL bar etc.
+        let container = this._window.gBrowser.tabContainer;
+        let ss = Cc["@mozilla.org/browser/sessionstore;1"]
+                    .getService(Ci.nsISessionStore);
+        let wm = Cc["@mozilla.org/appshell/window-mediator;1"]
+                    .getService(Ci.nsIWindowMediator);
+
+        function appifyTab(evt) {
+            let win = wm.getMostRecentWindow("navigator:browser");
+            let box = win.document.getElementById("nav-bar");
+
+            if (ss.getTabValue(evt.target, "appURL")) {
+                box.setAttribute("collapsed", true);
+            } else {
+                box.setAttribute("collapsed", false);
+            }
+        }
+
+        container.addEventListener("TabSelect", appifyTab, false);
+        // unloaders.push(container.removeEventListener("TabSelect", appifyTab,
+        // false);
     },
 
     _addToolbarButton: function() {
