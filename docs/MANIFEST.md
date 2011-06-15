@@ -15,6 +15,8 @@ Three changes from the production version:
 
 ## Manifest Example
 
+Here's an example:
+
    {
         "version": "1.0",
         "name": "MozillaBall",
@@ -57,3 +59,4 @@ Three changes from the production version:
             }
         }
    }
+
