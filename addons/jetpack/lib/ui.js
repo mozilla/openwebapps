@@ -157,6 +157,7 @@ openwebappsUI.prototype = {
             toolbox.palette;
 
         button.setAttribute("id", buttonId);
+        button.setAttribute("type", "checkbox");
         button.setAttribute("label",
             getString("openwebappsToolbarButton.label"));
         button.setAttribute("tooltipText",
