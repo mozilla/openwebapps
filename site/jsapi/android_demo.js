@@ -9,7 +9,7 @@ navigator.apps = (function() {
         "Google Search":"", "Contacts":"", "Calendar":"", "Messaging":"",
         "NYTimes":"", "Clock":"", "Contacts":"", "Email":"", "Music":"",
         "Fennec":"", "Browser":"", "Settings":"", "Talk":"", "Latitude":"",
-	"NYT Web":"", "Zeit Online":""
+        "NYT Web":"", "Zeit Online":"", "Marble Run":"", "Favimon":""
     };
     var webapps = {
     "http://tubagames.net": {
@@ -56,25 +56,6 @@ navigator.apps = (function() {
             }
         }
     },
-    "http://www.matthewhollett.com": {
-        "origin": "http://www.matthewhollett.com",
-        "src_url": "http://www.matthewhollett.com/favimon/manifest.webapp",
-        "manifest": {
-            "name": "Favimon (beta)",
-            "icons": {
-                "128": "/favimon/images/favimon-icon-128.png"
-            },
-            "installs_allowed_from": [
-                "*"
-            ],
-            "description": "Favimon is a web-based game in which you battle your favourite websites, building a collection of icons as you attempt to conquer the web! Works best in Firefox 3.6+.",
-            "launch_path": "/favimon/",
-            "developer": {
-                "url": "http://www.matthewhollett.com/",
-                "name": "Matthew Hollett"
-            }
-        }
-    },
     "http://shazow.net": {
         "origin": "http://shazow.net",
         "src_url": "http://shazow.net/linerage/gameon/manifest.json",
@@ -94,24 +75,6 @@ navigator.apps = (function() {
                 "url": "http://shazow.net",
                 "name": "Andrey Petrov"
             }
-        }
-    },
-    "http://marblerun.at": {
-        "origin": "http://marblerun.at",
-        "src_url": "http://marblerun.at/manifest.webapp",
-        "manifest": {
-            "icons": {
-                "128": "/images/webapp_icon.png"
-            },
-            "installs_allowed_from": [
-                "*"
-            ],
-            "developer": {
-                "url": "http://marblerun.at/about",
-                "name": "MARBLE RUN Team"
-            },
-            "name": "MARBLE RUN",
-            "description": "What is MARBLE RUN all about? It's about fun and easy gameplay. It's about creativeness and playfulness. It's about being a part of a big piece, actually a big marble run. Everyone is invited to build a track and add it to the big marble run. By doing so we will all create the longest marble run ever in history. The longer the run gets, the more special bricks will be available allowing us to build even more creative and awesome tracks.Long story short - it's all about building stuff like we all did when we were little kids."
         }
     },
     "http://regamez.com": {
