@@ -166,7 +166,7 @@ openwebappsUI.prototype = {
         button.onclick = function() { self._toggleDock(); };
 
         // Move to location at end
-        let toolbar = doc.getElementById("nav-bar");
+        let toolbar = doc.getElementById("addon-bar");
         toolbar.appendChild(button);
         
         // FIXME: this will probably not be called because of jetpack
@@ -184,7 +184,7 @@ openwebappsUI.prototype = {
         
         let dock = this._window.document.createElement("hbox");
         dock.collapsed = true;
-        dock.height = "90px";
+        //dock.height = "90px";
         dock.style.borderTop = "0.1em solid black";
 
         dock.style.background = "-moz-linear-gradient(15% 0% 270deg,#8A8A8A, #E0E0E0, #E0E0E0 15%,#F8F8F8 85%)"
@@ -229,10 +229,6 @@ openwebappsUI.prototype = {
             appBox.style.width = "100px";
             appBox.style.height = "90px";
 
-//turned off for now, kinda ugly
-//             if (k == recentlyInstalledAppKey) {
-//                 appBox.style.boxShadow = "0 0 1em gold";
-//             }
 
             //let icon = self._window.document.createElementNS(HTML_NS, "div");
             let icon = self._window.document.createElement("image");
