@@ -37,7 +37,7 @@
 const self = require("self");
 const unload = require("unload");
 
-const {Cc, Ci, Cm, Cu} = require("chrome");
+const {Cc, Ci, Cm, Cu, Cr, components} = require("chrome");
 const HTML_NS = "http://www.w3.org/1999/xhtml";
 const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
@@ -89,8 +89,8 @@ function openwebapps(win, getUrlCB)
     }
           
     // Keep an eye out for LINK headers that contain manifests:
-    var obs = Components.classes["@mozilla.org/observer-service;1"].
-              getService(Components.interfaces.nsIObserverService);
+    var obs = Cc["@mozilla.org/observer-service;1"].
+              getService(Ci.nsIObserverService);
     obs.addObserver(this, 'content-document-global-created', false);
 
     tmp = require("./ui");
@@ -241,12 +241,12 @@ openwebapps.prototype = {
             this._ui._renderDockIcons();
         } else if (topic == "content-document-global-created") {
             let mainWindow = subject
-                         .QueryInterface(Components.interfaces.nsIInterfaceRequestor)
-                         .getInterface(Components.interfaces.nsIWebNavigation)
-                         .QueryInterface(Components.interfaces.nsIDocShellTreeItem)
+                         .QueryInterface(Ci.nsIInterfaceRequestor)
+                         .getInterface(Ci.nsIWebNavigation)
+                         .QueryInterface(Ci.nsIDocShellTreeItem)
                          .rootTreeItem
-                         .QueryInterface(Components.interfaces.nsIInterfaceRequestor)
-                         .getInterface(Components.interfaces.nsIDOMWindow); 
+                         .QueryInterface(Ci.nsIInterfaceRequestor)
+                         .getInterface(Ci.nsIDOMWindow); 
             if (mainWindow != this._window) {
                 return;
             }
@@ -259,8 +259,8 @@ openwebapps.prototype = {
 
                     // Annotate the tab with the URL, so we can highlight the button
                     // and display the app when the user views this tab.
-                    var ios = Components.classes["@mozilla.org/network/io-service;1"].
-                    getService(Components.interfaces.nsIIOService);
+                    var ios = Cc["@mozilla.org/network/io-service;1"].
+                    getService(Ci.nsIIOService);
                 
                     // XXX TODO: Should we restrict the href to be associated in a limited way with the page?
                     aEvent.target.ownerDocument.applicationManifest =
@@ -298,12 +298,12 @@ openwebapps.prototype = {
 
 
 //----- about:apps implementation
-const AboutAppsUUID = Components.ID("{1DD224F3-7720-4E62-BAE9-30C1DCD6F519}");
+const AboutAppsUUID = components.ID("{1DD224F3-7720-4E62-BAE9-30C1DCD6F519}");
 const AboutAppsContract = "@mozilla.org/network/protocol/about;1?what=apps";
 let AboutAppsFactory = {
     createInstance: function(outer, iid) {
         if (outer != null)
-            throw Components.resources.NS_ERROR_NO_AGGREGATION;
+            throw Cr.NS_ERROR_NO_AGGREGATION;
         return AboutApps.QueryInterface(iid);
     }
 };
@@ -327,12 +327,12 @@ let AboutApps = {
 //----- end about:apps (but see ComponentRegistrar call in startup())
 
 //----- about:appshome implementation
-const AboutAppsHomeUUID = Components.ID("{C5A1D035-1A11-4152-8C17-7B6126FBA2CD}");
+const AboutAppsHomeUUID = components.ID("{C5A1D035-1A11-4152-8C17-7B6126FBA2CD}");
 const AboutAppsHomeContract = "@mozilla.org/network/protocol/about;1?what=appshome";
 let AboutAppsHomeFactory = {
     createInstance: function(outer, iid) {
         if (outer != null)
-            throw Components.resources.NS_ERROR_NO_AGGREGATION;
+            throw Cr.NS_ERROR_NO_AGGREGATION;
         return AboutAppsHome.QueryInterface(iid);
     }
 };
