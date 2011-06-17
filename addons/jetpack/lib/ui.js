@@ -110,9 +110,7 @@ openwebappsUI.prototype = {
         );
         doc.insertBefore(pi, doc.firstChild);
 
-        tmp = require("./panel");
         this._addToolbarButton();
-        this._popup = new tmp.appPopup(this._window);
         this._addDock();
     },
 
@@ -157,6 +155,7 @@ openwebappsUI.prototype = {
             toolbox.palette;
 
         button.setAttribute("id", buttonId);
+        button.setAttribute("type", "checkbox");
         button.setAttribute("label",
             getString("openwebappsToolbarButton.label"));
         button.setAttribute("tooltipText",
@@ -305,14 +304,6 @@ openwebappsUI.prototype = {
     _hideDock: function() {
         //this._dock.style.display ="none";
         this._dock.collapsed = true;
-    },
-    
-    _togglePopup: function() {
-        // Set up the current-app state:
-        this._repo.setCurrentPageAppURL(
-            this._window.gBrowser.contentDocument.applicationManifest
-        );
-        this._popup.toggle();
     }
 };
 

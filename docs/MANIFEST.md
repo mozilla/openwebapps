@@ -15,7 +15,9 @@ Three changes from the production version:
 
 ## Manifest Example
 
-   {
+Here's an example:
+
+    {
         "version": "1.0",
         "name": "MozillaBall",
         "description": "Exciting Open Web development action!",
@@ -56,4 +58,5 @@ Three changes from the production version:
                  "url": "/services/image-send",
             }
         }
-   }
+    }
+

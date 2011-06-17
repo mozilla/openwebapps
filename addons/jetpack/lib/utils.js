@@ -34,10 +34,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
  
-const Cu = Components.utils;
-const Cc = Components.classes;
-const Ci = Components.interfaces;
-
+const {Cc, Cu, Ci} = require("chrome");
 const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
 utils = (function() {

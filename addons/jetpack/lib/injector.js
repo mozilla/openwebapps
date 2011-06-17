@@ -40,16 +40,7 @@
 /* Partly based on code in the Geode extension. */
 
 const {Cc, Ci, Cu} = require("chrome");
-
-/*
-const Cc = Components.classes;
-const Ci = Components.interfaces;
-const Cu = Components.utils;
-*/
-
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
-
-let EXPORTED_SYMBOLS = ["InjectorInit"];
 
 const ALL_GROUP_CONSTANT = "___all___";
 let refreshed;
@@ -123,9 +114,9 @@ let Injector = {
     var safeWin = new XPCNativeWrapper(win);
     // options here are ignored for 3.6
     let sandbox = new Cu.Sandbox(safeWin, { sandboxProto: safeWin, wantXrays: true });
-    /*let sandbox = new Components.utils.Sandbox(
-        Components.classes["@mozilla.org/systemprincipal;1"].
-           createInstance(Components.interfaces.nsIPrincipal), 
+    /*let sandbox = new Cu.Sandbox(
+        Cc["@mozilla.org/systemprincipal;1"].
+           createInstance(Ci.nsIPrincipal), 
     );*/
 
     sandbox.importFunction(provider.getapi(safeWin), '__mozilla_injected_api_'+(provider.mangledName?provider.mangledName:provider.name)+'__');
@@ -145,14 +136,14 @@ function InjectorInit(window) {
     providers: [],
     actions: [],
     onLoad: function() {
-      var obs = Components.classes["@mozilla.org/observer-service;1"].
-                            getService(Components.interfaces.nsIObserverService);
+      var obs = Cc["@mozilla.org/observer-service;1"].
+                            getService(Ci.nsIObserverService);
       obs.addObserver(this, 'content-document-global-created', false);
     },
   
     onUnload: function() {
-      var obs = Components.classes["@mozilla.org/observer-service;1"].
-                            getService(Components.interfaces.nsIObserverService);
+      var obs = Cc["@mozilla.org/observer-service;1"].
+                            getService(Ci.nsIObserverService);
       obs.removeObserver(this, 'content-document-global-created');
     },
 
@@ -166,12 +157,12 @@ function InjectorInit(window) {
     observe: function(aSubject, aTopic, aData) {
       //if (!aSubject.location.href) return;
       // is this window a child of OUR XUL window?
-      let mainWindow = aSubject.QueryInterface(Components.interfaces.nsIInterfaceRequestor)
-                     .getInterface(Components.interfaces.nsIWebNavigation)
-                     .QueryInterface(Components.interfaces.nsIDocShellTreeItem)
+      let mainWindow = aSubject.QueryInterface(Ci.nsIInterfaceRequestor)
+                     .getInterface(Ci.nsIWebNavigation)
+                     .QueryInterface(Ci.nsIDocShellTreeItem)
                      .rootTreeItem
-                     .QueryInterface(Components.interfaces.nsIInterfaceRequestor)
-                     .getInterface(Components.interfaces.nsIDOMWindow); 
+                     .QueryInterface(Ci.nsIInterfaceRequestor)
+                     .getInterface(Ci.nsIDOMWindow); 
       if (mainWindow != window) {
         return;
       }
