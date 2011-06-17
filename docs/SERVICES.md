@@ -35,6 +35,13 @@ depend on the specific action.
 
 method_name examples are "link.share", "image.get", ...
 
+
+### Pre-Invocation Hooks
+
+F1 for example can hook in right before the service is invoked, add
+arguments to the invocation.
+
+
 ## Service Mediator
 
 The mediator is web content that, upon loading, knows that the user
@@ -68,7 +75,7 @@ of credentials for previously instantiated services. For example, if
 array of three credential blobs in availableCredentials if the user
 has 3 twitter accounts.
 
-The mediator should probably instantiate all services for which there
+The mediator then instantiates all services for which there
 are credentials, i.e.
 
     for (serviceOrigin in availableCredentials.keys()) {
@@ -77,6 +84,19 @@ are credentials, i.e.
                // do something with the serviceInstance that was created
            });
     }
+
+A serviceInstance object contains a few fields that are useful to the mediator:
+
+* serviceInstance.iframe is the service's IFRAME, if that service
+  offers a UI, which the mediator can then position appropriately.
+
+* serviceInstance.port
+
+### Other Considerations
+
+bulk login for all accounts at a provider, at some point?
+
+limited UI to just single credential per provider for now.
 
 ### Security Considerations
 
