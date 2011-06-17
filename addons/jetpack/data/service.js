@@ -229,3 +229,5 @@ self.port.on("start_channels", function(msg) {
 });
 self.port.emit("loaded");
 
+document.getElementById("confirmclicker").onclick = confirm;
+

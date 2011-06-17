@@ -37,8 +37,6 @@
  * ***** END LICENSE BLOCK ***** */
 
 const {Cc, Cu, Ci} = require("chrome");
-//const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
-
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
 var console = {
