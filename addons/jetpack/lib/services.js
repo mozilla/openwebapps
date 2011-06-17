@@ -82,6 +82,7 @@ serviceInvocationHandler.prototype = {
         if (!thePanel) {
             thePanel =  require("panel").Panel({
                 contentURL: data.url("service2.html"),
+                //contentURL: 'http://labs.adida.net/service2.html',
                 contentScriptFile: [
                     data.url("jquery-1.4.4.min.js"),
                     data.url("jquery-ui-1.8.10.custom.min.js"),
