@@ -35,16 +35,15 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-const {Cu, Ci, Cc} = require("chrome");
-const data = require("self").data;
-
-var panel = require("panel");
+const {Cu, Ci, Cc} = require("chrome"); 
 var {FFRepoImplService} = require("api");
 
-/*
+/**
  We create a service invocation panel when needed; there is at most one per
  tab, but the user can switch away from a tab while a service invocation
  dialog is still in progress.
+
+
 */
 function serviceInvocationHandler(win)
 {
@@ -55,53 +54,72 @@ function serviceInvocationHandler(win)
     observerService.addObserver(this, "openwebapp-installed", false);
 }
 serviceInvocationHandler.prototype = {
-    observe: function(subject, topic, data) {
-        if (topic != "openwebapp-installed")
-            return;
 
+    _createPopupPanel: function() {
+      let doc = this._window.document;
+      let XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
+      let xulPanel = doc.createElementNS(XUL_NS, "panel");
+      xulPanel.setAttribute("type", "arrow");
+
+      let frame = doc.createElementNS(XUL_NS, "browser");      
+      frame.setAttribute("flex", "1");
+      frame.setAttribute("type", "content");
+      frame.setAttribute("transparent", "transparent");
+      frame.setAttribute("style", "width:484px;height:484px");
+      xulPanel.appendChild(frame);
+      doc.getElementById("mainPopupSet").appendChild(xulPanel);
+      
+      frame.setAttribute("src", require("self").data.url("service2.html"));
+
+      return [xulPanel, frame];
+    },
+    
+    show: function(panel) {
+      // TODO: steal sizeToContent from F1
+      if (panel.state == "closed") {
+          panel.sizeTo(500, 400);
+          let larry = this._window.document.getElementById('identity-box');
+          panel.openPopup(larry, "after_start", 8);
+      }
+    },
+    
+    observe: function(subject, topic, data) {
+      if (topic == "openwebapp-installed")
+      {
         // let our panels know, if they are visible
         for each (let popupCheck in this._popups) {
-            if (popupCheck.panel.isShowing) {
-                this._updateContent(popupCheck);
-            }
+          if (popupCheck.panel.state != "closed")
+          {
+            this._updateContent(popupCheck);
+          }
         }
+      }
     },
     
     invoke: function(contentWindowRef, methodName, args, successCB, errorCB) {
+      try {
         // Do we already have a panel for this content window?
-        let thePanel, thePanelRecord;
+        let thePanel, theIFrame, thePanelRecord;
         for each (let popupCheck in this._popups) {
-            if (contentWindowRef == popupCheck.contentWindow) {
-                thePanel = popupCheck.thePanel;
-                thePanelRecord = popupCheck;
-                break;
-            }
+          if (contentWindowRef == popupCheck.contentWindow) {
+            thePanel = popupCheck.panel;
+            theIFrame = popupCheck.iframe;
+            thePanelRecord = popupCheck;
+            break;
+          }
         }
-
         // If not, go create one
-        if (!thePanel) {
-            thePanel =  require("panel").Panel({
-                contentURL: data.url("service2.html"),
-                contentScriptFile: [
-                    data.url("jquery-1.4.4.min.js"),
-                    data.url("jquery-ui-1.8.10.custom.min.js"),
-                    data.url("jschannel.js"),
-                    data.url("service.js"),
-                ],
-                width: 500, height: 450
-            });
-            thePanelRecord = {
-                contentWindow: contentWindowRef,
-                thePanel: thePanel
-            };
-            this._popups.push(thePanelRecord);
+        // TEMPORARY: always create panel for debugging
+        //if (!thePanel) {
+        if (1) {
+          let tmp = this._createPopupPanel();
+          thePanel = tmp[0];
+          theIFrame = tmp[1];
+          thePanelRecord =  { contentWindow: contentWindowRef, panel: thePanel, iframe: theIFrame} ;
+
+          this._popups.push( thePanelRecord );
         }
-        
-        // TODO: steal sizeToContent from F1
-        if (!thePanel.isShowing) {
-            let larry = this._window.document.getElementById('identity-box');
-            thePanel.show(larry);
-        }
+        this.show(thePanel);
 
         // Update the content for the new invocation        
         thePanelRecord.contentWindow = contentWindowRef;
@@ -109,65 +127,95 @@ serviceInvocationHandler.prototype = {
         thePanelRecord.args = args;
         thePanelRecord.successCB = successCB;
         thePanelRecord.errorCB = errorCB; 
-        // XXX: this memory is going to stick around for a long time;
-        // consider cleaning it up proactively
+        //XX this memory is going to stick around for a long time; consider cleaning it up proactively
         
         this._updateContent(thePanelRecord);
+        } catch (e) {
+          dump(e + "\n");
+          dump(e.stack + "\n");
+        }
     },
 
     _updateContent: function(thePanelRecord) {
-        // We are going to inject into our iframe (which is pointed at service.html).
-        // It needs to know:
-        // 1. What method is being invoked (and maybe some nice explanatory text)
-        // 2. Which services can provide that method, along with their icons and iframe URLs
-        // 3. Where to return messages to once it gets confirmation (that would be this)
-        let { methodName, args, successCB, errorCB } = thePanelRecord;
-        let contentWindowRef = thePanelRecord.contentWindow;
-        let thePanel = thePanelRecord.thePanel;
+      // We are going to inject into our iframe (which is pointed at service.html).
+      // It needs to know:
+      // 1. What method is being invoked (and maybe some nice explanatory text)
+      // 2. Which services can provide that method, along with their icons and iframe URLs
+      // 3. Where to return messages to once it gets confirmation (that would be this)
       
-        // Ready to go: attach our response listener
-        let self = this;
-        thePanel.port.on("result", function(msg) {
-            try {
-                thePanel.hidePopup();
-                successCB(event.data);
-            } catch (e) {
-                dump(e + "\n");
+      // Hang on, the window may not be fully loaded yet
+      let self = this;
+      let { methodName, args, successCB, errorCB } = thePanelRecord;
+      let contentWindowRef = thePanelRecord.contentWindow;
+      let theIFrame = thePanelRecord.iframe;
+      let thePanel = thePanelRecord.panel;
+      
+      
+      function updateContentWhenWindowIsReady()
+      {
+//        let theIFrame = theIFrame.wrappedJSObject;
+        if (!theIFrame.contentDocument || !theIFrame.contentDocument.getElementById("wrapper")) {
+          let timeout = self._window.setTimeout(updateContentWhenWindowIsReady, 1000);
+        } else {
+          // Ready to go: attach our response listener
+          theIFrame.contentDocument.wrappedJSObject.addEventListener("message", function(event) {
+            if (event.origin == "resource://openwebapps/service") {
+              var msg = JSON.parse(event.data);
+              if (msg.cmd == "result") {
+                try {
+                  thePanel.hidePopup();
+                  successCB(event.data);
+                } catch (e) {
+                  dump(e + "\n");
+                }
+              } else if (msg.cmd == "error") {
+                dump(event.data + "\n");
+              } else if (msg.cmd == "reconfigure") {
+                dump("services.js: Got a reconfigure event\n");
+                self._updateContent(contentWindowRef, thePanel, theIFrame, methodName, args, successCB, errorCB);
+              }
+            } else {
             }
-        });
-        thePanel.port.on("error", function(msg) {
-            dump(msg + "\n");
-        });
-        thePanel.port.on("reconfigure", function(msg) {
-            dump("services.js: Got a reconfigure event\n");
-            self._updateContent(
-                contentWindowRef, thePanel, theIFrame, methodName, args,
-                successCB, errorCB
-            );
-        });
-
-        /* Is this actually being used? 
-        thePanel.port.on("loaded", function(msg) {
-            let obs = Cc["@mozilla.org/observer-service;1"].
-                    getService(Ci.nsIObserverService);
-            obs.notifyObservers(
-                frame.contentWindow, "openwebapps-service-panel-loaded", ""
-            );
-        });*/
+          }, false);
           
-        // Send reconfigure event
-        FFRepoImplService.findServices(methodName, function(serviceList) {
-            thePanel.port.emit("setup", {
-                method: methodName,
-                args: args,
-                serviceList: serviceList,
-                caller: contentWindowRef.location.href
-            });
-            thePanel.port.emit("start_channels");
-        });
+          // Send reconfigure event
+          thePanel.successCB = successCB;
+          thePanel.errorCB = errorCB;
+          
+          FFRepoImplService.findServices(methodName, function(serviceList) {
+    
+            // Make the iframes
+            for (var i=0;i<serviceList.length;i++)
+            {
+              let svc = serviceList[i];
+              let frame = theIFrame.contentDocument.createElement("iframe");
+              frame.src = svc.url;
+              frame.classList.add("serviceFrame");
+              frame.setAttribute("id", "svc-frame-" + i);
+              theIFrame.contentDocument.getElementById("frame-garage").appendChild(frame);
+              theIFrame.addEventListener("DOMContentLoaded", function(event) {
+                // XXX this should be a deterministic link based on the call to registerBuiltInApp
+                if (svc.url.indexOf("resource://") == 0) {
+                  let observerService = Cc["@mozilla.org/observer-service;1"].getService(Ci.nsIObserverService);
+                  observerService.notifyObservers(frame.contentWindow, "openwebapps-service-panel-loaded", "");
+                }
+              }, false);
+            }
+
+            // direct call
+            theIFrame.contentWindow.wrappedJSObject.handleAdminPostMessage(
+                JSON.stringify({cmd:"setup", method:methodName, args:args, serviceList: serviceList, 
+                                caller:contentWindowRef.location.href}));
+
+            // direct call
+            theIFrame.contentWindow.wrappedJSObject.handleAdminPostMessage(
+                JSON.stringify({cmd:"start_channels"}));
+          });
+        }
+      }
+      updateContentWhenWindowIsReady();
     }
 };
 
 var EXPORTED_SYMBOLS = ["serviceInvocationHandler"];
 exports.serviceInvocationHandler = serviceInvocationHandler;
-

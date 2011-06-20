@@ -36,8 +36,8 @@ if (repo.getCurrentPageHasApp())
         try {
         
             if (currentPageApp) {
-                var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"]
-                                                         .getService(Components.interfaces.nsIWindowMediator);
+                var wm = Cc["@mozilla.org/appshell/window-mediator;1"]
+                                                         .getService(Ci.nsIWindowMediator);
                 var recentWindow = wm.getMostRecentWindow("navigator:browser");
                     
                 var offer_region = document.getElementById("offer_region");

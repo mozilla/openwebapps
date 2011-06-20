@@ -78,18 +78,17 @@ function renderRequestExplanation()
 function handleSetup(cmdRequest)
 {
     deleteOldChannels();
-
+    
     $("#requestDescription").empty().
-    append($("<div>Some page is asking for something from you.  Perhaps we could provide some more details about what is being requested here.</div>")).
-    append($("<div>Method name: " + cmdRequest.method + "</div>")).
-    append($("<div>Arguments: " + cmdRequest.args + "</div>"));
-
+        append($("<div>Some page is asking for something from you.  Perhaps we could provide some more details about what is being requested here.</div>")).
+        append($("<div>Method name: " + cmdRequest.method + "</div>")).
+        append($("<div>Arguments: " + cmdRequest.args + "</div>"));
+    
     gServiceList = cmdRequest.serviceList;
     gRequestMethod = cmdRequest.method;
     gArguments = cmdRequest.args;
   
     renderRequestExplanation();
-    document.getElementById("requestInfo").innerHTML = "FOOBAR";
     $("#servicebox").append($("<div id='services'></div>"));
     $("#services").append($("<ul id='services-tabs'></ul>"));
   
@@ -163,6 +162,12 @@ function createChannels(cmdRequest)
         try {
             var anIframe = document.getElementById("svc-frame-" + i);
       
+            console.log("building a channel to " + anIframe.src);
+            window.addEventListener("message", function(event) {
+                console.log("ping from " + event.origin);
+                anIframe.contentWindow.postMessage("yo", "*");
+                console.log("sent pong via " + anIframe.contentWindow.postMessage);
+            }, false);
             var chan = Channel.build({
                 window: anIframe.contentWindow,
                 origin: svc.url,
@@ -172,8 +177,11 @@ function createChannels(cmdRequest)
             chan.call({
                 method: gRequestMethod,
                 params: gArguments,
-                success: function() {}, /* perhaps record the fact that it worked? */
+                success: function() {
+                    console.log("success!");
+                }, /* perhaps record the fact that it worked? */
                 error: (function() {return function(error, message) {
+                    console.log("error");
                     var messageData = {
                         error: error, msg: message
                     };
@@ -182,7 +190,7 @@ function createChannels(cmdRequest)
             });    
             gServiceChannels.push(chan);
         } catch (e) {
-            dump("Warning: unable to create channel to " + svc.url + ": " + e + "\n");
+            console.log("Warning: unable to create channel to " + svc.url + ": " + e + "\n");
         }
     }
 }
@@ -216,7 +224,10 @@ self.port.on("setup", function(msg) {
     handleSetup(msg);
 });
 self.port.on("start_channels", function(msg) {
+    console.log("starting channels");
     createChannels(msg);
 });
 self.port.emit("loaded");
+
+document.getElementById("confirmclicker").onclick = confirm;
 

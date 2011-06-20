@@ -31,21 +31,15 @@
 var EXPORTED_SYMBOLS = ['AppsEngine', 'AppRec'];
 
 const {Cc, Cu, Ci} = require("chrome");
-/*
-const Cu = Components.utils;
-const Ci = Components.interfaces;
-*/
 const APPS_GUID = "apps";
 
 Cu.import("resource://services-sync/util.js");
 Cu.import("resource://services-sync/record.js");
 Cu.import("resource://services-sync/engines.js");
-//Cu.import("resource://openwebapps/modules/api.js");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
-//Cu.import("resource://openwebapps/modules/typed_storage.js");
 
-require("api");
-require("typed_storage");
+var {FFRepoImpl} = require("api");
+var {TypedStorage} = require("typed_storage");
 
 function AppRec(collection, id) {
     CryptoWrapper.call(this, collection, id);
