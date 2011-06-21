@@ -336,8 +336,43 @@ Repo = (function() {
         this.iterateApps(function(apps) {
             if (installedServices === undefined) installedServices = { };
             for (var app in apps) {
-                if (apps[app].manifest.experimental && apps[app].manifest.experimental.services) {
-                    var s = apps[app].manifest.experimental.services;
+                var manifest = apps[app].manifest;
+                if (manifest.experimental && manifest.experimental.services) {
+                    var s = manifest.experimental.services;
+                    
+                    // we've moved to an object with keys the service name, rather than an array
+                    if (typeof s === 'object') {
+                        for (var service_key in s) {
+                            if (!s.hasOwnProperty(service_key))
+                                continue;
+                            
+                            var one_service = s[service_key];
+                            
+                            var svcObj = {
+                                // null out the URL when no endpoint
+                                url: one_service.endpoint? app+one_service.endpoint:null,
+                                app: app,
+                                manifest: manifest
+                            }
+                            // Fixup for built-ins, no origin
+                            if (one_service.endpoint && one_service.endpoint.indexOf("resource://") == 0) svcObj.url = one_service.endpoint;
+
+                            if (!installedServices.hasOwnProperty(service_key)) {
+                              dump("creating list for " + service_key + "\n");
+                                installedServices[service_key] = [];
+                            } else {
+                                // does this svc already exist in the list (supports list *update*)?
+                                for (var j = 0; j < installedServices[service_key].length; j++) {
+                                    if (svcObj.url === installedServices[service_key].url) {
+                                        break;
+                                    }
+                                }
+                                if (j != installedServices[service_key].length) continue;
+                            }
+                            installedServices[service_key].push(svcObj);
+                        }
+                    }
+                    /*
                     if (typeof s === 'object') {
                         // key is name of service, value is *path* to it
                         
@@ -374,7 +409,7 @@ Repo = (function() {
                             installedServices[k].push(svcObj);
                         }
 
-                    }
+                    }*/
                 }
             }
             if (typeof cb === 'function') cb();
