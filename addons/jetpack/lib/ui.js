@@ -19,6 +19,7 @@
  *
  * Contributor(s):
  *    Anant Narayanan <anant@kix.in>
+ *    Dan Walkowski <dwalkowski@mozilla.com>
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -304,7 +305,10 @@ openwebappsUI.prototype = {
     _hideDock: function() {
         //this._dock.style.display ="none";
         this._dock.collapsed = true;
-    }
+    },
 };
 
+exports.showPageHasApp = function(link) {
+    console.log("This page has an application manifest at: " + link.url);
+};
 exports.openwebappsUI = openwebappsUI;

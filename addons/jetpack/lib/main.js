@@ -34,12 +34,13 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
+const ui = require("./ui");
+const url = require("./urlmatch");
 const self = require("self");
+const tabs = require("tabs");
 const unload = require("unload");
-
+const simple = require("simple-storage");
 const {Cc, Ci, Cm, Cu, Cr, components} = require("chrome");
-const HTML_NS = "http://www.w3.org/1999/xhtml";
-const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
 var tmp = {};
 Cu.import("resource://gre/modules/Services.jsm", tmp);
@@ -89,12 +90,11 @@ function openwebapps(win, getUrlCB)
     }
           
     // Keep an eye out for LINK headers that contain manifests:
-    var obs = Cc["@mozilla.org/observer-service;1"].
+    let obs = Cc["@mozilla.org/observer-service;1"].
               getService(Ci.nsIObserverService);
     obs.addObserver(this, 'content-document-global-created', false);
 
-    tmp = require("./ui");
-    this._ui = new tmp.openwebappsUI(win, getUrlCB, this._repo);
+    this._ui = new ui.openwebappsUI(win, getUrlCB, this._repo);
 }
 
 openwebapps.prototype = {
@@ -232,7 +232,7 @@ openwebapps.prototype = {
         if (topic == "weave:service:ready") {
             registerSyncEngine();
         } else if (topic == "openwebapp-installed") {
-            var installData = JSON.parse(data)
+            let installData = JSON.parse(data)
             this._ui._renderDockIcons(installData.origin);
             if (!installData.hidePostInstallPrompt) {
                 this._ui._showDock();
@@ -252,36 +252,32 @@ openwebapps.prototype = {
             }
             
             mainWindow.addEventListener("DOMLinkAdded", function(aEvent) {
-                if (aEvent.target.rel == "application-manifest") {
-                try {
-                    var page = aEvent.target.baseURI;
-                    var href = aEvent.target.href;
+                if (aEvent.target.rel != "application-manifest")
+                    return;
 
-                    // Annotate the tab with the URL, so we can highlight the button
-                    // and display the app when the user views this tab.
-                    var ios = Cc["@mozilla.org/network/io-service;1"].
-                    getService(Ci.nsIIOService);
-                
-                    // XXX TODO: Should we restrict the href to be associated in a limited way with the page?
-                    aEvent.target.ownerDocument.applicationManifest =
-                        ios.newURI(href, null, ios.newURI(page, null, null));
+                let href = aEvent.target.href;
+                let page = url.URLParse(aEvent.target.baseURI);
+                page = page.originOnly().toString();
 
-                    // If the current browser is this document's browser, update the highlight
-                    dump("Setting manifest to " +
-                    aEvent.target.ownerDocument.applicationManifest.spec + "\n");
+                if (!simple.storage.links[page]) {
+                    // XXX: Should we restrict the href to be associated in
+                    // a limited way with the page?
+                    // Yes, perhaps .well-known or at the very least same origin
+                    simple.storage.links[page] = {
+                        "show": true,
+                        "url": href
+                    };
 
-                    // whoops, no gBrowser here!  rework this.
-                    /*if (gBrowser.contentDocument === aEvent.target.ownerDocument) {
-                    let toolbarButton = document.getElementById("openwebapps-toolbar-button");
-                    if (toolbarButton) {
-                        toolbarButton.classList.add("highlight");
-                    }
-                    }*/
-              } catch (e) {
-                dump(e + "\n");
-              }
-            }
-          }, false);
+                    // If we just found this on the currently active page,
+                    // manually call UI hook because tabs.on('activate') will
+                    // not be called for this page
+                    let cUrl = url.URLParse(tabs.activeTab.url);
+                    cUrl = cUrl.originOnly().toString();
+
+                    if (cUrl == page)
+                        ui.showPageHasApp(simple.storage.links[page]);
+                }
+            }, false);
         }
     },
     
@@ -296,6 +292,12 @@ openwebapps.prototype = {
 
 };
 
+// Prompt user if we detect that the page has an app via tabs module
+tabs.on('activate', function(tab) {
+    let cUrl = url.URLParse(tab.url).originOnly().toString();
+    let record = simple.storage.links[cUrl];
+    if (record) ui.showPageHasApp(record);
+});
 
 //----- about:apps implementation
 const AboutAppsUUID = components.ID("{1DD224F3-7720-4E62-BAE9-30C1DCD6F519}");
@@ -357,6 +359,9 @@ let AboutAppsHome = {
 
 let unloaders = [];
 function startup(getUrlCB) {
+    /* Initialize simple storage */
+    if (!simple.storage.links) simple.storage.links = {};
+
     /* We use winWatcher to create an instance per window (current and future) */
     let iter = Cc["@mozilla.org/appshell/window-mediator;1"]
                .getService(Ci.nsIWindowMediator)
