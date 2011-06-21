@@ -34,6 +34,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 const {Cc, Ci, Cm, Cu} = require("chrome");
+const widgets = require("widget");
 const HTML_NS = "http://www.w3.org/1999/xhtml";
 const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
@@ -140,36 +141,13 @@ openwebappsUI.prototype = {
     },
 
     _addToolbarButton: function() {
-        let self = this;
-        let doc = this._window.document;
-        let buttonId = "openwebapps-toolbar-button";
-
-        // Don't add a toolbar button if one is already present
-        if (doc.getElementById(buttonId))
-            return;
-        
-        // TODO: make into a generic toolbar button module
-        let button = doc.createElementNS(XUL_NS, "toolbarbutton");
-        let toolbox = doc.getElementById("navigator-toolbox");
-        let palette = doc.getElementById("BrowserToolbarPalette") ||
-            toolbox.palette;
-
-        button.setAttribute("id", buttonId);
-        button.setAttribute("type", "checkbox");
-        button.setAttribute("label",
-            getString("openwebappsToolbarButton.label"));
-        button.setAttribute("tooltipText",
-            getString("openwebappsToolbarButton.tooltip"));
-        button.setAttribute("class",
-            "toolbarbutton-1 chromeclass-toolbar-additional");
-        button.onclick = function() { self._toggleDock(); };
-
-        // Move to location at end
-        let toolbar = doc.getElementById("addon-bar");
-        toolbar.appendChild(button);
-        
-        // FIXME: this will probably not be called because of jetpack
-        // unloaders.push(function() toolbar.removeChild(button));
+        let addon = this;
+        widgets.Widget({
+          id: "openwebapps-toolbar-button",
+          label: "Web Apps",
+          contentURL: require("self").data.url("skin/toolbar-button.png"),
+          onClick: function() { addon._toggleDock(); }
+          });
     },
 
     _addDock: function() {
