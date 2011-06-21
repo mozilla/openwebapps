@@ -10,8 +10,9 @@ THIS IS NOT YET IMPLEMENTED IN CODE. For now, this is documentation of how we th
 
 Three changes from the production version:
 - widget becomes a service, rather than an independent field
-- services is no longer experimental, it's top-level.
 - services now contains keyed items, rather than an array of objects that doesn't allow for easy indexing. A service entry can contain either a single service (object), or a list of services, for example in the case of a few widgets.
+
+SOON, but not yet: - services will no longer experimental, it's top-level.
 
 ## Manifest Example
 
@@ -48,15 +49,28 @@ Here's an example:
              }
         },
         "default_locale": "en",
-        "services": {
-            "widget": {
-                 "url": "/widget.html",
-                 "width": 100,
-                 "height": 200
-            },
-            "image.send": {
-                 "url": "/services/image-send",
-            }
+        "experimental": {
+          "services": {
+              "widget": {
+                   "endpoint": "/widget.html",
+                   "width": 100,
+                   "height": 200
+              },
+              "image.send": {
+                   "endpoint": "/services/image-send",
+              },
+              "login": {
+                   "endpoint": "/services/login",
+              },
+              "new-url": {
+              }
+          }
         }
     }
 
+
+The services component lists services provided by the app, with the
+corresponding endpoint URL for each. When no endpoint is specified,
+this indicates that the main app tab is responsible for providing that
+service. Providing a given service implies responding to a set of
+messages over postMessage() that, together, implement the service.
