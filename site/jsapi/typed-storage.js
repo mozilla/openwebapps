@@ -128,7 +128,8 @@ TypedStorage.ObjectStore = function (storage, objType, typedStorage) {
 
   //retrieve the object or null stored with a specified key
   self.get = function(key, cb) {
-    cb(getObject(self._storage, self.makeKey(key)));
+    var item = getObject(self._storage, self.makeKey(key));
+    cb && cb(item);
   };
 
   //store and object under a specified key
@@ -137,7 +138,7 @@ TypedStorage.ObjectStore = function (storage, objType, typedStorage) {
       {target: key, storageType: self, eventType: 'change', value: value});
     setObject(self._storage, self.makeKey(key), value);
     self._typedStorage.setLastModified();
-    cb(true);
+    cb && cb(true);
   };
 
   //remove the object at a specified key
@@ -148,18 +149,19 @@ TypedStorage.ObjectStore = function (storage, objType, typedStorage) {
       delete self._storage.removeItem(self.makeKey(key));
     }
     self._typedStorage.setLastModified();
-    cb(true);
+    cb && cb(true);
   };
 
   //remove all objects with our objType from the storage
   self.clear = function(cb) {
     //possibly slow, but code reuse for the win
-    var allKeys = self.keys();
-    for (var i=0; i<allKeys.length; i++) {
-      self.remove(allKeys[i]);
-    }
-    self._typedStorage.setLastModified();
-    cb(true);
+    self.keys(function(allKeys) {
+        for (var i=0; i<allKeys.length; i++) {
+          self.remove(allKeys[i]);
+        }
+        self._typedStorage.setLastModified();
+        cb && cb(true);
+    });
   };
 
   //do we have an object stored with key?
@@ -179,7 +181,7 @@ TypedStorage.ObjectStore = function (storage, objType, typedStorage) {
         resultKeys.push(nextKey);
       }
     }
-    cb(resultKeys);
+    cb && cb(resultKeys);
   };
 
   //iterate through our objects, applying a callback
