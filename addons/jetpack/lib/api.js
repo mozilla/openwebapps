@@ -236,7 +236,7 @@ FFRepoImpl.prototype = {
 
     launch: function _launch(id)
     {
-        function openAppURL(url)
+        function openAppURL(url, app)
         {
             let ss = Cc["@mozilla.org/browser/sessionstore;1"]
                     .getService(Ci.nsISessionStore);
@@ -284,6 +284,11 @@ FFRepoImpl.prototype = {
                     recentWindow.gBrowser.selectedTab = tab;
                     ss.setTabValue(tab, "appURL", url);
                     bar.setAttribute("collapsed", true);
+
+                    // perform login on the app if needed
+                    if (app.services.login) {
+                        console.log("ready to do some logging in!");
+                    }
                 } else {
                     // This is a very odd case: no browser windows are open, so open a new one.
                     aWindow.open(url);
@@ -292,22 +297,12 @@ FFRepoImpl.prototype = {
             }
         }
 
-        // FIXME: this is a hack, we are iterating over installed apps to
-        // find the one we want since we cannot get to the typed storage
-        // via common repo.js
-        Repo.list(function(apps) {
-            let found = false;
-            for (let app in apps) {
-                if (app == id) {
-                    let url = apps[app]['origin'];
-                    if ('launch_path' in apps[app]['manifest'])
-                        url += apps[app]['manifest']['launch_path'];
-                    openAppURL(url);
-                    found = true;
-                }
-            }
-            if (!found)
+        // fixed the hack, using a proper API call to get a single app
+        // (that API call may iterate, but that's not our problem here)
+        Repo.getAppById(id, function(app) {
+            if (!app)
                 throw "Invalid AppID: " + id;
+            openAppURL(app.launch_url, app);
         });
     },
 
