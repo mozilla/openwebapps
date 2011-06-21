@@ -60,7 +60,7 @@ Here's an example:
                    "endpoint": "/services/image-send",
               },
               "login": {
-                   "endpoint": "/services/login",
+                   "dialog": "/services/login",
               },
               "new-url": {
               }
@@ -74,3 +74,9 @@ corresponding endpoint URL for each. When no endpoint is specified,
 this indicates that the main app tab is responsible for providing that
 service. Providing a given service implies responding to a set of
 messages over postMessage() that, together, implement the service.
+
+Some special cases:
+
+* the login service implies that the main page of the app supports the login messages, and the dialog parameters specifies which dialog to open up to perform login
+
+* the new-url service implies that the main page of the app supports the new-url message, handling clicks to URLs within the app's origin.
