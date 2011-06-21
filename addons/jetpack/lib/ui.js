@@ -36,6 +36,7 @@
  * ***** END LICENSE BLOCK ***** */
 const {Cc, Ci, Cm, Cu} = require("chrome");
 const widgets = require("widget");
+const simple = require("simple-storage");
 const HTML_NS = "http://www.w3.org/1999/xhtml";
 const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
@@ -142,13 +143,13 @@ openwebappsUI.prototype = {
     },
 
     _addToolbarButton: function() {
-        let addon = this;
+        let self = this;
         widgets.Widget({
-          id: "openwebapps-toolbar-button",
-          label: "Web Apps",
-          contentURL: require("self").data.url("skin/toolbar-button.png"),
-          onClick: function() { addon._toggleDock(); }
-          });
+            id: "openwebapps-toolbar-button",
+            label: "Web Apps",
+            contentURL: require("self").data.url("skin/toolbar-button.png"),
+            onClick: function() { self._toggleDock(); }
+        });
     },
 
     _addDock: function() {
@@ -283,10 +284,34 @@ openwebappsUI.prototype = {
     _hideDock: function() {
         //this._dock.style.display ="none";
         this._dock.collapsed = true;
-    },
+    }
 };
 
-exports.showPageHasApp = function(link) {
-    console.log("This page has an application manifest at: " + link.url);
+var offerAppPanel;
+exports.showPageHasApp = function(page) {
+    let link = simple.storage.links[page];
+    if (!link.show || (offerAppPanel && offerAppPanel.isShowing))
+        return;
+    
+    if (!offerAppPanel) {
+        offerAppPanel = require("panel").Panel({
+            contentURL: require("self").data.url("offer.html")
+        });
+    }
+
+    /* Setup callbacks */
+    offerAppPanel.port.on("yes", function() {
+    });
+    offerAppPanel.port.on("no", function() {
+        offerAppPanel.hide();
+    });
+
+    /* Prepare to anchor panel to apps widget */
+    let WM = Cc['@mozilla.org/appshell/window-mediator;1']
+        .getService(Ci.nsIWindowMediator);
+    let doc = WM.getMostRecentWindow("navigator:browser").document;
+    let bar = doc.getElementById("widget:" + 
+        require("self").id + "-openwebapps-toolbar-button");
+    offerAppPanel.show(bar);
 };
 exports.openwebappsUI = openwebappsUI;

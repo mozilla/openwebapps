@@ -267,16 +267,16 @@ openwebapps.prototype = {
                         "show": true,
                         "url": href
                     };
-
-                    // If we just found this on the currently active page,
-                    // manually call UI hook because tabs.on('activate') will
-                    // not be called for this page
-                    let cUrl = url.URLParse(tabs.activeTab.url);
-                    cUrl = cUrl.originOnly().toString();
-
-                    if (cUrl == page)
-                        ui.showPageHasApp(simple.storage.links[page]);
                 }
+
+                // If we just found this on the currently active page,
+                // manually call UI hook because tabs.on('activate') will
+                // not be called for this page
+                let cUrl = url.URLParse(tabs.activeTab.url);
+                cUrl = cUrl.originOnly().toString();
+
+                if (cUrl == page)
+                    ui.showPageHasApp(page);
             }, false);
         }
     },
@@ -296,7 +296,7 @@ openwebapps.prototype = {
 tabs.on('activate', function(tab) {
     let cUrl = url.URLParse(tab.url).originOnly().toString();
     let record = simple.storage.links[cUrl];
-    if (record) ui.showPageHasApp(record);
+    if (record) ui.showPageHasApp(cUrl);
 });
 
 //----- about:apps implementation
