@@ -59,6 +59,19 @@ if (require) {
     var {Manifest} = require("./manifest");
 }
 
+// An App data structure
+function App(app_obj) {
+    this._app_obj = app_obj;
+    this.origin = this._app_obj.origin;
+    this.manifest = this._app_obj.manifest;
+
+    this.services = this.manifest.experimental.services;
+
+    this.launch_url = this.origin;
+    if (this.manifest.launch_path)
+        this.launch_url += this.manifest.launch_path;
+};
+
 Repo = (function() {
     // A TypedStorage singleton global object is expected to be present
     // Must be provided either by the FF extension, Chrome extension, or in
@@ -295,7 +308,6 @@ Repo = (function() {
 
         iterateApps(function(items) {
             for (var key in items) {
-                console.log("iterating " + key);
                 if (!done) {
                     if (applicationMatchesDomain(items[key].origin, origin)) {
                         done = true;
@@ -352,7 +364,8 @@ Repo = (function() {
                                 // null out the URL when no endpoint
                                 url: one_service.endpoint? app+one_service.endpoint:null,
                                 app: app,
-                                manifest: manifest
+                                manifest: manifest,
+                                params: one_service
                             }
                             // Fixup for built-ins, no origin
                             if (one_service.endpoint && one_service.endpoint.indexOf("resource://") == 0) svcObj.url = one_service.endpoint;
@@ -492,6 +505,22 @@ Repo = (function() {
         }
     };
 
+    // for now, this is the only function that returns a legitimate App data structure
+    // refactoring of other calls is in order to get the right App abstraction, but one thing at a time.
+    function getAppById(id, cb) {
+        iterateApps(function(apps) {
+            let found = false;
+            for (var app in apps) {
+                if (app == id) {
+                    cb(new App(apps[app]));
+                    found = true;
+                }
+            }
+            if (!found)
+                cb(null);
+        });
+    };
+
     return {
         list: list,
         install: install,
@@ -504,7 +533,8 @@ Repo = (function() {
         renderChooser: renderChooser,
         iterateApps: iterateApps,
         invalidateCaches: invalidateCaches,
-        updateServices: updateServices
+        updateServices: updateServices,
+        getAppById: getAppById,
     };
 })();
 
