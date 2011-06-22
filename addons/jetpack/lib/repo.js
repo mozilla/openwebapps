@@ -59,6 +59,21 @@ if (require) {
     var {Manifest} = require("./manifest");
 }
 
+// An App data structure
+function App(app_obj) {
+    this._app_obj = app_obj;
+    this.origin = this._app_obj.origin;
+    this.manifest = this._app_obj.manifest;
+
+    if ("experimental" in this.manifest &&
+        "services" in this.manifest.experimental)
+        this.services = this.manifest.experimental.services;
+
+    this.launch_url = this.origin;
+    if (this.manifest.launch_path)
+        this.launch_url += this.manifest.launch_path;
+};
+
 Repo = (function() {
     // A TypedStorage singleton global object is expected to be present
     // Must be provided either by the FF extension, Chrome extension, or in
@@ -295,7 +310,6 @@ Repo = (function() {
 
         iterateApps(function(items) {
             for (var key in items) {
-                console.log("iterating " + key);
                 if (!done) {
                     if (applicationMatchesDomain(items[key].origin, origin)) {
                         done = true;
@@ -336,8 +350,44 @@ Repo = (function() {
         this.iterateApps(function(apps) {
             if (installedServices === undefined) installedServices = { };
             for (var app in apps) {
-                if (apps[app].manifest.experimental && apps[app].manifest.experimental.services) {
-                    var s = apps[app].manifest.experimental.services;
+                var manifest = apps[app].manifest;
+                if (manifest.experimental && manifest.experimental.services) {
+                    var s = manifest.experimental.services;
+                    
+                    // we've moved to an object with keys the service name, rather than an array
+                    if (typeof s === 'object') {
+                        for (var service_key in s) {
+                            if (!s.hasOwnProperty(service_key))
+                                continue;
+                            
+                            var one_service = s[service_key];
+                            
+                            var svcObj = {
+                                // null out the URL when no endpoint
+                                url: one_service.endpoint? app+one_service.endpoint:null,
+                                app: app,
+                                manifest: manifest,
+                                params: one_service
+                            }
+                            // Fixup for built-ins, no origin
+                            if (one_service.endpoint && one_service.endpoint.indexOf("resource://") == 0) svcObj.url = one_service.endpoint;
+
+                            if (!installedServices.hasOwnProperty(service_key)) {
+                              dump("creating list for " + service_key + "\n");
+                                installedServices[service_key] = [];
+                            } else {
+                                // does this svc already exist in the list (supports list *update*)?
+                                for (var j = 0; j < installedServices[service_key].length; j++) {
+                                    if (svcObj.url === installedServices[service_key].url) {
+                                        break;
+                                    }
+                                }
+                                if (j != installedServices[service_key].length) continue;
+                            }
+                            installedServices[service_key].push(svcObj);
+                        }
+                    }
+                    /*
                     if (typeof s === 'object') {
                         // key is name of service, value is *path* to it
                         
@@ -374,7 +424,7 @@ Repo = (function() {
                             installedServices[k].push(svcObj);
                         }
 
-                    }
+                    }*/
                 }
             }
             if (typeof cb === 'function') cb();
@@ -457,6 +507,22 @@ Repo = (function() {
         }
     };
 
+    // for now, this is the only function that returns a legitimate App data structure
+    // refactoring of other calls is in order to get the right App abstraction, but one thing at a time.
+    function getAppById(id, cb) {
+        iterateApps(function(apps) {
+            let found = false;
+            for (var app in apps) {
+                if (app == id) {
+                    cb(new App(apps[app]));
+                    found = true;
+                }
+            }
+            if (!found)
+                cb(null);
+        });
+    };
+
     return {
         list: list,
         install: install,
@@ -469,7 +535,8 @@ Repo = (function() {
         renderChooser: renderChooser,
         iterateApps: iterateApps,
         invalidateCaches: invalidateCaches,
-        updateServices: updateServices
+        updateServices: updateServices,
+        getAppById: getAppById,
     };
 })();
 

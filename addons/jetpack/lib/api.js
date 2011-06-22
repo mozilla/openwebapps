@@ -34,10 +34,11 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-const {Cc, Ci, Cu} = require("chrome");
+const {Cc, Ci, Cu, Cr, components} = require("chrome");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
 var {TypedStorage} = require("typed_storage");
+var {Auth} = require("auth");
 
 var console = {
     log: function(s) {dump(s+"\n");}
@@ -59,27 +60,26 @@ FFRepoImpl.prototype = {
                 .getService(Ci.nsIObserverService),
     
     _registerBuiltInApp: function(domain, app, injector) {
-      this._builtInApps[domain] = { 
-        manifest:app,
-        origin:domain,
-        install_time: new Date().getTime(),
-        install_origin:domain,
-        injector: injector
-      }
-      this._repo.invalidateCaches();
+        this._builtInApps[domain] = { 
+            manifest:app,
+            origin:domain,
+            install_time: new Date().getTime(),
+            install_origin:domain,
+            injector: injector
+        }
+        this._repo.invalidateCaches();
     },
     
-    iterateApps: function(callback)
-    {
-      let that = this;
-      Repo.iterateApps(function(apps) {
-        if (that._builtInApps) {
-          for (var k in that._builtInApps) {
-            apps[k] = that._builtInApps[k];
-          }
-        }
-        callback(apps);
-      });
+    iterateApps: function(callback) {
+        let that = this;
+        Repo.iterateApps(function(apps) {
+            if (that._builtInApps) {
+                for (var k in that._builtInApps) {
+                    apps[k] = that._builtInApps[k];
+                }
+            }
+            callback(apps);
+        });
     },
     
     install: function _install(location, args, window)
@@ -140,9 +140,59 @@ FFRepoImpl.prototype = {
             };
             xhr.send(null);
         }
+    
+        // Fetch from local file:// or resource:// URI (eg. for faker apps)
+        function fetchLocalManifest(url, cb)
+        {
+            function LocalReader(callback) { this._callback = callback; }
+            LocalReader.prototype = {
+                QueryInterface: function(iid) {
+                    if (iid.equals(Ci.nsIStreamListener) ||
+                        iid.equals(Ci.nsIRequestObserver) ||
+                        iid.equals(Ci.nsISupports))
+                        return this;
+                    throw Cr.NS_ERROR_NO_INTERFACE;
+                },
+            
+                onStartRequest: function(req, ctx) {
+                    this._data = "";
+                    this._input = null;
+                },
+
+                onDataAvailable: function(req, ctx, stream, off, count) {
+                    if (!this._input) {
+                        let sis = Cc["@mozilla.org/scriptableinputstream;1"]
+                            .getService(Ci.nsIScriptableInputStream);
+                        sis.init(stream);
+                        this._input = sis;
+                    }
+                    
+                    this._data += this._input.read(count);
+                },
+
+                onStopRequest: function(req, ctx, stat) {
+                    this._input.close();
+                    if (components.isSuccessCode(stat))
+                        this._callback(this._data, "application/x-web-app-manifest+json");
+                    else
+                        this._callback(null);
+                }
+            };
+
+            let ios = Cc["@mozilla.org/network/io-service;1"]
+                .getService(Ci.nsIIOService);
+            let stream = Cc["@mozilla.org/scriptableinputstream;1"]
+                .getService(Ci.nsIScriptableInputStream);
+            let channel = ios.newChannel(url, null, null);
+            channel.asyncOpen(new LocalReader(cb), null);
+        }
+
+        let fetcher = fetchManifest;
+        if (args.url.indexOf("resource://") === 0 ||
+            args.url.indexOf("file://") === 0) fetcher = fetchLocalManifest;
 
         let self = this;
-        return Repo.install(location, args, displayPrompt, fetchManifest,
+        return Repo.install(location, args, displayPrompt, fetcher,
             function (result) {
                 // install is complete
                 if (result !== true) {
@@ -236,7 +286,7 @@ FFRepoImpl.prototype = {
 
     launch: function _launch(id)
     {
-        function openAppURL(url)
+        function openAppURL(url, app)
         {
             let ss = Cc["@mozilla.org/browser/sessionstore;1"]
                     .getService(Ci.nsISessionStore);
@@ -278,6 +328,9 @@ FFRepoImpl.prototype = {
                 let recentWindow = wm.getMostRecentWindow("navigator:browser");
                 if (recentWindow) {
                     let tab = recentWindow.gBrowser.addTab(url);
+
+                    // hook in the auth/login stuff
+                    Auth.setupAppAuth(recentWindow.gBrowser.getBrowserForTab(tab).contentWindow, app);
                     let bar = recentWindow.document.getElementById("nav-bar");
 
                     recentWindow.gBrowser.pinTab(tab);
@@ -286,28 +339,19 @@ FFRepoImpl.prototype = {
                     bar.setAttribute("collapsed", true);
                 } else {
                     // This is a very odd case: no browser windows are open, so open a new one.
-                    aWindow.open(url);
+                    var new_window = aWindow.open(url);
+                    auth.setupAppAuth(new_window.contentWindow, app);
                     // TODO: convert to app tab somehow
                 }
             }
         }
 
-        // FIXME: this is a hack, we are iterating over installed apps to
-        // find the one we want since we cannot get to the typed storage
-        // via common repo.js
-        Repo.list(function(apps) {
-            let found = false;
-            for (let app in apps) {
-                if (app == id) {
-                    let url = apps[app]['origin'];
-                    if ('launch_path' in apps[app]['manifest'])
-                        url += apps[app]['manifest']['launch_path'];
-                    openAppURL(url);
-                    found = true;
-                }
-            }
-            if (!found)
+        // fixed the hack, using a proper API call to get a single app
+        // (that API call may iterate, but that's not our problem here)
+        Repo.getAppById(id, function(app) {
+            if (!app)
                 throw "Invalid AppID: " + id;
+            openAppURL(app.launch_url, app);
         });
     },
 
