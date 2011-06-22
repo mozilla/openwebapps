@@ -322,6 +322,7 @@ openwebappsUI.prototype = {
             self._repo.install(
                 "chrome://openwebapps", {
                     url: link.url,
+                    origin: page,
                     onsuccess: function() {
                         self._installInProgress = false;
                         simple.storage.links[page].show = false;

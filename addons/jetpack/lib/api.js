@@ -142,6 +142,7 @@ FFRepoImpl.prototype = {
         }
     
         // Fetch from local file:// or resource:// URI (eg. for faker apps)
+        let originalOrigin = {};
         function fetchLocalManifest(url, cb)
         {
             function LocalReader(callback) { this._callback = callback; }
@@ -183,13 +184,22 @@ FFRepoImpl.prototype = {
                 .getService(Ci.nsIIOService);
             let stream = Cc["@mozilla.org/scriptableinputstream;1"]
                 .getService(Ci.nsIScriptableInputStream);
-            let channel = ios.newChannel(url, null, null);
+            let channel = ios.newChannel(originalOrigin[url], null, null);
             channel.asyncOpen(new LocalReader(cb), null);
         }
 
+        // Choose appropriate fetcher depending on where the manifest lives
         let fetcher = fetchManifest;
         if (args.url.indexOf("resource://") === 0 ||
-            args.url.indexOf("file://") === 0) fetcher = fetchLocalManifest;
+            args.url.indexOf("file://") === 0) {
+            fetcher = fetchLocalManifest;
+            if (!args.origin) throw "Local manifest specified without origin!";
+
+            // We'll have to store the resource/file URI to allow repo.install
+            // to get the correct origin domain
+            originalOrigin[args.origin] = args.url;
+            args.url = args.origin;
+        }
 
         let self = this;
         return Repo.install(location, args, displayPrompt, fetcher,
