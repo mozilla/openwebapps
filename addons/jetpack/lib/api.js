@@ -38,6 +38,7 @@ const {Cc, Ci, Cu} = require("chrome");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
 var {TypedStorage} = require("typed_storage");
+var {Auth} = require("auth");
 
 var console = {
     log: function(s) {dump(s+"\n");}
@@ -278,20 +279,19 @@ FFRepoImpl.prototype = {
                 let recentWindow = wm.getMostRecentWindow("navigator:browser");
                 if (recentWindow) {
                     let tab = recentWindow.gBrowser.addTab(url);
+
+                    // hook in the auth/login stuff
+                    Auth.setupAppAuth(recentWindow.gBrowser.getBrowserForTab(tab).contentWindow, app);
                     let bar = recentWindow.document.getElementById("nav-bar");
 
                     recentWindow.gBrowser.pinTab(tab);
                     recentWindow.gBrowser.selectedTab = tab;
                     ss.setTabValue(tab, "appURL", url);
                     bar.setAttribute("collapsed", true);
-
-                    // perform login on the app if needed
-                    if (app.services.login) {
-                        console.log("ready to do some logging in!");
-                    }
                 } else {
                     // This is a very odd case: no browser windows are open, so open a new one.
-                    aWindow.open(url);
+                    var new_window = aWindow.open(url);
+                    auth.setupAppAuth(new_window.contentWindow, app);
                     // TODO: convert to app tab somehow
                 }
             }
