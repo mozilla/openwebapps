@@ -99,9 +99,13 @@ function openwebapps(win, getUrlCB)
     // Prompt user if we detect that the page has an app via tabs module
     let self = this;
     tabs.on('activate', function(tab) {
+        // If user switches tab via keyboard shortcuts, it does not dismiss
+        // the offer panel (clicking does); so hide it if present
+        self._ui._hideOffer();
+
         let cUrl = url.URLParse(tab.url).originOnly().toString();
         let record = simple.storage.links[cUrl];
-        if (record) self._ui._showPageHasApp(cUrl);
+        if (record) self.offerInstallIfNeeded(cUrl);
     });
 }
 
@@ -285,11 +289,28 @@ openwebapps.prototype = {
                 cUrl = cUrl.originOnly().toString();
 
                 if (cUrl == page)
-                    self._ui._showPageHasApp(page);
+                    self.offerInstallIfNeeded(page);
             }, false);
         }
     },
     
+    // TODO: Don't be so annoying and display the offer everytime the app site
+    // is visited. If the user says 'no', don't display again for the session
+    offerInstallIfNeeded: function(origin) {
+        let toInstall = true;
+        this._repo.list(function(apps) {
+            for (let app in apps) {
+                if (app == origin) {
+                    toInstall = false;
+                    break;
+                }
+            }
+        });
+
+        if (toInstall)
+            this._ui._showPageHasApp(origin);
+    },
+
     registerBuiltInApp: function(domain, app, injector) {
         if (!this._repo) {
             if (!this.pendingRegistrations) this.pendingRegistrations = [];

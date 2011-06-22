@@ -104,7 +104,7 @@ function openwebappsUI(win, getUrlCB, repo)
 
     /* Offer to install */
     this._offerAppPanel = null;
-    this._offerEnabled = false;
+    this._installInProgress = false;
 }
 openwebappsUI.prototype = {
     _overlay: function() {
@@ -290,9 +290,14 @@ openwebappsUI.prototype = {
         this._dock.collapsed = true;
     },
 
+    _hideOffer: function() {
+        if (this._offerAppPanel && this._offerAppPanel.isShowing)
+            this._offerAppPanel.hide();
+    },
+
     _showPageHasApp: function(page) {
         let link = simple.storage.links[page];
-        if (!link.show || this._offerEnabled)
+        if (!link.show || this._installInProgress)
             return;
     
         if (!this._offerAppPanel) {
@@ -307,27 +312,27 @@ openwebappsUI.prototype = {
                     '}'
             });
         }
+        if (this._offerAppPanel.isShowing) return;
 
         /* Setup callbacks */
         let self = this;
         this._offerAppPanel.port.on("yes", function() {
+            self._installInProgress = true;
             self._offerAppPanel.hide();
             self._repo.install(
                 "chrome://openwebapps", {
                     url: link.url,
                     onsuccess: function() {
-                        self._offerEnabled = false;
+                        self._installInProgress = false;
                         simple.storage.links[page].show = false;
                     }
                 }, self._window
             );
         });
         this._offerAppPanel.port.on("no", function() {
-            self._offerEnabled = false;
             self._offerAppPanel.hide();
         });
         this._offerAppPanel.port.on("never", function() {
-            self._offerEnabled = false;
             self._offerAppPanel.hide();
             simple.storage.links[page].show = false;
         });
@@ -340,7 +345,6 @@ openwebappsUI.prototype = {
             require("self").id + "-openwebapps-toolbar-button");
 
         this._offerAppPanel.show(bar);
-        this._offerEnabled = true;
     }
 };
 
