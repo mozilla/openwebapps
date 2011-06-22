@@ -101,10 +101,14 @@ function openwebappsUI(win, getUrlCB, repo)
     getString.init(getUrlCB);
     this._overlay();
     this._setupTabHandling();
+
+    /* Offer to install */
+    this._offerAppPanel = null;
+    this._offerEnabled = false;
 }
 openwebappsUI.prototype = {
     _overlay: function() {
-        // Load CSS before adding toolbar button
+        // Load CSS before adding toolbar butt/on
         // XXX: Seems to cause some sort of flicker?
         let doc = this._window.document;
         let pi = doc.createProcessingInstruction(
@@ -284,34 +288,60 @@ openwebappsUI.prototype = {
     _hideDock: function() {
         //this._dock.style.display ="none";
         this._dock.collapsed = true;
-    }
-};
+    },
 
-var offerAppPanel;
-exports.showPageHasApp = function(page) {
-    let link = simple.storage.links[page];
-    if (!link.show || (offerAppPanel && offerAppPanel.isShowing))
-        return;
+    _showPageHasApp: function(page) {
+        let link = simple.storage.links[page];
+        if (!link.show || this._offerEnabled)
+            return;
     
-    if (!offerAppPanel) {
-        offerAppPanel = require("panel").Panel({
-            contentURL: require("self").data.url("offer.html")
+        if (!this._offerAppPanel) {
+            this._offerAppPanel = require("panel").Panel({
+                contentURL: require("self").data.url("offer.html"),
+                contentScript: 'let actions = ["yes", "no", "never"];' +
+                    'for (let i = 0; i < actions.length; i++) { ' +
+                    '   document.getElementById(actions[i]).onclick = ' +
+                    '       (function(i) { return function() { ' +
+                    '           self.port.emit(actions[i]);' +
+                    '       }})(i); ' +
+                    '}'
+            });
+        }
+
+        /* Setup callbacks */
+        let self = this;
+        this._offerAppPanel.port.on("yes", function() {
+            self._offerAppPanel.hide();
+            self._repo.install(
+                "chrome://openwebapps", {
+                    url: link.url,
+                    onsuccess: function() {
+                        self._offerEnabled = false;
+                        simple.storage.links[page].show = false;
+                    }
+                }, self._window
+            );
         });
+        this._offerAppPanel.port.on("no", function() {
+            self._offerEnabled = false;
+            self._offerAppPanel.hide();
+        });
+        this._offerAppPanel.port.on("never", function() {
+            self._offerEnabled = false;
+            self._offerAppPanel.hide();
+            simple.storage.links[page].show = false;
+        });
+
+        /* Prepare to anchor panel to apps widget */
+        let WM = Cc['@mozilla.org/appshell/window-mediator;1']
+            .getService(Ci.nsIWindowMediator);
+        let doc = WM.getMostRecentWindow("navigator:browser").document;
+        let bar = doc.getElementById("widget:" + 
+            require("self").id + "-openwebapps-toolbar-button");
+
+        this._offerAppPanel.show(bar);
+        this._offerEnabled = true;
     }
-
-    /* Setup callbacks */
-    offerAppPanel.port.on("yes", function() {
-    });
-    offerAppPanel.port.on("no", function() {
-        offerAppPanel.hide();
-    });
-
-    /* Prepare to anchor panel to apps widget */
-    let WM = Cc['@mozilla.org/appshell/window-mediator;1']
-        .getService(Ci.nsIWindowMediator);
-    let doc = WM.getMostRecentWindow("navigator:browser").document;
-    let bar = doc.getElementById("widget:" + 
-        require("self").id + "-openwebapps-toolbar-button");
-    offerAppPanel.show(bar);
 };
+
 exports.openwebappsUI = openwebappsUI;
