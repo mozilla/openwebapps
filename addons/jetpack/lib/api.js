@@ -329,7 +329,11 @@ FFRepoImpl.prototype = {
                         // else, reload the page with the new URL?
                         if (url != brs.currentURI.spec) {
                             // XXX: check for link service & notify
-                            brs.loadURI(url, null, null); // Referrer is broken
+                            //brs.loadURI(url, null, null); // Referrer is broken
+                            brs.contentWindow.wrappedJSObject.postMessage(
+                                JSON.stringify({method:'link.transition',params:url}), "*"
+                            );
+                            console.log("sent");
                         }
 
                         found = true;

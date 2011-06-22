@@ -59,7 +59,11 @@ function injectAsInstallable()
                 'el.setAttribute("rel", "application-manifest");' +
                 'el.setAttribute("href", "' +
                     self.data.url(FAKE_APPS[origin][0]) + '");' +
-                'head.appendChild(el);'
+                'head.appendChild(el);' +
+                // Free link transition receiving for fake apps
+                'window.addEventListener("message", function(event) {' +
+                '   console.log("received " + event.data);' +
+                '}, false);'
         });
     }
 }
