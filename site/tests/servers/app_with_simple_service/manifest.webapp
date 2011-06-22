@@ -1,9 +1,11 @@
 {
   "name":"Simple App With Service",
   "experimental": {
-    "services": [
-      { "profile.get": "/aboutme_svc.html" }
-    ]
+    "services": {
+        "profile.get": {
+            "endpoint": "/aboutme_svc.html" 
+        }
+    }    
   },
   "installs_allowed_from": [ "*" ]
 }
