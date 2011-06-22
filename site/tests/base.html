@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset=utf-8>
+    <title>{% block name %}{% endblock %} - Open Web Apps Browser Unit Tests</title>
+    <style>
+        iframe {
+            width: 800px;
+            height: 1000px;
+            margin: 10px auto;
+        }
+        
+        ul, li {
+            list-style-type: none;
+        }
+    </style>
+    <link rel="stylesheet" type="text/css" href="/tests/doctestjs/doctest.css" />
+    <script type="text/javascript" src="/tests/doctestjs/doctest.js"></script>
+    <script type="text/javascript" src="/jsapi/urlmatch.js"></script>
+    <script type="text/javascript" src="/jsapi/manifest.js"></script>
+    <script type="text/javascript" src="/servers.js"></script>
+    <script type="text/javascript" src="/jsapi/include.js"></script>
+    <script type="text/javascript" src="/jsapi/jschannel.js"></script>
+    <script type="text/javascript" src="/jsapi/conduit.js"></script>
+
+</head>
+<body class="autodoctest">
+<h1>Open Web Apps Browser Unit Tests</h1>
+
+<h2>Select a test</h2>
+<ul id="testSelection">
+    {% for spec in specs %}
+        <li><a href="/tests/spec/{{spec}}">{{spec}}</a></li>
+    {% endfor %}
+</ul>
+
+{% block test %}
+{% endblock %}
+
+{% block extrajs %}
+{% endblock %}
+
+</body>
+</html>

@@ -1,0 +1,140 @@
+{% extends "/tests/base.html" %}
+
+{% block name %}
+TypedStorage Tests
+{% endblock %}
+
+{% block extrajs %}
+<script type="text/javascript" src="/tests/js/underscore-min.js"></script>
+<script type="text/javascript" src="/jsapi/eventmixin.js"></script>
+<script type="text/javascript" src="/jsapi/typed-storage.js"></script>
+{% endblock %}
+
+{% block test %}
+
+<p><b>WARNING</b>: This test will clear local storage for the domain it's run on.</p>
+
+<h2>Clear</h2>
+
+<div class="test">
+
+<pre class="doctest">
+$ function printRepoLength() {
+>   this.keys(function(keys) {
+>       writeln(keys.length);
+>   });
+> }
+> var printRepoItem = function(name) {
+>   this.get(name, function(outItem) {
+>       writeln(outItem);
+>   });
+> };
+> var checkRepoItemEqual = function(name, thing) {
+>   this.get(name, function(outObject) {
+>     writeln(_.isEqual(thing, outObject));
+>   });
+> };
+$ var testRepo = TypedStorage().open("testObjectType");
+> var printTestRepoLength = printRepoLength.bind(testRepo);
+> testRepo.clear();
+> printTestRepoLength();
+0
+$ var thing1 = { "foo":"bar", "baz":"flam", 'plink':4.7};
+> testRepo.put("thing1", thing1, printTestRepoLength);
+1
+$ var thing2 = { 'first':{ "a":78, "b":23, "c":"foobar"}, "other":{"alice":'girl', "bob":'boy'}};
+> testRepo.put("thing2", thing2, printTestRepoLength);
+2
+$ var thing3 = { "frotz":"mailbox", 'joe':{'fruit':4, 'bread':2, 'vegetable':6}};
+> testRepo.put("thing3", thing3, printTestRepoLength);
+3
+$ testRepo.clear(printTestRepoLength);
+0
+</pre>
+
+</div>
+
+<h2>Add/Check/Remove</h2>
+
+<div class="test">
+<pre class="doctest setup">
+$ var testRepo = TypedStorage().open("testObjectType");
+> var printTestRepoLength = printRepoLength.bind(testRepo);
+>
+> testRepo.clear();
+>
+> var thing1 = { "foo":"bar", "baz":"flam", 'plink':4.7};
+> testRepo.put("thing1", thing1, printTestRepoLength);
+1
+$ var thing2 = { 'first':{ "a":78, "b":23, "c":"foobar"}, "other":{"alice":'girl', "bob":'boy'}};
+> testRepo.put("thing2", thing2, printTestRepoLength);
+2
+$ var thing3 = { "frotz":"mailbox", 'joe':{'fruit':4, 'bread':2, 'vegetable':6}};
+> testRepo.put("thing3", thing3, printTestRepoLength);
+3
+$ checkRepoItemEqual.call(testRepo, "thing1", thing1);
+true
+$ checkRepoItemEqual.call(testRepo, "thing2", thing2);
+true
+$ checkRepoItemEqual.call(testRepo, "thing3", thing3);
+true
+$ testRepo.remove("thing1", printTestRepoLength);
+2
+$ printRepoItem.call(testRepo, "thing1");
+undefined
+$ testRepo.remove("thing2", printTestRepoLength);
+1
+$ printRepoItem.call(testRepo, "thing2");
+undefined
+$ testRepo.remove("thing3", printTestRepoLength);
+0
+$ printRepoItem.call(testRepo, "thing3");
+undefined
+
+</pre>
+
+</div>
+
+<h2>Multiple TypedStorages in same localStorage</h2>
+
+<div class="test">
+<pre class="doctest">
+$ while (window.localStorage.length) {
+>   writeln('deleting ', window.localStorage.key(0));
+>   window.localStorage.removeItem(window.localStorage.key(0));
+> }
+...
+$ var testRepo1 = TypedStorage().open("fakeType");
+> testRepo1.clear();
+>
+> var thing1 = { "foo":"bar", "baz":"flam", 'plink':4.7};
+> testRepo1.put("thing1", thing1, printRepoLength.bind(testRepo1));
+1
+$ var testRepo2 = TypedStorage().open("bogusType");
+> testRepo2.clear();
+>
+> testRepo2.put("thing1", thing1, printRepoLength.bind(testRepo2));
+1
+$ var i=0;
+$ for ( i = 0; i &lt; window.localStorage.length; i++) {
+>   writeln(window.localStorage.key(i));
+> }
+bogusType#thing1
+typed-storage#last_modified
+fakeType#thing1
+$ testRepo2.clear();
+> for ( i = 0; i &lt; window.localStorage.length; i++) {
+>   writeln(window.localStorage.key(i));
+> }
+typed-storage#last_modified
+fakeType#thing1
+$ testRepo1.clear();
+> for ( i = 0; i &lt; window.localStorage.length; i++) {
+>   writeln(window.localStorage.key(i));
+> }
+typed-storage#last_modified
+</pre>
+
+</div>
+
+{% endblock %}
