@@ -39,7 +39,7 @@ var Auth = (function() {
     // given a contentWindow, set up the auth service pieces
     function setupAppAuth(contentWin, app) {
         // perform login on the app if needed
-        if (app.services.login) {
+        if ("services" in app && "login" in app.services) {
             console.log("ready to do some logging in!");
         }
 

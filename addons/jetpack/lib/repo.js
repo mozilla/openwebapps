@@ -65,7 +65,9 @@ function App(app_obj) {
     this.origin = this._app_obj.origin;
     this.manifest = this._app_obj.manifest;
 
-    this.services = this.manifest.experimental.services;
+    if ("experimental" in this.manifest &&
+        "services" in this.manifest.experimental)
+        this.services = this.manifest.experimental.services;
 
     this.launch_url = this.origin;
     if (this.manifest.launch_path)
