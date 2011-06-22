@@ -36,8 +36,8 @@
 
 const ui = require("./ui");
 const url = require("./urlmatch");
-const self = require("self");
 const tabs = require("tabs");
+const addon = require("self");
 const unload = require("unload");
 const simple = require("simple-storage");
 const {Cc, Ci, Cm, Cu, Cr, components} = require("chrome");
@@ -95,6 +95,14 @@ function openwebapps(win, getUrlCB)
     obs.addObserver(this, 'content-document-global-created', false);
 
     this._ui = new ui.openwebappsUI(win, getUrlCB, this._repo);
+    
+    // Prompt user if we detect that the page has an app via tabs module
+    let self = this;
+    tabs.on('activate', function(tab) {
+        let cUrl = url.URLParse(tab.url).originOnly().toString();
+        let record = simple.storage.links[cUrl];
+        if (record) self._ui._showPageHasApp(cUrl);
+    });
 }
 
 openwebapps.prototype = {
@@ -251,6 +259,7 @@ openwebapps.prototype = {
                 return;
             }
             
+            let self = this;
             mainWindow.addEventListener("DOMLinkAdded", function(aEvent) {
                 if (aEvent.target.rel != "application-manifest")
                     return;
@@ -276,7 +285,7 @@ openwebapps.prototype = {
                 cUrl = cUrl.originOnly().toString();
 
                 if (cUrl == page)
-                    ui.showPageHasApp(page);
+                    self._ui._showPageHasApp(page);
             }, false);
         }
     },
@@ -292,12 +301,7 @@ openwebapps.prototype = {
 
 };
 
-// Prompt user if we detect that the page has an app via tabs module
-tabs.on('activate', function(tab) {
-    let cUrl = url.URLParse(tab.url).originOnly().toString();
-    let record = simple.storage.links[cUrl];
-    if (record) ui.showPageHasApp(cUrl);
-});
+
 
 //----- about:apps implementation
 const AboutAppsUUID = components.ID("{1DD224F3-7720-4E62-BAE9-30C1DCD6F519}");
@@ -320,7 +324,7 @@ let AboutApps = {
         let ios = Cc["@mozilla.org/network/io-service;1"].
                   getService(Ci.nsIIOService);
         let channel = ios.newChannel(
-            require("self").data.url("about.html"), null, null
+            addon.data.url("about.html"), null, null
         );
         channel.originalURI = aURI;
         return channel;
@@ -349,7 +353,7 @@ let AboutAppsHome = {
         let ios = Cc["@mozilla.org/network/io-service;1"].
                   getService(Ci.nsIIOService);
         let channel = ios.newChannel(
-            require("self").data.url("home.xhtml"), null, null
+            addon.data.url("home.xhtml"), null, null
         );
         channel.originalURI = aURI;
         return channel;
@@ -418,7 +422,7 @@ function shutdown(why)
 }
 
 // Let's go!
-startup(self.data.url);
+startup(addon.data.url);
 
 // Hook up unloaders
 unload.when(shutdown);
