@@ -4,7 +4,14 @@ var sys = require("sys"),
 http = require("http"),
 url = require("url"),
 path = require("path"),
-fs = require("fs");
+fs = require("fs"),
+template = require("./serverjs/template"),
+template_loader = require("./serverjs/loader");
+
+const SPEC_DIR = path.join(path.dirname(__dirname), "spec");
+const STATIC_DIR = path.join(path.dirname(__dirname));
+
+template_loader.set_path(STATIC_DIR);
 
 // all bound webservers stored in this lil' object
 var boundServers = [ ];
@@ -36,8 +43,9 @@ function fourOhFour(resp, reason) {
   return undefined;
 }
 
-function createServer(port) {
-  var myserver = http.createServer(function(request, response) {
+function createServer(obj) {
+  var port = obj.port;
+  var myserver = http.createServer(function(obj, request, response) {
     var hostname = request.headers['host'].toString("utf8");
     var port = parseInt(hostname.split(':')[1]);
     var host = hostname.split(':')[0];
@@ -122,60 +130,11 @@ function createServer(port) {
       response.end();
       return;
     }
-
-    var serveFile = function (filename) {
-      path.exists(filename, function(exists) {
-        if(!exists) {
-          response.writeHead(404, {"Content-Type": "text/plain"});
-          response.write("404 Not Found");
-          response.end();
-          sys.puts("404 " + filename);
-          return;
-        }
-
-        fs.readFile(filename, "binary", function(err, data) {
-          if(err) {
-            response.writeHead(500, {"Content-Type": "text/plain"});
-            response.write(err + "\n");
-            response.end();
-            sys.puts("500 " + filename);
-            return;
-          }
-
-          var exts = {
-            ".js":   "text/javascript",
-            ".css":  "text/css",
-            ".html": "text/html",
-            ".webapp": "application/x-web-app-manifest+json",
-            ".png": "image/png",
-            ".ico": "image/x-icon"
-          };
-
-          var ext = path.extname(filename);
-          var mimeType = exts[ext] || "application/octet-stream";
-
-          data = data.replace(/https?:\/\/(stage\.)?myapps\.mozillalabs\.com/ig,
-                              "http://" + PRIMARY_HOST + ":" + PRIMARY_PORT);
-
-          response.writeHead(200, {"Content-Type": mimeType});
-          response.write(data, "binary");
-          response.end();
-          sys.puts("200 " + filename);
-        });
-      });
-    };
-
-
-    function serveFileIndex(filename) {
-      // automatically serve index.html if this is a directory
-      fs.stat(filename, function(err, s) {
-        if (err === null && s.isDirectory()) {
-          serveFile(path.join(filename, "index.html"));
-        } else {
-          serveFile(filename);
-        }
-      });
-    }
+    
+    if(obj.handler) {
+        obj.handler(request, response);
+        return;
+    }   
 
     var filename = path.join(siteroot, url.parse(request.url).pathname);
 
@@ -184,15 +143,15 @@ function createServer(port) {
       var otherPath = path.join(__dirname, '..', url.parse(request.url).pathname);
       path.exists(otherPath, function(exists) {
         if (exists) {
-          serveFileIndex(otherPath);
+          serveFileIndex(otherPath, response);
         } else {
-          serveFileIndex(filename);
+          serveFileIndex(filename, response);
         }
       });
     } else {
-      serveFileIndex(filename);
+      serveFileIndex(filename, response);
     }
-  });
+  }.bind(null,obj));
   myserver.listen(port, PRIMARY_HOST);
   return myserver;
 };
@@ -240,10 +199,82 @@ for (var i = 0; i < process.argv.length; i++) {
   }
 }
 
+function primaryHandler(req, resp) {
+    var urlpath = url.parse(req.url).pathname;
+
+    console.log( 'primary handler: ' + urlpath );
+    var specs = getSpecs();
+    var tests = [];
+    specs.forEach( function( spec, index ) {
+        if( spec !== 'run-all.html' ) {
+            tests.push( spec );
+        }
+    } );
+    template_loader.load_and_render(urlpath, { 
+        specs: specs,
+        tests: tests 
+    }, function(err, result) {
+        resp.end(result);
+    });
+}
+
+function serveFile(filename, response) {
+  path.exists(filename, function(exists) {
+    if(!exists) {
+      response.writeHead(404, {"Content-Type": "text/plain"});
+      response.write("404 Not Found");
+      response.end();
+      return;
+    }
+
+    fs.readFile(filename, "binary", function(err, data) {
+      if(err) {
+        response.writeHead(500, {"Content-Type": "text/plain"});
+        response.write(err + "\n");
+        response.end();
+        return;
+      }
+
+      var exts = {
+        ".js":   "text/javascript",
+        ".css":  "text/css",
+        ".html": "text/html",
+        ".webapp": "application/x-web-app-manifest+json",
+        ".png": "image/png",
+        ".ico": "image/x-icon"
+      };
+
+      var ext = path.extname(filename);
+      var mimeType = exts[ext] || "application/octet-stream";
+
+	  data = data.replace(/https?:\/\/(stage\.)?myapps\.mozillalabs\.com/ig,
+                              "http://" + PRIMARY_HOST + ":" + PRIMARY_PORT);
+
+      response.writeHead(200, {"Content-Type": mimeType});
+      response.write(data, "binary");
+      response.end();
+    });
+  });
+}
+
+function serveFileIndex(filename, response) {
+  // automatically serve index.html if this is a directory
+  fs.stat(filename, function(err, s) {
+	if (err === null && s.isDirectory()) {
+	  serveFile(path.join(filename, "index.html"), response);
+	} else {
+	  serveFile(filename, response);
+	}
+  });
+}
+
 
 boundServers.push({
   name: "_primary",
-  server: createServer(PRIMARY_PORT)
+  server: createServer({ 
+    port: PRIMARY_PORT,
+    handler: primaryHandler
+  })
 });
 
 function formatLink(nameOrServer, extraPath) {
@@ -258,6 +289,7 @@ function formatLink(nameOrServer, extraPath) {
   return url;
 }
 
+
 console.log('Primary server:');
 console.log('  ' + formatLink("_primary"));
 
@@ -270,11 +302,16 @@ dirs.forEach(function(dirObj) {
   }
   boundServers.push({
     path: dirObj.path,
-    server: createServer(0),
+    server: createServer({ port: 0 }),
     name: dirObj.name
   });
   console.log("  " + dirObj.name + ": " + formatLink(dirObj.name));
 });
 
 console.log("\nTesting server started, to run tests go to: "
-            + formatLink("_primary", "/repo_api.html"));
+            + formatLink("_primary", "/tests/index.html"));
+
+function getSpecs() {
+    var dirs = fs.readdirSync(path.join(__dirname, 'spec'));
+    return dirs;
+}

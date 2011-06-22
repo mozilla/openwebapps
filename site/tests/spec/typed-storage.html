@@ -1,17 +1,16 @@
-<html>
-<head>
-<title>TypedStorage Tests</title>
-<script type="text/javascript" src="../jsapi/eventmixin.js"></script>
-<script type="text/javascript" src="../jsapi/typed-storage.js"></script>
-<script type="text/javascript" src="js/underscore-min.js"></script>
-<script type="text/javascript" src="doctestjs/doctest.js"></script>
-<link rel="stylesheet" type="text/css" href="doctestjs/doctest.css" />
-</head>
+{% extends "/tests/base.html" %}
 
-<body class="autodoctest">
+{% block name %}
+TypedStorage Tests
+{% endblock %}
 
-<h1>TypedStorage Tests</h1>
+{% block extrajs %}
+<script type="text/javascript" src="/tests/js/underscore-min.js"></script>
+<script type="text/javascript" src="/jsapi/eventmixin.js"></script>
+<script type="text/javascript" src="/jsapi/typed-storage.js"></script>
+{% endblock %}
 
+{% block test %}
 
 <p><b>WARNING</b>: This test will clear local storage for the domain it's run on.</p>
 
@@ -137,5 +136,5 @@ typed-storage#last_modified
 </pre>
 
 </div>
-    
-</body> </html>
+
+{% endblock %}

@@ -1,76 +1,10 @@
-<!doctype html>
-<html>
-<head>
-    <title>Open Web Apps Browser Unit Tests</title>
-    <style>
-        iframe {
-            width: 95%;
-            height: 1000px;
-            margin: 10px auto;
-        }
-        
-        ul, li {
-            list-style-type: none;
-        }
-    </style>
-</head>
-<body>
-<h1>Open Web Apps Browser Unit Tests</h1>
+{% extends "/tests/base.html" %}
 
-<h2>Select a test</h2>
-<button id="runall">Run All</button>
-<ul id="testSelection">
-</ul>
+{% block name %}
+Test Root
+{% endblock %}
 
-<ul id="tests">
-</ul>
+{% block test %}
+No Tests Here
+{% endblock %}
 
-<script type="text/javascript" src="js/jquery-1.6.1.min.js"></script>
-    
-<script type="text/javascript">
-    var testURLS = {
-        'manifest.html': 'Manifest',
-        'typed-storage.html': 'TypedStorage',
-        'conduits.html': 'Conduits',
-        'repo_api.html': 'Repo API'
-    };
-
-    function createTestList() {
-        for( var url in testURLS ) {
-            var testItem = $( '<li><a class="testlink" href="' + url + '">' + testURLS[ url ] +
-                '</a></li>' ); 
-            testItem.appendTo( '#testSelection' );
-        }
-
-        $( '.testlink' ).click( function( event ) {
-            event.preventDefault();
-            
-            $( '#tests' ).empty();
-
-            var url = $( event.currentTarget ).attr( 'href' );
-            createTest( url );
-        } );
-    }
-    
-    function attachRunAll() {
-        $( '#runall' ).click( function( event ) {
-            event.preventDefault();
-
-            $( '#tests' ).empty();
-
-            for( var url in testURLS ) {
-                createTest( url );    
-            }
-        } );
-    }
-
-    function createTest( url ) {
-        var test = $( '<li><iframe src="' + url + 
-            '" /></li>' ).appendTo( '#tests' );    
-    }
-
-    createTestList();
-    attachRunAll();
-</script>
-</body>
-</html>

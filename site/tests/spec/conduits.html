@@ -1,23 +1,10 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Conduit Tests</title>
-  <script type="text/javascript" src="doctestjs/doctest.js"></script>
-  <link rel="stylesheet" type="text/css" href="doctestjs/doctest.css" />
-  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
-  <style type="text/css" media="screen">
-      iframe {
-        display: none;
-        position: fixed;
-        width: 100%;
-        height: 100%;
-        top: 0;
-        left: 0;
-      }
-  </style>
-</head>
-<body id="testingBody" class="autodoctest">
-<h2> Conduit Abstraction Tests </h2>
+{% extends "/tests/base.html" %}
+
+{% block name %}
+Conduit Abstraction Tests
+{% endblock %}
+
+{% block test %}
 
 <p> These are low level tests of the HTML5 conduit abstraction --
     this is the thing that's responsible for loading conduits into an
@@ -56,10 +43,4 @@ success({
 </pre>
 </div>
 
-</body>
-<script type="text/javascript" src="/servers.js"></script>
-<script type="text/javascript" src="/jsapi/include.js"></script>
-<script type="text/javascript" src="/jsapi/jschannel.js"></script>
-<script type="text/javascript" src="/jsapi/urlmatch.js"></script>
-<script type="text/javascript" src="/jsapi/conduit.js"></script>
-</html>
+{% endblock %}

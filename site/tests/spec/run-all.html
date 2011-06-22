@@ -1,0 +1,15 @@
+{% extends "/tests/base.html" %}
+
+{% block name %}
+Running all tests
+{% endblock %}
+
+{% block test %}
+
+    {% for test in tests %}
+           <!--iframe class="includedtest" src="/tests/spec/{{test}}"></iframe--> 
+        {% include "/tests/spec/" + test %}
+    {% endfor %}
+
+{% endblock %}
+
