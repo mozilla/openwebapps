@@ -107,6 +107,29 @@ function openwebapps(win, getUrlCB)
         let record = simple.storage.links[cUrl];
         if (record) self.offerInstallIfNeeded(cUrl);
     });
+
+    // TODO: Figure out a way to do this without waiting for 500ms.
+    // Also, intercept document loads that don't open in a new tab
+    // (this should be done in the content-document-global-created observer?)
+    win.gBrowser.tabContainer.addEventListener("TabOpen", function(e) {
+        self._window.setTimeout(function(e) {
+            if (e.target.pinned) return;
+
+            let browser = self._window.gBrowser.getBrowserForTab(e.target);
+            let origin = url.URLParse(browser.currentURI.spec)
+                .originOnly().toString();
+
+            self._repo.list(function(apps) {
+                for (let app in apps) {
+                    if (app == origin) {
+                        self._repo.launch(origin, browser.currentURI.spec);
+                        self._window.gBrowser.removeTab(e.target);
+                        break;
+                    }
+                }
+            });
+        }, 500, e);
+    }, false);
 }
 
 openwebapps.prototype = {

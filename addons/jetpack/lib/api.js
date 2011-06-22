@@ -294,7 +294,7 @@ FFRepoImpl.prototype = {
         return [userInfo, loginInfo];
     },
 
-    launch: function _launch(id)
+    launch: function _launch(id, dest)
     {
         function openAppURL(url, app)
         {
@@ -303,30 +303,35 @@ FFRepoImpl.prototype = {
             let wm = Cc["@mozilla.org/appshell/window-mediator;1"]
                     .getService(Ci.nsIWindowMediator);
             let bEnum = wm.getEnumerator("navigator:browser");
+
+            let origin = URLParse(url).normalize().originOnly().toString();
             let found = false;
 
             // Do we already have this app running in a tab? If so, target it.
             while (!found && bEnum.hasMoreElements()) {
                 let browserWin = bEnum.getNext();
                 let tabbrowser = browserWin.gBrowser;
-                let numTabs = tabbrowser.browsers.length;
 
                 for (let index = 0; index < tabbrowser.tabs.length; index++) {
                     let cur = tabbrowser.tabs[index];
                     let brs = tabbrowser.getBrowserForTab(cur);
                     let appURL = ss.getTabValue(cur, "appURL");
+                    let brsOrigin = URLParse(brs.currentURI.spec)
+                        .normalize().originOnly().toString();
 
-                    if ((appURL && appURL == url) || url == brs.currentURI.spec) {
+                    if (appURL && appURL == origin) {
                         // The app is running in this tab; select it and retarget.
+                        browserWin.focus();
                         tabbrowser.selectedTab = tabbrowser.tabContainer.childNodes[index];
 
-                        // Focus *this* browser-window
-                        browserWin.focus();
+                        // If destination is different than loaded content,
+                        // notify the app if it is registered to handle it,
+                        // else, reload the page with the new URL?
+                        if (url != brs.currentURI.spec) {
+                            // XXX: check for link service & notify
+                            brs.loadURI(url, null, null); // Referrer is broken
+                        }
 
-                        // XXX: Do we really need a reload here?
-                        //tabbrowser.selectedBrowser.loadURI(
-                        //     url, null // TODO don't break referrer!
-                        //, null);
                         found = true;
                     }
                 }
@@ -340,12 +345,15 @@ FFRepoImpl.prototype = {
                     let tab = recentWindow.gBrowser.addTab(url);
 
                     // hook in the auth/login stuff
-                    Auth.setupAppAuth(recentWindow.gBrowser.getBrowserForTab(tab).contentWindow, app);
+                    Auth.setupAppAuth(
+                            recentWindow.gBrowser.getBrowserForTab(tab)
+                                .contentWindow, app
+                    );
                     let bar = recentWindow.document.getElementById("nav-bar");
 
                     recentWindow.gBrowser.pinTab(tab);
                     recentWindow.gBrowser.selectedTab = tab;
-                    ss.setTabValue(tab, "appURL", url);
+                    ss.setTabValue(tab, "appURL", origin);
                     bar.setAttribute("collapsed", true);
                 } else {
                     // This is a very odd case: no browser windows are open, so open a new one.
@@ -361,7 +369,14 @@ FFRepoImpl.prototype = {
         Repo.getAppById(id, function(app) {
             if (!app)
                 throw "Invalid AppID: " + id;
-            openAppURL(app.launch_url, app);
+
+            if (dest) {
+                let origin = URLParse(dest).normalize().originOnly().toString();
+                if (origin != id)
+                    throw "Invalid AppDestination " + dest;
+            }
+
+            openAppURL(dest ? dest : app.launch_url, app);
         });
     },
 
