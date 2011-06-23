@@ -524,6 +524,8 @@ success("iVBORw0KGgoAAAANSUhEUgAAAEsAAABqCAMAAADDYFxLAAAAMFBMVEVnAQSQAQi3AAiUamr
   function embedIFrameAndStartChannel(url) {
     var iframe = document.createElement("iframe");
     iframe.src = url;
+    iframe.height = window.innerHeight + 'px';
+    iframe.width = window.innerWidth + 'px';
     document.body.appendChild(iframe);
     // next, let's connect to her over a jschannel
     var chan =  Channel.build({
@@ -547,7 +549,7 @@ success("iVBORw0KGgoAAAANSUhEUgAAAEsAAABqCAMAAADDYFxLAAAAMFBMVEVnAQSQAQi3AAiUamr
     var tags = document.getElementsByTagName('iframe');
     for (var i = 0; i < tags.length; i++) {
       if (0 === tags[i].getAttribute('src').indexOf(origin)) {
-        tags[i].style.display = "inline";
+        tags[i].style.display = "block";
         return;
       }
     }
