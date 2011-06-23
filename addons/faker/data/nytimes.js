@@ -8,6 +8,7 @@
 // set up the smooth transition stuff
 var head = document.getElementsByTagName("head")[0];
 var el = document.createElement("script");
+el.setAttribute("type", "text/javascript");
 el.setAttribute("src", "https://raw.github.com/mozilla/openwebapps/master/addons/faker/data/nytimes-inline.js");
 head.appendChild(el);
 

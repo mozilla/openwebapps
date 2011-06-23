@@ -179,7 +179,8 @@ openwebappsUI.prototype = {
         widgets.Widget({
         id: "openwebapps-toolbar-button",
         label: "Web Apps",
-        contentURL: require("self").data.url("skin/toolbar-button.png"),
+        width: 60,
+        contentURL: require("self").data.url("widget-label.html"),
         panel: thePanel,
         });
           
