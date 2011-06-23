@@ -141,15 +141,53 @@ openwebappsUI.prototype = {
         // false);
     },
 
+//     _addToolbarButton: function() {
+//         let addon = this;
+//         widgets.Widget({
+//           id: "openwebapps-toolbar-button",
+//           label: "Web Apps",
+//           contentURL: require("self").data.url("skin/toolbar-button.png"),
+//           onClick: function() { addon._toggleDock(); }
+//           });
+//     },
+
     _addToolbarButton: function() {
-        let addon = this;
-        widgets.Widget({
+        let self = this;
+        let data = require("self").data;
+        let thePanel = require("panel").Panel({
+          height: 160,
+          width: 800,
+          contentURL: data.url("panel.html"),
+          contentScriptFile: [data.url("base32.js"),
+                              data.url("jquery-1.4.2.min.js"),
+                              data.url("panel.js") ],
+                              
+          onShow: function() { self._repo.list(function(apps) {
+                                console.log("ui.js SENT theList");
+                                thePanel.port.emit("theList", apps);
+                                }); },
+        });      
+        
+        thePanel.port.on("getList", function(arg) {
+          self._repo.list(function(apps) {
+            console.log("ui.js RECEIVED getList");
+            thePanel.port.emit("theList", apps);
+          });
+        });
+        
+        thePanel.port.on("launch", function(arg) {
+            self._repo.launch(arg);
+            thePanel.hide();
+            });
+
+          widgets.Widget({
           id: "openwebapps-toolbar-button",
           label: "Web Apps",
           contentURL: require("self").data.url("skin/toolbar-button.png"),
-          onClick: function() { addon._toggleDock(); }
+          panel: thePanel,
           });
     },
+
 
     _addDock: function() {
         let self = this;
@@ -284,7 +322,21 @@ openwebappsUI.prototype = {
         //this._dock.style.display ="none";
         this._dock.collapsed = true;
     },
+    
+    _setupMessaging: function() {
+    
+      console.log("SETTING UP MESSAGING");
+      
+      let messageHandler = function(msg) {
+           console.log(msg);
+      }
+      
+      this.addEventListener("message", messageHandler, false);
+
+    }
 };
+
+
 
 exports.showPageHasApp = function(link) {
     console.log("This page has an application manifest at: " + link.url);
