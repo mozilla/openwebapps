@@ -10,3 +10,5 @@ var head = document.getElementsByTagName("head")[0];
 var el = document.createElement("script");
 el.setAttribute("src", "https://raw.github.com/mozilla/openwebapps/master/addons/faker/data/nytimes-inline.js");
 head.appendChild(el);
+
+console.log("appended!");
