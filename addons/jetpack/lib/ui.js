@@ -189,13 +189,22 @@ openwebappsUI.prototype = {
 
   _updateDashboard: function(show) {
     let self = this;
+    console.log("updating dashboard now...");
     self._repo.list(function(apps) {
       console.log("DASHBOARD UPDATED");
-      thePanel.port.emit("theList", apps);
+      self._panel.port.emit("theList", apps);
     });
-    
+      
+    let WM = Cc['@mozilla.org/appshell/window-mediator;1']
+            .getService(Ci.nsIWindowMediator);
+    let currentDoc = WM.getMostRecentWindow("navigator:browser").document;
+    var widgetAnchor = currentDoc.getElementById("widget:" + 
+                                          require("self").id + "-openwebapps-toolbar-button");
+
+    console.log(widgetAnchor);
     if (show != undefined) {
-      self._panel.show();
+      console.log("showing panel");
+      self._panel.show(widgetAnchor);
     }
   
   },
