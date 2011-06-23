@@ -1,11 +1,11 @@
 
 html {
   font-family: arial;
-  background: -moz-Field;
-  color: -moz-FieldText;
+
 }
 
 body {
+/*
   display: inline-block;
   position: relative;
   margin: 0;
@@ -13,27 +13,39 @@ body {
   height: 100%;
   border: 0px;
   padding: 0px;
+*/
 }
 
 
 
+/*
 .background {
   border: 0px;
   margin: 0px;
   padding: 0px;
   
-  overflow: hidden;
+  background-image: url('../img/tabletdash_bg.jpg');
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  overflow: scroll;
 }
+*/
 
 .dashboard {
-  position: relative;
-  overflow: hidden;
+
 }
 
 
 .page {
   display: inline-block; 
+width: 100%;
+height: 100%;
   vertical-align: top;
+  overflow: hidden;
+
+/*
+border: 1px solid red;
+*/
 }
 
 

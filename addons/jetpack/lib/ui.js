@@ -151,7 +151,7 @@ openwebappsUI.prototype = {
         let self = this;
         let data = require("self").data;
         let thePanel = require("panel").Panel({
-          height: 160,
+          height: 130,
           width: 800,
           contentURL: data.url("panel.html"),
           contentScriptFile: [data.url("base32.js"),

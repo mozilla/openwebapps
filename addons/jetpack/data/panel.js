@@ -112,15 +112,16 @@ function computeLayoutVars() {
   pageWidth = screenWidth;//-4;
   screenHeight = getWindowHeight();
   
-  if (screenWidth > screenHeight)  {
-    appBoxWidth = Math.floor(pageWidth / 6);
-    appBoxHeight = Math.floor(screenHeight / 2);
-  } else {
-    appBoxWidth = Math.floor(pageWidth / 2);
-    appBoxHeight = Math.floor(screenHeight / 6);
-  }
-  
-  appIconSize = Math.floor(Math.min(appBoxWidth, appBoxHeight) / 2.5);
+ //  if (screenWidth > screenHeight)  {
+//     appBoxWidth = Math.floor(pageWidth / 6);
+//     appBoxHeight = Math.floor(screenHeight / 2);
+//   } else {
+//     appBoxWidth = Math.floor(pageWidth / 2);
+//     appBoxHeight = Math.floor(screenHeight / 6);
+//   }
+  appBoxWidth = 100;
+  appBoxHeight = 100;
+  appIconSize = 64; //Math.floor(Math.min(appBoxWidth, appBoxHeight) / 2.5);
   appBorderSize = Math.floor(appIconSize/8);
   appNameSize = Math.floor(appBoxWidth * 0.8);
   appNameFontSize = Math.max(Math.ceil(appIconSize/6), 10);
@@ -137,15 +138,15 @@ function computeLayoutVars() {
 }
 
 //call it right away to prime the pump
-//computeLayoutVars();
+// computeLayoutVars();
 
 //************** document.ready()
 
-$(document).ready(function() {
-
-  var downX = 0;
-  var downY = 0;
-  var appHit;
+// $(document).ready(function() {
+// 
+//   var downX = 0;
+//   var downY = 0;
+//   var appHit;
   
 //       }, true);
 
@@ -153,56 +154,56 @@ $(document).ready(function() {
 //     console.log("SCROLLED");
 //   }, false);
 
-  document.addEventListener("contextmenu", function(e) {
-    e.preventDefault();
-  }, true);
+//   document.addEventListener("contextmenu", function(e) {
+//     e.preventDefault();
+//   }, true);
+// 
+//   document.addEventListener("touchstart", function(e) {
+//     if (e.touches && e.touches.length) {
+//       downX = e.touches[0].clientX;
+//       downY = e.touches[0].clientY;
+//       
+//       //now check to see if it hits on an icon, and if so, then highlight it
+//       // i know this is a bit fragile and ugly
+//       var theDiv = $(e.target.parentNode.parentNode);
+//       if (theDiv.hasClass("iconWrapper")) {
+//             appHit = theDiv;
+//             appHit.addClass("highlighted");
+//                   console.log("highlighted");
+// 
+//       }
+//     } else {
+//       downX = 0;
+//       downY = 0;
+//     } 
+//   }, false);
+// 
+//   document.addEventListener("touchmove", function(e) {
+//     if (appHit == undefined) return;
+//     
+//     if (e.touches && e.touches.length && downX != 0) {
+//       if ( Math.abs(e.touches[0].clientX - downX) > 10 || Math.abs(e.touches[0].clientY - downY) > 10) {
+//         //un-highlight the tapped app
+//         if (appHit != undefined) {
+//           appHit.removeClass("highlighted");
+//           appHit = undefined;
+//                             console.log("UNhighlighted");
+// 
+//         }
+//       }
+//     }
+//   }, false);
 
-  document.addEventListener("touchstart", function(e) {
-    if (e.touches && e.touches.length) {
-      downX = e.touches[0].clientX;
-      downY = e.touches[0].clientY;
-      
-      //now check to see if it hits on an icon, and if so, then highlight it
-      // i know this is a bit fragile and ugly
-      var theDiv = $(e.target.parentNode.parentNode);
-      if (theDiv.hasClass("iconWrapper")) {
-            appHit = theDiv;
-            appHit.addClass("highlighted");
-                  console.log("highlighted");
 
-      }
-    } else {
-      downX = 0;
-      downY = 0;
-    } 
-  }, false);
-
-  document.addEventListener("touchmove", function(e) {
-    if (appHit == undefined) return;
-    
-    if (e.touches && e.touches.length && downX != 0) {
-      if ( Math.abs(e.touches[0].clientX - downX) > 10 || Math.abs(e.touches[0].clientY - downY) > 10) {
-        //un-highlight the tapped app
-        if (appHit != undefined) {
-          appHit.removeClass("highlighted");
-          appHit = undefined;
-                            console.log("UNhighlighted");
-
-        }
-      }
-    }
-  }, false);
-
-
-  document.addEventListener("touchend", function(e) {
-  
-    if (appHit != undefined) {
-      appHit.removeClass("highlighted");
-      appHit = undefined;
-                                  console.log("UNhighlighted");
-
-    }
-    
+//   document.addEventListener("touchend", function(e) {
+//   
+//     if (appHit != undefined) {
+//       appHit.removeClass("highlighted");
+//       appHit = undefined;
+//                                   console.log("UNhighlighted");
+// 
+//     }
+//     
 //     var currentOffset = window.scrollX;
 //     var snapPage = 0;
 //     
@@ -218,10 +219,10 @@ $(document).ready(function() {
 //     
 //     if (snapPage >= numPages) snapPage = numPages - 1;
 //     window.scrollTo(snapPage * screenWidth);
-  }, true);
+//   }, true);
   
   
-  });
+//  });
 
 
 
@@ -278,7 +279,7 @@ function updateDashboard( listOfInstalledApps ) {
     
       //calculate various sizes of elements based on the window size, and set the background
       computeLayoutVars();
-      $(".background").css({width: screenWidth, height: screenHeight});
+      $(".dashboard").css({width: screenWidth - 20, height: screenHeight - 20});
       
           
           gApps = listOfInstalledApps;
@@ -295,6 +296,13 @@ function updateDashboard( listOfInstalledApps ) {
             }
           }
 
+          for (origin in gApps) {
+            console.log("appending: " + gApps[origin].origin);
+              $('#page0').append(createAppItem(gApps[origin]));
+            }
+                 
+            $('#page0').css({width: "100%", height: "100%"});
+
 
           //now, in the list callback, load the dashboard state
 //           navigator.apps.mgmt.loadState( function (dashState) 
@@ -305,24 +313,24 @@ function updateDashboard( listOfInstalledApps ) {
 //               if (gDashboardState.pages == undefined) {
 //               
 //                 //create the right number of pages to hold everything
-                gDashboardState.pages = [];
+//                gDashboardState.pages = [];
                 
                 //put 20 apps into each page, or as many as we have
-                var a=0;
-                for (origin in gApps) {
-                  gApps[origin].origin32 = Base32.encode(origin);
-                  if (gDashboardState.pages[Math.floor(a/20)] == undefined) { gDashboardState.pages[Math.floor(a/20)] = []; }
-                  gDashboardState.pages[Math.floor(a/20)][(a % 20)] = gApps[origin].origin32;
-                  a++;
-                }
+//                 var a=0;
+//                 for (origin in gApps) {
+//                   gApps[origin].origin32 = Base32.encode(origin);
+//                   if (gDashboardState.pages[Math.floor(a/8)] == undefined) { gDashboardState.pages[Math.floor(a/8)] = []; }
+//                   gDashboardState.pages[Math.floor(a/8)][(a % 8)] = gApps[origin].origin32;
+//                   a++;
+//                 }
 //                 //save this ias the new state
 //                 saveDashboardState();
 //               }
 //               
-              numPages = gDashboardState.pages.length;
+//              numPages = 1; //gDashboardState.pages.length;
 //               console.log("numPages: " + numPages);
 
-              layoutPages();
+//              layoutPages();
 //   
 //               //and call the dream within a dream within a dream callback.  if it exists.
 //               if (completionCallback) { completionCallback(); };
@@ -334,30 +342,30 @@ function updateDashboard( listOfInstalledApps ) {
 
 //create the full app list, and sort them for display
 // here is also where I cache the base32 version of the origin into the app
-function layoutPages() {
-  if (!gApps) return;
-  //clear the list
-  $('.page').remove();
-  
-  $('.dashboard').css({width: (gDashboardState.pages.length * screenWidth), height: screenHeight});
-    
-  //now for each page, build zero to 20 app icon items, and put them into the page
-  for (var p = 0; p < gDashboardState.pages.length; p++) {
-    //add the page div
-    var nextPage = $("<div/>").addClass("page").attr("id", "page" + p);
-    
-    $(".dashboard").append(nextPage);
-    nextPage.css({width: screenWidth, height: screenHeight});
-
-    
-    
-    //put the apps in
-    for (var a = 0; a < gDashboardState.pages[p].length; a++) {
-        nextPage.append(createAppItem( findInstallForOrigin32(gDashboardState.pages[p][a]) ));
-    }
-    
-  }
-}
+// function layoutPages() {
+//   if (!gApps) return;
+//   //clear the list
+//   $('.page').remove();
+//   
+//   $('.dashboard').css({width: (numPages * screenWidth), height: screenHeight});
+//     
+//   //now for each page, build zero to 20 app icon items, and put them into the page
+//   for (var p = 0; p < numPages; p++) {
+//     //add the page div
+//     var nextPage = $("<div/>").addClass("page").attr("id", "page" + p);
+//     
+//     $(".dashboard").append(nextPage);
+//     nextPage.css({width: screenWidth, height: screenHeight});
+// 
+//     
+//     
+//     //put the apps in
+//     for (var a = 0; a < gDashboardState.pages[p].length; a++) {
+//         nextPage.append(createAppItem( findInstallForOrigin32(gDashboardState.pages[p][a]) ));
+//     }
+//     
+//   }
+// }
 
 
 
