@@ -202,20 +202,28 @@ for (var i = 0; i < process.argv.length; i++) {
 function primaryHandler(req, resp) {
     var urlpath = url.parse(req.url).pathname;
 
-    console.log( 'primary handler: ' + urlpath );
-    var specs = getSpecs();
-    var tests = [];
-    specs.forEach( function( spec, index ) {
-        if( spec !== 'run-all.html' ) {
-            tests.push( spec );
-        }
-    } );
-    template_loader.load_and_render(urlpath, { 
-        specs: specs,
-        tests: tests 
-    }, function(err, result) {
-        resp.end(result);
-    });
+    /* We only want to use the template_loader for HTML
+     * files, all other files use the standard serveFileIndex
+     * since all the background work for mime types is set up.
+     */
+    if(urlpath.match(/\.html$/)) {
+        var specs = getSpecs();
+        var tests = [];
+        specs.forEach( function( spec, index ) {
+            if( spec !== 'run-all.html' ) {
+                tests.push( spec );
+            }
+        } );
+        template_loader.load_and_render(urlpath, { 
+            specs: specs,
+            tests: tests 
+        }, function(err, result) {
+            resp.end(result);
+        });
+    } else {
+        urlpath = path.join(__dirname, '..', urlpath);
+        serveFileIndex(urlpath, resp);
+    }
 }
 
 function serveFile(filename, response) {

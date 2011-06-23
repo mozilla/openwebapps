@@ -12,7 +12,6 @@ normalization of manifests.  This page tests and demonstrates its functioning.
 </p>
 
 <div>
-  <button onclick="doctest()" type="button">Test all</button>
   <pre id="doctestOutput"></pre>
 </div>
 
@@ -361,5 +360,10 @@ $ delete m.bogus;
 Error: (locales/en/bogus) unsupported property
 </pre>
 
-  <button onclick="doctest()" type="button">Test all</button>
+{% endblock %}
+
+{% block extrajs %}
+    <script type="text/javascript" src="/jsapi/urlmatch.js"></script>
+    <script type="text/javascript" src="/jsapi/manifest.js"></script>
+
 {% endblock %}

@@ -461,7 +461,7 @@ apps.install()
 </div>
 
 
-<!--div class="test">
+<div class="test">
 <h3>Invoke the profile provider service</h3>
 
 <pre class="doctest">
@@ -471,7 +471,7 @@ $ navigator.apps.invokeService(
 >    Spy('error', {wait: false})
 > );
 success({displayName: "Mork Hashimoto"})
-</pre-->
+</pre>
 
 <div class="test">
 <h3>Install an application that contains an image sink service</h3>
@@ -486,7 +486,7 @@ apps.install()
 </pre>
 </div>
 
-<!--div class="test">
+<div class="test">
 <h3>push an image to that app</h3>
 
 <pre class="doctest">
@@ -502,9 +502,9 @@ $ navigator.apps.invokeService(
 > );
 success(null)
 </pre>
-</div-->
+</div>
 
-<!--div class="test">
+<div class="test">
 <h3>use a backchannel to get the pushed image</h3>
 
 <pre class="doctest">
@@ -512,7 +512,7 @@ $ var chan = embedIFrameAndStartChannel(SERVERS['app_that_eats_images'] + "/back
 > chan.call(buildJSChanArgs("getLastImage", true));
 success("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")
 </pre>
-</div-->
+</div>
 {% endblock %}
 
 {% block extrajs %}
