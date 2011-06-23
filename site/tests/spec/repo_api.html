@@ -37,9 +37,12 @@ First let's ensure that the testing environment is sane...
 $ writeln(SERVERS);
 {
   _primary: "...",
+  app_that_eats_images: "...",
+  app_with_simple_service: "...",
   bad_content_type: "...",
   basic_app: "...",
   json_syntax_error: "...",
+  manifest_with_bom: "...",
   missing_required_field: "...",
   no_delegated_install: "...",
   no_mgmt_api_off_repo_origin: "..."
@@ -55,16 +58,17 @@ Are all of the functions present that we would expect on the navigator.apps obje
 <pre class="doctest">
 $ // We'll show all the methods we're testing
 > var arr = [];
-> for (var f in navigator.apps) {
->   if (typeof(navigator.apps[f]) === 'function') {
->     arr.push("navigator.apps." + f);
+> function iterateMethods(label, root) {
+>   for(var f in root) {
+>       if(typeof root[f] === 'function')
+>           arr.push(label + f);
 >   }
 > }
-> for (var f in navigator.apps.mgmt) {
->   if (typeof(navigator.apps.mgmt[f]) === 'function') {
->     arr.push("navigator.apps.mgmt." + f);
->   }
-> }
+>
+> iterateMethods("navigator.apps.", navigator.apps);
+> iterateMethods("navigator.apps.mgmt.", navigator.apps.mgmt);
+> iterateMethods("navigator.apps.services.", navigator.apps.services);
+>
 > arr = arr.sort();
 > for (var i = 0; i < arr.length; i++) writeln(arr[i]);
 navigator.apps.amInstalled
@@ -77,6 +81,8 @@ navigator.apps.mgmt.loadState
 navigator.apps.mgmt.loginStatus
 navigator.apps.mgmt.saveState
 navigator.apps.mgmt.uninstall
+navigator.apps.services.ready
+navigator.apps.services.registerHandler
 navigator.apps.setRepoOrigin
 </pre>
 </div>
