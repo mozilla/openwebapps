@@ -38,7 +38,6 @@ const {Cc, Ci, Cu, Cr, components} = require("chrome");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
 var {TypedStorage} = require("typed_storage");
-var {Auth} = require("auth");
 
 var console = {
     log: function(s) {dump(s+"\n");}
@@ -348,11 +347,6 @@ FFRepoImpl.prototype = {
                 if (recentWindow) {
                     let tab = recentWindow.gBrowser.addTab(url);
 
-                    // hook in the auth/login stuff
-                    Auth.setupAppAuth(
-                            recentWindow.gBrowser.getBrowserForTab(tab)
-                                .contentWindow, app
-                    );
                     let bar = recentWindow.document.getElementById("nav-bar");
 
                     recentWindow.gBrowser.pinTab(tab);
@@ -362,7 +356,6 @@ FFRepoImpl.prototype = {
                 } else {
                     // This is a very odd case: no browser windows are open, so open a new one.
                     var new_window = aWindow.open(url);
-                    auth.setupAppAuth(new_window.contentWindow, app);
                     // TODO: convert to app tab somehow
                 }
             }

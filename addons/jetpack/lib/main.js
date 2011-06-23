@@ -178,6 +178,25 @@ openwebapps.prototype = {
             }
         });
 
+        // services APIs
+        win.appinjector.register({
+            apibase: "navigator.apps.services", name: "ready", script: null,
+            getapi: function(contentWindowRef) {
+                return function(args) {
+                    self._services.initApp(contentWindowRef);
+                }
+            }
+        });
+
+        win.appinjector.register({
+            apibase: "navigator.apps.services", name: "registerHandler", script: null,
+            getapi: function(contentWindowRef) {
+                return function(activity, message, func) {
+                    self._services.registerServiceHandler(contentWindowRef, activity, message, func);
+                }
+            }
+        });
+
         // management APIs:
         win.appinjector.register({
             apibase: "navigator.apps.mgmt", name: "launch", script: null,

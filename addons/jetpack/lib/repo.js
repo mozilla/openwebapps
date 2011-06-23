@@ -66,13 +66,19 @@ function App(app_obj) {
     this.manifest = this._app_obj.manifest;
 
     if ("experimental" in this.manifest &&
-        "services" in this.manifest.experimental)
+        "services" in this.manifest.experimental) {
         this.services = this.manifest.experimental.services;
+        
+        if (this.services.login) {
+            this.login_dialog_url = this.origin + this.services.login.dialog;
+        }
+    }
 
     this.launch_url = this.origin;
     if (this.manifest.launch_path)
         this.launch_url += this.manifest.launch_path;
 };
+
 
 Repo = (function() {
     // A TypedStorage singleton global object is expected to be present
@@ -522,6 +528,11 @@ Repo = (function() {
                 cb(null);
         });
     };
+    
+    // the result might be null if no app
+    function getAppByUrl(url, cb) {
+        getAppById(normalizeOrigin(url), cb);
+    };
 
     return {
         list: list,
@@ -537,6 +548,7 @@ Repo = (function() {
         invalidateCaches: invalidateCaches,
         updateServices: updateServices,
         getAppById: getAppById,
+        getAppByUrl: getAppByUrl,
     };
 })();
 
