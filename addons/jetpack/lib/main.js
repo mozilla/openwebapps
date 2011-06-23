@@ -291,11 +291,15 @@ openwebapps.prototype = {
 //             if (!installData.hidePostInstallPrompt) {
 //                 this._ui._showDock();
 //             }
-               this._ui._updateDashboad(yes);
+            try{
+               this._ui._updateDashboard('yes');
+            } catch (e) {
+                console.log(e);
+            }
 
         } else if (topic == "openwebapp-uninstalled") {
 //             this._ui._renderDockIcons();
-               this._ui._updateDashboad();
+               this._ui._updateDashboard();
         } else if (topic == "content-document-global-created") {
             let mainWindow = subject
                          .QueryInterface(Ci.nsIInterfaceRequestor)
