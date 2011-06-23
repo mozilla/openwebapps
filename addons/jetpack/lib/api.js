@@ -83,9 +83,16 @@ FFRepoImpl.prototype = {
     
     install: function _install(location, args, window)
     {
+        // added a quick hack to forgo the prompt if a special argument is 
+        // sent in, to make it easy to install app straight from the lower-right prompt.
+        var autoInstall = args._autoInstall;
+
         function displayPrompt(installOrigin, appOrigin, manifestToInstall,
             isUpdate, installConfirmationFinishFn)
         {
+            if (autoInstall)
+                return installConfirmationFinishFn(true);
+
             let acceptButton = new Object();
             let declineButton = new Object();
 

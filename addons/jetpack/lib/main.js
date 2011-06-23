@@ -304,7 +304,7 @@ openwebapps.prototype = {
             if (mainWindow != this._window) {
                 return;
             }
-            
+
             let self = this;
             mainWindow.addEventListener("DOMLinkAdded", function(aEvent) {
                 if (aEvent.target.rel != "application-manifest")

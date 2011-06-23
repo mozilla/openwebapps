@@ -269,6 +269,15 @@ openwebappsUI.prototype = {
 
             appBox.appendChild(icon);
             appBox.appendChild(label);
+
+            // added by Ben because we're getting multiple calls in separate
+            // threads to this, and it's causing duplication of icon rendering
+            // (see specifically the twitter.com example with faker turned on.)
+            // the right solution is probably not this, but for now this will do.
+            while (self._dock.firstChild) {
+                self._dock.removeChild(self._dock.firstChild);
+            }
+
             self._dock.appendChild(appBox);
         }
       });
@@ -301,6 +310,7 @@ openwebappsUI.prototype = {
             return;
     
         if (!this._offerAppPanel) {
+            console.log("creating panel");
             this._offerAppPanel = require("panel").Panel({
                 contentURL: require("self").data.url("offer.html"),
                 contentScript: 'let actions = ["yes", "no", "never"];' +
@@ -321,6 +331,7 @@ openwebappsUI.prototype = {
             self._offerAppPanel.hide();
             self._repo.install(
                 "chrome://openwebapps", {
+                    _autoInstall: true,
                     url: link.url,
                     origin: page,
                     onsuccess: function() {

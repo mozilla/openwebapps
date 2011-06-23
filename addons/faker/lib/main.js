@@ -45,7 +45,8 @@ const {Cc, Ci, Cu} = require("chrome");
  * get the addon directory location in jetpack)
  */
 var FAKE_APPS = {
-    "http://nytimes.com": ["nytimes.manifest", "*.nytimes.com"]
+    "http://nytimes.com": ["nytimes.manifest", "*.nytimes.com"],
+    "http://twitter.com": ["twitter.manifest", "*.twitter.com"],
 };
 
 function injectAsInstallable()
