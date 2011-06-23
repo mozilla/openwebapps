@@ -50,12 +50,47 @@
 * }
 *
 */
+
+// check if ambient TypedStorage or not
+// by looking for 'require' keyword from jetpack
+if (typeof require !== 'undefined') {
+    var {TypedStorage} = require("./typed_storage");
+    var {URLParse} = require("./urlmatch");
+    var {Manifest} = require("./manifest");
+}
+
+// An App data structure
+function App(app_obj) {
+    this._app_obj = app_obj;
+    this.origin = this._app_obj.origin;
+    this.manifest = this._app_obj.manifest;
+
+    if ("experimental" in this.manifest &&
+        "services" in this.manifest.experimental) {
+        this.services = this.manifest.experimental.services;
+        
+        if (this.services.login) {
+            this.login_dialog_url = this.origin + this.services.login.dialog;
+        }
+    }
+
+    this.launch_url = this.origin;
+    if (this.manifest.launch_path)
+        this.launch_url += this.manifest.launch_path;
+};
+
+
 Repo = (function() {
     // A TypedStorage singleton global object is expected to be present
     // Must be provided either by the FF extension, Chrome extension, or in
     // the HTML5 case, localStorage.
     var appStorage = TypedStorage().open("app");
     var stateStorage = TypedStorage().open("state");
+
+    function invalidateCaches()
+    {
+      installedServices = undefined;
+    }
 
     // iterates over all stored applications manifests and passes them to a
     // callback function. This function should be used instead of manual
@@ -132,6 +167,10 @@ Repo = (function() {
         
         // chrome code can always do it:
         if (installOrigin == "chrome://openwebapps") return true;
+        
+        // XXX for demo purposes, we allow http://localhost:8420, which is where
+        // the service directory is running.
+        if (installOrigin == "http://localhost:8420") return true;
 
         // otherwise, when installOrigin != appOrigin, we must check the
         // installs_allowed_from member of the manifest
@@ -172,13 +211,6 @@ Repo = (function() {
     //         attempt is complete.
 
     function install(origin, args, promptDisplayFunc, fetchManifestFunc, cb) {
-        // several variables that maintain installation state for the
-        // various functions nested in this closure invoked asynchronously sometime in the
-        // future
-        var manifestToInstall;
-        var installOrigin = origin;
-        var appOrigin = undefined;
-
         origin = normalizeOrigin(origin);
 
         function installConfirmationFinish(allowed)
@@ -196,24 +228,19 @@ Repo = (function() {
                     installation.install_data = args.install_data;
                 }
 
-                // Save the app
-                appStorage.put(
-                    appOrigin, installation,
-                    function (r) {
-                        if (r === true) {
-                            // finally, upon successful installation, we'll update
-                            // the services map
-                            updateServices(function() {
-                                cb(r);
-                            });
-                        } else {
-                            cb(r);
-                        }
-                    });
+                // Save - blow away any existing value
+                appStorage.put(appOrigin, installation, cb);
+                
+                // and invalidate caches
+                invalidateCaches();
             } else {
                 if (cb) cb({error: ["denied", "User denied installation request"]});
             }
         }
+
+        var manifestToInstall;
+        var installOrigin = origin;
+        var appOrigin = undefined;
 
         if (!args || !args.url || typeof(args.url) !== 'string') {
             throw "install missing required url argument";
@@ -253,14 +280,21 @@ Repo = (function() {
                             cb({error: ["permissionDenied", "origin '" + installOrigin + "' may not install this app"]});
                             return;
                         }
-
-                        // if an app with the same origin is currently installed, this is an update
-                        appStorage.has(appOrigin, function(isUpdate) {
-                            promptDisplayFunc(
-                                installOrigin, appOrigin, manifestToInstall,
-                                isUpdate, installConfirmationFinish
-                            );
-                        });
+                        
+                        // if this origin is whitelisted we can proceed without a confirmation
+                        if (installOrigin == "http://localhost:8420") {
+                          installConfirmationFinish(true);
+                        }
+                        else 
+                        {
+                          // if an app with the same origin is currently installed, this is an update
+                          appStorage.has(appOrigin, function(isUpdate) {
+                              promptDisplayFunc(
+                                  installOrigin, appOrigin, manifestToInstall,
+                                  isUpdate, installConfirmationFinish
+                              );
+                          });
+                        }
                     } catch(e) {
                         cb({error: ["invalidManifest", "couldn't validate your manifest: " + e ]});
                     }
@@ -319,25 +353,70 @@ Repo = (function() {
 
     /* update the installedServices map for all currently installed services */
     function updateServices(cb) {
-        iterateApps(function(apps) {
+        this.iterateApps(function(apps) {
             if (installedServices === undefined) installedServices = { };
             for (var app in apps) {
-                if (apps[app].manifest.experimental && apps[app].manifest.experimental.services) {
-                    var s = apps[app].manifest.experimental.services;
+                var manifest = apps[app].manifest;
+                if (manifest.experimental && manifest.experimental.services) {
+                    var s = manifest.experimental.services;
+                    
+                    // we've moved to an object with keys the service name, rather than an array
+                    if (typeof s === 'object') {
+                        for (var service_key in s) {
+                            if (!s.hasOwnProperty(service_key))
+                                continue;
+                            
+                            var one_service = s[service_key];
+                            
+                            var svcObj = {
+                                // null out the URL when no endpoint
+                                url: one_service.endpoint? app+one_service.endpoint:null,
+                                app: app,
+                                manifest: manifest,
+                                params: one_service
+                            }
+                            // Fixup for built-ins, no origin
+                            if (one_service.endpoint && one_service.endpoint.indexOf("resource://") == 0) svcObj.url = one_service.endpoint;
+
+                            if (!installedServices.hasOwnProperty(service_key)) {
+                              dump("creating list for " + service_key + "\n");
+                                installedServices[service_key] = [];
+                            } else {
+                                // does this svc already exist in the list (supports list *update*)?
+                                for (var j = 0; j < installedServices[service_key].length; j++) {
+                                    if (svcObj.url === installedServices[service_key].url) {
+                                        break;
+                                    }
+                                }
+                                if (j != installedServices[service_key].length) continue;
+                            }
+                            installedServices[service_key].push(svcObj);
+                        }
+                    }
+                    /*
                     if (typeof s === 'object') {
                         // key is name of service, value is *path* to it
+                        
+                        dump("iterating services of " + apps[app].manifest.name + "\n");
+                        
                         for (var i = 0; i < s.length; i++) {
                             // get the first key in obj.
                             for (var k in s[i]) break;
+                            dump("got key " +k + "\n");
 
                             // for now we'll just build up objects which hold data about
                             // services.  real soon now, they'll become more proper
                             // abstractions
                             var svcObj = {
                                 url: app + s[i][k],
-                                app: app
+                                app: app,
+                                manifest: apps[app].manifest
                             };
+                            // Fixup for built-ins:
+                            if (s[i][k].indexOf("resource://") == 0) svcObj.url = s[i][k];
+                            
                             if (!installedServices.hasOwnProperty(k)) {
+                              dump("creating list for " + k + "\n");
                                 installedServices[k] = [];
                             } else {
                                 // does this svc already exist in the list (supports list *update*)?
@@ -348,9 +427,10 @@ Repo = (function() {
                                 }
                                 if (j != installedServices[k].length) continue;
                             }
+                            installedServices[k].push(svcObj);
                         }
-                        installedServices[k].push(svcObj);
-                    }
+
+                    }*/
                 }
             }
             if (typeof cb === 'function') cb();
@@ -364,7 +444,7 @@ Repo = (function() {
             if (installedServices[name]) svcs = installedServices[name];
             cb(svcs);
         }
-        if (installedServices === undefined) updateServices(doFind);
+        if (installedServices === undefined) this.updateServices(doFind);
         else doFind();
     }
 
@@ -378,27 +458,38 @@ Repo = (function() {
             if (onerror) onerror("noSuchService", "No application is installed that supports '"+ serviceName + "'");
             return;
         }
+        
+        /*var apps = [];
+        for (var i = 0, service; service = services[i]; i++ ) apps.push(service.app);
 
-        var apps = [];
-        for (var i = 0; i < services.length; i++) apps.push(services[i].app);
+        selectAppCallback(origin, serviceName, apps, function(selection) {      
+              // discover which app the user selected                             
+              for (var i = 0; i < services.length; i++) {                         
+                 if (services[i].app === selection) break;                       
+              }                                                                   
+             if (i === services.length) {                                        
+                  onerror("permissionDenied", "user denies access to this services"); 
+              } else {                                                            
+                  var conduitURL = services[i].url;                               
+                                                                                   
+                   if (!runningConduits.hasOwnProperty(conduitURL)) {              
+                       runningConduits[conduitURL] = new Conduit(conduitURL);      
+                   }                                                               
+                                                                                   
+                   runningConduits[conduitURL].invoke(serviceName, args, 
+                        onsuccess, onerror); 
+               }                                                                   
+           }, onerror);
+        */
 
-        selectAppCallback(origin, serviceName, apps, function(selection) {
-            // discover which app the user selected 
-            for (var i = 0; i < services.length; i++) {
-                if (services[i].app === selection) break;
-            }
-            if (i === services.length) {
-                onerror("permissionDenied", "user denies access to this services"); 
-            } else {
-                var conduitURL = services[i].url;
-
-                if (!runningConduits.hasOwnProperty(conduitURL)) {
-                    runningConduits[conduitURL] = new Conduit(conduitURL);
-                }
-
-                runningConduits[conduitURL].invoke(serviceName, args, onsuccess, onerror); 
-            }
-        }, onerror);
+        var conduitURL = services[0].url;V
+        
+                                                                                     
+        if (!runningConduits.hasOwnProperty(conduitURL)) {                      
+            runningConduits[conduitURL] = new Conduit(conduitURL);              
+        }                                                                       
+                                                                                 
+        runningConduits[conduitURL].invoke(serviceName, args, onsuccess, onerror);  
     }
 
     /* Management APIs for dashboards live beneath here */
@@ -417,7 +508,8 @@ Repo = (function() {
             iterateApps(cb);
     };
 
-    function uninstall(origin, cb) {
+    function uninstall(origin, cb) { 
+        var self = this;
         origin = normalizeOrigin(origin);
         appStorage.get(origin, function(item) {
             if (!item) {
@@ -427,6 +519,7 @@ Repo = (function() {
                     if (cb && typeof(cb) == "function")
                         cb(true);
                 });
+                self.invalidateCaches()
             }
         });
     };
@@ -444,6 +537,27 @@ Repo = (function() {
         }
     };
 
+    // for now, this is the only function that returns a legitimate App data structure
+    // refactoring of other calls is in order to get the right App abstraction, but one thing at a time.
+    function getAppById(id, cb) {
+        iterateApps(function(apps) {
+            var found = false;
+            for (var app in apps) {
+                if (app == id) {
+                    cb(new App(apps[app]));
+                    found = true;
+                }
+            }
+            if (!found)
+                cb(null);
+        });
+    };
+    
+    // the result might be null if no app
+    function getAppByUrl(url, cb) {
+        getAppById(normalizeOrigin(url), cb);
+    };
+
     return {
         list: list,
         install: install,
@@ -453,6 +567,15 @@ Repo = (function() {
         loadState: loadState,
         saveState: saveState,
         findServices: findServices,
-        renderChooser: renderChooser
+        renderChooser: renderChooser,
+        iterateApps: iterateApps,
+        invalidateCaches: invalidateCaches,
+        updateServices: updateServices,
+        getAppById: getAppById,
+        getAppByUrl: getAppByUrl,
     };
 })();
+
+/* Jetpack specific export */
+if (typeof exports !== 'undefined')
+    exports.Repo = Repo;
