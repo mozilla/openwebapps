@@ -296,6 +296,7 @@ function updateDashboard( listOfInstalledApps ) {
             }
           }
 
+          $('#page0').empty();
           for (origin in gApps) {
             console.log("appending: " + gApps[origin].origin);
               $('#page0').append(createAppItem(gApps[origin]));
