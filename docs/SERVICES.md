@@ -103,3 +103,23 @@ limited UI to just single credential per provider for now.
 As service mediators might eventually be pulled from less-trusted
 sources, we will consider shutting off their network access once they
 have signalled readiness.
+
+
+## App / Service Provider
+
+    navigator.apps.services.registerHandler('login', 'doLogin', function(args, cb) {
+       // perform login
+    
+       cb({'status':'notloggedin'});
+    });
+    
+    navigator.apps.services.registerHandler('link.share', 'doShare', function(args, cb) {
+       // share the link
+       twitter.share_link(args.url, args.title);
+       
+       // send back the number of tweets
+       twitter.getNumTweets(args.url, function(num){
+         cb({numTweets: num});
+       });
+    });
+
