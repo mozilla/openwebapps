@@ -45,7 +45,8 @@ const {Cc, Ci, Cu} = require("chrome");
  * get the addon directory location in jetpack)
  */
 var FAKE_APPS = {
-    "http://nytimes.com": ["nytimes.manifest", "*.nytimes.com"]
+    "http://nytimes.com": ["nytimes.manifest", "*.nytimes.com", "nytimes.js"],
+    "http://twitter.com": ["twitter.manifest", "*.twitter.com", "twitter.js"],
 };
 
 function injectAsInstallable()
@@ -53,13 +54,18 @@ function injectAsInstallable()
     for (let origin in FAKE_APPS) {
         pageMod.PageMod({
             include: FAKE_APPS[origin][1],
+            contentScriptFile: self.data.url(FAKE_APPS[origin][2]),
             contentScript:
                 'var head = document.getElementsByTagName("head")[0];' +
                 'var el = document.createElement("link");' +
                 'el.setAttribute("rel", "application-manifest");' +
                 'el.setAttribute("href", "' +
                     self.data.url(FAKE_APPS[origin][0]) + '");' +
-                'head.appendChild(el);'
+                'head.appendChild(el);' +
+                // Free link transition receiving for fake apps
+                'window.addEventListener("message", function(event) {' +
+                '   console.log("received " + event.data);' +
+                '}, false);'
         });
     }
 }

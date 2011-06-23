@@ -36,8 +36,8 @@
 
 const ui = require("./ui");
 const url = require("./urlmatch");
-const self = require("self");
 const tabs = require("tabs");
+const addon = require("self");
 const unload = require("unload");
 const simple = require("simple-storage");
 const {Cc, Ci, Cm, Cu, Cr, components} = require("chrome");
@@ -95,6 +95,41 @@ function openwebapps(win, getUrlCB)
     obs.addObserver(this, 'content-document-global-created', false);
 
     this._ui = new ui.openwebappsUI(win, getUrlCB, this._repo);
+    
+    // Prompt user if we detect that the page has an app via tabs module
+    let self = this;
+    tabs.on('activate', function(tab) {
+        // If user switches tab via keyboard shortcuts, it does not dismiss
+        // the offer panel (clicking does); so hide it if present
+        self._ui._hideOffer();
+
+        let cUrl = url.URLParse(tab.url).originOnly().toString();
+        let record = simple.storage.links[cUrl];
+        if (record) self.offerInstallIfNeeded(cUrl);
+    });
+
+    // TODO: Figure out a way to do this without waiting for 500ms.
+    // Also, intercept document loads that don't open in a new tab
+    // (this should be done in the content-document-global-created observer?)
+    win.gBrowser.tabContainer.addEventListener("TabOpen", function(e) {
+        self._window.setTimeout(function(e) {
+            if (e.target.pinned) return;
+
+            let browser = self._window.gBrowser.getBrowserForTab(e.target);
+            let origin = url.URLParse(browser.currentURI.spec)
+                .originOnly().toString();
+
+            self._repo.list(function(apps) {
+                for (let app in apps) {
+                    if (app == origin) {
+                        self._repo.launch(origin, browser.currentURI.spec);
+                        self._window.gBrowser.removeTab(e.target);
+                        break;
+                    }
+                }
+            });
+        }, 500, e);
+    }, false);
 }
 
 openwebapps.prototype = {
@@ -139,6 +174,25 @@ openwebapps.prototype = {
             getapi: function (contentWindowRef) {
                 return function (methodName, args, successCB, errorCB) {
                   self._services.invoke(contentWindowRef, methodName, args, successCB, errorCB);
+                }
+            }
+        });
+
+        // services APIs
+        win.appinjector.register({
+            apibase: "navigator.apps.services", name: "ready", script: null,
+            getapi: function(contentWindowRef) {
+                return function(args) {
+                    self._services.initApp(contentWindowRef);
+                }
+            }
+        });
+
+        win.appinjector.register({
+            apibase: "navigator.apps.services", name: "registerHandler", script: null,
+            getapi: function(contentWindowRef) {
+                return function(activity, message, func) {
+                    self._services.registerServiceHandler(contentWindowRef, activity, message, func);
                 }
             }
         });
@@ -250,7 +304,8 @@ openwebapps.prototype = {
             if (mainWindow != this._window) {
                 return;
             }
-            
+
+            let self = this;
             mainWindow.addEventListener("DOMLinkAdded", function(aEvent) {
                 if (aEvent.target.rel != "application-manifest")
                     return;
@@ -267,20 +322,37 @@ openwebapps.prototype = {
                         "show": true,
                         "url": href
                     };
-
-                    // If we just found this on the currently active page,
-                    // manually call UI hook because tabs.on('activate') will
-                    // not be called for this page
-                    let cUrl = url.URLParse(tabs.activeTab.url);
-                    cUrl = cUrl.originOnly().toString();
-
-                    if (cUrl == page)
-                        ui.showPageHasApp(simple.storage.links[page]);
                 }
+
+                // If we just found this on the currently active page,
+                // manually call UI hook because tabs.on('activate') will
+                // not be called for this page
+                let cUrl = url.URLParse(tabs.activeTab.url);
+                cUrl = cUrl.originOnly().toString();
+
+                if (cUrl == page)
+                    self.offerInstallIfNeeded(page);
             }, false);
         }
     },
     
+    // TODO: Don't be so annoying and display the offer everytime the app site
+    // is visited. If the user says 'no', don't display again for the session
+    offerInstallIfNeeded: function(origin) {
+        let toInstall = true;
+        this._repo.list(function(apps) {
+            for (let app in apps) {
+                if (app == origin) {
+                    toInstall = false;
+                    break;
+                }
+            }
+        });
+
+        if (toInstall)
+            this._ui._showPageHasApp(origin);
+    },
+
     registerBuiltInApp: function(domain, app, injector) {
         if (!this._repo) {
             if (!this.pendingRegistrations) this.pendingRegistrations = [];
@@ -292,12 +364,7 @@ openwebapps.prototype = {
 
 };
 
-// Prompt user if we detect that the page has an app via tabs module
-tabs.on('activate', function(tab) {
-    let cUrl = url.URLParse(tab.url).originOnly().toString();
-    let record = simple.storage.links[cUrl];
-    if (record) ui.showPageHasApp(record);
-});
+
 
 //----- about:apps implementation
 const AboutAppsUUID = components.ID("{1DD224F3-7720-4E62-BAE9-30C1DCD6F519}");
@@ -320,7 +387,7 @@ let AboutApps = {
         let ios = Cc["@mozilla.org/network/io-service;1"].
                   getService(Ci.nsIIOService);
         let channel = ios.newChannel(
-            require("self").data.url("about.html"), null, null
+            addon.data.url("about.html"), null, null
         );
         channel.originalURI = aURI;
         return channel;
@@ -349,7 +416,7 @@ let AboutAppsHome = {
         let ios = Cc["@mozilla.org/network/io-service;1"].
                   getService(Ci.nsIIOService);
         let channel = ios.newChannel(
-            require("self").data.url("home.xhtml"), null, null
+            addon.data.url("home.xhtml"), null, null
         );
         channel.originalURI = aURI;
         return channel;
@@ -418,7 +485,7 @@ function shutdown(why)
 }
 
 // Let's go!
-startup(self.data.url);
+startup(addon.data.url);
 
 // Hook up unloaders
 unload.when(shutdown);

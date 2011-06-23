@@ -95,7 +95,91 @@ serviceInvocationHandler.prototype = {
         }
       }
     },
-    
+
+    // called when an app tells us it's ready to go
+    initApp: function(contentWindowRef) {
+        let self = this;
+        // check that this is indeed an app
+        FFRepoImplService.getAppByUrl(contentWindowRef.location, function(app) {
+            if (!app) return;
+
+            // at this point, all services should be registered
+            
+            // we invoke the login one if it's supported
+            if (app.services && app.services.login) {
+                self.invokeService(contentWindowRef, 'login', 'doLogin', {'credentials' : null}, function(result) {
+                    // if result is status ok, we're good
+                    if (result.status == 'ok') {
+                        console.log("app is logged in");
+                        return;
+                    }
+
+                    // if result is status dialog, we need to open a popup.
+                    if (result.status == 'notloggedin') {
+                        if (app.services.login.dialog) {
+                            // open up a dialog
+                            var windows = require("windows").browserWindows;
+                            windows.open({
+                                url: app.login_dialog_url,
+                                onOpen: function(window) {
+                            }});
+                        }
+                    }
+                });
+            }
+        });
+    },
+
+    // when an app registers a service handler
+    registerServiceHandler: function(contentWindowRef, activity, message, func) {
+        // check that this is indeed an app
+        FFRepoImplService.getAppByUrl(contentWindowRef.location, function(app) {
+            console.log("pre-register");
+            if (!app) return;
+
+            // make sure the app supports this activity
+            if (!(app.services && app.services[activity])) {
+                console.log("app attempted to register handler for activity " + activity + " but not declared in manifest");
+                return;
+            }
+            
+            console.log("Registering handler for " + app.origin + " " + activity + " / " + message);
+
+            // do we need to unwrap it?
+            var theWindow = contentWindowRef;
+
+            if (!theWindow._MOZ_SERVICES)
+                theWindow._MOZ_SERVICES = {};
+
+            if (!theWindow._MOZ_SERVICES[activity])
+                theWindow._MOZ_SERVICES[activity] = {};
+
+            theWindow._MOZ_SERVICES[activity][message] = func;
+        });
+    },
+
+    // invoke below should really be named startActivity or something
+    // this call means to invoke a specific call within a given app
+    invokeService: function(contentWindow, activity, message, args, cb) {
+        FFRepoImplService.getAppByUrl(contentWindow.location, function(app) {
+            if (!app) return;
+
+            // make sure the app supports this activity
+            if (!(app.services && app.services[activity])) {
+                console.log("attempted to send message to app for activity " + activity + " but app doesn't support it");
+                return;
+            }
+
+            var theWindow = contentWindow;
+
+            try {
+                theWindow._MOZ_SERVICES[activity][message](args, cb);
+            } catch (e) {
+                console.log("error invoking " + activity + "/" + message + " on app " + app.origin + "\n" + e.toString());
+            }
+        });
+    },
+
     invoke: function(contentWindowRef, methodName, args, successCB, errorCB) {
       try {
         // Do we already have a panel for this content window?

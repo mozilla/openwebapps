@@ -1,13 +1,10 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Manifest Tests</title>
-  <script type="text/javascript" src="doctestjs/doctest.js"></script>
-  <link rel="stylesheet" type="text/css" href="doctestjs/doctest.css" />
-  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
-</head>
-<body>
-<h2> Manifest Tests </h2>
+{% extends "/tests/base.html" %}
+
+{% block name %}
+Manifest Tests
+{% endblock %}
+
+{% block test %}
 
 <p>
 `manifest.js` is a small javascript library responsible for parsing and 
@@ -15,7 +12,6 @@ normalization of manifests.  This page tests and demonstrates its functioning.
 </p>
 
 <div>
-  <button onclick="doctest()" type="button">Test all</button>
   <pre id="doctestOutput"></pre>
 </div>
 
@@ -364,9 +360,10 @@ $ delete m.bogus;
 Error: (locales/en/bogus) unsupported property
 </pre>
 
-  <button onclick="doctest()" type="button">Test all</button>
+{% endblock %}
 
-</body>
-<script type="text/javascript" src="../jsapi/urlmatch.js"></script>
-<script type="text/javascript" src="../jsapi/manifest.js"></script>
-</html>
+{% block extrajs %}
+    <script type="text/javascript" src="/jsapi/urlmatch.js"></script>
+    <script type="text/javascript" src="/jsapi/manifest.js"></script>
+
+{% endblock %}

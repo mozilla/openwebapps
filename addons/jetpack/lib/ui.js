@@ -36,6 +36,7 @@
  * ***** END LICENSE BLOCK ***** */
 const {Cc, Ci, Cm, Cu} = require("chrome");
 const widgets = require("widget");
+const simple = require("simple-storage");
 const HTML_NS = "http://www.w3.org/1999/xhtml";
 const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
@@ -100,10 +101,14 @@ function openwebappsUI(win, getUrlCB, repo)
     getString.init(getUrlCB);
     this._overlay();
     this._setupTabHandling();
+
+    /* Offer to install */
+    this._offerAppPanel = null;
+    this._installInProgress = false;
 }
 openwebappsUI.prototype = {
     _overlay: function() {
-        // Load CSS before adding toolbar button
+        // Load CSS before adding toolbar butt/on
         // XXX: Seems to cause some sort of flicker?
         let doc = this._window.document;
         let pi = doc.createProcessingInstruction(
@@ -141,15 +146,6 @@ openwebappsUI.prototype = {
         // false);
     },
 
-//     _addToolbarButton: function() {
-//         let addon = this;
-//         widgets.Widget({
-//           id: "openwebapps-toolbar-button",
-//           label: "Web Apps",
-//           contentURL: require("self").data.url("skin/toolbar-button.png"),
-//           onClick: function() { addon._toggleDock(); }
-//           });
-//     },
 
     _addToolbarButton: function() {
         let self = this;
@@ -302,6 +298,15 @@ openwebappsUI.prototype = {
 
             appBox.appendChild(icon);
             appBox.appendChild(label);
+
+            // added by Ben because we're getting multiple calls in separate
+            // threads to this, and it's causing duplication of icon rendering
+            // (see specifically the twitter.com example with faker turned on.)
+            // the right solution is probably not this, but for now this will do.
+            while (self._dock.firstChild) {
+                self._dock.removeChild(self._dock.firstChild);
+            }
+
             self._dock.appendChild(appBox);
         }
       });
@@ -322,23 +327,66 @@ openwebappsUI.prototype = {
         //this._dock.style.display ="none";
         this._dock.collapsed = true;
     },
-    
-    _setupMessaging: function() {
-    
-      console.log("SETTING UP MESSAGING");
-      
-      let messageHandler = function(msg) {
-           console.log(msg);
-      }
-      
-      this.addEventListener("message", messageHandler, false);
 
+    _hideOffer: function() {
+        if (this._offerAppPanel && this._offerAppPanel.isShowing)
+            this._offerAppPanel.hide();
+    },
+
+    _showPageHasApp: function(page) {
+        let link = simple.storage.links[page];
+        if (!link.show || this._installInProgress)
+            return;
+    
+        if (!this._offerAppPanel) {
+            console.log("creating panel");
+            this._offerAppPanel = require("panel").Panel({
+                contentURL: require("self").data.url("offer.html"),
+                contentScript: 'let actions = ["yes", "no", "never"];' +
+                    'for (let i = 0; i < actions.length; i++) { ' +
+                    '   document.getElementById(actions[i]).onclick = ' +
+                    '       (function(i) { return function() { ' +
+                    '           self.port.emit(actions[i]);' +
+                    '       }})(i); ' +
+                    '}'
+            });
+        }
+        if (this._offerAppPanel.isShowing) return;
+
+        /* Setup callbacks */
+        let self = this;
+        this._offerAppPanel.port.on("yes", function() {
+            self._installInProgress = true;
+            self._offerAppPanel.hide();
+            self._repo.install(
+                "chrome://openwebapps", {
+                    _autoInstall: true,
+                    url: link.url,
+                    origin: page,
+                    onsuccess: function() {
+                        self._installInProgress = false;
+                        simple.storage.links[page].show = false;
+                    }
+                }, self._window
+            );
+        });
+        this._offerAppPanel.port.on("no", function() {
+            self._offerAppPanel.hide();
+        });
+        this._offerAppPanel.port.on("never", function() {
+            self._offerAppPanel.hide();
+            simple.storage.links[page].show = false;
+        });
+
+        /* Prepare to anchor panel to apps widget */
+        let WM = Cc['@mozilla.org/appshell/window-mediator;1']
+            .getService(Ci.nsIWindowMediator);
+        let doc = WM.getMostRecentWindow("navigator:browser").document;
+        let bar = doc.getElementById("widget:" + 
+            require("self").id + "-openwebapps-toolbar-button");
+
+        this._offerAppPanel.show(bar);
     }
 };
 
-
-
-exports.showPageHasApp = function(link) {
-    console.log("This page has an application manifest at: " + link.url);
-};
 exports.openwebappsUI = openwebappsUI;

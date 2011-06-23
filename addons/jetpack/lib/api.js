@@ -34,7 +34,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-const {Cc, Ci, Cu} = require("chrome");
+const {Cc, Ci, Cu, Cr, components} = require("chrome");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
 var {TypedStorage} = require("typed_storage");
@@ -59,34 +59,40 @@ FFRepoImpl.prototype = {
                 .getService(Ci.nsIObserverService),
     
     _registerBuiltInApp: function(domain, app, injector) {
-      this._builtInApps[domain] = { 
-        manifest:app,
-        origin:domain,
-        install_time: new Date().getTime(),
-        install_origin:domain,
-        injector: injector
-      }
-      this._repo.invalidateCaches();
+        this._builtInApps[domain] = { 
+            manifest:app,
+            origin:domain,
+            install_time: new Date().getTime(),
+            install_origin:domain,
+            injector: injector
+        }
+        this._repo.invalidateCaches();
     },
     
-    iterateApps: function(callback)
-    {
-      let that = this;
-      Repo.iterateApps(function(apps) {
-        if (that._builtInApps) {
-          for (var k in that._builtInApps) {
-            apps[k] = that._builtInApps[k];
-          }
-        }
-        callback(apps);
-      });
+    iterateApps: function(callback) {
+        let that = this;
+        Repo.iterateApps(function(apps) {
+            if (that._builtInApps) {
+                for (var k in that._builtInApps) {
+                    apps[k] = that._builtInApps[k];
+                }
+            }
+            callback(apps);
+        });
     },
     
     install: function _install(location, args, window)
     {
+        // added a quick hack to forgo the prompt if a special argument is 
+        // sent in, to make it easy to install app straight from the lower-right prompt.
+        var autoInstall = args._autoInstall;
+
         function displayPrompt(installOrigin, appOrigin, manifestToInstall,
             isUpdate, installConfirmationFinishFn)
         {
+            if (autoInstall)
+                return installConfirmationFinishFn(true);
+
             let acceptButton = new Object();
             let declineButton = new Object();
 
@@ -140,9 +146,69 @@ FFRepoImpl.prototype = {
             };
             xhr.send(null);
         }
+    
+        // Fetch from local file:// or resource:// URI (eg. for faker apps)
+        let originalOrigin = {};
+        function fetchLocalManifest(url, cb)
+        {
+            function LocalReader(callback) { this._callback = callback; }
+            LocalReader.prototype = {
+                QueryInterface: function(iid) {
+                    if (iid.equals(Ci.nsIStreamListener) ||
+                        iid.equals(Ci.nsIRequestObserver) ||
+                        iid.equals(Ci.nsISupports))
+                        return this;
+                    throw Cr.NS_ERROR_NO_INTERFACE;
+                },
+            
+                onStartRequest: function(req, ctx) {
+                    this._data = "";
+                    this._input = null;
+                },
+
+                onDataAvailable: function(req, ctx, stream, off, count) {
+                    if (!this._input) {
+                        let sis = Cc["@mozilla.org/scriptableinputstream;1"]
+                            .getService(Ci.nsIScriptableInputStream);
+                        sis.init(stream);
+                        this._input = sis;
+                    }
+                    
+                    this._data += this._input.read(count);
+                },
+
+                onStopRequest: function(req, ctx, stat) {
+                    this._input.close();
+                    if (components.isSuccessCode(stat))
+                        this._callback(this._data, "application/x-web-app-manifest+json");
+                    else
+                        this._callback(null);
+                }
+            };
+
+            let ios = Cc["@mozilla.org/network/io-service;1"]
+                .getService(Ci.nsIIOService);
+            let stream = Cc["@mozilla.org/scriptableinputstream;1"]
+                .getService(Ci.nsIScriptableInputStream);
+            let channel = ios.newChannel(originalOrigin[url], null, null);
+            channel.asyncOpen(new LocalReader(cb), null);
+        }
+
+        // Choose appropriate fetcher depending on where the manifest lives
+        let fetcher = fetchManifest;
+        if (args.url.indexOf("resource://") === 0 ||
+            args.url.indexOf("file://") === 0) {
+            fetcher = fetchLocalManifest;
+            if (!args.origin) throw "Local manifest specified without origin!";
+
+            // We'll have to store the resource/file URI to allow repo.install
+            // to get the correct origin domain
+            originalOrigin[args.origin] = args.url;
+            args.url = args.origin;
+        }
 
         let self = this;
-        return Repo.install(location, args, displayPrompt, fetchManifest,
+        return Repo.install(location, args, displayPrompt, fetcher,
             function (result) {
                 // install is complete
                 if (result !== true) {
@@ -234,39 +300,53 @@ FFRepoImpl.prototype = {
         return [userInfo, loginInfo];
     },
 
-    launch: function _launch(id)
+    launch: function _launch(id, dest)
     {
-        function openAppURL(url)
+        function openAppURL(url, app)
         {
             let ss = Cc["@mozilla.org/browser/sessionstore;1"]
                     .getService(Ci.nsISessionStore);
             let wm = Cc["@mozilla.org/appshell/window-mediator;1"]
                     .getService(Ci.nsIWindowMediator);
             let bEnum = wm.getEnumerator("navigator:browser");
+
+            let origin = URLParse(url).normalize().originOnly().toString();
             let found = false;
 
             // Do we already have this app running in a tab? If so, target it.
             while (!found && bEnum.hasMoreElements()) {
                 let browserWin = bEnum.getNext();
                 let tabbrowser = browserWin.gBrowser;
-                let numTabs = tabbrowser.browsers.length;
 
                 for (let index = 0; index < tabbrowser.tabs.length; index++) {
                     let cur = tabbrowser.tabs[index];
                     let brs = tabbrowser.getBrowserForTab(cur);
                     let appURL = ss.getTabValue(cur, "appURL");
+                    let brsOrigin = URLParse(brs.currentURI.spec)
+                        .normalize().originOnly().toString();
 
-                    if ((appURL && appURL == url) || url == brs.currentURI.spec) {
+                    if (appURL && appURL == origin) {
                         // The app is running in this tab; select it and retarget.
+                        browserWin.focus();
                         tabbrowser.selectedTab = tabbrowser.tabContainer.childNodes[index];
 
-                        // Focus *this* browser-window
-                        browserWin.focus();
+                        // If destination is different than loaded content,
+                        // notify the app if it is registered to handle it,
+                        // else, reload the page with the new URL?
+                        if (url != brs.currentURI.spec) {
+                            if (app.services && app.services['link.transition']) {
+                                var services = require("./services");
+                                var serviceInterface = new services.serviceInvocationHandler(browserWin);
+                                serviceInterface.invokeService(brs.contentWindow.wrappedJSObject,
+                                                               'link.transition', 'transition',
+                                                               {'url' : url},
+                                                               function(result) {});
+                            } else {
+                                brs.loadURI(url, null, null); // Referrer is broken
+                            }
+                            console.log("sent");
+                        }
 
-                        // XXX: Do we really need a reload here?
-                        //tabbrowser.selectedBrowser.loadURI(
-                        //     url, null // TODO don't break referrer!
-                        //, null);
                         found = true;
                     }
                 }
@@ -278,36 +358,34 @@ FFRepoImpl.prototype = {
                 let recentWindow = wm.getMostRecentWindow("navigator:browser");
                 if (recentWindow) {
                     let tab = recentWindow.gBrowser.addTab(url);
+
                     let bar = recentWindow.document.getElementById("nav-bar");
 
                     recentWindow.gBrowser.pinTab(tab);
                     recentWindow.gBrowser.selectedTab = tab;
-                    ss.setTabValue(tab, "appURL", url);
+                    ss.setTabValue(tab, "appURL", origin);
                     bar.setAttribute("collapsed", true);
                 } else {
                     // This is a very odd case: no browser windows are open, so open a new one.
-                    aWindow.open(url);
+                    var new_window = aWindow.open(url);
                     // TODO: convert to app tab somehow
                 }
             }
         }
 
-        // FIXME: this is a hack, we are iterating over installed apps to
-        // find the one we want since we cannot get to the typed storage
-        // via common repo.js
-        Repo.list(function(apps) {
-            let found = false;
-            for (let app in apps) {
-                if (app == id) {
-                    let url = apps[app]['origin'];
-                    if ('launch_path' in apps[app]['manifest'])
-                        url += apps[app]['manifest']['launch_path'];
-                    openAppURL(url);
-                    found = true;
-                }
-            }
-            if (!found)
+        // fixed the hack, using a proper API call to get a single app
+        // (that API call may iterate, but that's not our problem here)
+        Repo.getAppById(id, function(app) {
+            if (!app)
                 throw "Invalid AppID: " + id;
+
+            if (dest) {
+                let origin = URLParse(dest).normalize().originOnly().toString();
+                if (origin != id)
+                    throw "Invalid AppDestination " + dest;
+            }
+
+            openAppURL(dest ? dest : app.launch_url, app);
         });
     },
 
