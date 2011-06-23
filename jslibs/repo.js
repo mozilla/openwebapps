@@ -482,7 +482,7 @@ Repo = (function() {
            }, onerror);
         */
 
-        var conduitURL = services[0].url;V
+        var conduitURL = services[0].url;
         
                                                                                      
         if (!runningConduits.hasOwnProperty(conduitURL)) {                      
