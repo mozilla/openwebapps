@@ -286,13 +286,16 @@ openwebapps.prototype = {
         if (topic == "weave:service:ready") {
             registerSyncEngine();
         } else if (topic == "openwebapp-installed") {
-            let installData = JSON.parse(data)
-            this._ui._renderDockIcons(installData.origin);
-            if (!installData.hidePostInstallPrompt) {
-                this._ui._showDock();
-            }
+//             let installData = JSON.parse(data)
+//             this._ui._renderDockIcons(installData.origin);
+//             if (!installData.hidePostInstallPrompt) {
+//                 this._ui._showDock();
+//             }
+               this._ui._updateDashboad(yes);
+
         } else if (topic == "openwebapp-uninstalled") {
-            this._ui._renderDockIcons();
+//             this._ui._renderDockIcons();
+               this._ui._updateDashboad();
         } else if (topic == "content-document-global-created") {
             let mainWindow = subject
                          .QueryInterface(Ci.nsIInterfaceRequestor)
