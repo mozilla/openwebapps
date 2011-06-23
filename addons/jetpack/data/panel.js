@@ -119,7 +119,7 @@ function computeLayoutVars() {
 //     appBoxWidth = Math.floor(pageWidth / 2);
 //     appBoxHeight = Math.floor(screenHeight / 6);
 //   }
-  appBoxWidth = 100;
+  appBoxWidth = 120;
   appBoxHeight = 100;
   appIconSize = 64; //Math.floor(Math.min(appBoxWidth, appBoxHeight) / 2.5);
   appBorderSize = Math.floor(appIconSize/8);
