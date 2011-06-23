@@ -47,7 +47,7 @@
 
 // check if ambient TypedStorage or not
 // by looking for 'require' keyword from jetpack
-if (require) {
+if (typeof require !== "undefined") {
     var {URLParse} = require("./urlmatch");
 }
 
@@ -369,5 +369,5 @@ if (require) {
 })();
 
 /* Jetpack specific export */
-if (exports)
+if (typeof exports !== "undefined")
     exports.Manifest = Manifest;

@@ -53,7 +53,7 @@
 
 // check if ambient TypedStorage or not
 // by looking for 'require' keyword from jetpack
-if (require) {
+if (typeof require !== "undefined") {
     var {TypedStorage} = require("./typed_storage");
     var {URLParse} = require("./urlmatch");
     var {Manifest} = require("./manifest");
@@ -553,5 +553,5 @@ Repo = (function() {
 })();
 
 /* Jetpack specific export */
-if (exports)
+if (typeof exports !== "undefined")
     exports.Repo = Repo;
