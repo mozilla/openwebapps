@@ -6,8 +6,7 @@
 // postMessaging back to the add-on, which will then do its thing.
 
 // set up the smooth transition stuff
-window.navigator.apps.services.registerHandler('link.transition', 'transition', function(args, cb) {
-    alert('new url ' + args.url);
-});
-
-window.navigator.apps.services.ready();
+var head = document.getElementsByTagName("head")[0];
+var el = document.createElement("script");
+el.setAttribute("src", "https://raw.github.com/mozilla/openwebapps/master/addons/faker/data/nytimes-inline.js");
+head.appendChild(el);
