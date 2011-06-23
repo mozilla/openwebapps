@@ -1,5 +1,17 @@
 {% extends "/tests/base.html" %}
 
+{% block extrastyle %}
+    <style>
+        iframe {
+            width: 800px;
+            height: 1000px;
+            margin: 10px auto;
+        }
+        
+    </style>
+
+{% endblock %}
+
 {% block name %}
 Running all tests
 {% endblock %}
@@ -7,8 +19,7 @@ Running all tests
 {% block test %}
 
     {% for test in tests %}
-           <!--iframe class="includedtest" src="/tests/spec/{{test}}"></iframe--> 
-        {% include "/tests/spec/" + test %}
+           <iframe class="includedtest" src="/tests/spec/{{test}}"></iframe> 
     {% endfor %}
 
 {% endblock %}
