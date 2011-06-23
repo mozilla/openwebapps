@@ -134,6 +134,7 @@ serviceInvocationHandler.prototype = {
     registerServiceHandler: function(contentWindowRef, activity, message, func) {
         // check that this is indeed an app
         FFRepoImplService.getAppByUrl(contentWindowRef.location, function(app) {
+            console.log("pre-register");
             if (!app) return;
 
             // make sure the app supports this activity
@@ -142,6 +143,8 @@ serviceInvocationHandler.prototype = {
                 return;
             }
             
+            console.log("Registering handler for " + app.origin + " " + activity + " / " + message);
+
             // do we need to unwrap it?
             var theWindow = contentWindowRef;
 

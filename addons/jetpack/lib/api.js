@@ -334,11 +334,16 @@ FFRepoImpl.prototype = {
                         // notify the app if it is registered to handle it,
                         // else, reload the page with the new URL?
                         if (url != brs.currentURI.spec) {
-                            // XXX: check for link service & notify
-                            //brs.loadURI(url, null, null); // Referrer is broken
-                            brs.contentWindow.wrappedJSObject.postMessage(
-                                JSON.stringify({method:'link.transition',params:url}), "*"
-                            );
+                            if (app.services && app.services['link.transition']) {
+                                var services = require("./services");
+                                var serviceInterface = new services.serviceInvocationHandler(browserWin);
+                                serviceInterface.invokeService(brs.contentWindow.wrappedJSObject,
+                                                               'link.transition', 'transition',
+                                                               {'url' : url},
+                                                               function(result) {});
+                            } else {
+                                brs.loadURI(url, null, null); // Referrer is broken
+                            }
                             console.log("sent");
                         }
 
