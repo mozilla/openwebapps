@@ -459,7 +459,7 @@ Repo = (function() {
             return;
         }
         
-        /*var apps = [];
+        var apps = [];
         for (var i = 0, service; service = services[i]; i++ ) apps.push(service.app);
 
         selectAppCallback(origin, serviceName, apps, function(selection) {      
@@ -480,9 +480,8 @@ Repo = (function() {
                         onsuccess, onerror); 
                }                                                                   
            }, onerror);
-        */
 
-        var conduitURL = services[0].url;
+/*        var conduitURL = services[0].url;
         
                                                                                      
         if (!runningConduits.hasOwnProperty(conduitURL)) {                      
@@ -490,7 +489,7 @@ Repo = (function() {
         }                                                                       
                                                                                  
         runningConduits[conduitURL].invoke(serviceName, args, onsuccess, onerror);  
-    }
+  */  }
 
     /* Management APIs for dashboards live beneath here */
 
