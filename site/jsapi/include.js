@@ -869,6 +869,12 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
             });
         }
 
+        function callReady(args) {
+        }
+
+        function callRegisterHandler(activity, message, func) {
+        }
+
         // Return AppClient object with exposed API calls
         return {
             install: callInstall,
@@ -883,6 +889,10 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
                 uninstall: callUninstall,
                 saveState: callSaveState
             },
+            services: {
+                ready: callReady,
+                registerHandler: callRegisterHandler,
+            },                
             html5Implementation: true,
             // a debugging routine which allows debugging or testing clients
             // to point at a repository location other than production.
