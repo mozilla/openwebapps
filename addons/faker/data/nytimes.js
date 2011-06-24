@@ -9,7 +9,7 @@
 var helpers = document.getElementsByClassName('helpers')[0];
 
 // try adding a link
-var readingList = '<dt class="customize">Reading List</dt><ol id="links"><li><a href="">foo</a></li></ol>';
+var readingList = '<dt class="customize">Reading List</dt><ol id="links"></ol>';
 
 var dl = document.createElement('dl');
 dl.setAttribute('class','helpers');
