@@ -45,44 +45,10 @@ const {Cc, Ci, Cu} = require("chrome");
  * get the addon directory location in jetpack)
  */
 var FAKE_APPS = {
-    "http://www.nytimes.com": ["nytimes.manifest", "*.nytimes.com", "nytimes.js", /nytimes\.com/],
-    "http://twitter.com": ["twitter.manifest", "*.twitter.com", "twitter.js", /twitter\.com/],
-    "http://chrome.angrybirds.com" : ["angrybirds.manifest", "*.angrybirds.com", "angrybirds.js", null]
+    "http://nytimes.com": ["nytimes.manifest", "*.nytimes.com", "nytimes.js"],
+    "http://twitter.com": ["twitter.manifest", "*.twitter.com", "twitter.js"],
+    "http://chrome.angrybirds.com" : ["angrybirds.manifest", "*.angrybirds.com", "angrybirds.js"]
 };
-
-/*
-var tabs = require("tabs");
-tabs.on('ready', function(tab) {
-    console.log("considering "  + tab.url);
-    
-    for (fake_app in FAKE_APPS) {
-        if (tab.url.search(FAKE_APPS[fake_app][3]) > -1) {
-            // now we know this is FAKE_APPS[fake_app]
-            console.log(tab.contentDocument);
-        }
-    }
-
-});
-
-const tabBrowser = require("tab-browser");
-const windows = require("windows").browserWindows;
-let tracker = {
-  onTrack: function(tab) {
-      console.log("A new tab is being tracked");
-      var current_url = tab.url;
-      function check_tab() {
-          console.log(tab.url+ " / " + tab.contentDocument);
-          windows.setTimeout(check_tab, 1000);
-      }
-
-      check_tab();
-  },
-  onUntrack: function(tab) {
-    console.log("A tab is no longer being tracked.");
-  }
-};
-tabBrowser.TabTracker(tracker);
-*/
 
 
 function injectAsInstallable()

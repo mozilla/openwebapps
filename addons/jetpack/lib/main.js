@@ -112,7 +112,9 @@ function openwebapps(win, getUrlCB)
     // Also, intercept document loads that don't open in a new tab
     // (this should be done in the content-document-global-created observer?)
     win.gBrowser.tabContainer.addEventListener("TabOpen", function(e) {
+        console.log("tab open!");
         self._window.setTimeout(function(e) {
+            console.log("after timeout");
             if (e.target.pinned) return;
 
             let browser = self._window.gBrowser.getBrowserForTab(e.target);
@@ -121,7 +123,9 @@ function openwebapps(win, getUrlCB)
 
             self._repo.list(function(apps) {
                 for (let app in apps) {
+                    console.log("app/origin: " + app + "/" + origin);
                     if (app == origin) {
+                        console.log("origin matches, launching");
                         self._repo.launch(origin, browser.currentURI.spec);
                         self._window.gBrowser.removeTab(e.target);
                         break;
@@ -183,7 +187,7 @@ openwebapps.prototype = {
             apibase: "navigator.apps.services", name: "ready", script: null,
             getapi: function(contentWindowRef) {
                 return function(args) {
-                    self._services.initApp(contentWindowRef);
+                    self._services.initApp(contentWindowRef.wrappedJSObject);
                 }
             }
         });
@@ -192,7 +196,7 @@ openwebapps.prototype = {
             apibase: "navigator.apps.services", name: "registerHandler", script: null,
             getapi: function(contentWindowRef) {
                 return function(activity, message, func) {
-                    self._services.registerServiceHandler(contentWindowRef, activity, message, func);
+                    self._services.registerServiceHandler(contentWindowRef.wrappedJSObject, activity, message, func);
                 }
             }
         });

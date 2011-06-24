@@ -107,6 +107,7 @@ serviceInvocationHandler.prototype = {
             
             // we invoke the login one if it's supported
             if (app.services && app.services.login) {
+                // FIXME: what do we do with tons of IFRAMEs? Do they all get the login message?
                 self.invokeService(contentWindowRef, 'login', 'doLogin', {'credentials' : null}, function(result) {
                     // if result is status ok, we're good
                     if (result.status == 'ok') {
