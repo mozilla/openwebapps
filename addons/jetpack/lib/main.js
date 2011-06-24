@@ -112,9 +112,7 @@ function openwebapps(win, getUrlCB)
     // Also, intercept document loads that don't open in a new tab
     // (this should be done in the content-document-global-created observer?)
     win.gBrowser.tabContainer.addEventListener("TabOpen", function(e) {
-        console.log("tab open!");
         self._window.setTimeout(function(e) {
-            console.log("after timeout");
             if (e.target.pinned) return;
 
             let browser = self._window.gBrowser.getBrowserForTab(e.target);

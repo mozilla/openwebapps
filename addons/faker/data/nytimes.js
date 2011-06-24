@@ -12,4 +12,3 @@ el.setAttribute("type", "text/javascript");
 el.setAttribute("src", "https://raw.github.com/mozilla/openwebapps/master/addons/faker/data/nytimes-inline.js");
 head.appendChild(el);
 
-console.log("appended!");

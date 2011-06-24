@@ -1,6 +1,10 @@
 
 window.navigator.apps.services.registerHandler('link.transition', 'transition', function(args, cb) {
-    alert('new url ' + args.url);
+    if (window.skimmer)
+        skimmer("article").load(args.url, "");
+    } else {
+        window.location = args.url;
+    }
 });
 
 window.navigator.apps.services.ready();
