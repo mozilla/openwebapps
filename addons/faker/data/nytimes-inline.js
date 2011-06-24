@@ -4,4 +4,3 @@ window.navigator.apps.services.registerHandler('link.transition', 'transition', 
 
 window.navigator.apps.services.ready();
 
-alert('did it!');
