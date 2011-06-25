@@ -393,7 +393,7 @@ openwebappsUI.prototype = {
                     origin: page,
                     onsuccess: function() {
                         self._installInProgress = false;
-                        simple.storage.links[page].show = false;
+                        //simple.storage.links[page].show = false;
                     }
                 }, self._window
             );
