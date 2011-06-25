@@ -135,7 +135,6 @@ serviceInvocationHandler.prototype = {
     registerServiceHandler: function(contentWindowRef, activity, message, func) {
         // check that this is indeed an app
         FFRepoImplService.getAppByUrl(contentWindowRef.location, function(app) {
-            console.log("pre-register");
             if (!app) return;
 
             // make sure the app supports this activity

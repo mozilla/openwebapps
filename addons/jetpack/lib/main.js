@@ -112,24 +112,17 @@ function openwebapps(win, getUrlCB)
     // Also, intercept document loads that don't open in a new tab
     // (this should be done in the content-document-global-created observer?)
     win.gBrowser.tabContainer.addEventListener("TabOpen", function(e) {
-        console.log("tab open!");
         self._window.setTimeout(function(e) {
-            console.log("after timeout");
             if (e.target.pinned) return;
 
             let browser = self._window.gBrowser.getBrowserForTab(e.target);
             let origin = url.URLParse(browser.currentURI.spec)
                 .originOnly().toString();
 
-            self._repo.list(function(apps) {
-                for (let app in apps) {
-                    console.log("app/origin: " + app + "/" + origin);
-                    if (app == origin) {
-                        console.log("origin matches, launching");
-                        self._repo.launch(origin, browser.currentURI.spec);
-                        self._window.gBrowser.removeTab(e.target);
-                        break;
-                    }
+            self._repo.getAppByUrl(origin, function(app) {
+                if (app) {
+                    self._repo.launch(origin, browser.currentURI.spec);
+                    self._window.gBrowser.removeTab(e.target);
                 }
             });
         }, 500, e);
@@ -323,7 +316,7 @@ openwebapps.prototype = {
 
                 let href = aEvent.target.href;
                 let page = url.URLParse(aEvent.target.baseURI);
-                page = page.originOnly().toString();
+                page = page.normalize().originOnly().toString();
 
                 if (!simple.storage.links[page]) {
                     // XXX: Should we restrict the href to be associated in
@@ -339,7 +332,7 @@ openwebapps.prototype = {
                 // manually call UI hook because tabs.on('activate') will
                 // not be called for this page
                 let cUrl = url.URLParse(tabs.activeTab.url);
-                cUrl = cUrl.originOnly().toString();
+                cUrl = cUrl.normalize().originOnly().toString();
 
                 if (cUrl == page)
                     self.offerInstallIfNeeded(page);
@@ -350,18 +343,11 @@ openwebapps.prototype = {
     // TODO: Don't be so annoying and display the offer everytime the app site
     // is visited. If the user says 'no', don't display again for the session
     offerInstallIfNeeded: function(origin) {
-        let toInstall = true;
-        this._repo.list(function(apps) {
-            for (let app in apps) {
-                if (app == origin) {
-                    toInstall = false;
-                    break;
-                }
-            }
+        let self = this;
+        this._repo.getAppByUrl(origin, function(app) {
+            if (!app)
+                self._ui._showPageHasApp(origin);
         });
-
-        if (toInstall)
-            this._ui._showPageHasApp(origin);
     },
 
     registerBuiltInApp: function(domain, app, injector) {
