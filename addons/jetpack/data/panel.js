@@ -126,6 +126,7 @@ function computeLayoutVars() {
   appNameSize = Math.floor(appBoxWidth * 0.8);
   appNameFontSize = Math.max(Math.ceil(appIconSize/6), 10);
   
+  /*
   console.log("screenWidth: " + screenWidth);
   console.log("screenHeight: " + screenHeight);
   console.log("pageWidth: " + pageWidth);
@@ -134,7 +135,7 @@ function computeLayoutVars() {
   console.log("appIconSize: " + appIconSize);
   console.log("appNameSize: " + appNameSize);
   console.log("appNameSize: " + appNameFontSize);
-
+  */
 }
 
 //call it right away to prime the pump
@@ -275,7 +276,7 @@ function checkSavedData(save) {
 function updateDashboard( listOfInstalledApps ) {
     //both the app list and dashboard data functions are asynchronous, so we need to do everything in the callback
     
-    console.log("UPDATING dashboard");
+    //console.log("UPDATING dashboard");
     
       //calculate various sizes of elements based on the window size, and set the background
       computeLayoutVars();
@@ -298,7 +299,7 @@ function updateDashboard( listOfInstalledApps ) {
 
           $('#page0').empty();
           for (origin in gApps) {
-            console.log("appending: " + gApps[origin].origin);
+            //console.log("appending: " + gApps[origin].origin);
               $('#page0').append(createAppItem(gApps[origin]));
             }
                  

@@ -159,14 +159,12 @@ openwebappsUI.prototype = {
                               data.url("panel.js") ],
                               
           onShow: function() { self._repo.list(function(apps) {
-                                console.log("ui.js SENT theList");
                                 thePanel.port.emit("theList", apps);
                                 }); },
         });      
         
         thePanel.port.on("getList", function(arg) {
           self._repo.list(function(apps) {
-            console.log("RECEIVED getList");
             thePanel.port.emit("theList", apps);
           });
         });
@@ -174,7 +172,7 @@ openwebappsUI.prototype = {
         thePanel.port.on("launch", function(arg) {
             self._repo.launch(arg);
             thePanel.hide();
-            });
+        });
 
         widgets.Widget({
         id: "openwebapps-toolbar-button",
@@ -190,9 +188,7 @@ openwebappsUI.prototype = {
 
   _updateDashboard: function(show) {
     let self = this;
-    console.log("updating dashboard now...");
     self._repo.list(function(apps) {
-      console.log("DASHBOARD UPDATED");
       self._panel.port.emit("theList", apps);
     });
       
@@ -202,9 +198,7 @@ openwebappsUI.prototype = {
     var widgetAnchor = currentDoc.getElementById("widget:" + 
                                           require("self").id + "-openwebapps-toolbar-button");
 
-    console.log(widgetAnchor);
     if (show != undefined) {
-      console.log("showing panel");
       self._panel.show(widgetAnchor);
     }
   
@@ -367,7 +361,6 @@ openwebappsUI.prototype = {
             return;
     
         if (!this._offerAppPanel) {
-            console.log("creating panel");
             this._offerAppPanel = require("panel").Panel({
                 contentURL: require("self").data.url("offer.html"),
                 contentScript: 'let actions = ["yes", "no", "never"];' +
