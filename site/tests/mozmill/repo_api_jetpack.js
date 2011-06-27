@@ -8,7 +8,7 @@ var setupTest = function(test) {
 }
 
 
-var testFoo = function() {
+var testOpenWebAppsJetpack = function() {
   var timeout = 2000;
   var button = new elementslib.Lookup(controller.window.document, '/id("main-window")/id("mainPopupSet")/id("notification-popup")/id("openwebapps-install-notification-notification")/anon([1])/{"class":"popup-notification-button-container","pack":"end","align":"center"}/anon({"anonid":"button"})/anon({"anonid":"button"})');
   
