@@ -11,3 +11,8 @@ line variant
 
 These tests will perform the interaction that is normally required of the user.
 
+When performing tests on the HTML5 version, the instance of FireFox must NOT 
+have the OpenWebApps addon installed.
+
+
+
