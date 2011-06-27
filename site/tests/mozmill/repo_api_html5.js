@@ -9,7 +9,7 @@ var setupTest = function(test) {
 }
 
 
-var testFoo = function() {
+var testHTML5Shim = function() {
   var timeout = 2000;
   var button = new elementslib.ID(
           controller.tabs.activeTab.defaultView.frames[0].document, "installButton");
