@@ -178,7 +178,7 @@ function makeSuccessFunction(svc)
     msg.initMessageEvent("message", // type
                          true, true, // bubble, cancelable
                          JSON.stringify(messageData),  // data
-                         "resource://openwebapps-at-labs-dot-mozilla-dot-com-openwebapps-data/service2.html", "", window); // origin, source
+                         "resource://openwebapps-at-mozillalabs-dot-com-openwebapps-data/service2.html", "", window); // origin, source
     document.dispatchEvent(msg);
   }
 }

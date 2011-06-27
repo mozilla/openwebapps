@@ -325,7 +325,6 @@ FFRepoImpl.prototype = {
                     let brsOrigin = URLParse(brs.currentURI.spec)
                         .normalize().originOnly().toString();
 
-                    console.log("checking for origin : " + appURL + " / " + origin);
                     if (appURL && appURL == origin) {
                         // The app is running in this tab; select it and retarget.
                         browserWin.focus();
@@ -349,7 +348,6 @@ FFRepoImpl.prototype = {
                             } else {
                                 brs.loadURI(url, null, null); // Referrer is broken
                             }
-                            console.log("sent");
                         }
 
                         found = true;

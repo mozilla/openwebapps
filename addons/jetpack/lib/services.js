@@ -143,7 +143,7 @@ serviceInvocationHandler.prototype = {
                 return;
             }
             
-            console.log("Registering handler for " + app.origin + " " + activity + " / " + message);
+            //console.log("Registering handler for " + app.origin + " " + activity + " / " + message);
 
             // do we need to unwrap it?
             var theWindow = contentWindowRef;
