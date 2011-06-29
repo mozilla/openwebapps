@@ -14,5 +14,10 @@ These tests will perform the interaction that is normally required of the user.
 When performing tests on the HTML5 version, the instance of FireFox must NOT 
 have the OpenWebApps addon installed.
 
+These tests can be run both from the command line and using the MozMill Firefox 
+extension.
+
+To run the html5 test, run test_html5.sh
+To run the addon test, run test_addon.sh
 
 
