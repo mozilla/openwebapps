@@ -52,6 +52,7 @@ function serviceInvocationHandler(win)
 
     let observerService = Cc["@mozilla.org/observer-service;1"].getService(Ci.nsIObserverService);
     observerService.addObserver(this, "openwebapp-installed", false);
+    observerService.addObserver(this, "openwebapp-uninstalled", false);
 }
 serviceInvocationHandler.prototype = {
 
@@ -74,23 +75,30 @@ serviceInvocationHandler.prototype = {
       return [xulPanel, frame];
     },
     
-    show: function(panel) {
+    show: function(panelRecord) {
+      let {panel} = panelRecord;
       // TODO: steal sizeToContent from F1
       if (panel.state == "closed") {
           panel.sizeTo(500, 400);
           let larry = this._window.document.getElementById('identity-box');
           panel.openPopup(larry, "after_start", 8);
       }
+      if (!panelRecord.isConfigured) {
+        this._updateContent(panelRecord)
+        panelRecord.isConfigured = true;
+      }
     },
     
     observe: function(subject, topic, data) {
-      if (topic == "openwebapp-installed")
+      if (topic == "openwebapp-installed" || topic == "openwebapp-uninstalled")
       {
-        // let our panels know, if they are visible
+        // All visible panels need to be reconfigured now, while invisible
+        // ones can wait until they are re-shown.
         for each (let popupCheck in this._popups) {
-          if (popupCheck.panel.state != "closed")
-          {
+          if (popupCheck.panel.state != "closed") {
             this._updateContent(popupCheck);
+          } else {
+            popupCheck.isConfigured = false;
           }
         }
       }
@@ -193,18 +201,15 @@ serviceInvocationHandler.prototype = {
           }
         }
         // If not, go create one
-        // TEMPORARY: always create panel for debugging
-        //if (!thePanel) {
-        if (1) {
+        if (!thePanel) {
           let tmp = this._createPopupPanel();
           thePanel = tmp[0];
           theIFrame = tmp[1];
-          thePanelRecord =  { contentWindow: contentWindowRef, panel: thePanel, iframe: theIFrame} ;
+          thePanelRecord =  { contentWindow: contentWindowRef, panel: thePanel,
+                              iframe: theIFrame, isConfigured: false} ;
 
           this._popups.push( thePanelRecord );
         }
-        this.show(thePanel);
-
         // Update the content for the new invocation        
         thePanelRecord.contentWindow = contentWindowRef;
         thePanelRecord.methodName = methodName;
@@ -213,7 +218,7 @@ serviceInvocationHandler.prototype = {
         thePanelRecord.errorCB = errorCB; 
         //XX this memory is going to stick around for a long time; consider cleaning it up proactively
         
-        this._updateContent(thePanelRecord);
+        this.show(thePanelRecord);
         } catch (e) {
           dump(e + "\n");
           dump(e.stack + "\n");
