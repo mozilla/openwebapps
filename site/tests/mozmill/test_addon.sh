@@ -1,7 +1,14 @@
 #!/bin/sh
 
-echo '********************This is only a placeholder***********************'
-echo '** To run the OpenWebApps addon tests, please start an instance of **'
-echo '** Firefox with the OpenWebApps and MozMill extensions installed,  **'
-echo '** start the MozMill extension, and load repo_api_jetpack.js       **'
-echo '*********************************************************************'
+pwd=`pwd`
+
+echo 'Creating XPI from source'
+
+cd ../../../addons/jetpack
+cfx xpi
+cp openwebapps.xpi $pwd
+cd $pwd
+
+echo 'Starting MozMill'
+mozmill --addons=openwebapps.xpi -t repo_api_jetpack.js
+
