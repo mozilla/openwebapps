@@ -131,6 +131,7 @@ FFRepoImpl.prototype = {
 
         function fetchManifest(url, cb)
         {
+          dump("Fetching manifest from " + url + "\n");
             // contact our server to retrieve the URL
             let xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"].
                     createInstance(Ci.nsIXMLHttpRequest);
@@ -138,8 +139,11 @@ FFRepoImpl.prototype = {
             xhr.onreadystatechange = function(aEvt) {
                 if (xhr.readyState == 4) {
                     if (xhr.status == 200) {
+                        dump("Got manifest (200) " + xhr.responseText.length + " bytes\n");
+
                         cb(xhr.responseText, xhr.getResponseHeader('Content-Type'));
                     } else {
+                        dump("Failed to get manifest (" + xhr.status + ")\n");
                         cb(null);
                     }
                 }

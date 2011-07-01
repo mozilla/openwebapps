@@ -92,6 +92,7 @@ function openwebapps(win, getUrlCB)
     // Keep an eye out for LINK headers that contain manifests:
     let obs = Cc["@mozilla.org/observer-service;1"].
               getService(Ci.nsIObserverService);
+    this._linkListenerAttached = false;
     obs.addObserver(this, 'content-document-global-created', false);
 
     this._ui = new ui.openwebappsUI(win, getUrlCB, this._repo);
@@ -298,22 +299,30 @@ openwebapps.prototype = {
 //             this._ui._renderDockIcons();
                this._ui._updateDashboard();
         } else if (topic == "content-document-global-created") {
+
             let mainWindow = subject
                          .QueryInterface(Ci.nsIInterfaceRequestor)
                          .getInterface(Ci.nsIWebNavigation)
                          .QueryInterface(Ci.nsIDocShellTreeItem)
                          .rootTreeItem
                          .QueryInterface(Ci.nsIInterfaceRequestor)
-                         .getInterface(Ci.nsIDOMWindow); 
-            if (mainWindow != this._window) {
-                return;
-            }
+                         .getInterface(Ci.nsIDOMWindow);
 
             let self = this;
-            mainWindow.addEventListener("DOMLinkAdded", function(aEvent) {
-                if (aEvent.target.rel != "application-manifest")
-                    return;
+            if (this._window != mainWindow) { // exclude other windows
+              return;
+            }
+            if (subject != this._window.content) { //exclude jetpack panels and iframes
+              return;
+            }
+            if (self._linkListenerAttached) { // don't fire more than once
+              return;
+            }
 
+            let linkHandler = function(aEvent) {
+              // Links could come in any order!  Be ready for that.
+              if (aEvent.target.rel == "application-manifest" || aEvent.target.rel == "application-preferred-store")
+              {
                 let href = aEvent.target.href;
                 let page = url.URLParse(aEvent.target.baseURI);
                 page = page.normalize().originOnly().toString();
@@ -334,9 +343,51 @@ openwebapps.prototype = {
                 let cUrl = url.URLParse(tabs.activeTab.url);
                 cUrl = cUrl.normalize().originOnly().toString();
 
-                if (cUrl == page)
+                if (cUrl == page) {
+                  if (aEvent.target.rel == "application-manifest")
+                  {
                     self.offerInstallIfNeeded(page);
-            }, false);
+                  } 
+                  else if (aEvent.target.rel == "application-preferred-store")
+                  {
+                    // TODO do nothing if we're installed already
+                    // let the UI know we've got a store here
+                    simple.storage.links[page].store = href;
+                    self._ui._showPageHasStoreApp(page);
+                    
+                    // create a hidden iframe to talk to the store:
+                    let doc = self._window.document;
+                    let XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
+                    let xulPanel = doc.createElementNS(XUL_NS, "panel");
+                    xulPanel.setAttribute("type", "arrow");
+
+                    let frame = doc.createElementNS(XUL_NS, "browser");      
+                    frame.setAttribute("flex", "1");
+                    frame.setAttribute("type", "content");
+                    frame.setAttribute("transparent", "transparent");
+                    frame.setAttribute("style", "width:484px;height:484px");
+                    xulPanel.appendChild(frame);
+                    doc.getElementById("mainPopupSet").appendChild(xulPanel);
+                    frame.setAttribute("src", href);
+
+                    xulPanel.sizeTo(0, 0);
+                    //let larry = self._window.document.getElementById('identity-box');
+                    //xulPanel.openPopup(larry, "after_start", 8);
+                    
+                    frame.addEventListener("DOMContentLoaded", function(event) {
+                      // and ask the store for details:
+                      self._services.invokeService( frame.contentWindow.wrappedJSObject, "appstore", "getOffer", {domain:cUrl}, function(result)
+                      {
+                        simple.storage.links[page].offer = result;
+                        self._ui._showPageHasStoreApp(page);
+                      }, true /* is privileged */);
+                    }, false);
+                  }
+                }
+              }
+            };
+            mainWindow.addEventListener("DOMLinkAdded", linkHandler, false);
+            self._linkListenerAttached = true;
         }
     },
     

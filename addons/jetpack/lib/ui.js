@@ -369,7 +369,28 @@ openwebappsUI.prototype = {
                     '       (function(i) { return function() { ' +
                     '           self.port.emit(actions[i]);' +
                     '       }})(i); ' +
-                    '}'
+                    '}' +
+                    'function renderOffer(offer) {'+
+                    '  var s="";'+
+                    '  s += "Purchase for $" + offer.price + "?";'+
+                    '  document.getElementById("store_offer").innerHTML = s;'+
+                    '  document.getElementById("store_offer").style.display = "block";'+
+                    '  document.getElementById("store_progress").style.display = "none";'+
+                    ' '+
+                    '  var acct="";'+
+                    '  if (offer.account) {'+
+                    '    acct = "Logged in to " + offer.storeName + " as <i>" + offer.account + "</i>";'+
+                    '  } else {'+
+                    '    acct = "You will be asked to log in to " + offer.storeName + " if you install.";'+
+                    '  }'+
+                    '  document.getElementById("login_status").innerHTML = acct;'+
+                    '  document.getElementById("login_status").style.display = "block";'+
+                    '}'+
+                    'self.port.on("store", function(data) {'+
+                    '  document.getElementById("self_published").style.display="none";' +
+                    '  document.getElementById("store").style.display="block";' +
+                    '  if (data.offer) { renderOffer(data.offer) };' +
+                    '});'
             });
         }
         if (this._offerAppPanel.isShowing) return;
@@ -377,26 +398,35 @@ openwebappsUI.prototype = {
         /* Setup callbacks */
         let self = this;
         this._offerAppPanel.port.on("yes", function() {
-            self._installInProgress = true;
+            //self._installInProgress = true;
             self._offerAppPanel.hide();
-            self._repo.install(
-                "chrome://openwebapps", {
-                    _autoInstall: true,
-                    url: link.url,
-                    origin: page,
-                    onsuccess: function() {
-                        self._installInProgress = false;
-                        //simple.storage.links[page].show = false;
-                    }
-                }, self._window
-            );
+            
+            try {
+              self._repo.install(
+                  "chrome://openwebapps", {
+                      _autoInstall: true,
+                      url: link.url,
+                      origin: page,
+                      onsuccess: function() {
+                          self._installInProgress = false;
+                          //simple.storage.links[page].show = false;
+                      },
+                      onerror: function(res) {
+                        console.log(JSON.stringify(res));
+                      }
+                  }, self._window
+              );
+            } catch (e) {
+              dump(e +"\n");
+              dump(e.stack + "\n");
+            }
         });
         this._offerAppPanel.port.on("no", function() {
             self._offerAppPanel.hide();
         });
         this._offerAppPanel.port.on("never", function() {
             self._offerAppPanel.hide();
-            simple.storage.links[page].show = false;
+            simple.storage.links[page].show = false; 
         });
 
         /* Prepare to anchor panel to apps widget */
@@ -407,6 +437,20 @@ openwebappsUI.prototype = {
             require("self").id + "-openwebapps-toolbar-button");
 
         this._offerAppPanel.show(bar);
+
+        if (link.store)
+          this._offerAppPanel.port.emit("store", {store:link.store, offer:link.offer});
+    },
+    
+    _showPageHasStoreApp: function(page, store) {
+        let link = simple.storage.links[page];
+        if (!link.show || this._installInProgress)
+            return;
+        if (this._offerAppPanel)
+        {
+          this._offerAppPanel.port.emit("store", {store:link.store, offer:link.offer});
+        }
+      
     }
 };
 

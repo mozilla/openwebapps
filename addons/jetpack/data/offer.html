@@ -1,10 +1,30 @@
 <html>
+<style>
+#login_status {
+  font: small-caption;
+  margin-top:16px;
+}
+</style>
 <body>
 <h1>App Available!</h1>
+
+<div id="self_published">
 <h4>This website offers an integrated Web App experience. Would you like to try it?</h4>
-<div id="c"></div>
+</div>
+
+<div id="store" style="display:none">
+<h4>This website offers an integrated Web App experience.</h4>
+<div style="font-style:italic" id="store_progress">Loading offer from application store...</div>
+<div id="store_offer" style="display:none"></div>
+</div>
+
 <button id="yes">Yes</button>
 <button id="no">No</button>
 <button id="never">Don't ask me again</button>
+
+<div id="login_status" style="display:none">
+</div>
+</div>
+
 </body>
 </html>
