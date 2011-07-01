@@ -353,33 +353,26 @@ openwebapps.prototype = {
                     // TODO do nothing if we're installed already
                     // let the UI know we've got a store here
                     simple.storage.links[page].store = href;
-                    self._ui._showPageHasStoreApp(page);
+                    self._ui._showPageHasStoreApp(page, self);
                     
                     // create a hidden iframe to talk to the store:
                     let doc = self._window.document;
                     let XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
                     let xulPanel = doc.createElementNS(XUL_NS, "panel");
-                    xulPanel.setAttribute("type", "arrow");
-
+                    xulPanel.setAttribute("type", "arrow");// <-- this is mandatory.  why??
                     let frame = doc.createElementNS(XUL_NS, "browser");      
-                    frame.setAttribute("flex", "1");
                     frame.setAttribute("type", "content");
-                    frame.setAttribute("transparent", "transparent");
-                    frame.setAttribute("style", "width:484px;height:484px");
                     xulPanel.appendChild(frame);
                     doc.getElementById("mainPopupSet").appendChild(xulPanel);
                     frame.setAttribute("src", href);
-
                     xulPanel.sizeTo(0, 0);
-                    //let larry = self._window.document.getElementById('identity-box');
-                    //xulPanel.openPopup(larry, "after_start", 8);
                     
                     frame.addEventListener("DOMContentLoaded", function(event) {
                       // and ask the store for details:
                       self._services.invokeService( frame.contentWindow.wrappedJSObject, "appstore", "getOffer", {domain:cUrl}, function(result)
                       {
                         simple.storage.links[page].offer = result;
-                        self._ui._showPageHasStoreApp(page);
+                        self._ui._showPageHasStoreApp(page, self);
                       }, true /* is privileged */);
                     }, false);
                   }
@@ -391,13 +384,40 @@ openwebapps.prototype = {
         }
     },
     
+    performPurchaseActivity: function(store, domain, cb)
+    {
+      let self = this;
+
+      // HACK: This is really kind of gross, I don't want to have to do this here.
+      // create a hidden iframe to talk to the store:
+      let doc = self._window.document;
+      let XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
+      let xulPanel = doc.createElementNS(XUL_NS, "panel");
+      xulPanel.setAttribute("type", "arrow");// <-- this is mandatory.  why??
+      let frame = doc.createElementNS(XUL_NS, "browser");      
+      frame.setAttribute("type", "content");
+      xulPanel.appendChild(frame);
+      doc.getElementById("mainPopupSet").appendChild(xulPanel);
+      frame.setAttribute("src", store);
+      xulPanel.sizeTo(0, 0);
+      
+      frame.addEventListener("DOMContentLoaded", function(event) {
+        // and ask the store for details:
+        self._services.invokeService( frame.contentWindow.wrappedJSObject, "appstore", "purchase", {domain:domain}, function(result)
+        {
+          dump("APPS | performPurchaseActivity | Purchase completed - result is " + result);
+          cb(result);
+        }, true /* is privileged */);
+      }, false);
+    },
+    
     // TODO: Don't be so annoying and display the offer everytime the app site
     // is visited. If the user says 'no', don't display again for the session
     offerInstallIfNeeded: function(origin) {
         let self = this;
         this._repo.getAppByUrl(origin, function(app) {
             if (!app)
-                self._ui._showPageHasApp(origin);
+                self._ui._showPageHasApp(origin, self);
         });
     },
 

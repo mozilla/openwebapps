@@ -37,6 +37,7 @@
 const {Cc, Ci, Cm, Cu} = require("chrome");
 const widgets = require("widget");
 const simple = require("simple-storage");
+const url = require("./urlmatch");
 const HTML_NS = "http://www.w3.org/1999/xhtml";
 const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
@@ -355,7 +356,7 @@ openwebappsUI.prototype = {
             this._offerAppPanel.hide();
     },
 
-    _showPageHasApp: function(page) {
+    _showPageHasApp: function(page, owa) { // XX I'm not happy that I need to pass in owa here, but I need it for the purchase activity. Refactor?
         let link = simple.storage.links[page];
         if (!link.show || this._installInProgress)
             return;
@@ -398,27 +399,70 @@ openwebappsUI.prototype = {
         /* Setup callbacks */
         let self = this;
         this._offerAppPanel.port.on("yes", function() {
-            //self._installInProgress = true;
-            self._offerAppPanel.hide();
+            dump("APPS | ui.showPageHasApp.onYes | User clicked Yes\n");
+            self._installInProgress = true;
             
-            try {
-              self._repo.install(
-                  "chrome://openwebapps", {
-                      _autoInstall: true,
-                      url: link.url,
-                      origin: page,
-                      onsuccess: function() {
+            if (link.offer) {
+              dump("APPS | ui.showPageHasApp.onYes | There's an offer\n");
+              // If there is a store offer, we have a more complicated flow.
+
+              if (link.offer.account) {
+                dump("APPS | ui.showPageHasApp.onYes | The user is logged in\n");
+                // The store thinks the user is logged in; let's go ahead and
+                // try to perform the purchase.  We might still end up needing
+                // to send the user to a landing page.
+            
+                let domain = url.URLParse(page);
+                domain = domain.normalize().originOnly().toString();
+                self._offerAppPanel.hide();
+                owa.performPurchaseActivity(link.store, domain, function(result) {
+                  self._installInProgress = false;
+                });
+                
+              } else {
+                // The store doesn't think the user is logged in; an authentication
+                // will be required.  Just send the user off to the store's
+                // indicated landing page.
+                if (link.offer.purchaseURL) {
+                  dump("APPS | ui.showPageHasApp.onYes | The user is not logged in, but there's a purchaseURL - creating new tab\n");
+                  let wm = Cc["@mozilla.org/appshell/window-mediator;1"]
+                          .getService(Ci.nsIWindowMediator);
+                  let recentWindow = wm.getMostRecentWindow("navigator:browser");
+                  if (recentWindow) {
+                      let tab = recentWindow.gBrowser.addTab(link.offer.purchaseURL);
+                      recentWindow.gBrowser.selectedTab = tab;
+                    }
+                } else {
+                  dump("APPS | ui.showPageHasApp.onYes | The user is not logged in, and there is no purchaseURL - we're done\n");
+                }
+                self._installInProgress = false;                
+              }
+            
+            
+            } else {
+              // Otherwise it's self-published; go ahead and install it.
+              dump("APPS | ui.showPageHasApp.onYes | No offer; go ahead and install\n");
+              try {
+                self._offerAppPanel.hide();
+                self._repo.install(
+                    "chrome://openwebapps", {
+                        _autoInstall: true,
+                        url: link.url,
+                        origin: page,
+                        onsuccess: function() {
+                            self._installInProgress = false;
+                            //simple.storage.links[page].show = false;
+                        },
+                        onerror: function(res) {
+                          console.log("An error occured while attempting to install an application: " + JSON.stringify(res));
                           self._installInProgress = false;
-                          //simple.storage.links[page].show = false;
-                      },
-                      onerror: function(res) {
-                        console.log(JSON.stringify(res));
-                      }
-                  }, self._window
-              );
-            } catch (e) {
-              dump(e +"\n");
-              dump(e.stack + "\n");
+                        }
+                    }, self._window
+                );
+              } catch (e) {
+                console.log("An error occured while attempting to install an application: " + e);
+                self._installInProgress = false;
+              }
             }
         });
         this._offerAppPanel.port.on("no", function() {

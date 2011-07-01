@@ -90,6 +90,7 @@ FFRepoImpl.prototype = {
         function displayPrompt(installOrigin, appOrigin, manifestToInstall,
             isUpdate, installConfirmationFinishFn)
         {
+            dump("APPS | api.install.displayPrompt | Checking for prompt\n");
             if (autoInstall)
                 return installConfirmationFinishFn(true);
 
@@ -131,7 +132,7 @@ FFRepoImpl.prototype = {
 
         function fetchManifest(url, cb)
         {
-          dump("Fetching manifest from " + url + "\n");
+          dump("APPS | api.install.fetchManifest | Fetching manifest from " + url + "\n");
             // contact our server to retrieve the URL
             let xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"].
                     createInstance(Ci.nsIXMLHttpRequest);
@@ -139,8 +140,7 @@ FFRepoImpl.prototype = {
             xhr.onreadystatechange = function(aEvt) {
                 if (xhr.readyState == 4) {
                     if (xhr.status == 200) {
-                        dump("Got manifest (200) " + xhr.responseText.length + " bytes\n");
-
+                        dump("APPS | api.install.fetchManifest | Got manifest (200) " + xhr.responseText.length + " bytes\n");
                         cb(xhr.responseText, xhr.getResponseHeader('Content-Type'));
                     } else {
                         dump("Failed to get manifest (" + xhr.status + ")\n");
@@ -214,6 +214,7 @@ FFRepoImpl.prototype = {
         let self = this;
         return Repo.install(location, args, displayPrompt, fetcher,
             function (result) {
+                dump("APPS | jetpack.install | Repo install returned to callback; result is " + result + "\n");
                 // install is complete
                 if (result !== true) {
                     if (args.onerror) {
