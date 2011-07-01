@@ -161,14 +161,12 @@ openwebappsUI.prototype = {
                               data.url("panel.js") ],
                               
           onShow: function() { self._repo.list(function(apps) {
-                                console.log("ui.js SENT theList");
                                 thePanel.port.emit("theList", apps);
                                 }); },
         });      
         
         thePanel.port.on("getList", function(arg) {
           self._repo.list(function(apps) {
-            console.log("RECEIVED getList");
             thePanel.port.emit("theList", apps);
           });
         });
@@ -176,7 +174,7 @@ openwebappsUI.prototype = {
         thePanel.port.on("launch", function(arg) {
             self._repo.launch(arg);
             thePanel.hide();
-            });
+        });
 
         widgets.Widget({
         id: "openwebapps-toolbar-button",
@@ -197,7 +195,6 @@ openwebappsUI.prototype = {
     });
       
 
-    console.log(widgetAnchor);
     if (show != undefined) {
       let WM = Cc['@mozilla.org/appshell/window-mediator;1']
             .getService(Ci.nsIWindowMediator);
@@ -276,152 +273,3 @@ openwebappsUI.prototype = {
 exports.openwebappsUI = openwebappsUI;
 
 
-
-
-
-
-//     _addDock: function() {
-//         let self = this;
-// 
-//         // We will add an hbox before navigator-toolbox;
-//         // this should put it above all the tabs.
-//         let targetID = "addon-bar";
-//         let mergePoint = this._window.document.getElementById(targetID);
-//         if (!mergePoint) return;
-//         
-//         let dock = this._window.document.createElement("hbox");
-//         dock.collapsed = true;
-//         //dock.height = "90px";
-//         dock.style.borderTop = "0.1em solid black";
-// 
-//         dock.style.background = "-moz-linear-gradient(15% 0% 270deg,#8A8A8A, #E0E0E0, #E0E0E0 15%,#F8F8F8 85%)"
-//         
-//         self._dock = dock;
-//         try {
-//           self._renderDockIcons();
-//         } catch (e) { }
-//         
-//         mergePoint.parentNode.insertBefore(dock, mergePoint);
-// 
-//         // FIXME: this will probably not be called because of jetpack
-//         // unloaders.push(function() mergePoint.parentNode.removeChild(dock));
-//     },
-//     
-//     _renderDockIcons: function(recentlyInstalledAppKey) {
-//       let self= this;
-//       while (this._dock.firstChild) {
-//         this._dock.removeChild(this._dock.firstChild);
-//       }
-//       
-//       this._repo.list(function(apps) {
-// 
-//         function getBiggestIcon(minifest) {
-//             // XXX this should really look for icon that is closest to 48 pixels.
-//             // see if the minifest has any icons, and if so, return the largest one
-//             if (minifest.icons) {
-//                 let biggest = 0;
-//                 for (z in minifest.icons) {
-//                     let size = parseInt(z, 10);
-//                     if (size > biggest) biggest = size;
-//                 }
-//                 if (biggest !== 0) return minifest.icons[biggest];
-//             }
-//             return null;
-//         }
-// 
-//         for (let k in apps) {
-//             //let appBox = self._window.document.createElementNS(HTML_NS, "div");
-//             let appBox = self._window.document.createElement("vbox");
-// 
-//             appBox.style.width = "100px";
-//             appBox.style.height = "90px";
-// 
-// 
-//             //let icon = self._window.document.createElementNS(HTML_NS, "div");
-//             let icon = self._window.document.createElement("image");
-// 
-//             if (apps[k].manifest.icons) {
-//                 let iconData = getBiggestIcon(apps[k].manifest);
-//                 if (iconData) {
-//                     if (iconData.indexOf("data:") == 0) {
-//                         icon.setAttribute("src", iconData);
-//                     } else {
-//                         icon.setAttribute("src", k + iconData);
-// 
-//                     }
-//                 } else {
-//                     // default
-//                 }
-//             } else {
-//                 // default
-//             }
-// 
-//             icon.style.width = "64px";
-//             icon.style.height = "64px";
-//             icon.style.margin = "18px";
-//             icon.style.marginBottom = "2px";
-//             icon.style.marginTop = "6px";
-//             icon.style.border = "4px solid rgba(30,150,45,0.4)";
-//             icon.style.borderRadius = "8px";
-//             icon.style.backgroundColor = "white";
-// 
-//             icon.onmouseover = (function() { icon.style.border = "4px solid rgba(30,255,45,1)"; } );
-//             icon.onmouseout = (function() { icon.style.border = "4px solid rgba(30,150,45,0.4)"; } );
-//             
-//             let key = k;
-//             icon.onclick = (function() {
-//                 return function() { 
-//                     self._repo.launch(key); 
-//                     self._hideDock();
-//                 }
-//             })();
-//              
-//             let label = self._window.document.createElement("label");
-//             label.style.width = "90px";
-//             
-//             label.style.font = "bold 12px Helvetica,Arial,sans-serif";
-//             label.style.color = "444444";
-//             label.style.overflow = "hidden";
-//             label.style.textShadow = "#dddddd 1px 1px, #dddddd -1px -1px, #dddddd -1px 1px, #dddddd 1px -1px";
-//             label.style.textAlign = "center";
-//             label.style.marginBottom = "6px";
-//             
-//             label.appendChild(
-//                 self._window.document.createTextNode(apps[k].manifest.name)
-//             );
-//             
-// 
-//             appBox.appendChild(icon);
-//             appBox.appendChild(label);
-// 
-//             // added by Ben because we're getting multiple calls in separate
-//             // threads to this, and it's causing duplication of icon rendering
-//             // (see specifically the twitter.com example with faker turned on.)
-//             // the right solution is probably not this, but for now this will do.
-//             while (self._dock.firstChild) {
-//                 self._dock.removeChild(self._dock.firstChild);
-//             }
-// 
-//             self._dock.appendChild(appBox);
-//         }
-//       });
-//     },
-// 
-//     _toggleDock: function() {
-//         if (this._dock.collapsed) {
-//             this._showDock();
-//         } else {
-//             this._hideDock();
-//         }
-//     },
-//     _showDock: function() {
-//         //this._dock.style.display ="block";
-//        //this._dock.collapsed = false;
-//        console.log("SHOW PANEL");
-//        this.panel.show();
-//     },
-//     _hideDock: function() {
-//         //this._dock.style.display ="none";
-//         //this._dock.collapsed = true;
-//         this.panel.hide();
-//     },

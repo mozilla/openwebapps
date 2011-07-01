@@ -95,15 +95,16 @@ function computeLayoutVars() {
   appNameSize = Math.floor(appBoxWidth * 0.8);
   appNameFontSize = Math.max(Math.ceil(appIconSize/6), 10);
   
-//   console.log("screenWidth: " + screenWidth);
-//   console.log("screenHeight: " + screenHeight);
-//   console.log("pageWidth: " + pageWidth);
-//   console.log("appBoxWidth: " + appBoxWidth);
-//   console.log("appBoxHeight: " + appBoxHeight);
-//   console.log("appIconSize: " + appIconSize);
-//   console.log("appNameSize: " + appNameSize);
-//   console.log("appNameSize: " + appNameFontSize);
-
+  /*
+  console.log("screenWidth: " + screenWidth);
+  console.log("screenHeight: " + screenHeight);
+  console.log("pageWidth: " + pageWidth);
+  console.log("appBoxWidth: " + appBoxWidth);
+  console.log("appBoxHeight: " + appBoxHeight);
+  console.log("appIconSize: " + appIconSize);
+  console.log("appNameSize: " + appNameSize);
+  console.log("appNameSize: " + appNameFontSize);
+  */
 }
 
 //call it right away to prime the pump
@@ -305,7 +306,6 @@ function updateDashboard() {
 function redrawDashboard( listOfInstalledApps ) {
     //both the app list and dashboard data functions are asynchronous, so we need to do everything in the callback
     
-    console.log("REDRAWiNG dashboard");
     
       //calculate various sizes of elements based on the window size, and set the background
       computeLayoutVars();      
@@ -323,14 +323,6 @@ function redrawDashboard( listOfInstalledApps ) {
               if (typeof console !== "undefined") console.log("Error while adding base32 ID to app " + origin + ": " + e);
             }
           }
-
-//           $('#page0').empty();
-//           for (origin in gApps) {
-//             console.log("appending: " + gApps[origin].origin);
-//               $('#page0').append(createAppItem(gApps[origin]));
-//             }
-//                  
-//             $('#page0').css({width: "100%", height: "100%"});
 
 
           //now, in the list callback, load the dashboard state

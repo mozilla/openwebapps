@@ -3,7 +3,7 @@
     "license": "MPL 1.1/GPL 2.0/LGPL 2.1", 
     "author": "Anant Narayanan", 
     "version": "0.1", 
-    "fullName": "faker", 
+    "fullName": "Open Web Apps Faker", 
     "id": "jid1-PbJbBxxOQDxnsA", 
-    "description": "Fakes appification of websites"
+    "description": "Fakes appification of websites for use with the OpenWebApps add-on."
 }

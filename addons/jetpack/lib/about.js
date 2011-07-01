@@ -33,7 +33,7 @@ function AboutApps(win)
 }
 
 AboutApps.prototype = {
-  _elem: function this._elem(type, clazz) {
+  _elem: function _elem(type, clazz) {
     var e = this._window.contentDocument.createElement(type);
     if (clazz) e.setAttribute("class", clazz);
     return e;

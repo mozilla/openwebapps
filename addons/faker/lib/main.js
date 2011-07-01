@@ -47,7 +47,9 @@ const {Cc, Ci, Cu} = require("chrome");
 var FAKE_APPS = {
     "http://nytimes.com": ["nytimes.manifest", "*.nytimes.com", "nytimes.js"],
     "http://twitter.com": ["twitter.manifest", "*.twitter.com", "twitter.js"],
+    "http://chrome.angrybirds.com" : ["angrybirds.manifest", "*.angrybirds.com", "angrybirds.js"]
 };
+
 
 function injectAsInstallable()
 {
@@ -67,4 +69,3 @@ function injectAsInstallable()
 }
 
 injectAsInstallable();
-

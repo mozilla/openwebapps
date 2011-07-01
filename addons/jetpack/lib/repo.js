@@ -262,6 +262,7 @@ Repo = (function() {
 
             // contact our server to retrieve the URL
             fetchManifestFunc(args.url, function(fetchedManifest, contentType) {
+                dump("Got fetchManifest cb\n");
                 if (!fetchedManifest) {
                     cb({error: ["networkError", "couldn't retrieve application manifest from network"]});
                 } else if (!contentType || contentType.indexOf("application/x-web-app-manifest+json") != 0) {
@@ -270,16 +271,20 @@ Repo = (function() {
                     try {
                         fetchedManifest = JSON.parse(fetchedManifest);
                     } catch(e) {
+                      dump(e +"\n");
                         cb({error: ["manifestParseError", "couldn't parse manifest JSON from " + args.url]});
                         return;
                     }
                     try {
                         manifestToInstall = Manifest.validate(fetchedManifest);
+                        
+                        dump("Validated manifest\n");
 
                         if (!mayInstall(installOrigin, appOrigin, manifestToInstall)) {
                             cb({error: ["permissionDenied", "origin '" + installOrigin + "' may not install this app"]});
                             return;
                         }
+                        dump("May install\n");
                         
                         // if this origin is whitelisted we can proceed without a confirmation
                         if (installOrigin == "http://localhost:8420") {
@@ -289,6 +294,8 @@ Repo = (function() {
                         {
                           // if an app with the same origin is currently installed, this is an update
                           appStorage.has(appOrigin, function(isUpdate) {
+                              dump("About to prompt\n");
+
                               promptDisplayFunc(
                                   installOrigin, appOrigin, manifestToInstall,
                                   isUpdate, installConfirmationFinish

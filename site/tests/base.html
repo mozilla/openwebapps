@@ -22,9 +22,12 @@
 
 </head>
 <body class="autodoctest">
-<h1>Open Web Apps Browser Unit Tests</h1>
+    <header>    
+        <h1>Open Web Apps Browser Unit Tests</h1>
+        <h2>{% block name %}{% endblock %}
+    </header>
 
-<h2>Select a test</h2>
+<h3>Available Tests</h3>
 <ul id="testSelection">
     {% for spec in specs %}
         <li><a href="/tests/spec/{{spec}}">{{spec}}</a></li>
