@@ -150,9 +150,11 @@ openwebappsUI.prototype = {
     _addToolbarButton: function() {
         let self = this;
         let data = require("self").data;
+        
+        console.log(data.url("panel.html"));
         let thePanel = require("panel").Panel({
-          height: 130,
-          width: 800,
+          height: 108,
+          width: 754,
           contentURL: data.url("panel.html"),
           contentScriptFile: [data.url("base32.js"),
                               data.url("jquery-1.4.2.min.js"),
@@ -190,25 +192,93 @@ openwebappsUI.prototype = {
 
   _updateDashboard: function(show) {
     let self = this;
-    console.log("updating dashboard now...");
     self._repo.list(function(apps) {
-      console.log("DASHBOARD UPDATED");
       self._panel.port.emit("theList", apps);
     });
       
-    let WM = Cc['@mozilla.org/appshell/window-mediator;1']
-            .getService(Ci.nsIWindowMediator);
-    let currentDoc = WM.getMostRecentWindow("navigator:browser").document;
-    var widgetAnchor = currentDoc.getElementById("widget:" + 
-                                          require("self").id + "-openwebapps-toolbar-button");
 
     console.log(widgetAnchor);
     if (show != undefined) {
+      let WM = Cc['@mozilla.org/appshell/window-mediator;1']
+            .getService(Ci.nsIWindowMediator);
+      let currentDoc = WM.getMostRecentWindow("navigator:browser").document;
+      var widgetAnchor = currentDoc.getElementById("widget:" + 
+                                          require("self").id + "-openwebapps-toolbar-button");
+
       console.log("showing panel");
       self._panel.show(widgetAnchor);
     }
   
   },
+
+
+    _hideOffer: function() {
+        if (this._offerAppPanel && this._offerAppPanel.isShowing)
+            this._offerAppPanel.hide();
+    },
+
+    _showPageHasApp: function(page) {
+        let link = simple.storage.links[page];
+        if (!link.show || this._installInProgress)
+            return;
+    
+        if (!this._offerAppPanel) {
+            console.log("creating panel");            
+            this._offerAppPanel = require("panel").Panel({
+                contentURL: require("self").data.url("offer.html"),
+                contentScript: 'let actions = ["yes", "no", "never"];' +
+                    'for (let i = 0; i < actions.length; i++) { ' +
+                    '   document.getElementById(actions[i]).onclick = ' +
+                    '       (function(i) { return function() { ' +
+                    '           self.port.emit(actions[i]);' +
+                    '       }})(i); ' +
+                    '}'
+            });
+        }
+        if (this._offerAppPanel.isShowing) return;
+
+        /* Setup callbacks */
+        let self = this;
+        this._offerAppPanel.port.on("yes", function() {
+            self._installInProgress = true;
+            self._offerAppPanel.hide();
+            self._repo.install(
+                "chrome://openwebapps", {
+                    _autoInstall: true,
+                    url: link.url,
+                    origin: page,
+                    onsuccess: function() {
+                        self._installInProgress = false;
+                        simple.storage.links[page].show = false;
+                    }
+                }, self._window
+            );
+        });
+        this._offerAppPanel.port.on("no", function() {
+            self._offerAppPanel.hide();
+        });
+        this._offerAppPanel.port.on("never", function() {
+            self._offerAppPanel.hide();
+            simple.storage.links[page].show = false;
+        });
+
+        /* Prepare to anchor panel to apps widget */
+        let WM = Cc['@mozilla.org/appshell/window-mediator;1']
+            .getService(Ci.nsIWindowMediator);
+        let doc = WM.getMostRecentWindow("navigator:browser").document;
+        let bar = doc.getElementById("widget:" + 
+            require("self").id + "-openwebapps-toolbar-button");
+
+        this._offerAppPanel.show(bar);
+    }
+};
+
+exports.openwebappsUI = openwebappsUI;
+
+
+
+
+
 
 //     _addDock: function() {
 //         let self = this;
@@ -355,66 +425,3 @@ openwebappsUI.prototype = {
 //         //this._dock.collapsed = true;
 //         this.panel.hide();
 //     },
-
-    _hideOffer: function() {
-        if (this._offerAppPanel && this._offerAppPanel.isShowing)
-            this._offerAppPanel.hide();
-    },
-
-    _showPageHasApp: function(page) {
-        let link = simple.storage.links[page];
-        if (!link.show || this._installInProgress)
-            return;
-    
-        if (!this._offerAppPanel) {
-            console.log("creating panel");
-            this._offerAppPanel = require("panel").Panel({
-                contentURL: require("self").data.url("offer.html"),
-                contentScript: 'let actions = ["yes", "no", "never"];' +
-                    'for (let i = 0; i < actions.length; i++) { ' +
-                    '   document.getElementById(actions[i]).onclick = ' +
-                    '       (function(i) { return function() { ' +
-                    '           self.port.emit(actions[i]);' +
-                    '       }})(i); ' +
-                    '}'
-            });
-        }
-        if (this._offerAppPanel.isShowing) return;
-
-        /* Setup callbacks */
-        let self = this;
-        this._offerAppPanel.port.on("yes", function() {
-            self._installInProgress = true;
-            self._offerAppPanel.hide();
-            self._repo.install(
-                "chrome://openwebapps", {
-                    _autoInstall: true,
-                    url: link.url,
-                    origin: page,
-                    onsuccess: function() {
-                        self._installInProgress = false;
-                        simple.storage.links[page].show = false;
-                    }
-                }, self._window
-            );
-        });
-        this._offerAppPanel.port.on("no", function() {
-            self._offerAppPanel.hide();
-        });
-        this._offerAppPanel.port.on("never", function() {
-            self._offerAppPanel.hide();
-            simple.storage.links[page].show = false;
-        });
-
-        /* Prepare to anchor panel to apps widget */
-        let WM = Cc['@mozilla.org/appshell/window-mediator;1']
-            .getService(Ci.nsIWindowMediator);
-        let doc = WM.getMostRecentWindow("navigator:browser").document;
-        let bar = doc.getElementById("widget:" + 
-            require("self").id + "-openwebapps-toolbar-button");
-
-        this._offerAppPanel.show(bar);
-    }
-};
-
-exports.openwebappsUI = openwebappsUI;
