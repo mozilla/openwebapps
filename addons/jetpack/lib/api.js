@@ -282,7 +282,8 @@ FFRepoImpl.prototype = {
             origin.host == "myapps.mozillalabs.com" ||
             origin.host == "stage.myapps.mozillalabs.com" ||
             origin.host == "apps.mozillalabs.com" ||
-            origin.toString().substr(0, 10) == "about:apps"
+            origin.toString().substr(0, 10) == "about:apps" ||
+            origin.toString().substr(0, 9) == "resource:"
             )
         {
             return;
