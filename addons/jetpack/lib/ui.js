@@ -231,7 +231,11 @@ openwebappsUI.prototype = {
                     '}' +
                     'function renderOffer(offer) {'+
                     '  var s="";'+
-                    '  s += "Purchase for $" + offer.price + "?";'+
+                    '  if (offer.purchased) {' +
+                    '     s += "You have already purchased this application.  Reinstall now?";' +
+                    '  }  else { '+
+                    '    s += "Purchase for $" + offer.price + "?";'+
+                    '  }'+
                     '  document.getElementById("store_offer").innerHTML = s;'+
                     '  document.getElementById("store_offer").style.display = "block";'+
                     '  document.getElementById("store_progress").style.display = "none";'+
@@ -340,8 +344,9 @@ openwebappsUI.prototype = {
 
         this._offerAppPanel.show(bar);
 
-        if (link.store)
+        if (link.store) {
           this._offerAppPanel.port.emit("store", {store:link.store, offer:link.offer});
+        }
     },
     
     _showPageHasStoreApp: function(page, store) {
