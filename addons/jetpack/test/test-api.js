@@ -1,7 +1,11 @@
-const about = require("api");
+const FFRepoImpl = require("api").FFRepoImplService;
 
+var repo;
+exports.setup = function() {
+    repo = FFRepoImpl;
+};
 
-exports.test_test_run = function(test) {
-    test.pass("Unit test running!");
+exports.teardown = function() {
+    repo = null;
 };
 
