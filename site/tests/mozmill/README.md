@@ -17,7 +17,23 @@ have the OpenWebApps addon installed.
 These tests can be run both from the command line and using the MozMill Firefox 
 extension.
 
-To run the html5 test, run test_html5.sh
-To run the addon test, run test_addon.sh
+Before running the tests, the node.js server must be started to server up the 
+applications.  This is done from the openwebapps/site/tests directory.
+
+1. cd ..
+2. node run.js
+
+Mozmill makes use of cfx from the 
+addon-sdk[https://github.com/mozilla/addon-sdk/], so this should be available.
+
+From the shell that you want to write the tests, go to the addon-sdk directory 
+and type:
+
+    source bin/activate
+
+Then return to this directory and run:
+
+html5: ./test_html5.sh
+addon: ./test_addon.sh
 
 
