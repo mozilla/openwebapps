@@ -43,6 +43,9 @@ var gApps = {};
 //the saved state (app icon arrangement, mostly) for the dashboard
 var gDashboardState = {};
 
+//caches the constructed app icon panes for speed, and to stop poking the network all the time.
+var gAppItemCache = {};
+
 
 function getWindowHeight() {
   /*if(window.innerHeight) return window.innerHeight;
@@ -56,12 +59,11 @@ function getWindowWidth() {
 
 
 /////////////////////////////////////////////////////////
+// mousedown/mouseup click/drag/flick state vars
   var downX = 0;			// mouse starting position
   var downY = 0;
-    var appHit;
-
+  var appHit;
   var elementLeft = 0;			// current element offset
-  
   var _dashboard = undefined;
   var dragStartTime = 0;
 
@@ -324,14 +326,6 @@ function redrawDashboard( listOfInstalledApps ) {
             }
           }
 
-//           $('#page0').empty();
-//           for (origin in gApps) {
-//             console.log("appending: " + gApps[origin].origin);
-//               $('#page0').append(createAppItem(gApps[origin]));
-//             }
-//                  
-//             $('#page0').css({width: "100%", height: "100%"});
-
 
           //now, in the list callback, load the dashboard state
 //           navigator.apps.mgmt.loadState( function (dashState) 
@@ -357,12 +351,8 @@ function redrawDashboard( listOfInstalledApps ) {
               //}
               
              numPages = gDashboardState.pages.length;
-              console.log("numPages: " + numPages);
-
              layoutPages();
   
-//               //and call the dream within a dream within a dream callback.  if it exists.
-//               if (completionCallback) { completionCallback(); };
 //            });                      
 
 }
@@ -386,17 +376,18 @@ function layoutPages() {
     $("#dashboard").append(nextPage);
     nextPage.css({width: screenWidth, height: screenHeight});
 
-    
-    //put the apps in
+    //put the apps in, used the cached items if we have them
     for (var a = 0; a < gDashboardState.pages[p].length; a++) {
-        nextPage.append(createAppItem( findInstallForOrigin32(gDashboardState.pages[p][a]) ));
+        
+        if (gAppItemCache[gDashboardState.pages[p][a]] == undefined)
+        {
+          gAppItemCache[gDashboardState.pages[p][a]] = createAppItem( findInstallForOrigin32(gDashboardState.pages[p][a]) );
+        }
+                  
+        nextPage.append(gAppItemCache[gDashboardState.pages[p][a]]);
     }
-    
   }
 }
-
-
-
 
 
 
