@@ -68,6 +68,7 @@ function openwebapps(win, getUrlCB)
     tmp = require("./injector");
     tmp.InjectorInit(this._window); 
     this._inject();
+    win.appinjector.inject();
 
     tmp = require("./services");
     this._services = new tmp.serviceInvocationHandler(this._window);
