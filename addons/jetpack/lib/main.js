@@ -261,9 +261,9 @@ openwebapps.prototype = {
     },
     
     _registerSyncEngine: function() {
+        /*
         let tmp = {};
         Cu.import("resource://services-sync/main.js", tmp);
-
         tmp.AppsEngine = require("./sync").AppsEngine;
             
         if (!tmp.Weave.Engines.get("apps")) {
@@ -272,12 +272,13 @@ openwebapps.prototype = {
                 tmp.Weave.Engines.unregister("apps");
             });
         }
-            
+        
         let prefname = "services.sync.engine.apps";
         if (Services.prefs.getPrefType(prefname) ==
             Ci.nsIPrefBranch.PREF_INVALID) {
             Services.prefs.setBoolPref(prefname, true);    
         }
+        */
     },
 
     observe: function(subject, topic, data) {
