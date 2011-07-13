@@ -156,6 +156,7 @@ openwebappsUI.prototype = {
         let thePanel = require("panel").Panel({
           height: 108,
           width: 754,
+          position: "topcenter bottomright",
           contentURL: data.url("panel.html"),
           contentScriptFile: [data.url("base32.js"),
                               data.url("jquery-1.4.2.min.js"),
@@ -204,7 +205,7 @@ openwebappsUI.prototype = {
                                           require("self").id + "-openwebapps-toolbar-button");
 
       console.log("showing panel");
-      self._panel.show(widgetAnchor);
+      self._panel.show(widgetAnchor, "topcenter bottomright");
     }
   
   },
@@ -226,6 +227,8 @@ openwebappsUI.prototype = {
             delete this._offerAppPanel;
         }
         this._offerAppPanel = require("panel").Panel({
+            height: 180,
+            width: 300,
             contentURL: require("self").data.url("offer.html"),
             contentScript: 'let actions = ["yes", "no", "never"];' +
                 'for (let i = 0; i < actions.length; i++) { ' +

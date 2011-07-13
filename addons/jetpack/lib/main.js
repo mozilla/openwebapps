@@ -68,6 +68,7 @@ function openwebapps(win, getUrlCB)
     tmp = require("./injector");
     tmp.InjectorInit(this._window); 
     this._inject();
+    win.appinjector.inject();
 
     tmp = require("./services");
     this._services = new tmp.serviceInvocationHandler(this._window);
@@ -75,7 +76,7 @@ function openwebapps(win, getUrlCB)
     tmp = {};
     Cu.import("resource://services-sync/main.js", tmp);
     if (tmp.Weave.Status.ready) {
-        registerSyncEngine();
+        this._registerSyncEngine();
     } else {
         tmp = {};
         Cu.import("resource://services-sync/util.js", tmp);
@@ -261,29 +262,30 @@ openwebapps.prototype = {
         });
     },
     
-    observe: function(subject, topic, data) {
-        function registerSyncEngine() {
-            let tmp = {};
-            Cu.import("resource://services-sync/main.js", tmp);
-
-            tmp.AppsEngine = require("./sync").AppsEngine;
+    _registerSyncEngine: function() {
+        /*
+        let tmp = {};
+        Cu.import("resource://services-sync/main.js", tmp);
+        tmp.AppsEngine = require("./sync").AppsEngine;
             
-            if (!tmp.Weave.Engines.get("apps")) {
-                tmp.Weave.Engines.register(tmp.AppsEngine);
-                unloaders.push(function() {
-                    tmp.Weave.Engines.unregister("apps");
-                });
-            }
-            
-            let prefname = "services.sync.engine.apps";
-            if (Services.prefs.getPrefType(prefname) ==
-                Ci.nsIPrefBranch.PREF_INVALID) {
-                Services.prefs.setBoolPref(prefname, true);    
-            }
+        if (!tmp.Weave.Engines.get("apps")) {
+            tmp.Weave.Engines.register(tmp.AppsEngine);
+            unloaders.push(function() {
+                tmp.Weave.Engines.unregister("apps");
+            });
         }
         
+        let prefname = "services.sync.engine.apps";
+        if (Services.prefs.getPrefType(prefname) ==
+            Ci.nsIPrefBranch.PREF_INVALID) {
+            Services.prefs.setBoolPref(prefname, true);    
+        }
+        */
+    },
+
+    observe: function(subject, topic, data) {
         if (topic == "weave:service:ready") {
-            registerSyncEngine();
+            this._registerSyncEngine();
         } else if (topic == "openwebapp-installed") {
 //             let installData = JSON.parse(data)
 //             this._ui._renderDockIcons(installData.origin);
