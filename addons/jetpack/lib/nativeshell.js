@@ -52,14 +52,17 @@ function getBiggestIcon(minifest) {
 
 function makeMenuBar(manifest)
 {
-  if (!'experimental' in manifest) return "";
-  if (!'menubar' in manifest.experimental) return "";
+  if (!('experimental' in manifest)) return "";
+  if (!('menubar' in manifest.experimental)) return "";
 
   let toolbox = '<toolbox collapsed="true"><menubar id="main-bar">';
   for (let key in manifest.experimental.menubar) {
     toolbox += '<menu label="' + key + '"><menupopup>';
     for (let option in manifest.experimental.menubar[key]) {
-      toolbox += '<menuitem label="' + option + '"/>';
+      toolbox += '<menuitem label="' + option + '" ' +
+        'oncommand="doHandleMenuBar(\'' +
+        manifest.experimental.menubar[key][option] +
+        '\');"/>';
     }
     toolbox += '</menupopup></menu>';
   }
