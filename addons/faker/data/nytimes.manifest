@@ -11,6 +11,11 @@
        "services" : {
           "link.transition" : {
           }
+       },
+       "menubar": {
+         "Tools": {
+           "Change Layout": "handleChangeLayout"
+         }
        }
     }
 }
