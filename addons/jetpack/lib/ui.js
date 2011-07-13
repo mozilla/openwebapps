@@ -222,6 +222,8 @@ openwebappsUI.prototype = {
     
         if (!this._offerAppPanel) {
             this._offerAppPanel = require("panel").Panel({
+				height: 180,
+				width: 300,
                 contentURL: require("self").data.url("offer.html"),
                 contentScript: 'let actions = ["yes", "no", "never"];' +
                     'for (let i = 0; i < actions.length; i++) { ' +
