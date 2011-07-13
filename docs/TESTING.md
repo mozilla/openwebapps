@@ -56,11 +56,13 @@ Tests can be run in openwebapps/site/tests/.  All test specs are found in openwe
 
 #### Manual Testing
 1. install node.js
-2. cd to openwebapps/site/tests
-3. type 'node run.js'
-4. copy the url presented.
-5. open up a browser instance.  To test the HTML5 shim, open a browser that does not have the OpenWebApps add on installed.
-6. select the series of tests to be run.
+2. If you have not done it, make sure all the openwebapps repo module dependencies are installed.
+To do this, go to the openwebapps directory.  Type 'git submodule init', then 'git submodule update'
+3. cd to openwebapps/site/tests
+4. type 'node run.js'
+5. copy the url presented.
+6. open up a browser instance.  To test the HTML5 shim, open a browser that does not have the OpenWebApps add on installed.
+7. select the series of tests to be run.
 
 Since there both the HTML5 and OpenWebApps addon must be tested, these tests need run twice, once in a browser instance that has the OpenWebApps addon installed and enabled, and a second time in a browser that does not.  
 
