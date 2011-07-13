@@ -1,4 +1,4 @@
-const {Cc, Cu, Ci} = require("chrome");
+const {components, Cc, Cu, Ci} = require("chrome");
 const file = require("file");
 const self = require("self");
 const url = require("url");
@@ -151,7 +151,6 @@ MacNativeShell.prototype = {
   createAppNativeLauncher : function(app)
   {
     dump("APPS | nativeshell.mac | Creating app native launcher\n");
-    
     this.createExecutable(app);
   },
 
@@ -193,16 +192,13 @@ MacNativeShell.prototype = {
   synthesizeIcon : function(app, destinationFile)
   {
     var icon = getBiggestIcon(app.manifest);
-    var iconPath;
-    if (icon.indexOf("data:") === 0) {
-      // write the image into a temp file and convert it
-      var fileutils={};
-      Cu.import("resource://gre/modules/FileUtils.jsm", fileutils);
 
-      var filePath = Cc["@mozilla.org/file/directory_service;1"].getService(Ci.nsIProperties).
-                 get("TmpD", Ci.nsIFile);
-                 
-      dump("APPS | nativeshell.mac | Got temporary path " + filePath + "\n");
+    // write the image into a temp file and convert it
+    var filePath = Cc["@mozilla.org/file/directory_service;1"].getService(Ci.nsIProperties).
+               get("TmpD", Ci.nsIFile);
+    dump("APPS | nativeshell.mac | Got temporary path " + filePath + "\n");
+
+    if (icon.indexOf("data:") === 0) {
 
       // Guess the file type
       var tIndex = icon.indexOf(";");
@@ -210,10 +206,9 @@ MacNativeShell.prototype = {
       dump("APPS | nativeshell.mac | type is " + type + "\n");
 
       var tSuffix="";
-      if (type.indexOf("/png")) tSuffix = ".png";
-      else if (type.indexOf("/jpeg")) tSuffix = ".jpg";
-      else if (type.indexOf("/jpg")) tSuffix = ".jpg";
-      
+      if (type.indexOf("/png") > 0) tSuffix = ".png";
+      else if (type.indexOf("/jpeg") > 0) tSuffix = ".jpg";
+      else if (type.indexOf("/jpg") > 0) tSuffix = ".jpg";
       filePath.append("tmpicon" + tSuffix);
 
       // Decode base64
@@ -246,20 +241,47 @@ MacNativeShell.prototype = {
       process.init(sipsFile);
       process.runAsync(["-s", "format", "icns", filePath.path, "--out", destinationFile, "-z", "128", "128"], 9);
 
-      //"sips -s format icns /path/to/png --out " + filePath + "/Contents/Resources/appicon.icns";
-      //iconPath = icon;
-
     } else {
-      iconPath = app.origin + icon;    
-      var netutil;
+      // Make temp file:
+      var tSuffix="";
+      if (icon.indexOf(".png") > 0) tSuffix = ".png";
+      else if (icon.indexOf(".jpeg") > 0) tSuffix = ".jpg";
+      else if (icon.indexOf(".jpg") > 0) tSuffix = ".jpg";
+      filePath.append("tmpicon" + tSuffix);
+      filePath.createUnique(Ci.nsIFile.NORMAL_FILE_TYPE, 0600);
+      dump("APPS | nativeshell.mac | Creating temporary icon at " + filePath.path + "\n");
+      var ostream = Cc["@mozilla.org/network/safe-file-output-stream;1"].
+                   createInstance(Ci.nsIFileOutputStream);
+      ostream.init(filePath, 0x04 | 0x08 | 0x20, 0600, 0); // readwrite, create, truncate
+
+      // Go get it:
+      var iconPath = app.origin + icon;    
+      var netutil={};
       Cu.import("resource://gre/modules/NetUtil.jsm", netutil);
-      netutil.asyncFetch(iconPath, function(inputStream, resultCode, request) {
-        if (!Cc.isSuccessCode(aResult)) {
-          // Handle error
-          dump("APPS | createExecutable | Unable to get icon\n");
-          return;
-        } else {
-          
+      dump("APPS | createExecutable | Retrieving icon from " + iconPath + "\n");
+      netutil.NetUtil.asyncFetch(iconPath, function(inputStream, resultCode, request) {
+        try {
+          if (!components.isSuccessCode(resultCode)) {
+            // Handle error
+            dump("APPS | createExecutable | Unable to get icon - error during request\n");
+            return;
+          } else {
+            netutil.NetUtil.asyncCopy(inputStream, ostream, function(aResult) {
+              if (ostream instanceof Ci.nsISafeOutputStream) {
+                  ostream.finish();
+              } else {
+                  ostream.close();
+              }
+              var process = Cc["@mozilla.org/process/util;1"].createInstance(Ci.nsIProcess);
+              var sipsFile = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsILocalFile);
+              sipsFile.initWithPath("/usr/bin/sips");
+              process.init(sipsFile);
+              process.runAsync(["-s", "format", "icns", filePath.path, "--out", destinationFile, "-z", "128", "128"], 9);
+            })
+
+          }
+        } catch (e) {
+          dump("ERROR : " + e + "\n");
         }
       });
 
@@ -322,7 +344,6 @@ MacNativeShell.prototype = {
       iconPath = app.origin + icon;    
     }
     var ret = setIcon(filePath, iconPath); // Will invoke NSURL resolution, could hang out for a LONG time
-    dump("Called setIcon; got " + ret + "\n"); 
   }
 }
 
