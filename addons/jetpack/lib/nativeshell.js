@@ -55,41 +55,30 @@ function getBiggestIcon(minifest) {
 
 function recursiveFileCopy(sourceBase, sourcePath, destPath, substitutions)
 {
-  dump("APPS | recursiveFileCopy | sourcePath is " + sourcePath + "\n");
   var srcFile = url.toFilename(self.data.url(sourceBase + "/" + sourcePath));
-  dump("APPS | recursiveFileCopy | srcFile is " + srcFile + "\n");
   if (file.exists(srcFile))
   {
-    dump("APPS | recursiveFileCopy | file exists\n");
-  
     // How do we tell if this is a directory?  Try to list() it 
     // and catch exceptions.
     var isDirectory=false, dirContents;
     try {
       dirContents = file.list(srcFile);
-      dump("APPS | recursiveFileCopy | isDirectory\n");
       isDirectory = true;
     } catch (cannotListException) {
-      dump("APPS | recursiveFileCopy | is not directory\n");
     }
     
     if (isDirectory) 
     {    
-      dump("APPS | recursiveFileCopy | create target directory; destPath is " + destPath + ", sourcePath is " + sourcePath + "\n");
       var dstFile = destPath + "/" + sourcePath;
-      dump("APPS | recursiveFileCopy | create " + dstFile + "\n");
       file.mkpath(dstFile);
       
       for (var i=0; i < dirContents.length; i++)
       {
-        dump("APPS | recursiveFileCopy | iterate to " + dirContents[i] + "\n");
         recursiveFileCopy(sourceBase, sourcePath + "/" + dirContents[i], destPath, substitutions);
       }
     } else {
       // Assuming textmode for everything - do we need any binaries?
       var dstFile = destPath + "/" + substituteStrings(sourcePath, substitutions);
-      dump("APPS | recursiveFileCopy | copy " + srcFile + " to " + dstFile + "\n");
-
 
       // BIG HACK
       var binaryMode = false;
@@ -158,7 +147,9 @@ MacNativeShell.prototype = {
     if (file.exists(filePath))
     {
       // recursive delete
-      
+      var aNsLocalFile = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
+      aNsLocalFile.initWithPath(filePath);
+      aNsLocalFile.remove(true);
     }
     
     // Now we synthesize a .app by copying the mac-app-template directory from our internal state
@@ -175,10 +166,10 @@ MacNativeShell.prototype = {
     }
     file.mkpath(filePath);
     recursiveFileCopy("mac-app-template", "", filePath, substitutions);
-    //this.synthesizeIcon(app, filePath + "/Contents/Resources/appicon.icns");
+    this.synthesizeIcon(app, filePath + "/Contents/Resources/appicon.icns");
   },
   
-  synthesizeIcon : function(app)
+  synthesizeIcon : function(app, destinationFile)
   {
     var icon = getBiggestIcon(app.manifest);
     var iconPath;
@@ -190,13 +181,18 @@ MacNativeShell.prototype = {
       var filePath = Cc["@mozilla.org/file/directory_service;1"].getService(Ci.nsIProperties).
                  get("TmpD", Ci.nsIFile);
                  
+      dump("APPS | nativeshell.mac | Got temporary path " + filePath + "\n");
+
       // Guess the file type
       var tIndex = icon.indexOf(";");
       var type = icon.substring(5, tIndex);
+      dump("APPS | nativeshell.mac | type is " + type + "\n");
+
       var tSuffix="";
       if (type.indexOf("/png")) tSuffix = ".png";
       else if (type.indexOf("/jpeg")) tSuffix = ".jpg";
       else if (type.indexOf("/jpg")) tSuffix = ".jpg";
+      
       filePath.append("tmpicon" + tSuffix);
 
       // Decode base64
@@ -206,17 +202,16 @@ MacNativeShell.prototype = {
         return;
       }
       var data = icon.substring(base64 + 7);
-      var decoded = atob(data);
+      const AppShellService = Cc["@mozilla.org/appshell/appShellService;1"].getService(Ci.nsIAppShellService);
+      var decoded = AppShellService.hiddenDOMWindow.atob(String(data));
       
       // Stream data into it
-      var aFile = Cc["@mozilla.org/file/local;1"].
-                  createInstance(Ci.nsILocalFile);
-      aFile.initWithPath(filePath);
-      aFile.createUnique(Ci.nsIFile.NORMAL_FILE_TYPE, 0600);
+      filePath.createUnique(Ci.nsIFile.NORMAL_FILE_TYPE, 0600);
+      dump("APPS | nativeshell.mac | Creating temporary icon at " + filePath.path + "\n");
 
       var stream = Cc["@mozilla.org/network/safe-file-output-stream;1"].
                    createInstance(Ci.nsIFileOutputStream);
-      stream.init(aFile, 0x04 | 0x08 | 0x20, 0600, 0); // readwrite, create, truncate
+      stream.init(filePath, 0x04 | 0x08 | 0x20, 0600, 0); // readwrite, create, truncate
                   
       stream.write(decoded, decoded.length);
       if (stream instanceof Ci.nsISafeOutputStream) {
@@ -224,6 +219,11 @@ MacNativeShell.prototype = {
       } else {
           stream.close();
       }
+      var process = Cc["@mozilla.org/process/util;1"].createInstance(Ci.nsIProcess);
+      var sipsFile = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsILocalFile);
+      sipsFile.initWithPath("/usr/bin/sips");
+      process.init(sipsFile);
+      process.runAsync(["-s", "format", "icns", filePath.path, "--out", destinationFile, "-z", "128", "128"], 9);
 
       //"sips -s format icns /path/to/png --out " + filePath + "/Contents/Resources/appicon.icns";
       //iconPath = icon;
