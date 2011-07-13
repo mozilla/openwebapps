@@ -50,6 +50,23 @@ function getBiggestIcon(minifest) {
   return null;
 }
 
+function makeMenuBar(manifest)
+{
+  if (!'experimental' in manifest) return "";
+  if (!'menubar' in manifest.experimental) return "";
+
+  let toolbox = '<toolbox collapsed="true"><menubar id="main-bar">';
+  for (let key in manifest.experimental.menubar) {
+    toolbox += '<menu label="' + key + '"><menupopup>';
+    for (let option in manifest.experimental.menubar[key]) {
+      toolbox += '<menuitem label="' + option + '"/>';
+    }
+    toolbox += '</menupopup></menu>';
+  }
+  toolbox += '</menubar></toolbox>';
+
+  return toolbox;
+}
 
 // XXX TODO use platform appropriate file divider everywhere!!!!!!
 
@@ -145,7 +162,7 @@ MacNativeShell.prototype = {
     
     this.createExecutable(app);
   },
-  
+
   createExecutable : function(app)
   {
     var baseDir = "/Applications/" + WEB_APPS_DIRNAME;
@@ -171,7 +188,8 @@ MacNativeShell.prototype = {
       APPNAME: app.manifest.name,
       APPDOMAIN: app.origin,
       APPDOMAIN_REVERSED: reverseDNS(app.origin),
-      LAUNCHPATH: launchPath
+      LAUNCHPATH: launchPath,
+      APPMENUBAR: makeMenuBar(app.manifest)
     }
     file.mkpath(filePath);
     recursiveFileCopy("mac-app-template", "", filePath, substitutions);
