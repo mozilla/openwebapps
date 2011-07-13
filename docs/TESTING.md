@@ -68,7 +68,9 @@ Since there both the HTML5 and OpenWebApps addon must be tested, these tests nee
 1. install node.js
 2. cd to openwebapps/site/tests
 3. type 'node run.js'
-4. start the MozMill scripts
+4. Run the mozmill scripts.  These can be done from the MozMill plugin using the scripts found in mozmill.
+4a. Scripts can be run from the MozMill firefox plugin - the scripts are located in the mozmill subdirectory under repo_api_jetpack.js and repo_api_html5.js
+4b. Scripts can be run from the command line by running tes_addon.sh or test_html5.sh
 
 Running these tests can be automated using MozMill.  More documentation for the MozMill tests can be found in openwebapps/site/tests/mozmill/README.md.
 
