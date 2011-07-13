@@ -35,6 +35,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 const {Cc, Ci, Cm, Cu} = require("chrome");
+const tabs = require("tabs");
 const widgets = require("widget");
 const simple = require("simple-storage");
 const url = require("./urlmatch");
@@ -317,6 +318,17 @@ openwebappsUI.prototype = {
                         onsuccess: function() {
                             self._installInProgress = false;
                             //simple.storage.links[page].show = false;
+							//if i just installed the app, i want it to become an app!
+							tab = tabs.activeTab;
+							tab.pin();
+							//issue: some apps are a different experience/url than 
+							//	where i may have noticed the 'app available' pop up.
+							// 	if we want a relaunch...
+							//self._repo.launch(page);
+							//	that said, making me 'restart' my engagement with the site
+							//	just cuz i launched into an app seems broken too.
+							//	i guess, thus the old flow: i can 'launch the app' if i want,
+							//	or i can continue browsing as is.
                         },
                         onerror: function(res) {
                           console.log("An error occured while attempting to install an application: " + JSON.stringify(res));
@@ -324,7 +336,6 @@ openwebappsUI.prototype = {
                         }
                     }, self._window
                 );
-				self._repo.launch(page, browser.currentURI.spec);
               } catch (e) {
                 console.log("An error occured while attempting to install an application: " + e);
                 self._installInProgress = false;
