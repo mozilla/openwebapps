@@ -90,6 +90,7 @@ FFRepoImpl.prototype = {
         function displayPrompt(installOrigin, appOrigin, manifestToInstall,
             isUpdate, installConfirmationFinishFn)
         {
+            dump("APPS | api.install.displayPrompt | Checking for prompt\n");
             if (autoInstall)
                 return installConfirmationFinishFn(true);
 
@@ -131,6 +132,7 @@ FFRepoImpl.prototype = {
 
         function fetchManifest(url, cb)
         {
+          dump("APPS | api.install.fetchManifest | Fetching manifest from " + url + "\n");
             // contact our server to retrieve the URL
             let xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"].
                     createInstance(Ci.nsIXMLHttpRequest);
@@ -138,8 +140,10 @@ FFRepoImpl.prototype = {
             xhr.onreadystatechange = function(aEvt) {
                 if (xhr.readyState == 4) {
                     if (xhr.status == 200) {
+                        dump("APPS | api.install.fetchManifest | Got manifest (200) " + xhr.responseText.length + " bytes\n");
                         cb(xhr.responseText, xhr.getResponseHeader('Content-Type'));
                     } else {
+                        dump("Failed to get manifest (" + xhr.status + ")\n");
                         cb(null);
                     }
                 }
@@ -210,6 +214,7 @@ FFRepoImpl.prototype = {
         let self = this;
         return Repo.install(location, args, displayPrompt, fetcher,
             function (result) {
+                dump("APPS | jetpack.install | Repo install returned to callback; result is " + result + "\n");
                 // install is complete
                 if (result !== true) {
                     if (args.onerror) {
@@ -277,7 +282,8 @@ FFRepoImpl.prototype = {
             origin.host == "myapps.mozillalabs.com" ||
             origin.host == "stage.myapps.mozillalabs.com" ||
             origin.host == "apps.mozillalabs.com" ||
-            origin.toString().substr(0, 10) == "about:apps"
+            origin.toString().substr(0, 10) == "about:apps" ||
+            origin.toString().substr(0, 9) == "resource:"
             )
         {
             return;
@@ -335,16 +341,19 @@ FFRepoImpl.prototype = {
                         // else, reload the page with the new URL?
                         if (url != brs.currentURI.spec) {
                             if (app.services && app.services['link.transition']) {
-                                var services = require("./services");
-                                var serviceInterface = new services.serviceInvocationHandler(browserWin);
-                                serviceInterface.invokeService(brs.contentWindow.wrappedJSObject,
-                                                               'link.transition', 'transition',
-                                                               {'url' : url},
-                                                               function(result) {});
+                                try {
+                                    var services = require("./services");
+                                    var serviceInterface = new services.serviceInvocationHandler(browserWin);
+                                    serviceInterface.invokeService(brs.contentWindow.wrappedJSObject,
+                                                                   'link.transition', 'transition',
+                                                                   {'url' : url},
+                                                                   function(result) {});
+                                } catch (e) {
+                                    console.log(e);
+                                }
                             } else {
                                 brs.loadURI(url, null, null); // Referrer is broken
                             }
-                            console.log("sent");
                         }
 
                         found = true;

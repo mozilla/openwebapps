@@ -326,17 +326,32 @@ $ m.widget = { }; // there are NO required args to widget.  wild.
 
 </pre>
 
-<h3>Property: services!</h3>
-
+<h3>Property: Old Style Services</h3>
 <pre class="doctest">
 $ var m = {
 >   name: "ServicyManifest",
 >   experimental: {
->     services: [
+>     services: [ 
 >       {
->         profile: "/aboutme_svc.html"
+>         profile: "/aboutme_svc.html" 
 >       }
 >     ]
+>   }
+> };
+> writeln(null !== Manifest.validate(m));
+true
+</pre>
+
+<h3>Property: New Style Services</h3>
+<pre class="doctest">
+$ var m = {
+>   name: "ServicyManifest",
+>   experimental: {
+>     services: {
+>         profile: {
+>           endpoint: "/aboutme_svc.html"
+>         }
+>     }
 >   }
 > };
 > writeln(null !== Manifest.validate(m));

@@ -190,5 +190,5 @@ URLParse = (function() {
 })();
 
 /* Jetpack specific export */
-if (exports)
+if (typeof exports !== "undefined")
     exports.URLParse = URLParse;

@@ -52,6 +52,7 @@ function serviceInvocationHandler(win)
 
     let observerService = Cc["@mozilla.org/observer-service;1"].getService(Ci.nsIObserverService);
     observerService.addObserver(this, "openwebapp-installed", false);
+    observerService.addObserver(this, "openwebapp-uninstalled", false);
 }
 serviceInvocationHandler.prototype = {
 
@@ -74,23 +75,30 @@ serviceInvocationHandler.prototype = {
       return [xulPanel, frame];
     },
     
-    show: function(panel) {
+    show: function(panelRecord) {
+      let {panel} = panelRecord;
       // TODO: steal sizeToContent from F1
       if (panel.state == "closed") {
           panel.sizeTo(500, 400);
           let larry = this._window.document.getElementById('identity-box');
           panel.openPopup(larry, "after_start", 8);
       }
+      if (!panelRecord.isConfigured) {
+        this._updateContent(panelRecord)
+        panelRecord.isConfigured = true;
+      }
     },
     
     observe: function(subject, topic, data) {
-      if (topic == "openwebapp-installed")
+      if (topic == "openwebapp-installed" || topic == "openwebapp-uninstalled")
       {
-        // let our panels know, if they are visible
+        // All visible panels need to be reconfigured now, while invisible
+        // ones can wait until they are re-shown.
         for each (let popupCheck in this._popups) {
-          if (popupCheck.panel.state != "closed")
-          {
+          if (popupCheck.panel.state != "closed") {
             this._updateContent(popupCheck);
+          } else {
+            popupCheck.isConfigured = false;
           }
         }
       }
@@ -107,6 +115,7 @@ serviceInvocationHandler.prototype = {
             
             // we invoke the login one if it's supported
             if (app.services && app.services.login) {
+                // FIXME: what do we do with tons of IFRAMEs? Do they all get the login message?
                 self.invokeService(contentWindowRef, 'login', 'doLogin', {'credentials' : null}, function(result) {
                     // if result is status ok, we're good
                     if (result.status == 'ok') {
@@ -130,23 +139,35 @@ serviceInvocationHandler.prototype = {
         });
     },
 
+
+    // FIXME: This should all be replaced with postMessage passing.
+    // Until we get that working we are invoking functions directly.
+    
     // when an app registers a service handler
     registerServiceHandler: function(contentWindowRef, activity, message, func) {
         // check that this is indeed an app
         FFRepoImplService.getAppByUrl(contentWindowRef.location, function(app) {
-            console.log("pre-register");
-            if (!app) return;
+
+            // do we need to unwrap it?
+            var theWindow = contentWindowRef;
+
+            if (!app) {
+              // We register handlers for things that aren't apps
+              var theWindow = contentWindowRef;
+              if (!theWindow._MOZ_NOAPP_SERVICES)
+                  theWindow._MOZ_NOAPP_SERVICES = {};
+              if (!theWindow._MOZ_NOAPP_SERVICES[activity])
+                  theWindow._MOZ_NOAPP_SERVICES[activity] = {};
+              theWindow._MOZ_NOAPP_SERVICES[activity][message] = func;
+              return;
+            }
 
             // make sure the app supports this activity
             if (!(app.services && app.services[activity])) {
                 console.log("app attempted to register handler for activity " + activity + " but not declared in manifest");
                 return;
             }
-            
-            console.log("Registering handler for " + app.origin + " " + activity + " / " + message);
-
-            // do we need to unwrap it?
-            var theWindow = contentWindowRef;
+            //console.log("Registering handler for " + app.origin + " " + activity + " / " + message);
 
             if (!theWindow._MOZ_SERVICES)
                 theWindow._MOZ_SERVICES = {};
@@ -160,17 +181,26 @@ serviceInvocationHandler.prototype = {
 
     // invoke below should really be named startActivity or something
     // this call means to invoke a specific call within a given app
-    invokeService: function(contentWindow, activity, message, args, cb) {
+    invokeService: function(contentWindow, activity, message, args, cb, privileged) {
         FFRepoImplService.getAppByUrl(contentWindow.location, function(app) {
-            if (!app) return;
+            var theWindow = contentWindow;
+
+            if (!app) {
+              if (privileged) {
+                try {
+                    theWindow._MOZ_NOAPP_SERVICES[activity][message](args, cb);
+                } catch (e) {
+                    console.log("error invoking " + activity + "/" + message + " in privileged invocation\n" + e.toString());
+                }
+              }
+              return;
+            }
 
             // make sure the app supports this activity
             if (!(app.services && app.services[activity])) {
                 console.log("attempted to send message to app for activity " + activity + " but app doesn't support it");
                 return;
             }
-
-            var theWindow = contentWindow;
 
             try {
                 theWindow._MOZ_SERVICES[activity][message](args, cb);
@@ -193,18 +223,15 @@ serviceInvocationHandler.prototype = {
           }
         }
         // If not, go create one
-        // TEMPORARY: always create panel for debugging
-        //if (!thePanel) {
-        if (1) {
+        if (!thePanel) {
           let tmp = this._createPopupPanel();
           thePanel = tmp[0];
           theIFrame = tmp[1];
-          thePanelRecord =  { contentWindow: contentWindowRef, panel: thePanel, iframe: theIFrame} ;
+          thePanelRecord =  { contentWindow: contentWindowRef, panel: thePanel,
+                              iframe: theIFrame, isConfigured: false} ;
 
           this._popups.push( thePanelRecord );
         }
-        this.show(thePanel);
-
         // Update the content for the new invocation        
         thePanelRecord.contentWindow = contentWindowRef;
         thePanelRecord.methodName = methodName;
@@ -213,7 +240,7 @@ serviceInvocationHandler.prototype = {
         thePanelRecord.errorCB = errorCB; 
         //XX this memory is going to stick around for a long time; consider cleaning it up proactively
         
-        this._updateContent(thePanelRecord);
+        this.show(thePanelRecord);
         } catch (e) {
           dump(e + "\n");
           dump(e.stack + "\n");

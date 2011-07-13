@@ -1,9 +1,9 @@
 {
     "name": "openwebapps", 
     "license": "MPL 1.1/GPL 2.0/LGPL 2.1", 
-    "author": "Anant Narayanan and Ben Adida", 
-    "version": "0.1", 
-    "fullName": "Open Web Apps", 
-    "id": "openwebapps@labs.mozilla.com", 
-    "description": "Open Web Apps as JetPack add-on"
+    "author": "Mozilla Labs", 
+    "version": "0.3", 
+    "fullName": "Open Web Apps for Firefox", 
+    "id": "openwebapps@mozillalabs.com", 
+    "description": "Adds features to Firefox to manage Web Applications directly in your browser."
 }
