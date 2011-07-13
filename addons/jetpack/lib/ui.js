@@ -324,6 +324,7 @@ openwebappsUI.prototype = {
                         }
                     }, self._window
                 );
+				self._repo.launch(page, browser.currentURI.spec);
               } catch (e) {
                 console.log("An error occured while attempting to install an application: " + e);
                 self._installInProgress = false;
