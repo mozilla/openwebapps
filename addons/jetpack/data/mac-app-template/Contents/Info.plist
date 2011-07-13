@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>English</string>
+	<key>CFBundleExecutable</key>
+	<string>foxlauncher</string>
+	<key>CFBundleGetInfoString</key>
+	<string>$APPNAME</string>
+	<key>CFBundleIconFile</key>
+	<string>appicon</string>
+	<key>CFBundleIdentifier</key>
+	<string>$APPDOMAIN_REVERSED</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$APPNAME</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>5.0.1</string>
+	<key>CFBundleSignature</key>
+	<string>MOZB</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLIconFile</key>
+			<string>document.icns</string>
+			<key>CFBundleURLName</key>
+			<string>http URL</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>http</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleURLIconFile</key>
+			<string>document.icns</string>
+			<key>CFBundleURLName</key>
+			<string>https URL</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>https</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>file URL</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>file</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>1.0</string>
+	<key>NSAppleScriptEnabled</key>
+	<true/>
+	<key>CGDisableCoalescedUpdates</key>
+	<true/>
+	<key>LSMinimumSystemVersion</key>
+	<string>10.5</string>
+	<key>LSMinimumSystemVersionByArchitecture</key>
+	<dict>
+		<key>i386</key>
+		<string>10.5.0</string>
+		<key>x86_64</key>
+		<string>10.6.0</string>
+	</dict>
+</dict>
+</plist>

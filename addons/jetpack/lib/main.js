@@ -106,6 +106,7 @@ function openwebapps(win, getUrlCB)
 
         let cUrl = url.URLParse(tab.url).originOnly().toString();
         let record = simple.storage.links[cUrl];
+        dump("APPS | onTabActivate | Checking url " + cUrl + " - found stored record " + JSON.stringify(record) + "\n");
         if (record) self.offerInstallIfNeeded(cUrl);
     });
 
@@ -371,6 +372,7 @@ openwebapps.prototype = {
                       // and ask the store for details:
                       self._services.invokeService( frame.contentWindow.wrappedJSObject, "appstore", "getOffer", {domain:cUrl}, function(result)
                       {
+                        //dump("APPS | appstore.getOffer service | Got getOffer result for " + page + ": " + JSON.stringify(result) + "\n");
                         simple.storage.links[page].offer = result;
                         self._ui._showPageHasStoreApp(page, self);
                       }, true /* is privileged */);
