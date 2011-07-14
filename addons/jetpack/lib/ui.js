@@ -319,16 +319,13 @@ openwebappsUI.prototype = {
                             self._installInProgress = false;
                             //simple.storage.links[page].show = false;
 							//if i just installed the app, i want it to become an app!
-							tab = tabs.activeTab;
-							tab.pin();
-							//issue: some apps are a different experience/url than 
-							//	where i may have noticed the 'app available' pop up.
-							// 	if we want a relaunch...
-							//self._repo.launch(page);
-							//	that said, making me 'restart' my engagement with the site
-							//	just cuz i launched into an app seems broken too.
-							//	i guess, thus the old flow: i can 'launch the app' if i want,
-							//	or i can continue browsing as is.
+							//pass in the current URL in case i notice the popup while in deep content
+							let tab = tabs.activeTab
+							let taburl = tab.url;
+							self._repo.launch(page, taburl);
+							console.log("about to close the tab");
+							tab.close();
+							console.log("tab closed");
                         },
                         onerror: function(res) {
                           console.log("An error occured while attempting to install an application: " + JSON.stringify(res));
