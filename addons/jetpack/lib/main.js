@@ -177,6 +177,19 @@ openwebapps.prototype = {
             }
         });
 
+        // this one kinda sucks - but it is the only way markh can find to
+        // pass a content object (eg, the iframe or the frame's content window).
+        // Attempting to pass it via self.emit() fails...
+        win.appinjector.register({
+            apibase: "navigator.apps.mediation", name: "_invokeService", script: null,
+            getapi: function (contentWindowRef) {
+                return function (iframe, activity, message, args, cb, cberr) {
+                  args = JSON.parse(JSON.stringify(args));
+                  self._services.invokeService(iframe.wrappedJSObject, activity, message, args, cb, cberr)
+                }
+            }
+        });
+
         // services APIs
         win.appinjector.register({
             apibase: "navigator.apps.services", name: "ready", script: null,

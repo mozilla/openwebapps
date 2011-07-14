@@ -108,7 +108,7 @@ Repo = (function() {
               return function(install) {
                 try {
                     install.manifest = Manifest.validate(install.manifest);
-                    toReturn[aKey] = install;
+                    toReturn[aKey] = new App(install);
                 } catch (e) {
                     toRemove.push(aKey)
                 } finally {
@@ -363,82 +363,40 @@ Repo = (function() {
     function updateServices(cb) {
         this.iterateApps(function(apps) {
             if (installedServices === undefined) installedServices = { };
-            for (var app in apps) {
-                var manifest = apps[app].manifest;
-                if (manifest.experimental && manifest.experimental.services) {
-                    var s = manifest.experimental.services;
-                    
-                    // we've moved to an object with keys the service name, rather than an array
-                    if (typeof s === 'object') {
-                        for (var service_key in s) {
-                            if (!s.hasOwnProperty(service_key))
-                                continue;
-                            
-                            var one_service = s[service_key];
-                            
-                            var svcObj = {
-                                // null out the URL when no endpoint
-                                url: one_service.endpoint? app+one_service.endpoint:null,
-                                app: app,
-                                manifest: manifest,
-                                params: one_service
-                            }
-                            // Fixup for built-ins, no origin
-                            if (one_service.endpoint && one_service.endpoint.indexOf("resource://") == 0) svcObj.url = one_service.endpoint;
+            for (var appid in apps) {
+                var app = apps[appid];
+                var s = app.services;
 
-                            if (!installedServices.hasOwnProperty(service_key)) {
-                              dump("creating list for " + service_key + "\n");
-                                installedServices[service_key] = [];
-                            } else {
-                                // does this svc already exist in the list (supports list *update*)?
-                                for (var j = 0; j < installedServices[service_key].length; j++) {
-                                    if (svcObj.url === installedServices[service_key].url) {
-                                        break;
-                                    }
-                                }
-                                if (j != installedServices[service_key].length) continue;
-                            }
-                            installedServices[service_key].push(svcObj);
+                if (typeof s === 'object') {
+                    for (var service_key in s) {
+                        if (!s.hasOwnProperty(service_key))
+                            continue;
+
+                        var one_service = s[service_key];
+
+                        var svcObj = {
+                            // null out the URL when no endpoint
+                            url: one_service.endpoint? appid+one_service.endpoint:null,
+                            app: app,
+                            service: service_key
                         }
+                        // Fixup for built-ins, no origin
+                        if (one_service.endpoint && one_service.endpoint.indexOf("resource://") == 0) svcObj.url = one_service.endpoint;
+
+                        if (!installedServices.hasOwnProperty(service_key)) {
+                          dump("creating list for " + service_key + "\n");
+                            installedServices[service_key] = [];
+                        } else {
+                            // does this svc already exist in the list (supports list *update*)?
+                            for (var j = 0; j < installedServices[service_key].length; j++) {
+                                if (svcObj.url === installedServices[service_key].url) {
+                                    break;
+                                }
+                            }
+                            if (j != installedServices[service_key].length) continue;
+                        }
+                        installedServices[service_key].push(svcObj);
                     }
-                    /*
-                    if (typeof s === 'object') {
-                        // key is name of service, value is *path* to it
-                        
-                        dump("iterating services of " + apps[app].manifest.name + "\n");
-                        
-                        for (var i = 0; i < s.length; i++) {
-                            // get the first key in obj.
-                            for (var k in s[i]) break;
-                            dump("got key " +k + "\n");
-
-                            // for now we'll just build up objects which hold data about
-                            // services.  real soon now, they'll become more proper
-                            // abstractions
-                            var svcObj = {
-                                url: app + s[i][k],
-                                app: app,
-                                manifest: apps[app].manifest
-                            };
-                            // Fixup for built-ins:
-                            if (s[i][k].indexOf("resource://") == 0) svcObj.url = s[i][k];
-                            
-                            if (!installedServices.hasOwnProperty(k)) {
-                              dump("creating list for " + k + "\n");
-                                installedServices[k] = [];
-                            } else {
-                                // does this svc already exist in the list (supports list *update*)?
-                                for (var j = 0; j < installedServices[k].length; j++) {
-                                    if (svcObj.url === installedServices[k].url) {
-                                        break;
-                                    }
-                                }
-                                if (j != installedServices[k].length) continue;
-                            }
-                            installedServices[k].push(svcObj);
-                        }
-
-                    }*/
                 }
             }
             if (typeof cb === 'function') cb();
@@ -528,7 +486,7 @@ Repo = (function() {
             let found = false;
             for (var app in apps) {
                 if (app == id) {
-                    cb(new App(apps[app]));
+                    cb(apps[app]);
                     found = true;
                 }
             }
