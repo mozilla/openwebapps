@@ -45,6 +45,7 @@ var console = {
 
 var {Manifest} = require("./manifest");
 var {URLParse} = require("./urlmatch");
+var {NativeShell} = require("./nativeshell");
 
 // We want to use as much from the cross-platform repo implementation
 // as possible, but we do need to override a few methods.
@@ -237,6 +238,19 @@ FFRepoImpl.prototype = {
                           hidePostInstallPrompt: args.hidePostInstallPrompt ? args.hidePostInstallPrompt : false
                         })
                     );
+                    
+                    // create OS-local application
+                    /*
+                    dump("APPS | jetpack.install | Getting app by URL now\n");
+                    Repo.getAppById(origin, function(app) {
+                        dump("APPS | jetpack.install | getAppByUrl returned " + app + "\n");
+                        if (app) {
+                          dump("APPS | jetpack.install | Calling NativeShell.CreateNativeShell\n");
+                          NativeShell.CreateNativeShell(app);
+                        }
+                    });
+                    */
+
                     if (args.onsuccess) {
                         (1,args.onsuccess)();
                     }
@@ -282,6 +296,7 @@ FFRepoImpl.prototype = {
             origin.host == "myapps.mozillalabs.com" ||
             origin.host == "stage.myapps.mozillalabs.com" ||
             origin.host == "apps.mozillalabs.com" ||
+            origin.host == "localhost:8010" ||
             origin.toString().substr(0, 10) == "about:apps" ||
             origin.toString().substr(0, 9) == "resource:"
             )

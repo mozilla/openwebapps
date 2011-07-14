@@ -121,19 +121,36 @@ WARNING: the Flickr Connector and <tt>image.get</tt> activity still
 uses the old mechanism of directly receiving invocation via
 postMessage().
 
-    navigator.apps.services.registerHandler('login', 'doLogin', function(args, cb) {
-       // perform login
-    
-       cb({'status':'notloggedin'});
+    navigator.apps.services.registerHandler('auth', 'getUser', function(cb) {
+       // return basic information about currently logged-in user
+       cb({
+         'id': 'jack',
+         'display': '@jack',
+         'full_name': 'Jack D'
+         });
     });
-    
-    navigator.apps.services.registerHandler('link.share', 'doShare', function(args, cb) {
+
+    navigator.apps.services.registerHandler('link.share', 'doShare', function(args, user, cb) {
+       // args is an object of named arguments coming from the caller,
+       // e.g. title of the page, message typed, etc.
+       // 
+       // user is the object from getUser() above which is expected to be the account
+       // to which the link is shared. This should contain at least {'id':...}
+       //
+       // The service handler's job is to ensure that
+       // the link is shared only as this account. For example, if something changed
+       // between the getUser() call and this call, the service provider should 
+       // not share the link
+
        // share the link
        twitter.share_link(args.url, args.title);
        
        // send back the number of tweets
        twitter.getNumTweets(args.url, function(num){
-         cb({numTweets: num});
+         cb({result: 'success', numTweets: num});
        });
+
+       // or if there is an error
+       cb({result: 'error', reason: 'wrong user logged in'});
     });
 

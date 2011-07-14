@@ -1,2 +1,4 @@
 #!/bin/bash
-zip -9r openwebapps_bundle.xpi openwebapps.xpi ../faker/faker.xpi install.rdf
+cp ../faker/faker.xpi .
+zip -9r openwebapps_bundle.xpi openwebapps.xpi faker.xpi install.rdf
+rm faker.xpi
