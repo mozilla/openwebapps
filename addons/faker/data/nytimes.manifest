@@ -11,6 +11,14 @@
        "services" : {
           "link.transition" : {
           }
+       },
+       "menubar": {
+         "New York Times": {
+           "About": "showAboutPopup"
+         },
+         "Tools": {
+           "Change Layout": "changeLayoutPopup"
+         }
        }
     }
 }
