@@ -338,9 +338,15 @@ openwebappsUI.prototype = {
 							let tab = tabs.activeTab
 							let taburl = tab.url;
 							self._repo.launch(page, taburl);
-							console.log("about to close the tab");
-							tab.close();
-							console.log("tab closed");
+							let timers = require("timers");
+							let closeTab = function() {
+								if (tabs.length > 1) {
+									tab.close();
+								} else {
+									timers.setTimeout(closeTab, 100);
+								}
+							}
+							closeTab();
                         },
                         onerror: function(res) {
                           console.log("An error occured while attempting to install an application: " + JSON.stringify(res));

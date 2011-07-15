@@ -389,47 +389,43 @@ FFRepoImpl.prototype = {
                     brs.selectedTab = tab;
                     ss.setTabValue(tab, "appURL", origin);
                     bar.setAttribute("collapsed", true);
-
-					console.log("added a tab at "+app.launch_url);
 					
 					//when clicking install after being told 'app available',
 					//sometimes a user will have been not on the landing page,
 					//so we should try to launch them into the page they were on
 					//but now in the app experience
 					if (app.services && app.services['link.transition']) {
-						console.log("app has services");
-						
 						let launchService = function(e) {
-							console.log("about to launch "+url);
                         	try {
 	                            var services = require("./services");
 	                            var serviceInterface = new services.serviceInvocationHandler(recentWindow);
-	                            serviceInterface.invokeService(brs.contentWindow.wrappedJSObject,
-	                                                           'link.transition', 'transition',
-	                                                           {'url' : url},
-	                                                           function(result) {});
+								//TODO: this feels hacky. see line 425 for discussion
+								if (brs.contentWindow.wrappedJSObject._MOZ_SERVICES != undefined) {
+									//console.log("services were ready");
+		                            serviceInterface.invokeService(brs.contentWindow.wrappedJSObject,
+		                                                           'link.transition', 'transition',
+		                                                           {'url' : url},
+		                                                           function(result) {});
+								}
+								else {
+									//console.log("services weren't ready");
+									recentWindow.setTimeout(launchService, 500, false);	
+								}
 							} catch (e) {
                             	console.log(e);
                         	}
+							recentWindow.document.removeEventListener("DOMContentLoaded", launchService, false);
 						};
-						let launchLater = function() {
-							console.log("about to set timeout");
-							recentWindow.setTimeout(launchService, 2000, false);
-						}
+						
 						// FIXME: for some reason using "load" here instead of "DOMContentLoaded" makes it never fire
 						// same with using let tabwindow = brs.getBrowserForTab(tab).contentWindow.wrappedJSObject;
 						// (and tabwindow.document) instead of recentWindow...
 						// try em out yourself i guess, as we may have missed one combination of options.
-						recentWindow.document.addEventListener("DOMContentLoaded", launchLater, false);
-						
-						//var newTabBrowser = gBrowser.getBrowserForTab(gBrowser.addTab("http://www.google.com/"));
-						//	newTabBrowser.addEventListener("load", function () {
-						//	  newTabBrowser.contentDocument.body.innerHTML = "<div>hello world</div>";
-						//	}, true);
+						//this problem is what necessitates the above check on ._MOZ_SERVICES != undefined
+						recentWindow.document.addEventListener("DOMContentLoaded", launchService, false);
 						
 						//let tabwindow = brs.getBrowserForTab(tab).contentWindow.wrappedJSObject;
 						//tabwindow.document.addEventListener("DOMContentLoaded", launchLater, false);
-						console.log("added event listener");
                     } else {
                         brs.loadURI(url, null, null); // Referrer is broken
                     }
