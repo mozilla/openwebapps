@@ -83,6 +83,11 @@ body {
       text-shadow: black 1px 1px;
 }
 
+
+.liftedApp {
+  box-shadow: 2px 6px 10px 2px rgb(0, 0, 0);
+  background-color: rgb(40, 180, 80) !important;
+}
       
 .highlighted {
     background-color: rgba(255, 140, 60, 0.66) !important;

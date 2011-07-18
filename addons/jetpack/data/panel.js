@@ -286,7 +286,7 @@ function getCurrentPage() {
     if (_isDraggingApp) {
       //console.log("app dragged to slot: " + _appDropSlot + " offset: " + (_appDropSlot * appBoxWidth));
       //dragged an app, so we need to align it to the slot
-      
+      _appIcon.removeClass("liftedApp");
       var rearrangedApps = moveAppsAround(_appHole, _appDropSlot);
       rearrangedApps[_appDropSlot] = _draggedApp;
       gDashboardState.pages[curPage] = rearrangedApps;
@@ -357,8 +357,7 @@ function getCurrentPage() {
         goToPage(snapPage, true);
       }
     }
-          
-          
+               
     _mouseDownTime = 0;
   }
   
@@ -366,11 +365,12 @@ function getCurrentPage() {
   function _onMouseHold(e) {
     if (_draggedApp) {
       _appIcon.removeClass("highlighted");
-      _appIcon = undefined;
+      _appIcon.addClass("liftedApp");
       _appOffsetX = extractNumber(gAppItemCache[_draggedApp].offset().left);
       _appOffsetY = extractNumber(gAppItemCache[_draggedApp].offset().top);
       _isDraggingApp = true;
       _appOldZ = gAppItemCache[_draggedApp].css('z-index');
+
       gAppItemCache[_draggedApp].css('z-index', 10000);
       _appHole = Math.floor(gAppItemCache[_draggedApp].position().left / appBoxWidth);
       
