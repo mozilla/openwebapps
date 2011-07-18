@@ -164,6 +164,7 @@ openwebappsUI.prototype = {
           onShow: function() { self._repo.list(function(apps) {
                                 thePanel.port.emit("theList", apps);
                                 }); },
+          position: "topcenter bottomright"
         });      
         
         thePanel.port.on("getList", function(arg) {
