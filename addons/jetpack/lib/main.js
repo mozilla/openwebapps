@@ -68,6 +68,7 @@ function openwebapps(win, getUrlCB)
     tmp = require("./injector");
     tmp.InjectorInit(this._window); 
     this._inject();
+    win.appinjector.inject();
 
     tmp = require("./services");
     this._services = new tmp.serviceInvocationHandler(this._window);
@@ -75,7 +76,7 @@ function openwebapps(win, getUrlCB)
     tmp = {};
     Cu.import("resource://services-sync/main.js", tmp);
     if (tmp.Weave.Status.ready) {
-        registerSyncEngine();
+        this._registerSyncEngine();
     } else {
         tmp = {};
         Cu.import("resource://services-sync/util.js", tmp);
@@ -106,6 +107,7 @@ function openwebapps(win, getUrlCB)
 
         let cUrl = url.URLParse(tab.url).originOnly().toString();
         let record = simple.storage.links[cUrl];
+        dump("APPS | onTabActivate | Checking url " + cUrl + " - found stored record " + JSON.stringify(record) + "\n");
         if (record) self.offerInstallIfNeeded(cUrl);
     });
 
@@ -260,29 +262,30 @@ openwebapps.prototype = {
         });
     },
     
-    observe: function(subject, topic, data) {
-        function registerSyncEngine() {
-            let tmp = {};
-            Cu.import("resource://services-sync/main.js", tmp);
-
-            tmp.AppsEngine = require("./sync").AppsEngine;
+    _registerSyncEngine: function() {
+        /*
+        let tmp = {};
+        Cu.import("resource://services-sync/main.js", tmp);
+        tmp.AppsEngine = require("./sync").AppsEngine;
             
-            if (!tmp.Weave.Engines.get("apps")) {
-                tmp.Weave.Engines.register(tmp.AppsEngine);
-                unloaders.push(function() {
-                    tmp.Weave.Engines.unregister("apps");
-                });
-            }
-            
-            let prefname = "services.sync.engine.apps";
-            if (Services.prefs.getPrefType(prefname) ==
-                Ci.nsIPrefBranch.PREF_INVALID) {
-                Services.prefs.setBoolPref(prefname, true);    
-            }
+        if (!tmp.Weave.Engines.get("apps")) {
+            tmp.Weave.Engines.register(tmp.AppsEngine);
+            unloaders.push(function() {
+                tmp.Weave.Engines.unregister("apps");
+            });
         }
         
+        let prefname = "services.sync.engine.apps";
+        if (Services.prefs.getPrefType(prefname) ==
+            Ci.nsIPrefBranch.PREF_INVALID) {
+            Services.prefs.setBoolPref(prefname, true);    
+        }
+        */
+    },
+
+    observe: function(subject, topic, data) {
         if (topic == "weave:service:ready") {
-            registerSyncEngine();
+            this._registerSyncEngine();
         } else if (topic == "openwebapp-installed") {
 //             let installData = JSON.parse(data)
 //             this._ui._renderDockIcons(installData.origin);
@@ -371,6 +374,7 @@ openwebapps.prototype = {
                       // and ask the store for details:
                       self._services.invokeService( frame.contentWindow.wrappedJSObject, "appstore", "getOffer", {domain:cUrl}, function(result)
                       {
+                        //dump("APPS | appstore.getOffer service | Got getOffer result for " + page + ": " + JSON.stringify(result) + "\n");
                         simple.storage.links[page].offer = result;
                         self._ui._showPageHasStoreApp(page, self);
                       }, true /* is privileged */);

@@ -45,6 +45,7 @@ var console = {
 
 var {Manifest} = require("./manifest");
 var {URLParse} = require("./urlmatch");
+var {NativeShell} = require("./nativeshell");
 
 // We want to use as much from the cross-platform repo implementation
 // as possible, but we do need to override a few methods.
@@ -237,6 +238,19 @@ FFRepoImpl.prototype = {
                           hidePostInstallPrompt: args.hidePostInstallPrompt ? args.hidePostInstallPrompt : false
                         })
                     );
+                    
+                    // create OS-local application
+                    /*
+                    dump("APPS | jetpack.install | Getting app by URL now\n");
+                    Repo.getAppById(origin, function(app) {
+                        dump("APPS | jetpack.install | getAppByUrl returned " + app + "\n");
+                        if (app) {
+                          dump("APPS | jetpack.install | Calling NativeShell.CreateNativeShell\n");
+                          NativeShell.CreateNativeShell(app);
+                        }
+                    });
+                    */
+
                     if (args.onsuccess) {
                         (1,args.onsuccess)();
                     }
@@ -282,6 +296,7 @@ FFRepoImpl.prototype = {
             origin.host == "myapps.mozillalabs.com" ||
             origin.host == "stage.myapps.mozillalabs.com" ||
             origin.host == "apps.mozillalabs.com" ||
+            origin.host == "localhost:8010" ||
             origin.toString().substr(0, 10) == "about:apps" ||
             origin.toString().substr(0, 9) == "resource:"
             )
@@ -366,14 +381,54 @@ FFRepoImpl.prototype = {
             if (!found) {
                 let recentWindow = wm.getMostRecentWindow("navigator:browser");
                 if (recentWindow) {
-                    let tab = recentWindow.gBrowser.addTab(url);
-
+					let brs = recentWindow.gBrowser;
+                    let tab = brs.addTab(app.launch_url);
                     let bar = recentWindow.document.getElementById("nav-bar");
 
-                    recentWindow.gBrowser.pinTab(tab);
-                    recentWindow.gBrowser.selectedTab = tab;
+                    brs.pinTab(tab);
+                    brs.selectedTab = tab;
                     ss.setTabValue(tab, "appURL", origin);
                     bar.setAttribute("collapsed", true);
+					
+					//when clicking install after being told 'app available',
+					//sometimes a user will have been not on the landing page,
+					//so we should try to launch them into the page they were on
+					//but now in the app experience
+					if (app.services && app.services['link.transition']) {
+						let launchService = function(e) {
+                        	try {
+	                            var services = require("./services");
+	                            var serviceInterface = new services.serviceInvocationHandler(recentWindow);
+								//TODO: this feels hacky. see line 425 for discussion
+								if (brs.contentWindow.wrappedJSObject._MOZ_SERVICES != undefined) {
+									//console.log("services were ready");
+		                            serviceInterface.invokeService(brs.contentWindow.wrappedJSObject,
+		                                                           'link.transition', 'transition',
+		                                                           {'url' : url},
+		                                                           function(result) {});
+								}
+								else {
+									//console.log("services weren't ready");
+									recentWindow.setTimeout(launchService, 500, false);	
+								}
+							} catch (e) {
+                            	console.log(e);
+                        	}
+							recentWindow.document.removeEventListener("DOMContentLoaded", launchService, false);
+						};
+						
+						// FIXME: for some reason using "load" here instead of "DOMContentLoaded" makes it never fire
+						// same with using let tabwindow = brs.getBrowserForTab(tab).contentWindow.wrappedJSObject;
+						// (and tabwindow.document) instead of recentWindow...
+						// try em out yourself i guess, as we may have missed one combination of options.
+						//this problem is what necessitates the above check on ._MOZ_SERVICES != undefined
+						recentWindow.document.addEventListener("DOMContentLoaded", launchService, false);
+						
+						//let tabwindow = brs.getBrowserForTab(tab).contentWindow.wrappedJSObject;
+						//tabwindow.document.addEventListener("DOMContentLoaded", launchLater, false);
+                    } else {
+                        brs.loadURI(url, null, null); // Referrer is broken
+                    }
                 } else {
                     // This is a very odd case: no browser windows are open, so open a new one.
                     var new_window = aWindow.open(url);

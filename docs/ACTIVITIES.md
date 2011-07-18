@@ -1,24 +1,28 @@
-### Service Discovery
+# Web Activities
 
-Open Web Apps Service Discovery allows for opportunistic connections
-between web components. For example, a user can share, via Firefox
-Share, a link via whichever sharing service she chooses.
+Web Activities allows for opportunistic connections between web
+components. For example, a user can share a web page via whichever
+sharing service she chooses, not just the ones embedded in a given web
+page.
 
 We can distinguish three components:
 
 * Instigator/Consumer: the trigger that begins the service-discovery
-  activity. The F1 share button is an example, as is web content
-  invoking navigator.apps.* service invocation.
+  activity. Some triggers may be in web content, others may be in
+  browser add-ons (e.g. buttons). 
 
 * Mediator: the user interface that guides the user through service
-  selection for the specific function. F1 is an example of a service
-  dashboard, as is the image-get UI.
+  selection for the specific function. Firefox Share is an example of
+  a service dashboard, as is the image-get UI.
 
-* App: a single service provider that has registered for the interface
-  and, when its corresponding URL is loaded in an IFRAME, responds to
-  postMessage() API calls.
+* App: a single service (activity) provider that has registered for
+  the interface and, when its corresponding URL is loaded in an
+  IFRAME, registers appropriate handlers for the individual calls
+  expected in the context of a given activity.
 
 ## Instigating / Invoking
+
+(We may change this to navigator.apps.startActivity...)
 
 The instigator begins the process as follows:
 
@@ -43,6 +47,8 @@ arguments to the invocation.
 
 
 ## Service Mediator
+
+(WARNING: This section is entirely theoretical, nothing has been built yet.)
 
 The mediator is web content that, upon loading, knows that the user
 has invoked the service. The mediator must now help the user pick a
@@ -107,19 +113,44 @@ have signalled readiness.
 
 ## App / Service Provider
 
-    navigator.apps.services.registerHandler('login', 'doLogin', function(args, cb) {
-       // perform login
-    
-       cb({'status':'notloggedin'});
+When a service provider's endpoint is loaded in an IFRAME, it should
+register the service handlers for handling messages of particular
+activities.
+
+WARNING: the Flickr Connector and <tt>image.get</tt> activity still
+uses the old mechanism of directly receiving invocation via
+postMessage().
+
+    navigator.apps.services.registerHandler('auth', 'getUser', function(cb) {
+       // return basic information about currently logged-in user
+       cb({
+         'id': 'jack',
+         'display': '@jack',
+         'full_name': 'Jack D'
+         });
     });
-    
-    navigator.apps.services.registerHandler('link.share', 'doShare', function(args, cb) {
+
+    navigator.apps.services.registerHandler('link.share', 'doShare', function(args, user, cb) {
+       // args is an object of named arguments coming from the caller,
+       // e.g. title of the page, message typed, etc.
+       // 
+       // user is the object from getUser() above which is expected to be the account
+       // to which the link is shared. This should contain at least {'id':...}
+       //
+       // The service handler's job is to ensure that
+       // the link is shared only as this account. For example, if something changed
+       // between the getUser() call and this call, the service provider should 
+       // not share the link
+
        // share the link
        twitter.share_link(args.url, args.title);
        
        // send back the number of tweets
        twitter.getNumTweets(args.url, function(num){
-         cb({numTweets: num});
+         cb({result: 'success', numTweets: num});
        });
+
+       // or if there is an error
+       cb({result: 'error', reason: 'wrong user logged in'});
     });
 

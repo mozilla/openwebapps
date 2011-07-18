@@ -1,10 +1,8 @@
-### App Manifest
+# App Manifest
 
 Production Manifest documentation lives at: https://developer.mozilla.org/en/OpenWebApps/The_Manifest
 
 Here we document the in-development state of the manifest.
-
-THIS IS NOT YET IMPLEMENTED IN CODE. For now, this is documentation of how we think the manifest *should* look.
 
 ## Changes
 

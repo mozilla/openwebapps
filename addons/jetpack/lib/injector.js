@@ -173,10 +173,24 @@ function InjectorInit(window) {
         //dump("injecting api "+this.providers[i].name+"\n");
         Injector._inject(aSubject, this.providers[i]);
       }
+    },
+
+    inject: function() {
+      // arrange to setup windows created in the future...
+      window.appinjector.onLoad();
+      window.addEventListener("unload", function() window.appinjector.onUnload(), false);
+      // and setup Windows which exist now.
+      let browsers = window.document.querySelectorAll("tabbrowser");
+      for (let i = 0; i < browsers.length; i++) {
+        for (let j = 0; j < browsers[i].browsers.length; j++) {
+          let cw = browsers[i].browsers[j].contentWindow;
+          if (cw) {
+            window.appinjector.observe(cw);
+          }
+        }
+      }
     }
   };
-  window.appinjector.onLoad();
-  window.addEventListener("unload", function() window.appinjector.onUnload(), false);
 }
 
 exports.InjectorInit = InjectorInit;
