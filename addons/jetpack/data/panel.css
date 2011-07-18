@@ -38,10 +38,9 @@ body {
 }
 
 
-.page {
+.page { 
   display: inline-block; 
-  width: 100%;
-  height: 100%;
+  position: relative;
   vertical-align: top;
   overflow: hidden;
 }
@@ -55,9 +54,6 @@ body {
   left: 2px;
   width: 12px;
   height: 100px;
-  
-  display: inline-block;
-  float: left;
 }
 
 .pageRight {
@@ -70,12 +66,10 @@ body {
   
   width: 12px;
   height: 100px;
-  display: inline-block;
 }
 
 .appDisplayFrame {
-  display: inline-block;
-  border: 0px;
+  position: absolute;
 }
 
 
