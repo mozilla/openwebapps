@@ -94,7 +94,7 @@ function render()
             }
           }
         }
-        renderObj("", theApp, box);
+        renderObj("", theApp.manifest, box);
         
       }
       else if (params["viewraw"]) {
