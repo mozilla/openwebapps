@@ -7,7 +7,7 @@
           
           
   <script type="text/javascript">
-    if (self.port == undefined) {
+    if (!window.self || !self.port) {
     //we are running in regular web page mode, so add the script includes
     var head = document.getElementsByTagName("head")[0];
     
@@ -25,7 +25,6 @@
     pnl.setAttribute("type", "text/javascript");
     pnl.setAttribute("src", "panel.js");
     head.appendChild(pnl);
-
     }
   </script>
   

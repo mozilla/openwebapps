@@ -35,6 +35,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 const {Cc, Ci, Cm, Cu} = require("chrome");
+const tabs = require("tabs");
 const widgets = require("widget");
 const simple = require("simple-storage");
 const url = require("./urlmatch");
@@ -165,6 +166,7 @@ openwebappsUI.prototype = {
           onShow: function() { self._repo.list(function(apps) {
                                 thePanel.port.emit("theList", apps);
                                 }); },
+          position: "topcenter bottomright"
         });      
         
         thePanel.port.on("getList", function(arg) {
@@ -211,8 +213,10 @@ openwebappsUI.prototype = {
   },
 
     _hideOffer: function() {
-        if (this._offerAppPanel && this._offerAppPanel.isShowing)
-            this._offerAppPanel.hide();
+        if (this._offerAppPanel) {
+          this._offerAppPanel.destroy();
+          delete this._offerAppPanel;
+        }
     },
 
     _showPageHasApp: function(page, owa) { // XX I'm not happy that I need to pass in owa here, but I need it for the purchase activity. Refactor?
@@ -220,47 +224,60 @@ openwebappsUI.prototype = {
         if (!link.show || this._installInProgress)
             return;
     
-        if (!this._offerAppPanel) {
-            this._offerAppPanel = require("panel").Panel({
-                contentURL: require("self").data.url("offer.html"),
-                contentScript: 'let actions = ["yes", "no", "never"];' +
-                    'for (let i = 0; i < actions.length; i++) { ' +
-                    '   document.getElementById(actions[i]).onclick = ' +
-                    '       (function(i) { return function() { ' +
-                    '           self.port.emit(actions[i]);' +
-                    '       }})(i); ' +
-                    '}' +
-                    'function renderOffer(offer) {'+
-                    '  var s="";'+
-                    '  if (offer.purchased) {' +
-                    '     s += "You have already purchased this application.  Reinstall now?";' +
-                    '  }  else { '+
-                    '    s += "Purchase for $" + offer.price + "?";'+
-                    '  }'+
-                    '  document.getElementById("store_offer").innerHTML = s;'+
-                    '  document.getElementById("store_offer").style.display = "block";'+
-                    '  document.getElementById("store_progress").style.display = "none";'+
-                    ' '+
-                    '  var acct="";'+
-                    '  if (offer.account) {'+
-                    '    acct = "Logged in to " + offer.storeName + " as <i>" + offer.account + "</i>";'+
-                    '  } else {'+
-                    '    acct = "You will be asked to log in to " + offer.storeName + " if you install.";'+
-                    '  }'+
-                    '  document.getElementById("login_status").innerHTML = acct;'+
-                    '  document.getElementById("login_status").style.display = "block";'+
-                    '}'+
-                    'self.port.on("store", function(data) {'+
-                    '  document.getElementById("self_published").style.display="none";' +
-                    '  document.getElementById("store").style.display="block";' +
-                    '  if (data.offer) { renderOffer(data.offer) };' +
-                    '});'
-            });
+        if (this._offerAppPanel) {
+            this._offerAppPanel.destroy();
+            delete this._offerAppPanel;
         }
-        if (this._offerAppPanel.isShowing) return;
+        this._offerAppPanel = require("panel").Panel({
+            height: 180,
+            width: 300,
+            contentURL: require("self").data.url("offer.html"),
+            contentScript: 'let actions = ["yes", "no", "never"];' +
+                'for (let i = 0; i < actions.length; i++) { ' +
+                '   document.getElementById(actions[i]).onclick = ' +
+                '       (function(i) { return function() { ' +
+                '           self.port.emit(actions[i]);' +
+                '       }})(i); ' +
+                '}' +
+                'self.port.on("setup", function(data) {'+
+                'document.getElementById("store_offer").innerHTML = "";'+
+                'document.getElementById("self_published").style.display = "block";'+
+                'document.getElementById("store").style.display = "none";'+
+                'document.getElementById("store_offer").style.display = "block";'+
+                'document.getElementById("store_progress").style.display = "block";'+
+                'document.getElementById("login_status").style.display = "none";'+
+                '});'+
+                'function renderOffer(offer) {'+
+                '  var s="";'+
+                '  if (offer.purchased) {' +
+                '     s += "You have already purchased this application.  Reinstall now?";' +
+                '  }  else { '+
+                '    s += "Purchase for $" + offer.price + "?";'+
+                '  }'+
+                '  document.getElementById("store_offer").innerHTML = s;'+
+                '  document.getElementById("store_offer").style.display = "block";'+
+                '  document.getElementById("store_progress").style.display = "none";'+
+                ' '+
+                '  var acct="";'+
+                '  if (offer.account) {'+
+                '    acct = "Logged in to " + offer.storeName + " as <i>" + offer.account + "</i>";'+
+                '  } else {'+
+                '    acct = "You will be asked to log in to " + offer.storeName + " if you install.";'+
+                '  }'+
+                '  document.getElementById("login_status").innerHTML = acct;'+
+                '  document.getElementById("login_status").style.display = "block";'+
+                '}'+
+                'self.port.on("store", function(data) {'+
+                '  document.getElementById("self_published").style.display="none";' +
+                '  document.getElementById("store").style.display="block";' +
+                '  if (data.offer) { renderOffer(data.offer) };' +
+                '});'
+        });
 
         /* Setup callbacks */
         let self = this;
+        this._offerAppPanel.port.emit("setup", {});
+
         this._offerAppPanel.port.on("yes", function() {
             dump("APPS | ui.showPageHasApp.onYes | User clicked Yes\n");
             self._installInProgress = true;
@@ -288,13 +305,15 @@ openwebappsUI.prototype = {
                 // indicated landing page.
                 if (link.offer.purchaseURL) {
                   dump("APPS | ui.showPageHasApp.onYes | The user is not logged in, but there's a purchaseURL - creating new tab\n");
+                  
                   let wm = Cc["@mozilla.org/appshell/window-mediator;1"]
                           .getService(Ci.nsIWindowMediator);
                   let recentWindow = wm.getMostRecentWindow("navigator:browser");
                   if (recentWindow) {
-                      let tab = recentWindow.gBrowser.addTab(link.offer.purchaseURL);
-                      recentWindow.gBrowser.selectedTab = tab;
-                    }
+                    let tab = recentWindow.gBrowser.addTab(link.offer.purchaseURL);
+                    recentWindow.gBrowser.selectedTab = tab;
+                    link.purchaseTab = tab;
+                  }
                 } else {
                   dump("APPS | ui.showPageHasApp.onYes | The user is not logged in, and there is no purchaseURL - we're done\n");
                 }
@@ -315,6 +334,20 @@ openwebappsUI.prototype = {
                         onsuccess: function() {
                             self._installInProgress = false;
                             //simple.storage.links[page].show = false;
+							//if i just installed the app, i want it to become an app!
+							//pass in the current URL in case i notice the popup while in deep content
+							let tab = tabs.activeTab
+							let taburl = tab.url;
+							self._repo.launch(page, taburl);
+							let timers = require("timers");
+							let closeTab = function() {
+								if (tabs.length > 1) {
+									tab.close();
+								} else {
+									timers.setTimeout(closeTab, 100);
+								}
+							}
+							closeTab();
                         },
                         onerror: function(res) {
                           console.log("An error occured while attempting to install an application: " + JSON.stringify(res));
