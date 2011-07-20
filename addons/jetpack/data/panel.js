@@ -224,32 +224,7 @@ function getCurrentPage() {
             }
           }
         }
-      
-      }
-      
-//       if (_appDropSlot > 5) _appDropSlot = 5;
-//       if (_appDropSlot < 0) _appDropSlot = 0;
-//       if (_appDropSlot != _appHole) {      
-//         var moveDir = _appHole - _appDropSlot;
-//        // if (_appDropSlot < _appHole) { moveDir = _appDropSlot - _appHole; }
-//         
-//         var findPos = (_appDropSlot * appBoxWidth);
-//              
-//         var curPageName = "#page" + getCurrentPage();
-//   
-//         var appLeft;
-//         var apps = $(curPageName).children('.appDisplayFrame');
-//         jQuery.each(apps, function(i, a) {
-//           if ($(a) != _draggedApp) {
-//             appLeft = $(a).position().left;
-//             if (appLeft == findPos) {
-//               $(a).animate({left: appLeft + (moveDir * appBoxWidth)}, 100);
-//               _appHole = _appDropSlot;
-//             }
-//           }
-//         });
-//       }
-      
+      }      
     } else {
       // this is the page scrolling code
       var newPos = (_dashOffsetX + e.clientX - _mouseDownX) + 'px';
@@ -290,6 +265,7 @@ function getCurrentPage() {
       var rearrangedApps = moveAppsAround(_appHole, _appDropSlot);
       rearrangedApps[_appDropSlot] = _draggedApp;
       gDashboardState.pages[curPage] = rearrangedApps;
+      saveDashboardState(gDashboardState);
       
       gAppItemCache[_draggedApp].animate({left: (_appDropSlot * appBoxWidth)}, 100);
       gAppItemCache[_draggedApp].css('z-index', _appOldZ);
@@ -321,7 +297,7 @@ function getCurrentPage() {
         _appIcon = undefined;
   
         var origin32 = $(e.target.parentNode).attr("origin32");
-        if (self.port != undefined) {
+        if (self && self.port) {
           self.port.emit("launch", Base32.decode(origin32));
         } else {
           navigator.apps.mgmt.launch(Base32.decode(origin32));
@@ -394,16 +370,18 @@ function getCurrentPage() {
 
 function onFocus(event)
 {
-  if (self.port == undefined) {
+  if (!self || !self.port) {
   updateDashboard();
   }
 }
 
 
-
-
-function saveDashboardState( callback ) {
-  //navigator.apps.mgmt.saveState(gDashboardState, callback);
+function saveDashboardState(state) {
+  if (self && self.port) {
+    self.port.emit("saveState", state);
+  } else {
+    navigator.apps.mgmt.saveState(gDashboardState, function() {console.log("dashboard state saved");} );
+  }
 }
 
 
@@ -428,24 +406,47 @@ function keyCount(obj) {
 
 
 
-function checkSavedData(save) {
-  //do a basic structure check on our saved data
-  var emptyState = {};
-
-  if (save && (typeof save == 'object')) {
-    if (save.pages && $.isArray(save.pages)) return save;
-  }
-  return emptyState;
-}
+// function checkSavedData(save) {
+//   //do a basic structure check on our saved data
+//   var emptyState = {};
+// 
+//   if (save && (typeof save == 'object')) {
+//     if (save.pages && $.isArray(save.pages)) return save;
+//   }
+//   return emptyState;
+// }
 
 function updateDashboard() {
-  if (self.port == undefined) {
+  if (!self || !self.port) {
     navigator.apps.mgmt.list( function (allApps) {
     redrawDashboard(allApps);
   });
   }
 }
 
+
+function updateState(newState) {
+  gDashboardState = newState?newState:{};
+  
+  if (gDashboardState.pages == undefined) {
+    //create the right number of pages to hold everything
+    gDashboardState.pages = [];
+    
+    //put up to 6 apps into each page, or as many as we have
+    var a=0;
+    for (origin in gApps) {
+      if (gDashboardState.pages[Math.floor(a/6)] == undefined) { gDashboardState.pages[Math.floor(a/6)] = []; }
+      gDashboardState.pages[Math.floor(a/6)][(a % 6)] = gApps[origin].origin32;
+      a++;
+    }
+    
+    //save this as the new state
+    saveDashboardState(gDashboardState);
+  }
+    
+  numPages = gDashboardState.pages.length;
+  layoutPages();
+}
 
 //this is the primary UI function.  It loads the latest app list from disk, the latest dashboard state from disk,
 // and then proceeds to bring the visual depiction into synchrony with the data, with the least visual interruption.
@@ -470,32 +471,39 @@ function redrawDashboard( listOfInstalledApps ) {
           }
 
 
+          if (self && self.port) {
+            self.port.emit("loadState");
+          } else {
+            navigator.apps.mgmt.loadState(updateState);
+          }
+
+
           //now, in the list callback, load the dashboard state
-//           navigator.apps.mgmt.loadState( function (dashState) 
+          // navigator.apps.mgmt.loadState( function (dashState) 
 //           {
 //               gDashboardState = checkSavedData(dashState);
 //               
 //               //if we get an empty dashboard state here, then we will just stuff everything into pages as we find them
-//               if (gDashboardState.pages == undefined) {
+//                if (gDashboardState.pages == undefined) {
+//                
+//                   //create the right number of pages to hold everything
+//                   gDashboardState.pages = [];
+//                 
+//                   //put up to 6 apps into each page, or as many as we have
+//                   var a=0;
+//                   for (origin in gApps) {
+//                     if (gDashboardState.pages[Math.floor(a/6)] == undefined) { gDashboardState.pages[Math.floor(a/6)] = []; }
+//                     gDashboardState.pages[Math.floor(a/6)][(a % 6)] = gApps[origin].origin32;
+//                     a++;
+//                   }
+//                 //save this as the new state
+//                 saveDashboardState(gDashboardState);
+//               }
 //               
-//                 //create the right number of pages to hold everything
-               gDashboardState.pages = [];
-                
-                //put up to 6 apps into each page, or as many as we have
-                var a=0;
-                for (origin in gApps) {
-                  if (gDashboardState.pages[Math.floor(a/6)] == undefined) { gDashboardState.pages[Math.floor(a/6)] = []; }
-                  gDashboardState.pages[Math.floor(a/6)][(a % 6)] = gApps[origin].origin32;
-                  a++;
-                }
-                //save this as the new state
-                //saveDashboardState();
-              //}
-              
-             numPages = gDashboardState.pages.length;
-             layoutPages();
-  
-//            });                      
+//              numPages = gDashboardState.pages.length;
+//              layoutPages();
+//   
+//             } //);                      
 
 }
 
@@ -649,6 +657,10 @@ if (self && self.port) {
   self.port.on("theList", redrawDashboard);
 } else {
   updateDashboard();
+}
+
+if (self && self.port) {
+  self.port.on("theState", updateState);
 }
 
 //set up the mouse handlers for html page loads
