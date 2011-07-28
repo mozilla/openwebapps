@@ -13,11 +13,6 @@ body {
 }
 
 
-.container {
-  width: 1000px;
-  display: inline-block;
-}
-
 
 .dashboardclipper {
   position: absolute;
@@ -29,12 +24,16 @@ body {
   width: 720;
   height: 110;
   clip: rect(0px, 720px, 110px, 0px);
-  float: left;
 }
 
 .dashboard {
   position: absolute;
+  margin: 0px;
+  border: 0px;
+  padding: 0px;
+
   overflow: hidden;
+  height: 110;
 }
 
 
