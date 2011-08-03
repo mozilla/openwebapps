@@ -9,7 +9,9 @@ NativeShell = (function() {
 
   function CreateNativeShell(domain, appManifest)
   {
+    // TODO: Select Mac or Windows
     new MacNativeShell().createAppNativeLauncher(domain, appManifest);
+    //new WinNativeShell().createAppNativeLauncher(domain, appManifest);
   }
 
   return {
@@ -71,6 +73,70 @@ function makeMenuBar(manifest)
   return toolbox;
 }
 
+
+function winRecursiveFileCopy(sourceBase, sourcePath, destPath, substitutions)
+{
+  console.log("APPS | nativeshell.win | winRecursiveFileCopy - "
+               + "\nsourceBase=" + sourceBase
+               + "\nsourcePath=" + sourcePath
+               + "\ndestPath=" + destPath);
+  var srcFile = (url.toFilename(self.data.url(sourceBase + "/" + sourcePath))).replace("/","\\","g");
+
+  console.log("APPS | nativeshell.win | winRecursiveFileCopy - " + srcFile);
+  if (file.exists(srcFile))
+  {
+    // How do we tell if this is a directory?  Try to list() it 
+    // and catch exceptions.
+    var isDirectory=false, dirContents;
+    try {
+      dirContents = file.list(srcFile);
+      isDirectory = true;
+      console.log("APPS | nativeshell.win | winRecursiveFileCopy - IS a directory");
+    } catch (cannotListException) {
+      console.log("APPS | nativeshell.win | winRecursiveFileCopy - IS NOT a directory");
+    }
+    
+    if (isDirectory) 
+    {    
+      var dstFile = destPath + "\\" + sourcePath.replace("/","\\","g");
+      console.log("APPS | nativeshell.win | winRecursiveFileCopy - creating directory " + dstFile);
+      file.mkpath(dstFile);
+      console.log("APPS | nativeshell.win | winRecursiveFileCopy - directory created");
+
+      for (var i=0; i < dirContents.length; i++)
+      {
+        winRecursiveFileCopy(sourceBase, sourcePath + "/" + dirContents[i], destPath, substitutions);
+      }
+    } else {
+      // Assuming textmode for everything - do we need any binaries?
+      var dstFile = destPath + "\\" + (substituteStrings(sourcePath, substitutions)).replace("/","\\", "g");
+      console.log("APPS | nativeshell.win | winRecursiveFileCopy - dstFile=" + dstFile);
+
+      // BIG HACK
+      var binaryMode = false;
+      if (sourcePath.indexOf("foxlauncher") >= 0)
+      {
+        // Some shenanigans here to set the executable bit:
+        var aNsLocalFile = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
+        aNsLocalFile.initWithPath(dstFile);
+        aNsLocalFile.create(aNsLocalFile.NORMAL_FILE_TYPE, 0x1ed); // octal 755
+        binaryMode = true;
+      }
+      var inputStream = file.open(srcFile, "r" + (binaryMode ? "b" : ""));
+      var fileContents = inputStream.read();
+      var finalContents;
+      if (!binaryMode) {
+        finalContents = substituteStrings(fileContents, substitutions);
+      } else {
+        finalContents = fileContents;
+      }
+      var outputStream = file.open(dstFile, "w" + (binaryMode ? "b" : ""));
+      outputStream.write(finalContents);
+      outputStream.close();
+    }
+  }
+}
+
 // XXX TODO use platform appropriate file divider everywhere!!!!!!
 
 function recursiveFileCopy(sourceBase, sourcePath, destPath, substitutions)
@@ -126,6 +192,85 @@ function recursiveFileCopy(sourceBase, sourcePath, destPath, substitutions)
 }
 
 
+const WEB_APPS_DIRNAME = "Web Apps";
+
+// Windows implementation
+//
+// Our Windows strategy:
+//    Copy our XUL app and generic launcher to user's machine
+//       Currently C:\Web Apps, eventually %APPDATA%
+//    TODO: Add registry entry for Add/Remove programs
+//    TODO: Create shortcut somewhere useful (desktop?)
+//    TODO: Update exe resources with correct icon
+
+function WinNativeShell() {
+
+}
+
+// TODO: Pretty sure we can ask the OS to do this for us with
+// js-ctypes and a system call
+function sanitizeWinFileName(path)
+{
+  return path.replace(":", "-").replace("/", "-");
+}
+
+WinNativeShell.prototype = {
+
+  createAppNativeLauncher : function(app)
+  {
+    console.log("APPS | nativeshell.Win | Creating app native launcher");
+    this.createExecutable(app);
+  },
+
+  createExecutable : function(app)
+  {
+    // TODO: baseDir should point to %APPDATA%\WEB_APPS_DIRNAME
+    // see `ExpandEnvironmentStrings` (invoke through js-ctypes)
+    //   http://msdn.microsoft.com/en-us/library/ms724265.aspx
+    var baseDir = "C:\\" + WEB_APPS_DIRNAME;
+    console.log("APPS | nativeshell.Win | baseDir=" + baseDir);
+    if (!file.exists(baseDir))
+    {
+      file.mkpath(baseDir);
+    }
+
+    var filePath = baseDir + "\\" + sanitizeWinFileName(app.manifest.name);
+    console.log("APPS | nativeshell.Win | filePath=" + filePath);
+    if (file.exists(filePath))
+    {
+      // recursive delete
+      var aNsLocalFile = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
+      aNsLocalFile.initWithPath(filePath);
+      aNsLocalFile.remove(true);
+    }
+    
+    var launchPath = app.origin;
+    if (app.manifest.launch_path) {
+      launchPath += app.manifest.launch_path;
+    }
+    console.log("APPS | nativeshell.Win | launchPath=" + launchPath);
+
+    var substitutions = {
+      APPNAME: app.manifest.name,
+      APPDOMAIN: app.origin,
+      APPDOMAIN_REVERSED: reverseDNS(app.origin),
+      LAUNCHPATH: launchPath,
+      APPMENUBAR: makeMenuBar(app.manifest)
+    }
+    file.mkpath(filePath);
+    // TODO: Organize this so it's not in "mac-app-template"
+    winRecursiveFileCopy("mac-app-template", "", filePath, substitutions);
+    //this.synthesizeIcon(app, filePath + "/Contents/Resources/appicon.icns");
+  },
+  
+  synthesizeIcon : function(app, destinationFile)
+  {
+    // TODO: Get icon for use with Windows
+  }
+}
+
+
+
 // Mac implementation
 //
 // Our Mac strategy for now is to create a .webloc file and
@@ -134,8 +279,6 @@ function recursiveFileCopy(sourceBase, sourcePath, destPath, substitutions)
 //
 // This does _not_ give us document opening (boo) but it will
 // interact reasonably with the Finder and the Dock
-
-const WEB_APPS_DIRNAME = "Web Apps";
 
 function MacNativeShell() {
 
