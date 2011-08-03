@@ -70,7 +70,8 @@ function getWindowWidth() {
     
   //application dragging/rearranging globals  
   var _mouseDownHoldTimer;  //timer that determines whether we are dragging the app or the dashboard
-  
+  var _mouseDragoutTimer;   //timer that retains the mouse for a brief time after they user drags out of the window
+
   //the id of the currently dragged app, or undefined if none
   var _draggedApp;
   //the starting coordinates of the dragged app
@@ -95,7 +96,6 @@ var appBorderSize = 0;
 var appNameSize = 0;
 var appNameFontSize = 0;
 
-var numPages = 0;
 
 
 function computeLayoutVars() {
@@ -155,9 +155,8 @@ function getCurrentPage() {
     return n == null || isNaN(n) ? 0 : n;
   }
   
-  //I need to make a copy of the whole dashboard state, manipulate it while dragging an app, and if everything goes well,
-  // swap it for the original.  This is to prevent broken states being saved, as best I can.  (browser crashes, drag code fails,
-  // etc.)
+  //This code computes the (minimal) changes to the initial arrangement that will leave a hole under the 
+  // currently dragged item.  The resultant array is used to move the necessary items around in the page.
   function arrangeAppsOnPageToFit(pageIdx, overSlot) {    
     //get a copy of the page in question
     var arrangedPage = gDashboardState.pages[pageIdx].slice(0);
@@ -165,12 +164,26 @@ function getCurrentPage() {
     //do nothing if the overSlot is empty
     if (arrangedPage[overSlot])
     {  
-      //find a hole, if there is one.  start at the beginning, which will prefer left-packing
+      //find a hole in the array, so we can slide things over
+      // prefer a hole that is to the left of the dragged item, and as close as possible to it, so as to move only the
+      // apps that must be moved, and no others.
+      // if we are unable to find a hole to the left, then find the closest one to the right of the dragged item.
+      // if there are no holes to be found, then use a virtual hole that is off the end of the array to the right.
+      //  we will fix the array up after the drop
       var hole = 6;
       var i;
-      for (i=0; i<6; i++) {
+      //try to find a left hole
+      for (i=0; i<overSlot; i++) {
         if (!arrangedPage[i]) {
           hole = i;
+        }
+      }
+      //didnt find left hole, look for right
+      if (hole == 6) {
+        for (i=5; i>overSlot; i--) {
+        if (!arrangedPage[i]) {
+            hole = i;
+          }
         }
       }
       
@@ -192,10 +205,11 @@ function getCurrentPage() {
       //now loop over all of the app signatures in the array, and tell each appDisplayFrame (from the cache) 
       //  to animate to left = array slot * appBoxWidth
       var i;
-      for (i=0; i<6; i++) {
+      //NOTE: 7 here is important!  It pushes the rightmost one off the side of the page, so that it is hidden
+      for (i=0; i<7; i++) {
       if (arrangedPage[i]) {
           if (gAppItemCache[arrangedPage[i]].position().left != (appBoxWidth * i)) {
-            console.log("moving app: " + i);
+            console.log("OWA: moving app: " + i + " on page " + pageIdx);
             gAppItemCache[arrangedPage[i]].stop(true, false);
             gAppItemCache[arrangedPage[i]].animate({left: (appBoxWidth * i)}, 100);
           }
@@ -206,7 +220,70 @@ function getCurrentPage() {
     //return the modified page
     return arrangedPage;
   }
-    
+      
+  //make sure every app on the page is where it is supposed to be
+  function redrawPage(page, animated) {
+    for (var i=0; i<6; i++) {
+      if (gDashboardState.pages[page][i]){
+        if (animated) {
+          gAppItemCache[gDashboardState.pages[page][i]].css({left: (appBoxWidth * i)});
+        } else {
+          gAppItemCache[gDashboardState.pages[page][i]].animate({left: (appBoxWidth * i)}, 100);
+        }
+      }
+    }
+  }
+
+
+  function fixUpPageOverflows(startPage) {
+    //loop over all the pages, starting at the first, (or maybe the one we just dropped on?) and
+    // check to make sure none of the apps have run off the end of the page.  if so, then shove them onto the next page,
+    // and keep going, until we get to the end, or a page that doesn't need to be fixed
+    //Then, when we are all done, remove any trailing pages that are empty
+    var p, t;
+    var numPages = gDashboardState.pages.length;
+
+    for (p=startPage; p<numPages; p++) {
+      if (gDashboardState.pages[p][6]) { //overflow
+        //push the app into slot 0 of the next page, and then see if that causes a ripple
+        if (!gDashboardState.pages[p+1]) gDashboardState.pages[p+1] = [];  //make a new empty page if there isn't one
+        //check to see if we have to move things over
+        if (gDashboardState.pages[p+1][0]) {
+          //must shove them all over 1 to make room
+          for (t=6; t>0; t--) {
+            gDashboardState.pages[p+1][t] = gDashboardState.pages[p+1][t-1];
+          }
+        }
+        //push the app into the empty slot in the next page
+        gAppItemCache[gDashboardState.pages[p][6]].detach();
+        $("#page" + (p+1)).append(gAppItemCache[gDashboardState.pages[p][6]]);
+
+        gDashboardState.pages[p+1][0] = gDashboardState.pages[p][6];  
+        gDashboardState.pages[p][6] = undefined;
+        redrawPage(p+1);
+      }
+    }
+
+    var emptyish;
+    //remove empty trailing pages.  this must be the last code in this function, since we return from the middle of it
+    for (p=numPages-1; p>0; p--) {
+      emptyish = true;
+      if (gDashboardState.pages[p].length) {
+        for (var t=0; t<gDashboardState.pages[p].length; t++){
+          if (gDashboardState.pages[p][t]) emptyish = false;
+        }
+      }
+
+      if (emptyish) {
+        $("#page" + p).remove();
+        gDashboardState.pages.length--;
+      }
+      else return;
+    }
+  }
+
+
+
       
   function _onMouseMove(e)
   {
@@ -226,40 +303,28 @@ function getCurrentPage() {
       // if it's empty, do nothing
       var currentSlot = Math.floor((gAppItemCache[_draggedApp].position().left + (appBoxWidth/2)) / appBoxWidth);
       
-      //special kludge for switching pages
+      //special kludge for switching pages.  I need to abstract this
       if (gAppItemCache[_draggedApp].position().left <= -16) currentSlot = -1;
       if (gAppItemCache[_draggedApp].position().left + (appBoxWidth-16) > pageWidth) currentSlot = 6;
-
-      //console.log("app.left: " + gAppItemCache[_draggedApp].position().left + "       currentslot: " + currentSlot);
       
       if (currentSlot > 5) {
         currentSlot = 5;
         _draggedAppLastSlot = currentSlot;
-        newPage = goToPage(curPage+1, function(page) {
+        newPage = goToPage(curPage+1, 400, function(page) {
                                                 //need to put the page we left back the way it was
-                                                  for (var i=0; i<6; i++) {
-                                                    if (gDashboardState.pages[page][i]){
-                                                      gAppItemCache[gDashboardState.pages[page][i]].css({left: (appBoxWidth * i)});
-                                                    }
-                                                  }
-                                                  arrangeAppsOnPageToFit(page, currentSlot);
+                                                if (curPage != page) redrawPage(curPage);
+                                                arrangeAppsOnPageToFit(page, currentSlot);
                                               });
-        curPage = newPage;
       }
       
       else if (currentSlot < 0) {
         currentSlot = 0;
         _draggedAppLastSlot = currentSlot;
-        newPage = goToPage(curPage-1, function(page) {
+        newPage = goToPage(curPage-1, 400, function(page) {
                                                 //need to put the page we left back the way it was
-                                                for (var i=0; i<6; i++) {
-                                                  if (gDashboardState.pages[page][i]){
-                                                    gAppItemCache[gDashboardState.pages[page][i]].css({left: (appBoxWidth * i)});
-                                                  }
-                                                };
+                                                if (curPage != page) redrawPage(curPage);
                                                 arrangeAppsOnPageToFit(page, currentSlot);
                                               });
-        curPage = newPage;
       }
       
       else if (currentSlot != _draggedAppLastSlot) {      
@@ -306,22 +371,29 @@ function getCurrentPage() {
       gAppItemCache[_draggedApp].css('z-index', 10000);
       gAppItemCache[_draggedApp].detach();
       $("#clipper").append(gAppItemCache[_draggedApp]);
+
+      //temporarily add an extra blank page at the end, in case the user wants to spread things out
+      addEmptyPageToDash();
     }
   }
 
 
   
   function _onMouseLeave(e) {
-    //for now, jsut treat it as a mouse up
+    //for now, just treat it as a mouse up
     if (_mouseDownTime == 0) { return; }
     
-    //if (over left page button) { page left}
-    //else if (over right page button) { page right}
-    //else  {
+    if (_draggedApp) {
+      _mouseDragoutTimer = setTimeout(_onMouseUp, 410, e);
+    } else {
       _onMouseUp(e);
-    //}
+    }
   }
-  
+    
+  function _onMouseEnter(e) {
+    clearTimeout(_mouseDragoutTimer);
+  }
+
   
   
   function _onMouseUp(e)
@@ -329,6 +401,7 @@ function getCurrentPage() {
     clearTimeout(_mouseDownHoldTimer);
     e.preventDefault();
     var curPage = getCurrentPage();
+    console.log("OWA: MOUSE UP!");
 
     if (_draggedApp) {
 
@@ -342,15 +415,22 @@ function getCurrentPage() {
       _appIcon = undefined;
       
       //get the correct arrangement of the current (dropped on) page
-      var rearrangedApps = arrangeAppsOnPageToFit(curPage, _draggedAppLastSlot);
-      console.log("drop: " + _draggedAppLastSlot);
+      var currentSlot = Math.floor((gAppItemCache[_draggedApp].position().left + (appBoxWidth/2)) / appBoxWidth);
+      if (currentSlot > 5) currentSlot = 5;
+      if (currentSlot < 0) currentSlot = 0;
+
+      var rearrangedApps = arrangeAppsOnPageToFit(curPage, currentSlot);
       //insert the app into the empty slot it is over, on the current page
-      rearrangedApps[_draggedAppLastSlot] = _draggedApp;
-      //DO LOTS OF FIXUP!!
+      rearrangedApps[currentSlot] = _draggedApp;
+      console.log("OWA: DROPPED " + _draggedApp + " IN SLOT " + currentSlot + " ON PAGE " + curPage)
       
       //overwrite the page in the dashboard state with the newly arranged page
       gDashboardState.pages[curPage] = rearrangedApps;
-      
+      //redrawPage(curPage, true);
+      //DO LOTS OF FIXUP!!
+
+      fixUpPageOverflows(curPage);
+
       //save the changes
       saveDashboardState(gDashboardState);
 
@@ -382,7 +462,7 @@ function getCurrentPage() {
       var drag = !quick;
         
       if (tap && (_appIcon != undefined)) {
-        console.log("app launched");
+        console.log("OWA: app launched");
         _appIcon.removeClass("highlighted");
         _appIcon = undefined;
   
@@ -394,7 +474,7 @@ function getCurrentPage() {
         }
       } else if (flick) {
         //we go to the next page in the direction specified by the flick
-        console.log("dashboard flicked");
+        console.log("OWA: dashboard flicked");
                   
         //left or right?
         var dir = (_endX - _mouseDownX) > 0;
@@ -405,10 +485,10 @@ function getCurrentPage() {
           curPage --;
         }
             
-        goToPage(curPage);
+        goToPage(curPage, 200);
     
       } else { //drag, which may or may not go to the next page
-        console.log("dashboard dragged");
+        console.log("OWA: dashboard dragged");
         
         var snapPage = curPage;
         
@@ -420,7 +500,7 @@ function getCurrentPage() {
               snapPage++;
             }
         }
-        goToPage(snapPage);
+        goToPage(snapPage, 400);
       }
     }
                
@@ -429,15 +509,16 @@ function getCurrentPage() {
   
     
   
-  function goToPage(whichPage, completionCallback) {
+  function goToPage(whichPage, animationSpeed, completionCallback) {
+    var numPages = gDashboardState.pages.length;
     if (whichPage >= numPages)  whichPage = numPages - 1;
     if (whichPage < 0) whichPage = 0;
     var finalPos = (whichPage * screenWidth * -1);
     
     if ( ($("#dashboard").position().left != finalPos) && (!_pageAnimating) ) {
-      console.log("transitioning to page : " + whichPage);
+      console.log("OWA: transitioning to page : " + whichPage);
       _pageAnimating = true;
-      $("#dashboard").animate({left: (whichPage * screenWidth * -1) }, 400, function() {_pageAnimating = false; if (completionCallback) completionCallback(whichPage); } );
+      $("#dashboard").animate({left: (whichPage * screenWidth * -1) }, animationSpeed, function() {_pageAnimating = false; if (completionCallback) completionCallback(whichPage); } );
     } 
     return whichPage;
   }
@@ -458,7 +539,7 @@ function saveDashboardState(state) {
   if (self && self.port) {
     self.port.emit("saveState", state);
   } else {
-    navigator.apps.mgmt.saveState(gDashboardState, function() {console.log("dashboard state saved");} );
+    navigator.apps.mgmt.saveState(gDashboardState, function() {console.log("OWA: dashboard state saved");} );
   }
 }
 
@@ -511,7 +592,6 @@ function updateState(newState) {
     saveDashboardState(gDashboardState);
   }
     
-  numPages = gDashboardState.pages.length;
   layoutPages();
 }
 
@@ -533,7 +613,7 @@ function redrawDashboard( listOfInstalledApps ) {
               gApps[origin].origin32 = Base32.encode(origin); 
             }        
         } catch (e) {
-          if (typeof console !== "undefined") console.log("Error while adding base32 ID to app " + origin + ": " + e);
+          if (typeof console !== "undefined") console.log("OWA: Error while adding base32 ID to app " + origin + ": " + e);
         }
       }
 
@@ -545,6 +625,20 @@ function redrawDashboard( listOfInstalledApps ) {
       }
 }
 
+function addEmptyPageToDash() {
+  var numPages = gDashboardState.pages.length;
+
+  //add empty page to dash state array
+  gDashboardState.pages[numPages] = [];
+
+  //grow the dashboard
+  $('#dashboard').css({width: ((numPages+1) * (screenWidth +2)), height: screenHeight});
+
+  //add a new empty page at the end
+  var nextPage = $("<div/>").addClass("page").attr("id", "page" + numPages);
+  $("#dashboard").append(nextPage);
+  nextPage.css({width: screenWidth, height: screenHeight});
+}
 
 
 //create the full app list, and sort them for display
@@ -554,6 +648,7 @@ function layoutPages() {
   //clear the list
   $('.page').remove();
   
+  var numPages = gDashboardState.pages.length;
   $('#dashboard').css({width: (numPages * (screenWidth +2)), height: screenHeight});
   
   //now for each page, build zero or more icon items, and put them into the page
@@ -683,12 +778,12 @@ function createAppItem(install)
 
 function _pageLeftClick() { 
   var curPage = getCurrentPage();
-  goToPage(curPage - 1);
+  goToPage(curPage - 1, 200);
   }
 
  function _pageRightClick() { 
   var curPage = getCurrentPage();
-  goToPage(curPage + 1);
+  goToPage(curPage + 1, 200);
   } 
 
 
@@ -710,6 +805,8 @@ if (self && self.port) {
   $("#clipper").mouseup(_onMouseUp);
   $("#clipper").mousemove(_onMouseMove);
   $("#clipper").mouseleave(_onMouseLeave);
+  $("#clipper").mouseenter(_onMouseEnter);
+
   $("#pageLeft").click(_pageLeftClick);            
   $("#pageRight").click(_pageRightClick);
 
