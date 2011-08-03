@@ -10,8 +10,8 @@ NativeShell = (function() {
   function CreateNativeShell(domain, appManifest)
   {
     // TODO: Select Mac or Windows
-    //new MacNativeShell().createAppNativeLauncher(domain, appManifest);
-    new WinNativeShell().createAppNativeLauncher(domain, appManifest);
+    new MacNativeShell().createAppNativeLauncher(domain, appManifest);
+    //new WinNativeShell().createAppNativeLauncher(domain, appManifest);
   }
 
   return {
