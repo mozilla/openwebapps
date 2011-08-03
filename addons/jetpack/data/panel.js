@@ -71,6 +71,10 @@ function getWindowWidth() {
   //application dragging/rearranging globals  
   var _mouseDownHoldTimer;  //timer that determines whether we are dragging the app or the dashboard
   var _mouseDragoutTimer;   //timer that retains the mouse for a brief time after they user drags out of the window
+  
+  var _pageScrollTimer;           //timer that retains the mouse for a brief time after they user drags out of the window
+  var _pageScrollDelay = false;   //true if scrolling to new page should wait, false if it can go ahead
+  var _pageScrollEventObject;     //sigh, this is a cached event object, used for triggering multi-page scrolls when the user doesn't actually move the mouse.
 
   //the id of the currently dragged app, or undefined if none
   var _draggedApp;
@@ -221,7 +225,7 @@ function getCurrentPage() {
     return arrangedPage;
   }
       
-  //make sure every app on the page is where it is supposed to be
+  //make sure every appDisplayFrame on the page is where it is supposed to be
   function redrawPage(page, animated) {
     for (var i=0; i<6; i++) {
       if (gDashboardState.pages[page][i]){
@@ -287,6 +291,16 @@ function getCurrentPage() {
       
   function _onMouseMove(e)
   {
+    //slightly hokey caching of last mousemove event (the position is what we care about) for the case 
+    // when you want to scroll multiple pages, without having to wiggle the mouse
+    if (e) {
+      //console.log("OWA: caching mousemoveevent");
+      _pageScrollEventObject = e;
+    } else {
+      console.log("OWA: using cached mousemoveevent");
+      e = _pageScrollEventObject;
+    }
+
     e.preventDefault();
     clearTimeout(_mouseDownHoldTimer);
     if (_mouseDownTime == 0) { return; }
@@ -310,21 +324,25 @@ function getCurrentPage() {
       if (currentSlot > 5) {
         currentSlot = 5;
         _draggedAppLastSlot = currentSlot;
-        newPage = goToPage(curPage+1, 400, function(page) {
+        if (!_pageScrollDelay) {
+                newPage = goToPage(curPage+1, 400, function(page) {
                                                 //need to put the page we left back the way it was
                                                 if (curPage != page) redrawPage(curPage);
                                                 arrangeAppsOnPageToFit(page, currentSlot);
                                               });
+        }
       }
       
       else if (currentSlot < 0) {
         currentSlot = 0;
         _draggedAppLastSlot = currentSlot;
-        newPage = goToPage(curPage-1, 400, function(page) {
+        if (!_pageScrollDelay) {
+                newPage = goToPage(curPage-1, 400, function(page) {
                                                 //need to put the page we left back the way it was
                                                 if (curPage != page) redrawPage(curPage);
                                                 arrangeAppsOnPageToFit(page, currentSlot);
                                               });
+        }
       }
       
       else if (currentSlot != _draggedAppLastSlot) {      
@@ -485,7 +503,7 @@ function getCurrentPage() {
           curPage --;
         }
             
-        goToPage(curPage, 200);
+        goToPage(curPage, 250);
     
       } else { //drag, which may or may not go to the next page
         console.log("OWA: dashboard dragged");
@@ -500,7 +518,7 @@ function getCurrentPage() {
               snapPage++;
             }
         }
-        goToPage(snapPage, 400);
+        goToPage(snapPage, 350);
       }
     }
                
@@ -518,7 +536,12 @@ function getCurrentPage() {
     if ( ($("#dashboard").position().left != finalPos) && (!_pageAnimating) ) {
       console.log("OWA: transitioning to page : " + whichPage);
       _pageAnimating = true;
-      $("#dashboard").animate({left: (whichPage * screenWidth * -1) }, animationSpeed, function() {_pageAnimating = false; if (completionCallback) completionCallback(whichPage); } );
+      _pageScrollDelay = true;  //used by the auto-scrolling code to prevent rapid scrolling across many pages
+      $("#dashboard").animate({left: (whichPage * screenWidth * -1) }, animationSpeed, function() {
+                                                                                                    _pageAnimating = false; 
+                                                                                                    if (completionCallback) completionCallback(whichPage); 
+                                                                                                    _pageScrollTimer = setTimeout(function() { _pageScrollDelay = false; _onMouseMove(null); }, 400);
+                                                                                                  } );
     } 
     return whichPage;
   }
