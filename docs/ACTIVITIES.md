@@ -33,10 +33,10 @@ The client begins an activity by constructing an Activity and passing it to the 
      void postResult(in object data);
     }
 
-*action*: A string that specifies the activity to be launched.
-*type*: An optional MIME type that further defines the type of the payload data. e.g., “image/png” if data is a PNG image.
-*data*: A structured clone that constitutes the payload to send to the service.
-*postResult*: The method used by the service to return data to the client. This method is provided by the browser, and is only useful in the context of the service.  The client should (*ed: must?*) not set this.
+* `action`: A string that specifies the activity to be launched.
+* `type`: An optional MIME type that further defines the type of the payload data. e.g., “image/png” if data is a PNG image.
+* `data`: A structured clone that constitutes the payload to send to the service.
+* `postResult`: The method used by the service to return data to the client. This method is provided by the browser, and is only useful in the context of the service.  The client should (*ed: must?*) not set this.
 
     interface AppServices {
      // Used by clients to start things off:
@@ -99,7 +99,7 @@ It is expected that user agents will provide a default mediator that presents a 
 
 The exact user experience provided by a mediator can vary depending on the activity action.
 
-The authors believe that this is a natural place to assist users with account selection tasks.  We propose that, when a mediator is invoked, it is given read/write access to the activity, a read-only list of services that can serve that activity, and an optional list of credential lists, which describe the accounts that are available to this browser at each of the named activities.  See the 'Account Management' section, below, for more on this flow.
+The authors believe that this is a natural place to assist users with account selection tasks.  We propose that, when a mediator is invoked, it is given read/write access to the activity, a read-only list of services that can serve that activity, and an optional list of credential lists, which describe the accounts that are available to this browser at each of the named activities.  See the *Account Management* section, below, for more on this flow.
 
 The mediator is intended to provide a place for message coordination, so that interactions which require the exchange of multiple messages with a provider need not return data and control to the calling client.
 
