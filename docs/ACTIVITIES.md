@@ -38,6 +38,8 @@ The client begins an activity by constructing an Activity and passing it to the 
 * `data`: A structured clone that constitutes the payload to send to the service.
 * `postResult`: The method used by the service to return data to the client. This method is provided by the browser, and is only useful in the context of the service.  The client should (*ed: must?*) not set this.
 
+Clients interact with the `startActivity` method to start processing:
+
     interface AppServices {
      // Used by clients to start things off:
      void startActivity(in Activity activity,
