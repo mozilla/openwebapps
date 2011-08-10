@@ -23,7 +23,7 @@ function Service(svcinfo, iframe) {
 unsafeWindow.Service = Service;
 
 Service.prototype = {
-    call: function(activity, arguments, cb, cberr) {
+    call: function(activity, args, cb, cberr) {
         function cbshim(result) {
             cb(JSON.parse(result));
         }
@@ -33,7 +33,7 @@ Service.prototype = {
             }
         }
         // Need to use unsafeWindow here for some reason.
-        unsafeWindow.navigator.apps.mediation._invokeService(this.iframe.contentWindow, this.service, activity, arguments, cbshim, cberrshim);
+        unsafeWindow.navigator.apps.mediation._invokeService(this.iframe.contentWindow, this.service, activity, args, cbshim, cberrshim);
     },
 
     // Get the closest icon that is equal to or larger than the requested size,
@@ -145,7 +145,7 @@ window.navigator.apps.mediation.emit = function(event, args) {
 
 unsafeWindow.navigator.apps.mediation.emit = window.navigator.apps.mediation.emit;
 
-window.navigator.apps.mediation.invokeService = function(iframe, method, activity, arguments, callback) {
+window.navigator.apps.mediation.invokeService = function(iframe, method, activity, args, callback) {
     function callbackShim(result) {
         dump("mediator shim got" + (typeof result) + "\n");
         callback(JSON.parse(result));
@@ -153,7 +153,7 @@ window.navigator.apps.mediation.invokeService = function(iframe, method, activit
     // ideally we could use the port mechanism, but this is stymied by the
     // inability to pass iframe or iframe.contentWindow in args to emit().
     // Need to use unsafeWindow here for some reason.
-    unsafeWindow.navigator.apps.mediation._invokeService(iframe.contentWindow, method, activity, arguments, callbackShim);
+    unsafeWindow.navigator.apps.mediation._invokeService(iframe.contentWindow, method, activity, args, callbackShim);
 };
 
 unsafeWindow.navigator.apps.mediation.invokeService = window.navigator.apps.mediation.invokeService;

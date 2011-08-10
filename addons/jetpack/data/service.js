@@ -1,6 +1,6 @@
 var gServiceList;
 
-function renderRequestExplanation(requestMethod, arguments)
+function renderRequestExplanation(requestMethod, args)
 {
     $("#requestInfo").empty();
 
@@ -8,10 +8,10 @@ function renderRequestExplanation(requestMethod, arguments)
         var box = $("<div/>");
         var preview = $("<img style='margin:auto;border-left:2px solid #fafafa;border-top:2px solid #fafafa;border-right:2px solid #ddd;border-bottom:2px solid #ddd;max-width:96px;max-height:96px;display:inline-block'/>").appendTo(box);
 
-        if (arguments.mimeType && arguments.data) {
-            preview.attr("src", "data:"+ arguments.mimeType  +";base64," + arguments.data);
-        } else if (arguments.data) {
-            preview.attr("src", "data:;base64," + arguments.data);
+        if (args.mimeType && args.data) {
+            preview.attr("src", "data:"+ args.mimeType  +";base64," + args.data);
+        } else if (args.data) {
+            preview.attr("src", "data:;base64," + args.data);
         }
 
         var previewText = $("<div style='display:inline-block;vertical-align:top;margin-left:8px'>")
@@ -19,14 +19,14 @@ function renderRequestExplanation(requestMethod, arguments)
         var previewTitle = $("<div style='font-weight:bold;font-size:0.9em'/>")
         .appendTo(previewText);
     
-        if (arguments.title) previewTitle.text(arguments.title);
+        if (args.title) previewTitle.text(args.title);
         var previewDimensions = $("<div style='font-size:0.7em;color:#888'>")
         .appendTo(previewText);;
     
-        /*if (arguments.size) */previewDimensions.text("640px x 960px"); // fake
+        /*if (args.size) */previewDimensions.text("640px x 960px"); // fake
         var previewSize = $("<div style='font-size:0.7em;color:#888'>")
         .appendTo(previewText);;
-        /*if (arguments.size) */previewSize.text("96 KB"); // fake
+        /*if (args.size) */previewSize.text("96 KB"); // fake
 
         var action = $("<div style='margin-top:10px;margin-bottom:6px;font-weight:bold;font-size:1.1em'>").text("Send Image to:");
         $("#requestInfo").append(box);
@@ -52,7 +52,7 @@ function handleSetup(method, args, serviceList)
     
     gServiceList = serviceList;
 
-    renderRequestExplanation(method, arguments);
+    renderRequestExplanation(method, args);
     $("#servicebox").append($("<div id='services'></div>"));
     $("#services").append($("<ul id='services-tabs'></ul>"));
 
