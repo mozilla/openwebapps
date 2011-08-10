@@ -63,9 +63,6 @@ function handleSetup(method, args, serviceList)
         var svcTabImg = document.createElement("img");
 
         var icon = svc.getIconForSize(48);
-        if (!(icon.indexOf("data:") == 0)) {
-            icon = svc.launch_url + icon;
-        }
         svcTabImg.setAttribute("src", icon);
         svcTabImg.setAttribute("style", "width:48px;height:48px;vertical-align:middle");
         svcTabLink.appendChild(svcTabImg);
@@ -131,6 +128,7 @@ var addServicesService = new Service(
 
 function confirm()
 {
+    var emit = window.navigator.apps.mediation.emit;
     var selected = $("#services").tabs('option', 'selected'); // => 0
     var service = gServiceList[selected].call("confirm", {},
         function(status) {
@@ -138,15 +136,17 @@ function confirm()
                 app:iframe.contentWindow.location.href,
                 result:"ok"
             };
-            self.port.emit("result", messageData);
+            emit("result", messageData);
         },
         function(err) {
-            self.port.emit("error", err);
+            emit("error", err);
         }
     );
 }
 
-document.getElementById("confirmclicker").onclick = confirm;
+$(function() {
+    document.getElementById("confirmclicker").onclick = confirm;
+});
 
 window.navigator.apps.mediation.ready(
     function(method, args, services) {
