@@ -113,9 +113,8 @@ MediatorPanel.prototype = {
      */
     onResult: function(msg) {
         this.panel.hide();
-        // XXX why pass raw data?
         if (this.successCB)
-            this.successCB(msg.data);
+            this.successCB(msg);
     },
 
     onClose: function(msg) {
