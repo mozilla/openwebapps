@@ -162,10 +162,12 @@ function InjectorInit(window) {
                      .QueryInterface(Ci.nsIDocShellTreeItem)
                      .rootTreeItem
                      .QueryInterface(Ci.nsIInterfaceRequestor)
-                     .getInterface(Ci.nsIDOMWindow); 
-      if (mainWindow != window) {
-        return;
-      }
+                     .getInterface(Ci.nsIDOMWindow);
+      // *sob* - this check prevents the API from being injected in content
+      // loaded into a jetpack panel...
+      // if (mainWindow != window) {
+      //  return;
+      // }
       for (let i in this.actions) {
         this.actions[i]();
       }
