@@ -20,10 +20,10 @@ body {
   border: 0px;
   padding: 0px;
 
-  left: 16px;
   width: 720;
   height: 110;
   clip: rect(0px, 720px, 110px, 0px);
+  background: rgb(230, 230, 230);
 }
 
 .dashboard {
@@ -68,19 +68,11 @@ body {
 }
 
 .appDisplayFrame {
+  border: 0px;
   position: absolute;
 }
 
 
-.listLabel {
-      white-space: nowrap;
-      overflow: hidden;    
-      text-align:center;
-      margin: auto;
-      font-weight: bold;
-      color: #ccc;
-      text-shadow: black 1px 1px;
-}
 
 
 .liftedApp {
@@ -106,5 +98,16 @@ body {
 }
 
 .iconWrapper {
-    background-color: transparent;
+  background-color: transparent;
 }
+
+.appLabel {
+  white-space: nowrap;
+  overflow: hidden;    
+  text-align:center;
+  margin: auto;
+  font-weight: bold;
+  color: #ccc;
+  text-shadow: black 1px 1px;
+}
+

@@ -155,7 +155,7 @@ openwebappsUI.prototype = {
         
         console.log(data.url("panel.html"));
         let thePanel = require("panel").Panel({
-          height: 108,
+          height: 216,
           width: 754,
           position: "topcenter bottomright",
           contentURL: data.url("panel.html"),

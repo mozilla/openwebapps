@@ -40,20 +40,45 @@
 // Singleton instance of the Apps object:
 var gApps = {};
 
+var appAnimationSpeed = 150;
+
 //the saved state (app icon arrangement, mostly) for the dashboard
 var gDashboardState = {};
 
 //caches the constructed app icon panes for speed, and to stop poking the network all the time.
 var gAppItemCache = {};
 
+//contains constants defining the current layout, values computed from them, and methods to alter and retrieve them, as well as update the views
+var gLayout = { //some plausible default values
+                panelWidth: 100,
+                panelHeight: 100,
+                rowCount: 1,
+                columnCount: 1,
+                appBoxWidth: 100,
+                appBoxHeight: 100,
+                appIconSize: 50,
+                appBorderSize: 5,
+                appNameSize: 80,
+                appNameFontSize: 12,
+                setPanelSize: function(width, height) { if (width) this.panelWidth = width; if (height) this.panelHeight = height; this.recomputeLayout(); },
+                setAppRowsAndColumns: function(rows, columns) { if (rows) this.rowCount = rows; if (columns) this.columnCount = columns; this.recomputeLayout();},
+                recomputeLayout: function() {
+                                                $("#clipper").css({width: this.panelWidth, height: this.panelHeight, clip: "rect(0px, " + this.panelWidth + "px, " + this.panelHeight + "px, 0px)"});
+                                                $("#dashboard").css({width: this.panelWidth, height: this.panelHeight});
+                                                //compute all the other params based on the panel size and rows/cols
+                                                console.log("computing layout");
+                                                this.appBoxWidth = Math.floor(this.panelWidth/this.columnCount);
+                                                this.appBoxHeight = Math.floor(this.panelHeight/this.rowCount);
+                                                this.appIconSize = Math.floor(Math.min(this.appBoxWidth, this.appBoxHeight) / 2);
+                                                this.appBorderSize = Math.max(Math.ceil(this.appIconSize/12), 2);
+                                                this.appNameSize = Math.floor(this.appBoxWidth * 0.8);
+                                                this.appNameFontSize = Math.max(Math.ceil(this.appIconSize/6), 10);
+                                             },
 
-function getWindowHeight() {
-  return document.body.clientHeight;
-}
+              };
 
-function getWindowWidth() {
-  return document.body.clientWidth;
-}
+gLayout.setPanelSize(750, 220);
+gLayout.setAppRowsAndColumns(2, 6);
 
 
 /////////////////////////////////////////////////////////
@@ -88,46 +113,10 @@ function getWindowWidth() {
   // a different slot
   var _draggedAppLastSlot;
 
-/////////////////////////////////////////////////////////
-//important page layout global vars
-var screenWidth = 0;
-var screenHeight = 0;
-var pageWidth = 0;
-var appBoxWidth = 0;
-var appBoxHeight = 0;
-var appIconSize = 0;
-var appBorderSize = 0;
-var appNameSize = 0;
-var appNameFontSize = 0;
-
-
-
-function computeLayoutVars() {
-  screenWidth = 720;//getWindowWidth();
-  pageWidth = screenWidth;
-  screenHeight = 110;//getWindowHeight();
-  
-  appBoxWidth = 120;
-  appBoxHeight = 90;
-  appIconSize = 64; 
-  appBorderSize = Math.floor(appIconSize/12);
-  appNameSize = Math.floor(appBoxWidth * 0.8);
-  appNameFontSize = Math.max(Math.ceil(appIconSize/6), 10);
-  
-//   console.log("screenWidth: " + screenWidth);
-//   console.log("screenHeight: " + screenHeight);
-//   console.log("pageWidth: " + pageWidth);
-//   console.log("appBoxWidth: " + appBoxWidth);
-//   console.log("appBoxHeight: " + appBoxHeight);
-//   console.log("appIconSize: " + appIconSize);
-//   console.log("appNameSize: " + appNameSize);
-//   console.log("appNameFontSize: " + appNameFontSize);
-
-}
 
 //////////////////////
 function getCurrentPage() {
-  return Math.floor( (Math.abs($("#dashboard").position().left)) / screenWidth);
+  return Math.floor( (Math.abs($("#dashboard").position().left)) / gLayout.panelWidth);
 }
 
 /////////////////////////////////////////////////////////
@@ -140,6 +129,7 @@ function getCurrentPage() {
     // grab the mouse position
     _mouseDownX = e.clientX;
     _mouseDownY = e.clientY;
+    console.log(_mouseDownX + " " + _mouseDownY);
                 
     var iconWrapper = $(e.target.parentNode.parentNode);
     
@@ -161,7 +151,9 @@ function getCurrentPage() {
   
   //This code computes the (minimal) changes to the initial arrangement that will leave a hole under the 
   // currently dragged item.  The resultant array is used to move the necessary items around in the page.
-  function arrangeAppsOnPageToFit(pageIdx, overSlot) {    
+  function arrangeAppsOnPageToFit(pageIdx, overSlot) {   
+  
+    if (!gDashboardState.pages[pageIdx]) { console.log("OWA: ERROR!!  non-existent page index: " + pageIdx); return null;} 
     //get a copy of the page in question
     var arrangedPage = gDashboardState.pages[pageIdx].slice(0);
 
@@ -174,7 +166,7 @@ function getCurrentPage() {
       // if we are unable to find a hole to the left, then find the closest one to the right of the dragged item.
       // if there are no holes to be found, then use a virtual hole that is off the end of the array to the right.
       //  we will fix the array up after the drop
-      var hole = 6;
+      var hole = (gLayout.rowCount * gLayout.columnCount);
       var i;
       //try to find a left hole
       for (i=0; i<overSlot; i++) {
@@ -183,8 +175,8 @@ function getCurrentPage() {
         }
       }
       //didnt find left hole, look for right
-      if (hole == 6) {
-        for (i=5; i>overSlot; i--) {
+      if (hole == (gLayout.rowCount * gLayout.columnCount)) {
+        for (i=(gLayout.rowCount * gLayout.columnCount)-1; i>overSlot; i--) {
         if (!arrangedPage[i]) {
             hole = i;
           }
@@ -207,15 +199,17 @@ function getCurrentPage() {
     //animate all the app icons to move to their correct places
     if (arrangedPage) {
       //now loop over all of the app signatures in the array, and tell each appDisplayFrame (from the cache) 
-      //  to animate to left = array slot * appBoxWidth
+      //  to animate to left = array slot * gLayout.appBoxWidth
       var i;
-      //NOTE: 7 here is important!  It pushes the rightmost one off the side of the page, so that it is hidden
-      for (i=0; i<7; i++) {
+      //NOTE: (gLayout.columnCount+1) here is important!  It pushes the rightmost one off the side of the page, so that it is hidden
+      for (i=0; i< (gLayout.rowCount * gLayout.columnCount)+1; i++) {
       if (arrangedPage[i]) {
-          if (gAppItemCache[arrangedPage[i]].position().left != (appBoxWidth * i)) {
-            console.log("OWA: moving app: " + i + " on page " + pageIdx);
+
+          var pos = positionForSlot(i);
+
+          if ((gAppItemCache[arrangedPage[i]].position().left != pos.left) || (gAppItemCache[arrangedPage[i]].position().top != pos.top)) {
             gAppItemCache[arrangedPage[i]].stop(true, false);
-            gAppItemCache[arrangedPage[i]].animate({left: (appBoxWidth * i)}, 100);
+            gAppItemCache[arrangedPage[i]].animate({left: pos.left, top: pos.top}, appAnimationSpeed);
           }
         }
       }
@@ -227,16 +221,18 @@ function getCurrentPage() {
       
   //make sure every appDisplayFrame on the page is where it is supposed to be
   function redrawPage(page, animated) {
-    for (var i=0; i<6; i++) {
+    for (var i=0; i<(gLayout.rowCount * gLayout.columnCount); i++) {
       if (gDashboardState.pages[page][i]){
+        var pos = positionForSlot(i);
         if (animated) {
-          gAppItemCache[gDashboardState.pages[page][i]].css({left: (appBoxWidth * i)});
+          gAppItemCache[gDashboardState.pages[page][i]].css({left: pos.left, top: pos.top}, appAnimationSpeed);
         } else {
-          gAppItemCache[gDashboardState.pages[page][i]].animate({left: (appBoxWidth * i)}, 100);
+          gAppItemCache[gDashboardState.pages[page][i]].animate({left: pos.left, top: pos.top});
         }
       }
     }
   }
+
 
 
   function fixUpPageOverflows(startPage) {
@@ -247,23 +243,25 @@ function getCurrentPage() {
     var p, t;
     var numPages = gDashboardState.pages.length;
 
+    var pageSize = gLayout.columnCount * gLayout.rowCount;
+
     for (p=startPage; p<numPages; p++) {
-      if (gDashboardState.pages[p][6]) { //overflow
+      if (gDashboardState.pages[p][pageSize]) { //overflow
         //push the app into slot 0 of the next page, and then see if that causes a ripple
         if (!gDashboardState.pages[p+1]) gDashboardState.pages[p+1] = [];  //make a new empty page if there isn't one
         //check to see if we have to move things over
         if (gDashboardState.pages[p+1][0]) {
           //must shove them all over 1 to make room
-          for (t=6; t>0; t--) {
+          for (t=pageSize; t>0; t--) {
             gDashboardState.pages[p+1][t] = gDashboardState.pages[p+1][t-1];
           }
         }
         //push the app into the empty slot in the next page
-        gAppItemCache[gDashboardState.pages[p][6]].detach();
-        $("#page" + (p+1)).append(gAppItemCache[gDashboardState.pages[p][6]]);
+        gAppItemCache[gDashboardState.pages[p][pageSize]].detach();
+        $("#page" + (p+1)).append(gAppItemCache[gDashboardState.pages[p][pageSize]]);
 
-        gDashboardState.pages[p+1][0] = gDashboardState.pages[p][6];  
-        gDashboardState.pages[p][6] = undefined;
+        gDashboardState.pages[p+1][0] = gDashboardState.pages[p][pageSize];  
+        gDashboardState.pages[p][pageSize] = undefined;
         redrawPage(p+1);
       }
     }
@@ -287,14 +285,35 @@ function getCurrentPage() {
   }
 
 
+  //finds the nearest slot for a given set of coordinates
+  function slotForPosition(left, top) {
+      var currentSlot = Math.floor((left + (gLayout.appBoxWidth/2)) / gLayout.appBoxWidth);
+      //add on the rows
+      currentSlot += gLayout.columnCount * Math.floor((top + (gLayout.appBoxHeight/2)) / gLayout.appBoxHeight);
 
+      if (currentSlot < 0) currentSlot = 0;
+      if (currentSlot > (gLayout.columnCount * gLayout.rowCount)-1 ) { currentSlot = (gLayout.columnCount * gLayout.rowCount)-1; }
+
+      console.log("over slot: " + currentSlot)
+      return currentSlot;
+  }
+
+  //returns the coordinates for a given slot
+  function positionForSlot(s) {
+    var slotLeft = gLayout.appBoxWidth * (s % gLayout.columnCount);
+    var slotTop = Math.floor(s/gLayout.columnCount) * gLayout.appBoxHeight;
+
+    return {left: slotLeft, top: slotTop};
+  }
+
+
+  //TODO: add hold-forgiveness, whereby we don't stop the holddown timer if the stay within 2 pixels of where they are holding
       
   function _onMouseMove(e)
   {
     //slightly hokey caching of last mousemove event (the position is what we care about) for the case 
     // when you want to scroll multiple pages, without having to wiggle the mouse
     if (e) {
-      //console.log("OWA: caching mousemoveevent");
       _pageScrollEventObject = e;
     } else {
       console.log("OWA: using cached mousemoveevent");
@@ -302,49 +321,63 @@ function getCurrentPage() {
     }
 
     e.preventDefault();
-    clearTimeout(_mouseDownHoldTimer);
     if (_mouseDownTime == 0) { return; }
 
+    //give the user some forgiveness when pressing and holding. if they only move a couple of pixels, we will stillcount it as a hold.
+    if (_mouseDownHoldTimer) {
+      if (Math.abs(e.clientX - _mouseDownX) > 3 || Math.abs(e.clientY - _mouseDownY) > 3) {
+        clearTimeout(_mouseDownHoldTimer);
+        _mouseDownHoldTimer = undefined;
+      }
+      else return;
+    }
+
     var curPage = getCurrentPage();
-    var newPage;
     
+    //this is the -app- dragging code, which manages the necessary animations, the underlying data changes, and the possible paging to a different
+    // dashboard page while carrying an app
     if (_draggedApp) {
+      //we are moving the appDisplayFrame from one coordinate system to another, so we need to computer an offset, so it doesn't jump away from the cursor
+      var containerOffsetLeft = $("#clipper").offset().left;
+      var containerOffsetTop = $("#clipper").offset().top;
+
       //this is the icon dragging code
       //I need to do all the snapping, rearranging the other apps on the page, etc here
-      gAppItemCache[_draggedApp].css("left", (_draggedAppOffsetX + e.clientX - _mouseDownX) + 'px');
+
+      //don't ]et the app be dragged outside the clipping frame
+      var dragOutAmount = Math.floor((gLayout.appBoxWidth - ((gLayout.appBorderSize * 2) + gLayout.appIconSize))/2) - 1; //frame padding
+
+      //figure out if they are pushing against the side and want to scroll the page
+      var paging = 0;
+      if (gAppItemCache[_draggedApp].position().left <= -dragOutAmount) paging = -1;
+      if ((gAppItemCache[_draggedApp].position().left - dragOutAmount + gLayout.appBoxWidth) >= gLayout.panelWidth) paging = 1;
+
+      //keep the app inside the dash
+      var newLeft = Math.min( Math.max( (_draggedAppOffsetX + e.clientX - (_mouseDownX + containerOffsetLeft)), -dragOutAmount), (gLayout.panelWidth + dragOutAmount - gLayout.appBoxWidth));  
+      var newTop = Math.min( Math.max( (_draggedAppOffsetY + e.clientY - (_mouseDownY + containerOffsetTop)), 0), (gLayout.panelHeight - gLayout.appBoxHeight));
+
+      //keep it from going outside the dashboard
+      gAppItemCache[_draggedApp].css({left: newLeft, top: newTop});
       
       // figure out which slot we are above
       // if it's empty, do nothing
-      var currentSlot = Math.floor((gAppItemCache[_draggedApp].position().left + (appBoxWidth/2)) / appBoxWidth);
-      
-      //special kludge for switching pages.  I need to abstract this
-      if (gAppItemCache[_draggedApp].position().left <= -16) currentSlot = -1;
-      if (gAppItemCache[_draggedApp].position().left + (appBoxWidth-16) > pageWidth) currentSlot = 6;
-      
-      if (currentSlot > 5) {
-        currentSlot = 5;
-        _draggedAppLastSlot = currentSlot;
+      var currentSlot = slotForPosition(gAppItemCache[_draggedApp].position().left, gAppItemCache[_draggedApp].position().top);
+
+      //this is the paging code that is triggered when you are carrying an app and then push against the side of the screen.
+      // we go to the next page in that direction, if there is one
+      if (paging != 0) {
+        console.log("paging to the " + paging==1?"right":"left");
+
+        _draggedAppLastSlot = undefined;
         if (!_pageScrollDelay) {
-                newPage = goToPage(curPage+1, 400, function(page) {
+                var resultantPage = goToPage(curPage+paging, 400, function(page) {
                                                 //need to put the page we left back the way it was
                                                 if (curPage != page) redrawPage(curPage);
                                                 arrangeAppsOnPageToFit(page, currentSlot);
                                               });
         }
       }
-      
-      else if (currentSlot < 0) {
-        currentSlot = 0;
-        _draggedAppLastSlot = currentSlot;
-        if (!_pageScrollDelay) {
-                newPage = goToPage(curPage-1, 400, function(page) {
-                                                //need to put the page we left back the way it was
-                                                if (curPage != page) redrawPage(curPage);
-                                                arrangeAppsOnPageToFit(page, currentSlot);
-                                              });
-        }
-      }
-      
+      //otherwise, if they are over a new slot than they were last time, we animate the icons on the page into the proper configuration      
       else if (currentSlot != _draggedAppLastSlot) {      
         _draggedAppLastSlot = currentSlot;
         //now call the magic function that, given you are holding the lifted app over slot N, 
@@ -353,7 +386,7 @@ function getCurrentPage() {
         
       }      
     } else {
-      // this is the page scrolling code
+      // this is the -dashboard- scrolling code, when the user grabs the dash and pulls it one way or the other
       var newPos = (_dashOffsetX + e.clientX - _mouseDownX) + 'px';
   
       $("#dashboard").css("left", newPos);
@@ -378,7 +411,7 @@ function getCurrentPage() {
       _draggedAppOffsetX = extractNumber(gAppItemCache[_draggedApp].offset().left);
       _draggedAppOffsetY = extractNumber(gAppItemCache[_draggedApp].offset().top);
 
-      var startSlot = Math.floor(gAppItemCache[_draggedApp].position().left / appBoxWidth);
+      var startSlot = slotForPosition(_draggedAppOffsetX, _draggedAppOffsetY)
       
       //remove the app from the page it started on
       gDashboardState.pages[getCurrentPage()][startSlot] = undefined;
@@ -417,6 +450,8 @@ function getCurrentPage() {
   function _onMouseUp(e)
   {    
     clearTimeout(_mouseDownHoldTimer);
+    _mouseDownHoldTimer = undefined;
+
     e.preventDefault();
     var curPage = getCurrentPage();
     console.log("OWA: MOUSE UP!");
@@ -433,9 +468,7 @@ function getCurrentPage() {
       _appIcon = undefined;
       
       //get the correct arrangement of the current (dropped on) page
-      var currentSlot = Math.floor((gAppItemCache[_draggedApp].position().left + (appBoxWidth/2)) / appBoxWidth);
-      if (currentSlot > 5) currentSlot = 5;
-      if (currentSlot < 0) currentSlot = 0;
+      var currentSlot = slotForPosition(gAppItemCache[_draggedApp].position().left, gAppItemCache[_draggedApp].position().top);
 
       var rearrangedApps = arrangeAppsOnPageToFit(curPage, currentSlot);
       //insert the app into the empty slot it is over, on the current page
@@ -444,10 +477,10 @@ function getCurrentPage() {
       
       //overwrite the page in the dashboard state with the newly arranged page
       gDashboardState.pages[curPage] = rearrangedApps;
-      //redrawPage(curPage, true);
       //DO LOTS OF FIXUP!!
 
       fixUpPageOverflows(curPage);
+      //redrawPage(curPage, true);
 
       //save the changes
       saveDashboardState(gDashboardState);
@@ -456,8 +489,10 @@ function getCurrentPage() {
       gAppItemCache[_draggedApp].detach();
       //insert the appDisplayFrame into the current page
       $("#page" + curPage).append(gAppItemCache[_draggedApp]);
+      
       //animate the appdisplayframe to the correct position and z-index
-      gAppItemCache[_draggedApp].animate({left: (_draggedAppLastSlot * appBoxWidth)}, 100);
+      var pos = positionForSlot(currentSlot);
+      gAppItemCache[_draggedApp].animate({left: pos.left, top: pos.top}, appAnimationSpeed);
       gAppItemCache[_draggedApp].css('z-index', _draggedAppOrigZ);
       
       //stop dragging 
@@ -512,9 +547,9 @@ function getCurrentPage() {
         
         if ($("#dashboard").position().left < 0) {
             var offset = Math.abs($("#dashboard").position().left);
-            var remainder = offset - (curPage * screenWidth);
+            var remainder = offset - (curPage * gLayout.panelWidth);
             
-            if ( remainder > Math.floor(screenWidth / 2) ) {
+            if ( remainder > Math.floor(gLayout.panelWidth / 2) ) {
               snapPage++;
             }
         }
@@ -531,16 +566,16 @@ function getCurrentPage() {
     var numPages = gDashboardState.pages.length;
     if (whichPage >= numPages)  whichPage = numPages - 1;
     if (whichPage < 0) whichPage = 0;
-    var finalPos = (whichPage * screenWidth * -1);
+    var finalPos = (whichPage * gLayout.panelWidth * -1);
     
     if ( ($("#dashboard").position().left != finalPos) && (!_pageAnimating) ) {
       console.log("OWA: transitioning to page : " + whichPage);
       _pageAnimating = true;
       _pageScrollDelay = true;  //used by the auto-scrolling code to prevent rapid scrolling across many pages
-      $("#dashboard").animate({left: (whichPage * screenWidth * -1) }, animationSpeed, function() {
+      $("#dashboard").animate({left: (whichPage * gLayout.panelWidth * -1) }, animationSpeed, function() {
                                                                                                     _pageAnimating = false; 
                                                                                                     if (completionCallback) completionCallback(whichPage); 
-                                                                                                    _pageScrollTimer = setTimeout(function() { _pageScrollDelay = false; _onMouseMove(null); }, 400);
+                                                                                                    _pageScrollTimer = setTimeout(function() { _pageScrollDelay = false; _onMouseMove(false); }, 400);
                                                                                                   } );
     } 
     return whichPage;
@@ -603,11 +638,12 @@ function updateState(newState) {
     //create the right number of pages to hold everything
     gDashboardState.pages = [];
     
-    //put up to 6 apps into each page, or as many as we have
+    //put up to gLayout.columnCount apps into each page, or as many as we have
     var a=0;
+    var maxAppsInPage = gLayout.columnCount * gLayout.rowCount;
     for (origin in gApps) {
-      if (gDashboardState.pages[Math.floor(a/6)] == undefined) { gDashboardState.pages[Math.floor(a/6)] = []; }
-      gDashboardState.pages[Math.floor(a/6)][(a % 6)] = gApps[origin].origin32;
+      if (gDashboardState.pages[Math.floor(a/maxAppsInPage)] == undefined) { gDashboardState.pages[Math.floor(a/maxAppsInPage)] = []; }
+      gDashboardState.pages[Math.floor(a/maxAppsInPage)][(a % maxAppsInPage)] = gApps[origin].origin32;
       a++;
     }
     
@@ -624,7 +660,7 @@ function redrawDashboard( listOfInstalledApps ) {
     //both the app list and dashboard data functions are asynchronous, so we need to do everything in the callback
         
       //calculate various sizes of elements based on the window size, and set the background
-      computeLayoutVars();      
+      gLayout.recomputeLayout();      
           
       gApps = listOfInstalledApps;
 
@@ -655,12 +691,12 @@ function addEmptyPageToDash() {
   gDashboardState.pages[numPages] = [];
 
   //grow the dashboard
-  $('#dashboard').css({width: ((numPages+1) * (screenWidth +2)), height: screenHeight});
+  $('#dashboard').css({width: ((numPages+1) * (gLayout.panelWidth +2)), height: gLayout.panelHeight});
 
   //add a new empty page at the end
   var nextPage = $("<div/>").addClass("page").attr("id", "page" + numPages);
   $("#dashboard").append(nextPage);
-  nextPage.css({width: screenWidth, height: screenHeight});
+  nextPage.css({width: gLayout.panelWidth, height: gLayout.panelHeight});
 }
 
 
@@ -672,7 +708,7 @@ function layoutPages() {
   $('.page').remove();
   
   var numPages = gDashboardState.pages.length;
-  $('#dashboard').css({width: (numPages * (screenWidth +2)), height: screenHeight});
+  $('#dashboard').css({width: (numPages * (gLayout.panelWidth +2)), height: gLayout.panelHeight});
   
   //now for each page, build zero or more icon items, and put them into the page
   for (var p = 0; p < numPages; p++) {
@@ -680,7 +716,7 @@ function layoutPages() {
     var nextPage = $("<div/>").addClass("page").attr("id", "page" + p);
     
     $("#dashboard").append(nextPage);
-    nextPage.css({width: screenWidth, height: screenHeight});
+    nextPage.css({width: gLayout.panelWidth, height: gLayout.panelHeight});
 
     //put the apps in, used the cached items if we have them
     for (var a = 0; a < gDashboardState.pages[p].length; a++) {
@@ -693,7 +729,8 @@ function layoutPages() {
           
           var thisApp = gAppItemCache[gDashboardState.pages[p][a]];
           nextPage.append(thisApp);
-          thisApp.css({left: (a*appBoxWidth)});
+          var pos = positionForSlot(a);
+          thisApp.css({left: pos.left, top: pos.top});
       }
     }
   }
@@ -741,13 +778,13 @@ function createAppItem(install)
 {
 
   var appDisplayFrame = $("<div/>").addClass("appDisplayFrame");
-  appDisplayFrame.css({width: appBoxWidth, height: appBoxHeight});
+  appDisplayFrame.css({width: gLayout.appBoxWidth, height: gLayout.appBoxHeight});
   
   //helpers
-  var borders = appBorderSize * 2;
-  var wrapperSize = appIconSize + borders;
-  var heightRem = appBoxHeight - wrapperSize;
-  var widthRem = appBoxWidth - wrapperSize;
+  var borders = gLayout.appBorderSize * 2;
+  var wrapperSize = gLayout.appIconSize + borders;
+  var heightRem = gLayout.appBoxHeight - (wrapperSize + gLayout.appNameFontSize);
+  var widthRem = gLayout.appBoxWidth - wrapperSize;
   
   var iconWrapper = $("<div/>").addClass("iconWrapper").css({width: wrapperSize, 
                                                               height: wrapperSize,
@@ -761,19 +798,19 @@ function createAppItem(install)
   var clickyIcon = $("<div/>").addClass("icon");
   clickyIcon.attr("origin32", install.origin32);
 
-  clickyIcon.css({width: appIconSize, 
-                  height: appIconSize, 
-                  margin: appBorderSize,
+  clickyIcon.css({width: gLayout.appIconSize, 
+                  height: gLayout.appIconSize, 
+                  margin: gLayout.appBorderSize,
                                     
-                  "-moz-border-radius": (appIconSize/6) + "px",
-	                "-webkit-border-radius": (appIconSize/6) + "px",
-	                "border-radius": (appIconSize/6) + "px"
+                  "-moz-border-radius": (gLayout.appIconSize/6) + "px",
+	                "-webkit-border-radius": (gLayout.appIconSize/6) + "px",
+	                "border-radius": (gLayout.appIconSize/6) + "px"
 
                   });
 
   var iconImg = getBigIcon(install.manifest);
   
-  var appIcon = $("<img width='" + appIconSize + "' height='" + appIconSize + "'/>");
+  var appIcon = $("<img width='" + gLayout.appIconSize + "' height='" + gLayout.appIconSize + "'/>");
   
   if (iconImg.indexOf('/') === 0) {
     appIcon.attr('src', install.origin + iconImg);  
@@ -786,11 +823,9 @@ function createAppItem(install)
   iconWrapper.append(clickyIcon);
   appDisplayFrame.append(iconWrapper);
 
-
-  //TODO: size text to fit
-  var appName = $("<div/>").addClass("listLabel");
-  appName.css({width: appNameSize, 
-              "font-size":  appNameFontSize});
+  var appName = $("<div/>").addClass("appLabel");
+  appName.css({width: gLayout.appNameSize, 
+              "font-size":  gLayout.appNameFontSize});
 
   appName.text(install.manifest.name);  
   appDisplayFrame.append(appName);
@@ -833,9 +868,31 @@ if (self && self.port) {
   $("#pageLeft").click(_pageLeftClick);            
   $("#pageRight").click(_pageRightClick);
 
-    document.addEventListener("contextmenu", function(e) {
-      e.preventDefault();
-    }, true);
+  document.addEventListener("contextmenu", function(e) {
+    e.preventDefault();
+  }, true);
+
+  document.addEventListener("touchstart", function(e) {
+    if (e.touches && e.touches.length) {
+      e.clientX = e.touches[0].clientX;
+      e.clientY = e.touches[0].clientY;
+      _onMouseDown(e);
+    }
+  });
+
+  document.addEventListener("touchmove", function(e) {
+    if (e.touches && e.touches.length) {
+      e.clientX = e.touches[0].clientX;
+      e.clientY = e.touches[0].clientY;
+      _onMouseMove(e);
+    }
+  });
+
+  document.addEventListener("touchend", function(e) {
+      _onMouseUp(_pageScrollEventObject); //cached last move event
+
+  });
+
 
  });
 
