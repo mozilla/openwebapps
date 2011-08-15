@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<window id="main" title="$APPNAME" width="1024" height="800" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"> <!-- TODO Escape quotes! -->
+  <script type="application/javascript" src="chrome://webapp/content/main.js"/>
+  $APPMENUBAR
+  <browser type="content" src="$LAUNCHPATH" flex="1"/>
+</window>
+
