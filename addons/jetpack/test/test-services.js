@@ -1,4 +1,4 @@
-const services = require("services");
+const {MediatorPanel} = require("services");
 const FFRepoImpl = require("api").FFRepoImplService;
 const {getOWA, installTestApp} = require("./helpers/helpers");
 const {Cc, Ci, Cm, Cu, components} = require("chrome");
@@ -13,30 +13,39 @@ function getContentWindow() {
   return element.contentWindow.wrappedJSObject;
 }
 
-function createTestMediatorPanel() {
-  // We still use service2.html, but use a different content script tailored
-  // for testing.
-  let data = require("self").data;
-  let thePanel = require("panel").Panel({
-    id: 'test-mediator-panel',
-      contentURL: data.url("service2.html"),
-      contentScriptFile: [
-          data.url("mediatorapi.js"),
-      ],
-      contentScript:
-       "window.navigator.apps.mediation.ready(function(method, args, services) {" +
-       "  let service = services[0];" +
-       "  document.getElementById('servicebox').appendChild(service.iframe);" +
-       "  service.on('ready', function() {" +
-       "    service.call('echoArgs', args, function(result) {" +
-       "      self.port.emit('result', result);" +
-       "    });" +
-       "  });" +
-       "});",
-      width: 484, height: 484
-  });
-  return thePanel;
+// A subclass of the mediator used for testing.
+function TestMediatorPanel(window, contentWindowRef, methodName, args, successCB, errorCB) {
+  MediatorPanel.call(this, window, contentWindowRef, methodName, args, successCB, errorCB);
+}
+TestMediatorPanel.prototype = {
+  __proto__: MediatorPanel.prototype,
+
+  _createPopupPanel: function() {
+    // We still use service2.html, but use a different content script tailored
+    // for testing.
+    let data = require("self").data;
+    let thePanel = require("panel").Panel({
+        contentURL: data.url("service2.html"),
+        contentScriptFile: [
+            data.url("mediatorapi.js"),
+        ],
+        contentScript:
+         "window.navigator.apps.mediation.ready(function(method, args, services) {" +
+         "  let service = services[0];" +
+         // XXX - why is unsafeWindow needed here???
+         "  unsafeWindow.document.getElementById('servicebox').appendChild(service.iframe);" +
+         "  service.on('ready', function() {" +
+         "    service.call('echoArgs', args, function(result) {" +
+         "      self.port.emit('result', result);" +
+         "    });" +
+         "  });" +
+         "});",
+        width: 484, height: 484
+    });
+    this.panel = thePanel;
+  }
 };
+
 
 exports.test_invoke = function(test) {
   test.waitUntilDone();
@@ -50,21 +59,22 @@ exports.test_invoke = function(test) {
     owa._ui._panel.hide();
 
     let services = getOWA()._services;
-    let thePanelRecord = { contentWindow: getContentWindow(),
-                           panel: createTestMediatorPanel(),
-                           methodName: "test.basic",
-                           args: {hello: "world"},
-                           successCB: function(result) {
-                            test.assertEqual(result.hello, "world");
-                            test.done();
-                           },
-                           errorCB: function() {
-                            test.fail("error callback invoked");
-                           },
-                           isConfigured: true
-    };
-    services._popups.push(thePanelRecord);
-    services._configureContent(thePanelRecord);
-    services.show(thePanelRecord);
+    let wm = Cc["@mozilla.org/appshell/window-mediator;1"]
+                .getService(Ci.nsIWindowMediator);
+    let topWindow = wm.getMostRecentWindow("navigator:browser");
+    let medPanel = new TestMediatorPanel(
+      topWindow, getContentWindow(),
+      "test.basic", {hello: "world"}, // serviceName, args
+      function(result) { // success cb
+        test.assertEqual(result.hello, "world");
+        test.done();
+      },
+      function() { // error callback
+        test.fail("error callback invoked");
+      }
+     );
+    services._popups.push(medPanel);
+    medPanel.attachHandlers();
+    medPanel.show();
   });
 };
