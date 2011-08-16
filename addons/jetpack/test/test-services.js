@@ -53,12 +53,6 @@ exports.test_invoke = function(test) {
   installTestApp(test, "apps/basic/basic.webapp", function() {
     // we don't yet have a "mediator" concept we can use, so we call some
     // internal methods to set things up bypassing the builtin mediator ui.
-
-    // installing an app makes the dashboard appear, if you don't close it, you get exceptions
-    // bug 678238
-    const {dashboard} = require("ui");
-    dashboard._panel.hide();
-
     let services = getOWA()._services;
     let wm = Cc["@mozilla.org/appshell/window-mediator;1"]
                 .getService(Ci.nsIWindowMediator);
