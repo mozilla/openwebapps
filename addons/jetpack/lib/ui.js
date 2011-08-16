@@ -190,7 +190,7 @@ var dashboard = {
         if (topic == "openwebapp-installed") {
             data = JSON.parse(data);
             try{
-               dashboard.update(!data.hidePostInstallPrompt ? 'yes': undefined);
+               dashboard.update(!data.skipPostInstallDashboard ? 'yes': undefined);
             } catch (e) {
                 console.log(e);
             }
