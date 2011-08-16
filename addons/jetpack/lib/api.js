@@ -234,7 +234,7 @@ FFRepoImpl.prototype = {
                     self._observer.notifyObservers(
                         null, "openwebapp-installed", JSON.stringify({ 
                           origin: origin, 
-                          hidePostInstallPrompt: args.hidePostInstallPrompt ? args.hidePostInstallPrompt : false
+                          skipPostInstallDashboard: args.skipPostInstallDashboard ? args.skipPostInstallDashboard : false
                         })
                     );
                     
