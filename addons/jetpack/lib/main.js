@@ -48,18 +48,16 @@ Cu.import("resource://gre/modules/AddonManager.jsm", tmp);
 Cu.import("resource://gre/modules/XPCOMUtils.jsm", tmp);
 var {XPCOMUtils, AddonManager, Services} = tmp;
 
+/**
+ * openwebapps
+ *
+ * per-window initialization for owa
+ */
 function openwebapps(win, getUrlCB)
 {
     this._getUrlCB = getUrlCB;
     this._window = win;
 
-    Cc["@mozilla.org/observer-service;1"]
-      .getService(Ci.nsIObserverService)
-          .addObserver( this, "openwebapp-installed", false);
-    Cc["@mozilla.org/observer-service;1"]
-      .getService(Ci.nsIObserverService)
-          .addObserver( this, "openwebapp-uninstalled", false);
-    
     // Base initialization
     let tmp = {};
     tmp = require("./api");
@@ -72,16 +70,6 @@ function openwebapps(win, getUrlCB)
 
     tmp = require("./services");
     this._services = new tmp.serviceInvocationHandler(this._window);
-
-    tmp = {};
-    Cu.import("resource://services-sync/main.js", tmp);
-    if (tmp.Weave.Status.ready) {
-        this._registerSyncEngine();
-    } else {
-        tmp = {};
-        Cu.import("resource://services-sync/util.js", tmp);
-        tmp.Svc.Obs.add("weave:service:ready", this);
-    }
             
     if (this.pendingRegistrations) {
         for each (let reg in this.pendingRegistrations) {
@@ -91,10 +79,8 @@ function openwebapps(win, getUrlCB)
     }
           
     // Keep an eye out for LINK headers that contain manifests:
-    let obs = Cc["@mozilla.org/observer-service;1"].
-              getService(Ci.nsIObserverService);
     this._linkListenerAttached = false;
-    obs.addObserver(this, 'content-document-global-created', false);
+    Services.obs.addObserver( this, "content-document-global-created", false);
 
     this._ui = new ui.openwebappsUI(win, getUrlCB, this._repo);
     
@@ -119,6 +105,8 @@ function openwebapps(win, getUrlCB)
             if (e.target.pinned) return;
 
             let browser = self._window.gBrowser.getBrowserForTab(e.target);
+            // empty tabs have no currentURI
+            if (!browser || !browser.currentURI) return;
             let origin = url.URLParse(browser.currentURI.spec)
                 .originOnly().toString();
 
@@ -265,56 +253,10 @@ openwebapps.prototype = {
                 }
             }
         });
-        win.appinjector.registerAction(function() {
-            // Clear out the current page URL on every page load
-            let toolbarButton = win.document.getElementById("openwebapps-toolbar-button");
-            if (toolbarButton) {
-                toolbarButton.classList.remove("highlight");
-            }
-            repo.setCurrentPageAppURL(null);
-        });
-    },
-    
-    _registerSyncEngine: function() {
-        /*
-        let tmp = {};
-        Cu.import("resource://services-sync/main.js", tmp);
-        tmp.AppsEngine = require("./sync").AppsEngine;
-            
-        if (!tmp.Weave.Engines.get("apps")) {
-            tmp.Weave.Engines.register(tmp.AppsEngine);
-            unloaders.push(function() {
-                tmp.Weave.Engines.unregister("apps");
-            });
-        }
-        
-        let prefname = "services.sync.engine.apps";
-        if (Services.prefs.getPrefType(prefname) ==
-            Ci.nsIPrefBranch.PREF_INVALID) {
-            Services.prefs.setBoolPref(prefname, true);    
-        }
-        */
     },
 
     observe: function(subject, topic, data) {
-        if (topic == "weave:service:ready") {
-            this._registerSyncEngine();
-        } else if (topic == "openwebapp-installed") {
-//             let installData = JSON.parse(data)
-//             this._ui._renderDockIcons(installData.origin);
-//             if (!installData.hidePostInstallPrompt) {
-//                 this._ui._showDock();
-//             }
-            try{
-               this._ui._updateDashboard('yes');
-            } catch (e) {
-                console.log(e);
-            }
-
-        } else if (topic == "openwebapp-uninstalled") {
-//             this._ui._renderDockIcons();
-               this._ui._updateDashboard();
-        } else if (topic == "content-document-global-created") {
+        if (topic == "content-document-global-created") {
 
             let mainWindow = subject
                          .QueryInterface(Ci.nsIInterfaceRequestor)
@@ -510,9 +452,25 @@ let AboutAppsHome = {
 //----- end about:apps (but see ComponentRegistrar call in startup())
 
 let unloaders = [];
+
+/**
+ * startup
+ *
+ * all per-instance initialization should be started from here.  The window
+ * watcher will create an instance of openwebapps per navigator window.
+ * addon-sdk widgets manage their own per-window initialization, don't replicate
+ * that.
+ *
+ * Notifications are made per-window after owa has finished it's per-window
+ * to allow other addons with owa as a dependency to have a reliable
+ * way to initialize per-window.
+ */
 function startup(getUrlCB) {
     /* Initialize simple storage */
     if (!simple.storage.links) simple.storage.links = {};
+    Services.obs.notifyObservers(null, "openwebapps-mediator-init", "");
+    
+    ui.dashboard.init();
 
     /* We use winWatcher to create an instance per window (current and future) */
     let iter = Cc["@mozilla.org/appshell/window-mediator;1"]
@@ -521,6 +479,7 @@ function startup(getUrlCB) {
     while (iter.hasMoreElements()) {
         let aWindow = iter.getNext().QueryInterface(Ci.nsIDOMWindow);
         aWindow.apps = new openwebapps(aWindow, getUrlCB);
+        Services.obs.notifyObservers(aWindow, "openwebapps-mediator-load", "");
     }
     function winWatcher(subject, topic) {
         if (topic != "domwindowopened")
@@ -530,6 +489,7 @@ function startup(getUrlCB) {
             let doc = subject.document.documentElement;
             if (doc.getAttribute("windowtype") == "navigator:browser") {
                 subject.apps = new openwebapps(subject, getUrlCB);
+                Services.obs.notifyObservers(subject, "openwebapps-mediator-load", "");
             }
         }, false);
     }
@@ -553,11 +513,8 @@ function startup(getUrlCB) {
     });
 
     // Broadcast that we're done, in case anybody is listening
-    let observerService = Cc["@mozilla.org/observer-service;1"]
-               .getService(Ci.nsIObserverService);
-
     let tmp = require("api");
-    observerService.notifyObservers(tmp.FFRepoImplService, "openwebapps-startup-complete", "");
+    Services.obs.notifyObservers(tmp.FFRepoImplService, "openwebapps-startup-complete", "");
 }
 
 function shutdown(why)
