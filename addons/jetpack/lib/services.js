@@ -460,14 +460,22 @@ serviceInvocationHandler.prototype = {
         this._popups = newPopups;
     },
     
-    get: function(contentWindowRef, methodName) {
-        let panel;
+    get: function(contentWindowRef, methodName, args, successCB, errorCB) {
         for each (let popupCheck in this._popups) {
             if (contentWindowRef == popupCheck.contentWindow && methodName == popupCheck.methodName) {
                 return popupCheck;
             }
         }
-        return null;
+        // if we didn't find it, create it
+        let agent = agentCreators[methodName] ? agentCreators[methodName] : MediatorPanel;
+        let panel = new agent(this._window, contentWindowRef, methodName, args, successCB, errorCB);
+        // attach our response listeners
+        panel.attachHandlers();
+        this._popups.push(panel);
+        // add an unload listener so we can nuke this popup info as the window closes.
+        contentWindowRef.addEventListener("unload",
+                           this.removePanelsForWindow.bind(this), true);
+        return panel;
     },
 
     /**
@@ -478,18 +486,7 @@ serviceInvocationHandler.prototype = {
     invoke: function(contentWindowRef, methodName, args, successCB, errorCB) {
       try {
         // Do we already have a panel for this service for this content window?
-        let panel = this.get(contentWindowRef, methodName);
-        // If not, go create one
-        if (!panel) {
-            let agent = agentCreators[methodName] ? agentCreators[methodName] : MediatorPanel;
-            panel = new agent(this._window, contentWindowRef, methodName, args, successCB, errorCB);
-            // attach our response listeners
-            panel.attachHandlers();
-            this._popups.push(panel);
-            // add an unload listener so we can nuke this popup info as the window closes.
-            contentWindowRef.addEventListener("unload",
-                               this.removePanelsForWindow.bind(this), true);
-        }
+        let panel = this.get(contentWindowRef, methodName, args, successCB, errorCB);
         panel.hideErrorNotification();
         panel.show();
       } catch (e) {
