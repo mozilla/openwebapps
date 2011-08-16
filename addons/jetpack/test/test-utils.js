@@ -2,12 +2,6 @@ const utils = require("utils").utils;
 const test_module = require("./helpers/unit_test_runner").test_module;
 const {Element, Window} = require("./helpers/win_stub");
 
-exports.setup = function() {
-};
-
-exports.teardown = function() {
-};
-
 exports['test create_iframe'] = function(test) {
    test.assertEqual('function', typeof utils.create_iframe, 'create_iframe added');
 };
