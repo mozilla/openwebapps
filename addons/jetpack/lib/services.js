@@ -271,8 +271,8 @@ serviceInvocationHandler.prototype = {
       // Ready to go: attach our response listeners
       thePanel.port.on("result", function(msg) {
         try {
-          thePanel.hidePopup();
-          successCB(event.data);
+          thePanel.hide();
+          successCB(msg);
         } catch (e) {
           dump(e + "\n");
         }
