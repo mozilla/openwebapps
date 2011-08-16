@@ -29,6 +29,7 @@ TestMediatorPanel.prototype = {
         contentScriptFile: [
             data.url("mediatorapi.js"),
         ],
+        contentScriptWhen: "start",
         contentScript:
          "window.navigator.apps.mediation.ready(function(method, args, services) {" +
          "  let service = services[0];" +
@@ -55,8 +56,8 @@ exports.test_invoke = function(test) {
 
     // installing an app makes the dashboard appear, if you don't close it, you get exceptions
     // bug 678238
-    let owa = getOWA();
-    owa._ui._panel.hide();
+    const {dashboard} = require("ui");
+    dashboard._panel.hide();
 
     let services = getOWA()._services;
     let wm = Cc["@mozilla.org/appshell/window-mediator;1"]
