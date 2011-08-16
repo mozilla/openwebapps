@@ -45,7 +45,6 @@ var console = {
 
 var {Manifest} = require("./manifest");
 var {URLParse} = require("./urlmatch");
-var {NativeShell} = require("./nativeshell");
 
 // We want to use as much from the cross-platform repo implementation
 // as possible, but we do need to override a few methods.
