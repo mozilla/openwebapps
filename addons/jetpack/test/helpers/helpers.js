@@ -19,7 +19,7 @@ function getTestAppOptions(appRelPath) {
   return {
     url: manifest,
     origin: origin,
-    hidePostInstallPrompt: true // don't want the app panel to appear.
+    skipPostInstallDashboard: true // don't want the app panel to appear.
   };
 };
 
