@@ -60,13 +60,13 @@ var gLayout = { //some plausible default values
                 appBorderSize: 5,
                 appNameSize: 80,
                 appNameFontSize: 12,
-                setPanelSize: function(width, height) { if (width) this.panelWidth = width; if (height) this.panelHeight = height; this.recomputeLayout(); },
-                setAppRowsAndColumns: function(rows, columns) { if (rows) this.rowCount = rows; if (columns) this.columnCount = columns; this.recomputeLayout();},
+                setPanelWidthHeight: function(width, height) { if (width) this.panelWidth = width; if (height) this.panelHeight = height; this.recomputeLayout(); },
+                setPanelColumnsRows: function(columns, rows) { if (rows) this.rowCount = rows; if (columns) this.columnCount = columns; this.recomputeLayout();},
                 recomputeLayout: function() {
                                                 $("#clipper").css({width: this.panelWidth, height: this.panelHeight, clip: "rect(0px, " + this.panelWidth + "px, " + this.panelHeight + "px, 0px)"});
                                                 $("#dashboard").css({width: this.panelWidth, height: this.panelHeight});
                                                 //compute all the other params based on the panel size and rows/cols
-                                                console.log("computing layout");
+                                                console.log("computing layout: " + this);
                                                 this.appBoxWidth = Math.floor(this.panelWidth/this.columnCount);
                                                 this.appBoxHeight = Math.floor(this.panelHeight/this.rowCount);
                                                 this.appIconSize = Math.floor(Math.min(this.appBoxWidth, this.appBoxHeight) / 2);
@@ -77,18 +77,19 @@ var gLayout = { //some plausible default values
 
               };
 
-gLayout.setPanelSize(750, 220);
-gLayout.setAppRowsAndColumns(2, 6);
-
+  gLayout.setPanelWidthHeight(800, 400);
+  gLayout.setPanelColumnsRows(4, 2);
 
 /////////////////////////////////////////////////////////
 // mousedown/mouseup click/drag/flick state vars
+  //IN GLOBAL COORDINATES
   var _mouseDownX = 0;			// mouse starting position
   var _mouseDownY = 0;
   var _mouseDownTime = 0;
 
-  var _dashOffsetX;			
-  var _dashOffsetY;
+  //LOCAL COORDINATES LEFT OFFSET, used to deternmine what page is in view
+  var _dashboardScrollOffsetX;			
+  //var _dashOffsetY;  //currently unused, since we don't support vertically scrolling dashboard
   
   var _appIcon;
   var _pageAnimating = false;
@@ -103,7 +104,8 @@ gLayout.setAppRowsAndColumns(2, 6);
 
   //the id of the currently dragged app, or undefined if none
   var _draggedApp;
-  //the starting coordinates of the dragged app
+
+  //the starting LOCAL coordinates of the dragged app
   var _draggedAppOffsetX;
   var _draggedAppOffsetY;
 
@@ -116,7 +118,7 @@ gLayout.setAppRowsAndColumns(2, 6);
 
 //////////////////////
 function getCurrentPage() {
-  return Math.floor( (Math.abs($("#dashboard").position().left)) / gLayout.panelWidth);
+  return Math.floor( ( (Math.abs($("#dashboard").position().left))  + (gLayout.panelWidth/2) ) / gLayout.panelWidth);
 }
 
 /////////////////////////////////////////////////////////
@@ -129,12 +131,12 @@ function getCurrentPage() {
     // grab the mouse position
     _mouseDownX = e.clientX;
     _mouseDownY = e.clientY;
-    console.log(_mouseDownX + " " + _mouseDownY);
+    console.log("mousedown: " + e.clientX + " " + e.clientY);
                 
     var iconWrapper = $(e.target.parentNode.parentNode);
     
-    _dashOffsetX = extractNumber($("#dashboard").position().left);
-    _dashOffsetY = extractNumber($("#dashboard").position().top);
+    _dashboardScrollOffsetX = extractNumber($("#dashboard").position().left);
+    //_dashOffsetY = extractNumber($("#dashboard").position().top);
 
     if (iconWrapper.hasClass("iconWrapper")) {
             _appIcon = iconWrapper;
@@ -285,7 +287,7 @@ function getCurrentPage() {
   }
 
 
-  //finds the nearest slot for a given set of coordinates
+  //finds the nearest slot for a given set of LOCAL coordinates
   function slotForPosition(left, top) {
       var currentSlot = Math.floor((left + (gLayout.appBoxWidth/2)) / gLayout.appBoxWidth);
       //add on the rows
@@ -306,8 +308,6 @@ function getCurrentPage() {
     return {left: slotLeft, top: slotTop};
   }
 
-
-  //TODO: add hold-forgiveness, whereby we don't stop the holddown timer if the stay within 2 pixels of where they are holding
       
   function _onMouseMove(e)
   {
@@ -325,7 +325,7 @@ function getCurrentPage() {
 
     //give the user some forgiveness when pressing and holding. if they only move a couple of pixels, we will stillcount it as a hold.
     if (_mouseDownHoldTimer) {
-      if (Math.abs(e.clientX - _mouseDownX) > 3 || Math.abs(e.clientY - _mouseDownY) > 3) {
+      if (Math.abs(e.clientX - _mouseDownX) > 4 || Math.abs(e.clientY - _mouseDownY) > 4) {
         clearTimeout(_mouseDownHoldTimer);
         _mouseDownHoldTimer = undefined;
       }
@@ -353,12 +353,13 @@ function getCurrentPage() {
       if ((gAppItemCache[_draggedApp].position().left - dragOutAmount + gLayout.appBoxWidth) >= gLayout.panelWidth) paging = 1;
 
       //keep the app inside the dash
-      var newLeft = Math.min( Math.max( (_draggedAppOffsetX + e.clientX - (_mouseDownX + containerOffsetLeft)), -dragOutAmount), (gLayout.panelWidth + dragOutAmount - gLayout.appBoxWidth));  
-      var newTop = Math.min( Math.max( (_draggedAppOffsetY + e.clientY - (_mouseDownY + containerOffsetTop)), 0), (gLayout.panelHeight - gLayout.appBoxHeight));
+      var newLeft = Math.min( Math.max( (_draggedAppOffsetX + e.clientX - _mouseDownX), -dragOutAmount), (gLayout.panelWidth + dragOutAmount - gLayout.appBoxWidth));  
+      var newTop = Math.min( Math.max( (_draggedAppOffsetY + e.clientY - _mouseDownY), 0), (gLayout.panelHeight - gLayout.appBoxHeight));
 
       //keep it from going outside the dashboard
       gAppItemCache[_draggedApp].css({left: newLeft, top: newTop});
-      
+      console.log("OWA app coords: " + newLeft + " " + newTop);
+
       // figure out which slot we are above
       // if it's empty, do nothing
       var currentSlot = slotForPosition(gAppItemCache[_draggedApp].position().left, gAppItemCache[_draggedApp].position().top);
@@ -387,7 +388,7 @@ function getCurrentPage() {
       }      
     } else {
       // this is the -dashboard- scrolling code, when the user grabs the dash and pulls it one way or the other
-      var newPos = (_dashOffsetX + e.clientX - _mouseDownX) + 'px';
+      var newPos = (_dashboardScrollOffsetX + e.clientX - _mouseDownX) + 'px';
   
       $("#dashboard").css("left", newPos);
       
@@ -402,14 +403,14 @@ function getCurrentPage() {
   // we can move it around between pages if necessary
   function _onMouseHold(e) {
     //keep track of the id of the app we are dragging.  this is also used as a flag to tell us we are dragging
-    _draggedApp = $(e.target.parentNode).attr("origin32");
+    _draggedApp = $(e.target.parentNode).attr("guid");
     //check to be sure we have one
     if (_draggedApp) {
       _appIcon.removeClass("highlighted");
       _appIcon.addClass("liftedApp");
       
-      _draggedAppOffsetX = extractNumber(gAppItemCache[_draggedApp].offset().left);
-      _draggedAppOffsetY = extractNumber(gAppItemCache[_draggedApp].offset().top);
+      _draggedAppOffsetX = extractNumber(gAppItemCache[_draggedApp].position().left);
+      _draggedAppOffsetY = extractNumber(gAppItemCache[_draggedApp].position().top);
 
       var startSlot = slotForPosition(_draggedAppOffsetX, _draggedAppOffsetY)
       
@@ -519,11 +520,11 @@ function getCurrentPage() {
         _appIcon.removeClass("highlighted");
         _appIcon = undefined;
   
-        var origin32 = $(e.target.parentNode).attr("origin32");
+        var guid = $(e.target.parentNode).attr("guid");
         if (self && self.port) {
-          self.port.emit("launch", Base32.decode(origin32));
+          self.port.emit("launch", Base32.decode(guid));
         } else {
-          navigator.apps.mgmt.launch(Base32.decode(origin32));
+          navigator.apps.mgmt.launch(Base32.decode(guid));
         }
       } else if (flick) {
         //we go to the next page in the direction specified by the flick
@@ -583,106 +584,177 @@ function getCurrentPage() {
   
   
   
-  //////////////////////////////////////////////////
 
-function onFocus(event)
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// DATA MANAGEMENT AND UPDATE CODE
+
+/*
+  There are three moving parts to worry about:  The Dataset (list of currently installed apps), The DashboardState (a two-dimensional arrangement of references to items in the Dataset),
+  and the DisplayCache (a keyed object containing visual representations of every item in the DashboardState)
+
+  1) Poll or get notified that the dataset may have changed
+  2) For every item in the DashboardState, if it does not appear in the Dataset, remove it from the DashboardState.  
+      Also remove the corresponding item from the DisplayCache, and from the Page it was displayed on.
+  3) For every item in the Dataset, if it does not appear in the DashboardState, then add it into the DashboardState, in the first empty slot.  
+      Also generate the DisplayCache item, store it, and add it to the corresponding Page.
+  4) Recompute the gLayout parameters. 
+  5) (Done?)
+
+*/
+
+function onfocus(event)
 {
-  if (!self || !self.port) {
-  updateDashboard();
-  }
+  gLayout.recomputeLayout();      
+  dashboardRefresh();
 }
 
 
-function saveDashboardState(state) {
+function dashboardRefresh() {
+
+  //First get the dashboard state, if there is one.  
+  // this code works for regular window and jetpack panel
   if (self && self.port) {
-    self.port.emit("saveState", state);
+    self.port.emit("loadState");
   } else {
-    navigator.apps.mgmt.saveState(gDashboardState, function() {console.log("OWA: dashboard state saved");} );
+    navigator.apps.mgmt.loadState(receivedNewDashboardState);
   }
 }
 
-
-//giant pain:  we have only one unique identifying piece of data per app, and it's a url.
-// urls cannot be used for css/dom ids, as they contain disallowed characters.
-// we must construct a 1-1 mapping unique string that only contains allowed characters.
-// I have chose base32, in particular Crockford's version.  It is found in js/base32.js
-
-function findInstallForOrigin32(origin32) {
-  return gApps[Base32.decode(origin32)];
+//this callback is installed only if we are in a jetpack, and is called from dashboardRefresh above
+if (self && self.port) {
+  self.port.on("theState", receivedNewDashboardState);
 }
 
 
+//this is the function called by both the navigator.apps callback or the jetpack callback when the dashboard state loads
+// we immediately turn around and load the app list.
+function receivedNewDashboardState(newState) {
+  if (newState) gDashboardState = newState;
+  if (!gDashboardState.pages) gDashboardState.pages = [];
 
-
-function keyCount(obj) {
-  var n=0;
-  for (var p in obj) 
-      n += Object.prototype.hasOwnProperty.call(obj, p);
-  return n;
-}
-
-
-function updateDashboard() {
-  if (!self || !self.port) {
-    navigator.apps.mgmt.list( function (allApps) {
-    redrawDashboard(allApps);
-  });
+  if (self && self.port) {
+    self.port.emit("getList");
+  } else {
+    navigator.apps.mgmt.list( function (allApps) { interimRekeyDataset(allApps) });
   }
 }
 
+//this callback is installed only if we are in a jetpack, and is called from receivedNewDashboardState above
+if (self && self.port) {
+  self.port.on("theList", interimRekeyDataset);
+}
 
-function updateState(newState) {
-  gDashboardState = newState?newState:{};
-  
-  if (gDashboardState.pages == undefined) {
-    //create the right number of pages to hold everything
-    gDashboardState.pages = [];
-    
-    //put up to gLayout.columnCount apps into each page, or as many as we have
-    var a=0;
-    var maxAppsInPage = gLayout.columnCount * gLayout.rowCount;
-    for (origin in gApps) {
-      if (gDashboardState.pages[Math.floor(a/maxAppsInPage)] == undefined) { gDashboardState.pages[Math.floor(a/maxAppsInPage)] = []; }
-      gDashboardState.pages[Math.floor(a/maxAppsInPage)][(a % maxAppsInPage)] = gApps[origin].origin32;
-      a++;
+function interimRekeyDataset(dataset) {
+  var newSet = {};
+  for (id in dataset) newSet[Base32.encode(id)] = dataset[id];
+  refreshGrid(newSet);
+}
+
+//IMPORTANT!  THIS ASSUMES DATASET CONTAINS THE ELEMENTS YOU WISH DISPLAYED, KEYED BY GUID,
+// and in particular, a GUID that is suitable for a dom element id
+function refreshGrid(dataset) {
+  //first delete items that have been removed from the dataset
+  var p,s;
+  gApps = {};
+
+  if (!gDashboardState.pages) gDashboardState.pages = [];
+
+  //record the ones we had last time
+  for (p=0; p<gDashboardState.pages.length; p++) {
+    for (s=0; s<gLayout.rowCount * gLayout.columnCount; s++) {
+      var guid = gDashboardState.pages[p][s];
+      if (guid) {
+        gApps[guid] = {slot: [p, s]};  //remember where we found it
+        console.log("found old app at: " + p + " " + s);
+      }
     }
-    
-    //save this as the new state
-    saveDashboardState(gDashboardState);
+  }
+
+  //overlay the ones we have now
+  for (guid in dataset) {
+    gApps[guid] = dataset[guid]; 
+    console.log("found new app: " + guid);
+  }
+
+  //remove the ones that are still marked with theor former positions
+  for (guid in gApps) {
+    //check to see if it was deleted
+    var slot = gApps[guid].slot;
+    if (slot) {
+      console.log("found deleted app: " + guid + " " + gApps[guid].slot);
+      //remove it from everywhere
+      gApps[guid] = undefined;
+      gDashboardState.pages[slot[0]][slot[1]] = undefined;
+      if (gAppItemCache[guid]) {
+        gAppItemCache[guid].remove();
+        gAppItemCache[guid] = undefined;
+      }
+    }
+  }
+
+  //fill in the stuff for existing ones
+  for (p=0; p<gDashboardState.pages.length; p++) {
+
+    if ($("#page" + p).length == 0) { //results are an array, so zero length means non existence
+      var nextPage = $("<div/>").addClass("page").attr("id", "page" + p);
+      $("#dashboard").append(nextPage);
+      nextPage.css({width: gLayout.panelWidth, height: gLayout.panelHeight});
+    }
+
+    for (s=0; s<gLayout.rowCount * gLayout.columnCount; s++) {
+      var guid = gDashboardState.pages[p][s];
+
+      if (guid && !gAppItemCache[guid]) {
+        gAppItemCache[guid] = createAppItem(guid);
+        var pos = positionForSlot(s);
+        gAppItemCache[guid].css({left: pos.left, top: pos.top});
+        $('#page' + p).append(gAppItemCache[guid]);
+      }
+    }
+    $('#dashboard').css({width: (gDashboardState.pages.length * (gLayout.panelWidth +2)), height: gLayout.panelHeight});
+  }
+
+  //now add in  all the ones that are missing
+  // and create the DisplayCache items for them, and find a place in a page for them to live
+  for (guid in gApps) {
+    if (!gAppItemCache[guid]) {
+      gAppItemCache[guid] = createAppItem(guid);
+      insertNewItemIntoDash(guid);
+    }
   }
     
-  layoutPages();
+  saveDashboardState(gDashboardState);
 }
 
-//this is the primary UI function.  It loads the latest app list from disk, the latest dashboard state from disk,
-// and then proceeds to bring the visual depiction into synchrony with the data, with the least visual interruption.
-function redrawDashboard( listOfInstalledApps ) {
-    //both the app list and dashboard data functions are asynchronous, so we need to do everything in the callback
-        
-      //calculate various sizes of elements based on the window size, and set the background
-      gLayout.recomputeLayout();      
-          
-      gApps = listOfInstalledApps;
 
-      //tag them
-      for (origin in gApps) {
-        try {
-            //Tag the items with a base32 version of their url to use as an ID if they don't have it already
-            if (gApps[origin].origin32 == undefined) { 
-              gApps[origin].origin32 = Base32.encode(origin); 
-            }        
-        } catch (e) {
-          if (typeof console !== "undefined") console.log("OWA: Error while adding base32 ID to app " + origin + ": " + e);
-        }
+function insertNewItemIntoDash(guid) {
+  //iterate through the pages, looking for the first empty slot.  create new pages if necessary
+  p = 0;
+  s = 0;
+  var complete = false;
+
+  while (!complete) {
+    if (!gDashboardState.pages[p]) addEmptyPageToDash();
+
+    for (s=0; s< (gLayout.columnCount * gLayout.rowCount); s++) {
+      if (!gDashboardState.pages[p][s]) {
+        gDashboardState.pages[p][s] = guid;
+        var pos = positionForSlot(s);
+        gAppItemCache[guid].css({left: pos.left, top: pos.top});
+        $('#page' + p).append(gAppItemCache[guid]);
+        complete = true;
+        break;
       }
-
-
-      if (self && self.port) {
-        self.port.emit("loadState");
-      } else {
-        navigator.apps.mgmt.loadState(updateState);
-      }
+    }
+    p++;
+  }
+  // $('#dashboard').css({width: (gDashboardState.pages.length * (gLayout.panelWidth +2)), height: gLayout.panelHeight});
 }
+
 
 function addEmptyPageToDash() {
   var numPages = gDashboardState.pages.length;
@@ -697,44 +769,27 @@ function addEmptyPageToDash() {
   var nextPage = $("<div/>").addClass("page").attr("id", "page" + numPages);
   $("#dashboard").append(nextPage);
   nextPage.css({width: gLayout.panelWidth, height: gLayout.panelHeight});
+
+  console.log("added empty page");
 }
 
 
-//create the full app list, and sort them for display
-// here is also where I cache the base32 version of the origin into the app
-function layoutPages() {
-  if (!gApps) return;
-  //clear the list
-  $('.page').remove();
-  
-  var numPages = gDashboardState.pages.length;
-  $('#dashboard').css({width: (numPages * (gLayout.panelWidth +2)), height: gLayout.panelHeight});
-  
-  //now for each page, build zero or more icon items, and put them into the page
-  for (var p = 0; p < numPages; p++) {
-    //add the page div
-    var nextPage = $("<div/>").addClass("page").attr("id", "page" + p);
-    
-    $("#dashboard").append(nextPage);
-    nextPage.css({width: gLayout.panelWidth, height: gLayout.panelHeight});
-
-    //put the apps in, used the cached items if we have them
-    for (var a = 0; a < gDashboardState.pages[p].length; a++) {
-        
-        if (gDashboardState.pages[p][a]) {  //some slots contain undefined
-          if (gAppItemCache[gDashboardState.pages[p][a]] == undefined)
-          {
-            gAppItemCache[gDashboardState.pages[p][a]] = createAppItem( findInstallForOrigin32(gDashboardState.pages[p][a]) );
-          }
-          
-          var thisApp = gAppItemCache[gDashboardState.pages[p][a]];
-          nextPage.append(thisApp);
-          var pos = positionForSlot(a);
-          thisApp.css({left: pos.left, top: pos.top});
-      }
-    }
+//WORKS WITH PANEL AND WINDOW
+function saveDashboardState(state) {
+  if (self && self.port) {
+    self.port.emit("saveState", state);
+  } else {
+    navigator.apps.mgmt.saveState(gDashboardState, function() {console.log("OWA: dashboard state saved");} );
   }
 }
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 
 
 
@@ -757,25 +812,27 @@ function getBigIcon(manifest) {
 
 
 
-function getSmallIcon(manifest) {
-  //see if the manifest has any icons, and if so, return a 32px one if possible
-  if (manifest.icons) {
-  //prefer 32
-    if (manifest.icons["32"]) return manifest.icons["32"];
+// function getSmallIcon(manifest) {
+//   //see if the manifest has any icons, and if so, return a 32px one if possible
+//   if (manifest.icons) {
+//   //prefer 32
+//     if (manifest.icons["32"]) return manifest.icons["32"];
     
-    var smallSize = 1000;
-    for (z in manifest.icons) {
-      var size = parseInt(z, 10);
-      if (size < smallSize) smallSize = size;
-    }
-    if (smallSize !== 1000) return manifest.icons[smallSize];
-  }
-  return null;
-}
+//     var smallSize = 1000;
+//     for (z in manifest.icons) {
+//       var size = parseInt(z, 10);
+//       if (size < smallSize) smallSize = size;
+//     }
+//     if (smallSize !== 1000) return manifest.icons[smallSize];
+//   }
+//   return null;
+// }
 
 
-function createAppItem(install)
+function createAppItem(guid)
 {
+  //look it up
+  var install = gApps[guid];
 
   var appDisplayFrame = $("<div/>").addClass("appDisplayFrame");
   appDisplayFrame.css({width: gLayout.appBoxWidth, height: gLayout.appBoxHeight});
@@ -796,7 +853,7 @@ function createAppItem(install)
                                                               });
   
   var clickyIcon = $("<div/>").addClass("icon");
-  clickyIcon.attr("origin32", install.origin32);
+  clickyIcon.attr("guid", guid);
 
   clickyIcon.css({width: gLayout.appIconSize, 
                   height: gLayout.appIconSize, 
@@ -845,20 +902,10 @@ function _pageLeftClick() {
   } 
 
 
-//set up the message handler for the widget
-if (self && self.port) {
-  self.port.on("theList", redrawDashboard);
-} else {
-  updateDashboard();
-}
-
-if (self && self.port) {
-  self.port.on("theState", updateState);
-}
 
 //set up the mouse handlers for html page loads
  $(document).ready(function() {
-  
+
   $("#clipper").mousedown(_onMouseDown);
   $("#clipper").mouseup(_onMouseUp);
   $("#clipper").mousemove(_onMouseMove);
@@ -896,4 +943,6 @@ if (self && self.port) {
 
  });
 
+  gLayout.recomputeLayout();      
+  dashboardRefresh();
 

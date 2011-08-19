@@ -155,8 +155,8 @@ openwebappsUI.prototype = {
         
         console.log(data.url("panel.html"));
         let thePanel = require("panel").Panel({
-          height: 216,
-          width: 754,
+          height: 200,
+          width: 800,
           position: "topcenter bottomright",
           contentURL: data.url("panel.html"),
           contentScriptFile: [data.url("base32.js"),

@@ -20,6 +20,8 @@ body {
   border: 0px;
   padding: 0px;
 
+  left: 23;
+  top: 53;
   width: 720;
   height: 110;
   clip: rect(0px, 720px, 110px, 0px);
