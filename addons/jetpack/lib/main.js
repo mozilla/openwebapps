@@ -130,6 +130,10 @@ function openwebapps(win, getUrlCB)
             });
         }, 500, e);
     }, false);
+    
+    // Init push notifications code
+    let pnotifs = require('./pnotifs/owabridge');
+    pnotifs.OWANotificationsBridge.init();
 }
 
 openwebapps.prototype = {
@@ -137,7 +141,7 @@ openwebapps.prototype = {
         let repo = this._repo;
         let win = this._window;
         let self = this;
-        
+                
         win.appinjector.register({
             apibase: "navigator.apps", name: "install", script: null,
             getapi: function (contentWindowRef) {
