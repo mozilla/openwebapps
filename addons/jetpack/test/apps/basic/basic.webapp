@@ -7,7 +7,7 @@
   "experimental": {
     "services": {
       "test.basic": {
-        "endpoint": "/apps/basic/basic.html"
+        "endpoint": "/basic.html"
       }
     }
   }
