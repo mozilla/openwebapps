@@ -420,19 +420,32 @@ serviceInvocationHandler.prototype = {
             let cbshim = function(result) {
               cb(JSON.stringify(result));
             };
-            let cberrshim = function(result) {
-              if (cberr) {
-                cberr(JSON.stringify(result));
+            let cberrshim = function(code, message) {
+              // Following the lead from jschannel, the errback might be invoked
+              // as either: errback(code, message) or errback({code: "code", message: message})
+              let errob;
+              if (typeof message === 'undefined') {
+                if (typeof code === 'string') {
+                  errob = {code: code};
+                } else {
+                  errob = code;
+                }
               } else {
-                console.log("invokeService error but no error callback:", JSON.stringify(result));
+                // 2 params - must be explicit code/message params.
+                errob = {code: code, message: message};
+              }
+              if (cberr) {
+                cberr(JSON.stringify(errob));
+              } else {
+                console.log("invokeService error but no error callback:", JSON.stringify(errob));
               }
             }
             try {
                 theWindow._MOZ_SERVICES[activity][message](args, cbshim, cberrshim);
             } catch (e) {
-                console.log("error invoking " + activity + "/" + message + " on app " + app.origin + "\n" + e.toString());
+                console.log("error invoking " + activity + "/" + message + " on app " + app.origin + ": " + e.toString());
                 // invoke the callback with an error object the content can see.
-                cberrshim({error: e.toString()});
+                cberrshim("runtime_error", e.toString());
             }
         });
     },
