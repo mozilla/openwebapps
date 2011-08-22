@@ -42,6 +42,10 @@ const url = require("./urlmatch");
 const HTML_NS = "http://www.w3.org/1999/xhtml";
 const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
+let tmp = {};
+Cu.import("resource://gre/modules/Services.jsm", tmp);
+let {Services} = tmp;
+
 /* l10n support. See https://github.com/Mardak/restartless/examples/l10nDialogs */
 function getString(name, args, plural) {
     let str;
@@ -93,6 +97,110 @@ getString.init = function(getUrlCB, getAlternate) {
     getString.fallback = getBundle("en-US");
 }
 
+
+/**
+ * dashboard
+ *
+ * the dashboard widget is created once during the addon startup.  addon sdk
+ * handles adding the widget to each new window
+ */
+var dashboard = {
+    init: function() {
+        let tmp = {};
+        tmp = require("./api");
+        this._repo = tmp.FFRepoImplService;
+    
+        Services.obs.addObserver( this, "openwebapp-installed", false);
+        Services.obs.addObserver( this, "openwebapp-uninstalled", false);
+
+        let self = this;
+        let data = require("self").data;
+        let thePanel = require("panel").Panel({
+            height: 108,
+            width: 754,
+            position: "topcenter bottomright",
+            contentURL: data.url("panel.html"),
+            contentScriptFile: [data.url("base32.js"),
+                                data.url("jquery-1.4.2.min.js"),
+                                data.url("panel.js") ],
+
+            onShow: function() { self._repo.list(function(apps) {
+                                 thePanel.port.emit("theList", apps);
+                                });
+            }
+        });
+        
+        thePanel.port.on("getList", function(arg) {
+            self._repo.list(function(apps) {
+                thePanel.port.emit("theList", apps);
+            });
+        });
+        
+        thePanel.port.on("launch", function(arg) {
+            self._repo.launch(arg);
+            thePanel.hide();
+        });
+
+        //load and save dash state, just using a constant string for now
+        thePanel.port.on("loadState", function(arg) {
+          self._repo.loadState("owadock", function(state) {
+            thePanel.port.emit("theState", state);
+          });
+        });
+        
+        thePanel.port.on("saveState", function(arg) {
+          self._repo.saveState("owadock", arg);
+        });
+
+        this._panel = thePanel;
+
+        this._widget = widgets.Widget({
+            id: "openwebapps-toolbar-button",
+            label: "Web Apps",
+            width: 60,
+            contentURL: require("self").data.url("widget-label.html"),
+            panel: thePanel
+        });
+    },
+
+    /**
+     * update
+     *
+     * update the dashboard with any changes in the apps list
+     * XXX Dashboard should just have a listener built in
+     */
+    update: function(show) {
+        let self = this;
+        self._repo.list(function(apps) {
+          self._panel.port.emit("theList", apps);
+        });
+
+        if (show != undefined) {
+            let WM = Cc['@mozilla.org/appshell/window-mediator;1']
+                .getService(Ci.nsIWindowMediator);
+            let currentDoc = WM.getMostRecentWindow("navigator:browser").document;
+            var widgetAnchor = currentDoc.getElementById("widget:" + 
+                                              require("self").id + "-openwebapps-toolbar-button");
+    
+            self._panel.show(widgetAnchor, "topcenter bottomright");
+        }
+      
+    },
+    observe: function(subject, topic, data) {
+        if (topic == "openwebapp-installed") {
+            data = JSON.parse(data);
+            try{
+               dashboard.update(!data.skipPostInstallDashboard ? 'yes': undefined);
+            } catch (e) {
+                console.log(e);
+            }
+        } else if (topic == "openwebapp-uninstalled") {
+               dashboard.update();
+        }
+    }    
+}
+
+
 function openwebappsUI(win, getUrlCB, repo)
 {
     this._repo = repo;
@@ -118,9 +226,6 @@ openwebappsUI.prototype = {
             "\" type=\"text/css\""
         );
         doc.insertBefore(pi, doc.firstChild);
-
-        this._addToolbarButton();
-//         this._addDock();
     },
 
     _setupTabHandling: function() {
@@ -147,81 +252,6 @@ openwebappsUI.prototype = {
         // unloaders.push(container.removeEventListener("TabSelect", appifyTab,
         // false);
     },
-
-
-    _addToolbarButton: function() {
-        let self = this;
-        let data = require("self").data;
-        
-        console.log(data.url("panel.html"));
-        let thePanel = require("panel").Panel({
-          height: 108,
-          width: 754,
-          position: "topcenter bottomright",
-          contentURL: data.url("panel.html"),
-          contentScriptFile: [data.url("base32.js"),
-                              data.url("jquery-1.4.2.min.js"),
-                              data.url("panel.js") ],
-                              
-          onShow: function() { self._repo.list(function(apps) {
-                                thePanel.port.emit("theList", apps);
-                                }); },
-          position: "topcenter bottomright"
-        });      
-        
-        thePanel.port.on("getList", function(arg) {
-          self._repo.list(function(apps) {
-            thePanel.port.emit("theList", apps);
-          });
-        });
-        
-        thePanel.port.on("launch", function(arg) {
-            self._repo.launch(arg);
-            thePanel.hide();
-        });
-
-        //load and save dash state, just using a constant string for now
-        thePanel.port.on("loadState", function(arg) {
-          self._repo.loadState("owadock", function(state) {
-            thePanel.port.emit("theState", state);
-          });
-        });
-        
-        thePanel.port.on("saveState", function(arg) {
-          self._repo.saveState("owadock", arg);
-        });
-
-        widgets.Widget({
-        id: "openwebapps-toolbar-button",
-        label: "Web Apps",
-        width: 60,
-        contentURL: require("self").data.url("widget-label.html"),
-        panel: thePanel,
-        });
-          
-        self._panel = thePanel;
-    },
-
-
-  _updateDashboard: function(show) {
-    let self = this;
-    self._repo.list(function(apps) {
-      self._panel.port.emit("theList", apps);
-    });
-      
-
-    if (show != undefined) {
-      let WM = Cc['@mozilla.org/appshell/window-mediator;1']
-            .getService(Ci.nsIWindowMediator);
-      let currentDoc = WM.getMostRecentWindow("navigator:browser").document;
-      var widgetAnchor = currentDoc.getElementById("widget:" + 
-                                          require("self").id + "-openwebapps-toolbar-button");
-
-      console.log("showing panel");
-      self._panel.show(widgetAnchor, "topcenter bottomright");
-    }
-  
-  },
 
     _hideOffer: function() {
         if (this._offerAppPanel) {
@@ -407,3 +437,4 @@ openwebappsUI.prototype = {
 };
 
 exports.openwebappsUI = openwebappsUI;
+exports.dashboard = dashboard;

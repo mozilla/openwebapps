@@ -81,6 +81,19 @@ function App(app_obj) {
         this.launch_url += this.manifest.launch_path;
 };
 
+// A helper to join a path to a base being tollerant of the path ending
+// in a slash and the path starting with one.
+function appendPath(base, path) {
+    let baseEndsWithSlash = base.substr(-1) === "/";
+    let pathStartsWithSlash = path.substr(0, 1) === "/";
+    if (baseEndsWithSlash && pathStartsWithSlash) {
+        return base + path.substr(1);
+    }
+    if (!baseEndsWithSlash && !pathStartsWithSlash) {
+        return base + "/" + path;
+    }
+    return base + path;
+};
 
 Repo = (function() {
     // A TypedStorage singleton global object is expected to be present
@@ -190,8 +203,23 @@ Repo = (function() {
 
     // given an origin, normalize it (like, http://foo:80 --> http://foo), or
     // https://bar:443 --> https://bar, or even http://baz/ --> http://baz)
+    // Special treatment for resource:// URLs to support "builtin" apps - for
+    // these, the "origin" is considered to be the *path* to the .webapp - eg,
+    // "resource://foo/bar/app.webapp" is considered to be
+    // "resource://foo/bar" - thus, any services etc for such apps must be
+    // under resource://foo/bar"
+    // XXX - is this handling of builtin apps OK???
     function normalizeOrigin(origin) {
-        return URLParse(origin).normalize().originOnly().toString()
+        let parsed = URLParse(origin).normalize();
+        if (parsed.scheme === "resource") {
+            let str = parsed.toString();
+            // Look for the last slash and return the value *including* that
+            // slash (so calling normalizeOrigin(url) multiple times on the
+            // same URL returns the same value.
+            let lastSlash = str.lastIndexOf("/");
+            return str.substr(0, lastSlash+1);
+        }
+        return parsed.originOnly().toString()
     }
 
 
@@ -378,13 +406,10 @@ Repo = (function() {
 
                         var svcObj = {
                             // null out the URL when no endpoint
-                            url: one_service.endpoint? appid+one_service.endpoint:null,
+                            url: one_service.endpoint ? appendPath(appid, one_service.endpoint) : null,
                             app: app,
                             service: service_key
                         }
-                        // Fixup for built-ins, no origin
-                        if (one_service.endpoint && one_service.endpoint.indexOf("resource://") == 0) svcObj.url = one_service.endpoint;
-
                         if (!installedServices.hasOwnProperty(service_key)) {
                           dump("creating list for " + service_key + "\n");
                             installedServices[service_key] = [];
