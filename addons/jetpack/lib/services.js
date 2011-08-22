@@ -420,19 +420,19 @@ serviceInvocationHandler.prototype = {
             let cbshim = function(result) {
               cb(JSON.stringify(result));
             };
-            let cberrshim = function(result, extra) {
+            let cberrshim = function(code, message) {
               // Following the lead from jschannel, the errback might be invoked
-              // as either: errback(type, message) or errback({type: "type", message: message})
+              // as either: errback(code, message) or errback({code: "code", message: message})
               let errob;
-              if (typeof extra === 'undefined') {
-                if (typeof result === 'string') {
-                  errob = {code: result};
+              if (typeof message === 'undefined') {
+                if (typeof code === 'string') {
+                  errob = {code: code};
                 } else {
-                  errob = result;
+                  errob = code;
                 }
               } else {
-                // 2 params - must be explicit type/message params.
-                errob = {code: result, message: extra};
+                // 2 params - must be explicit code/message params.
+                errob = {code: code, message: message};
               }
               if (cberr) {
                 cberr(JSON.stringify(errob));
