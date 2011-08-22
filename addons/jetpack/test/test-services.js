@@ -2,6 +2,8 @@ const {MediatorPanel} = require("services");
 const FFRepoImpl = require("api").FFRepoImplService;
 const {getOWA, installTestApp, getTestUrl} = require("./helpers/helpers");
 const {Cc, Ci, Cm, Cu, components} = require("chrome");
+const tabs = require("tabs");
+
 
 function getContentWindow() {
   let wm = Cc["@mozilla.org/appshell/window-mediator;1"]
@@ -48,5 +50,66 @@ exports.test_invoke = function(test) {
       }
     );
     panel.show();
+  });
+};
+
+// Test that having 2 tabs, each with its own panel, works as expected.
+exports.test_invoke_twice = function(test) {
+  test.waitUntilDone();
+  let services = getOWA()._services;
+  let seenTab1Callback = false;
+  services.registerMediator("test.basic", TestMediator);
+  installTestApp(test, "apps/basic/basic.webapp", function() {
+    tabs.open({
+      url: "about:blank",
+      onOpen: function(tab1) {
+        tab1.on('ready', function(){
+          // first tab is open - create and invoke our test app.
+          let panel1 = services.get(
+            getContentWindow(),
+            "test.basic", {hello: "world"}, // serviceName, args
+            function(result) { // success cb
+              if (seenTab1Callback) {
+                test.fail("first tab got success callback twice");
+                test.done();
+                return;
+              }
+              seenTab1Callback = true;
+              test.assertEqual(result.hello, "world");
+              // yay - worked in the first tab - try the second.
+              panel1.panel.hide();
+              tabs.open({
+                url: "about:blank",
+                onOpen: function(tab2) {
+                  tab2.on('ready', function(){
+                    let panel2 = services.get(
+                      getContentWindow(),
+                      "test.basic", {hello: "world"}, // serviceName, args
+                      function(result) { // success cb
+                        test.assertEqual(result.hello, "world");
+                        // yay - worked in the second tab too - all done!
+                        tab2.close(function() {
+                          tab1.close(function() {
+                            test.done();
+                          })
+                        })
+                      },
+                      function() { // error callback
+                        test.fail("error callback invoked");
+                      }
+                    );
+                    panel2.show();
+                  });
+                }
+              });
+            },
+            function() { // error callback
+              test.fail("error callback invoked");
+            }
+          );
+          panel1.show();
+        });
+      }
+    });
   });
 };
