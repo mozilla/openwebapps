@@ -6,3 +6,5 @@ The harness is index.html and webactivities.js
 The specific service implementation is
     example-activity.js
     login.html
+
+Start by loading index.html in a browser
