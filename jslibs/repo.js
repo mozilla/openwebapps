@@ -56,9 +56,9 @@
 // check if ambient TypedStorage or not
 // by looking for 'require' keyword from jetpack
 if (typeof require !== 'undefined') {
-  var { TypedStorage } = require("./typed_storage");
-  var { URLParse } = require("./urlmatch");
-  var { Manifest } = require("./manifest");
+  var TypedStorage = require("./typed_storage").TypedStorage;
+  var URLParse = require("./urlmatch").URLParse;
+  var Manifest = require("./manifest").Manifest;
 }
 
 // An App data structure
