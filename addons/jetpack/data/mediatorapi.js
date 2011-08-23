@@ -91,6 +91,9 @@ window.navigator.apps.mediation.ready = function(invocationHandler) {
 
     let setupHandler = function(msg) {
         console.log("setup event has", msg.serviceList.length, "services");
+        // We record the invocation ID in the mediator window so we can later
+        // link the "app ready" calls back to the specific mediator instance.
+        unsafeWindow.navigator.apps.mediation._invocationid = msg.invocationid;
         let services = [];
         let document = unsafeWindow.document;
         for (var i = 0; i < msg.serviceList.length; i++) {
