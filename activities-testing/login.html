@@ -1,0 +1,21 @@
+<head>
+  <script src="webactivities.js" type="text/javascript" />
+
+  <script type="text/javascript">
+    function onSuccessfulLogin() {
+      // at this point, the site has successfully logged in its user.
+      // it now delivers the CREDENTIAL object back to the open web apps framework.
+      // this credential object can be any non-null object, and need not
+      // contain the full credential: the full credential can be in a cookie or localStorage.
+      navigator.apps.services.storeCredential({
+        credential: {id: 'john@smith.com'},
+        displayName: "John Smith"
+      });
+    }
+  </script>
+
+</head>
+<body>
+<h2>Login</h2>
+
+</body>
