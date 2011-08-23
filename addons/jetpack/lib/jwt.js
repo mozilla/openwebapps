@@ -1,3 +1,5 @@
+/* -*- Mode: JavaScript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* vim: set ts=2 et sw=2 tw=80: */
 
 var jwt = {};
 
@@ -169,7 +171,7 @@ var JWTInternals = (function() {
       {
           return JSON.parse(base64urldecode(this.payloadSegment));
       },
-    
+
     verify: function _verify(key)
     {
       var header = jsonObj(this.pkAlgorithm);
@@ -180,7 +182,7 @@ var JWTInternals = (function() {
       return algorithm.verify(this.cryptoSegment);
     }
   }
-  
+
   jwt.WebToken = WebToken;
   jwt.WebTokenParser = WebTokenParser;
   jwt.base64urlencode = base64urlencode;

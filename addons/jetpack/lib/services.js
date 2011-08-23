@@ -1,3 +1,5 @@
+/* -*- Mode: JavaScript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* vim: set ts=2 et sw=2 tw=80: */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -37,7 +39,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-const {Cu, Ci, Cc} = require("chrome"); 
+const {Cu, Ci, Cc} = require("chrome");
 var {FFRepoImplService} = require("api");
 let {URLParse} = require("openwebapps/urlmatch");
 
@@ -83,12 +85,12 @@ function MediatorPanel(window, contentWindowRef, methodName, args, successCB, er
 }
 MediatorPanel.prototype = {
     /* OWA Mediator Agents may subclass the following: */
-    
+
     /**
      * what the panel gets attached to
      * */
     get anchor() { return this.window.document.getElementById('identity-box') },
-    
+
     /**
      * update the arguments that get sent to a mediator
      */
@@ -122,7 +124,7 @@ MediatorPanel.prototype = {
     onClose: function(msg) {
         this.panel.hide();
     },
-        
+
     onError: function(msg) {
         console.error("mediator reported invocation error:", msg)
         this.showErrorNotification(msg);
@@ -144,7 +146,7 @@ MediatorPanel.prototype = {
         this.panel.resize(args.width, args.height);
     },
 
-    attachHandlers: function() {    
+    attachHandlers: function() {
         this.panel.port.on("result", this.onResult.bind(this));
         this.panel.port.on("error", this.onError.bind(this));
         this.panel.port.on("close", this.onClose.bind(this));
@@ -254,7 +256,7 @@ MediatorPanel.prototype = {
  * serviceInvocationHandler
  *
  * Controller for all mediator panels within a single top level window.
- * 
+ *
  * We create a service invocation panel when needed; there is at most one per
  * tab, but the user can switch away from a tab while a service invocation
  * dialog is still in progress.
@@ -325,7 +327,7 @@ serviceInvocationHandler.prototype = {
             if (!app) return;
 
             // at this point, all services should be registered
-            
+
             // we invoke the login one if it's supported
             if (app.services && app.services.login) {
                 // FIXME: what do we do with tons of IFRAMEs? Do they all get the login message?
@@ -452,7 +454,7 @@ serviceInvocationHandler.prototype = {
             }
         });
     },
-    
+
     /**
      * removePanelsForWindow
      *
@@ -478,7 +480,7 @@ serviceInvocationHandler.prototype = {
         console.log("window closed - had", this._popups.length, "popups, now have", newPopups.length);
         this._popups = newPopups;
     },
-    
+
     get: function(contentWindowRef, methodName, args, successCB, errorCB) {
         for each (let popupCheck in this._popups) {
             if (contentWindowRef == popupCheck.contentWindow && methodName == popupCheck.methodName) {
