@@ -21,8 +21,8 @@ body {
   padding: 0px;
 
   left: 16px;
-  width: 720;
-  height: 110;
+  width: 720px;
+  height: 110px;
   clip: rect(0px, 720px, 110px, 0px);
 }
 
@@ -33,12 +33,12 @@ body {
   padding: 0px;
 
   overflow: hidden;
-  height: 110;
+  height: 110px;
 }
 
 
-.page { 
-  display: inline-block; 
+.page {
+  display: inline-block;
   position: relative;
   vertical-align: top;
   overflow: hidden;
@@ -62,7 +62,7 @@ body {
 
   position: absolute;
   left: 738px;
-  
+
   width: 12px;
   height: 100px;
 }
@@ -73,13 +73,13 @@ body {
 
 
 .listLabel {
-      white-space: nowrap;
-      overflow: hidden;    
-      text-align:center;
-      margin: auto;
-      font-weight: bold;
-      color: #ccc;
-      text-shadow: black 1px 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-align:center;
+  margin: auto;
+  font-weight: bold;
+  color: #ccc;
+  text-shadow: black 1px 1px;
 }
 
 
@@ -87,24 +87,22 @@ body {
   box-shadow: 2px 6px 10px 2px rgb(0, 0, 0);
   background-color: rgb(40, 180, 80) !important;
 }
-      
+
 .highlighted {
-    background-color: rgba(255, 140, 60, 0.66) !important;
-  }
+  background-color: rgba(255, 140, 60, 0.66) !important;
+}
 
 
 .icon {
   display:inline-block;
 
-	-moz-border-radius: 4px;
-	-webkit-border-radius: 4px;
-	border-radius: 4px;
+  -moz-border-radius: 4px;
+  -webkit-border-radius: 4px;
+  border-radius: 4px;
 
   background-image: -moz-linear-gradient( rgba(245,245,245,1), rgba(175,175,175,1) );
-
-
 }
 
 .iconWrapper {
-    background-color: transparent;
+  background-color: transparent;
 }

@@ -1,3 +1,5 @@
+/* -*- Mode: JavaScript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* vim: set ts=2 et sw=2 tw=80: */
 var gServiceList;
 
 function renderRequestExplanation(requestMethod, args)
@@ -18,11 +20,11 @@ function renderRequestExplanation(requestMethod, args)
         .appendTo(box);
         var previewTitle = $("<div style='font-weight:bold;font-size:0.9em'/>")
         .appendTo(previewText);
-    
+
         if (args.title) previewTitle.text(args.title);
         var previewDimensions = $("<div style='font-size:0.7em;color:#888'>")
         .appendTo(previewText);;
-    
+
         /*if (args.size) */previewDimensions.text("640px x 960px"); // fake
         var previewSize = $("<div style='font-size:0.7em;color:#888'>")
         .appendTo(previewText);;
@@ -36,10 +38,10 @@ function renderRequestExplanation(requestMethod, args)
         $("#requestInfo").append(action);
     } else if (requestMethod== "profile.get") {
         var action = $("<div style='margin-top:10px;font-weight:bold;font-size:1.1em'>").text("Load Profile from:");
-        $("#requestInfo").append(action);  
+        $("#requestInfo").append(action);
     } else {
         var action = $("<div style='margin-top:10px;font-weight:bold;font-size:1.1em'>").text(requestMethod);
-        $("#requestInfo").append(action);  
+        $("#requestInfo").append(action);
     }
 }
 
@@ -49,7 +51,7 @@ function handleSetup(method, args, serviceList)
         append($("<div>Some page is asking for something from you.  Perhaps we could provide some more details about what is being requested here.</div>")).
         append($("<div>Method name: " + method + "</div>")).
         append($("<div>Arguments: " + args + "</div>"));
-    
+
     gServiceList = serviceList;
 
     renderRequestExplanation(method, args);

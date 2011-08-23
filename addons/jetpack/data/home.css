@@ -263,7 +263,7 @@ body[dir=rtl] #restorePreviousSession::before {
 }
 
 @media all and (max-width: 500px) {
-  #restorePreviousSession::before { 
+  #restorePreviousSession::before {
     content: url("chrome://browser/content/aboutHome-restore-icon-small.png");
     height: 41px;
   }
@@ -354,7 +354,7 @@ body[dir=rtl] #restorePreviousSession::before {
   height:80px;
   width:100%;
 }
-.containerTopbar { 
+.containerTopbar {
   width:100%;
 }
 .containerTopbar .label {
@@ -388,10 +388,10 @@ body[dir=rtl] #restorePreviousSession::before {
 .app {
   display:inline-block;
   position: relative;
-	margin-left: 8px;
-	margin-top: 8px;
-	width: 80px;
-	height: 60px;
+  margin-left: 8px;
+  margin-top: 8px;
+  width: 80px;
+  height: 60px;
   vertical-align:top;
 }
 
@@ -410,28 +410,29 @@ body[dir=rtl] #restorePreviousSession::before {
 }
 
 .iconimg {
-	width: 40px;
-	height: 40px;
+  width: 40px;
+  height: 40px;
 }
 
 .icon {
   vertical-align:top;
   margin:auto;
-	width: 40px;
-	height: 40px;
+  width: 40px;
+  height: 40px;
 
 /*
-	-moz-border-radius: 4px;
-	border-radius: 4px;
+  -moz-border-radius: 4px;
+  border-radius: 4px;
 
-	-moz-box-shadow:
-		inset rgba(255, 255, 255, 0.8) 0 1px 1px,
-		inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
-		rgba(0, 0, 0, 0.1) 0px 2px 12px,
-		rgba(0, 0, 0, 0.5) 0px 2px 1px;
-	box-shadow:
-		inset rgba(255, 255, 255, 0.8) 0 1px 1px,
-		inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
-		rgba(0, 0, 0, 0.1) 0px 2px 12px,
-		rgba(0, 0, 0, 0.5) 0px 2px 1px;*/
+  -moz-box-shadow:
+      inset rgba(255, 255, 255, 0.8) 0 1px 1px,
+      inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
+      rgba(0, 0, 0, 0.1) 0px 2px 12px,
+      rgba(0, 0, 0, 0.5) 0px 2px 1px;
+  box-shadow:
+      inset rgba(255, 255, 255, 0.8) 0 1px 1px,
+      inset rgba(0, 0, 0, 0.1) 0 -3px 0px,
+      rgba(0, 0, 0, 0.1) 0px 2px 12px,
+      rgba(0, 0, 0, 0.5) 0px 2px 1px;
+*/
 }
