@@ -5,14 +5,26 @@
 
 </head>
 <body>
+  <h2>Web Activities Test Harness</h2>
+  <p>
+    Customize the behavior of the activity by editing <tt>example-activity.js</tt><br />
+    Customize the login page by editing <tt>login.html</tt>.
+  </p>
+  <hr>
+  <h3>Try It</h3>
   <form onsubmit="navigator.apps.services.testShare(this.message.value); return false;">
     Message:<br />
-    <textarea name="message" rows=3 cols=80 wrap="soft">
-    </textarea><br />
+    <textarea name="message" rows=3 cols=80 wrap="soft"></textarea><br />
     <input type="submit" value="share" />
   </form>
 <br /><br />
-Credentials:
-<div id="credentials">
+<p id="credentials">
+<em>not logged in</em>
+</p>
+
+<h4>Log</h4>
+
+<div id="log">
 </div>
+
 </body>
