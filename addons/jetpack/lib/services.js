@@ -55,6 +55,7 @@ var mediators = {};
 // the User-Agent (ie, into Firefox) or be extensions.
 var agentCreators = {}; // key is service name, value is a callable.
 
+var nextinvocationid = 0;
 /**
  * MediatorPanel
  *
@@ -76,6 +77,7 @@ function MediatorPanel(window, contentWindowRef, methodName, args, successCB, er
     this.configured = false;
     this.haveAddedListener = false; // is the message handler installed?
     this.isConfigured = false;
+    this.invocationid = nextinvocationid++;
 
     this._createPopupPanel();
 }
@@ -132,7 +134,8 @@ MediatorPanel.prototype = {
                           method: this.methodName,
                           args: this.args,
                           serviceList: serviceList,
-                          caller: this.contentWindow.location.href
+                          caller: this.contentWindow.location.href,
+                          invocationid: this.invocationid
           });
         }.bind(this));
     },
@@ -350,7 +353,7 @@ serviceInvocationHandler.prototype = {
             // panels, message the panel about the readiness.
             if (contentWindowRef.parent) {
               for each (let popupCheck in self._popups) {
-                if (popupCheck.panel.url === contentWindowRef.parent.location.href) {
+                if (popupCheck.invocationid === contentWindowRef.parent.navigator.apps.mediation._invocationid) {
                   popupCheck.panel.port.emit("app_ready", contentWindowRef.location.href);
                   break;
                 }
