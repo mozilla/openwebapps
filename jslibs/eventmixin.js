@@ -1,3 +1,6 @@
+/* -*- Mode: JavaScript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* vim: set ts=2 et sw=2 tw=80: */
+
 function EventMixin(self) {
   self._listeners = {};
 

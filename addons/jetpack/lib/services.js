@@ -1,3 +1,5 @@
+/* -*- Mode: JavaScript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* vim: set ts=2 et sw=2 tw=80: */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -37,7 +39,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-const {Cu, Ci, Cc} = require("chrome"); 
+const {Cu, Ci, Cc} = require("chrome");
 var {FFRepoImplService} = require("api");
 let {URLParse} = require("openwebapps/urlmatch");
 
@@ -55,6 +57,7 @@ var mediators = {};
 // the User-Agent (ie, into Firefox) or be extensions.
 var agentCreators = {}; // key is service name, value is a callable.
 
+var nextinvocationid = 0;
 /**
  * MediatorPanel
  *
@@ -76,17 +79,18 @@ function MediatorPanel(window, contentWindowRef, methodName, args, successCB, er
     this.configured = false;
     this.haveAddedListener = false; // is the message handler installed?
     this.isConfigured = false;
+    this.invocationid = nextinvocationid++;
 
     this._createPopupPanel();
 }
 MediatorPanel.prototype = {
     /* OWA Mediator Agents may subclass the following: */
-    
+
     /**
      * what the panel gets attached to
      * */
     get anchor() { return this.window.document.getElementById('identity-box') },
-    
+
     /**
      * update the arguments that get sent to a mediator
      */
@@ -120,7 +124,7 @@ MediatorPanel.prototype = {
     onClose: function(msg) {
         this.panel.hide();
     },
-        
+
     onError: function(msg) {
         console.error("mediator reported invocation error:", msg)
         this.showErrorNotification(msg);
@@ -132,7 +136,8 @@ MediatorPanel.prototype = {
                           method: this.methodName,
                           args: this.args,
                           serviceList: serviceList,
-                          caller: this.contentWindow.location.href
+                          caller: this.contentWindow.location.href,
+                          invocationid: this.invocationid
           });
         }.bind(this));
     },
@@ -141,7 +146,7 @@ MediatorPanel.prototype = {
         this.panel.resize(args.width, args.height);
     },
 
-    attachHandlers: function() {    
+    attachHandlers: function() {
         this.panel.port.on("result", this.onResult.bind(this));
         this.panel.port.on("error", this.onError.bind(this));
         this.panel.port.on("close", this.onClose.bind(this));
@@ -251,7 +256,7 @@ MediatorPanel.prototype = {
  * serviceInvocationHandler
  *
  * Controller for all mediator panels within a single top level window.
- * 
+ *
  * We create a service invocation panel when needed; there is at most one per
  * tab, but the user can switch away from a tab while a service invocation
  * dialog is still in progress.
@@ -322,7 +327,7 @@ serviceInvocationHandler.prototype = {
             if (!app) return;
 
             // at this point, all services should be registered
-            
+
             // we invoke the login one if it's supported
             if (app.services && app.services.login) {
                 // FIXME: what do we do with tons of IFRAMEs? Do they all get the login message?
@@ -350,7 +355,7 @@ serviceInvocationHandler.prototype = {
             // panels, message the panel about the readiness.
             if (contentWindowRef.parent) {
               for each (let popupCheck in self._popups) {
-                if (popupCheck.panel.url === contentWindowRef.parent.location.href) {
+                if (popupCheck.invocationid === contentWindowRef.parent.navigator.apps.mediation._invocationid) {
                   popupCheck.panel.port.emit("app_ready", contentWindowRef.location.href);
                   break;
                 }
@@ -420,23 +425,36 @@ serviceInvocationHandler.prototype = {
             let cbshim = function(result) {
               cb(JSON.stringify(result));
             };
-            let cberrshim = function(result) {
-              if (cberr) {
-                cberr(JSON.stringify(result));
+            let cberrshim = function(code, message) {
+              // Following the lead from jschannel, the errback might be invoked
+              // as either: errback(code, message) or errback({code: "code", message: message})
+              let errob;
+              if (typeof message === 'undefined') {
+                if (typeof code === 'string') {
+                  errob = {code: code};
+                } else {
+                  errob = code;
+                }
               } else {
-                console.log("invokeService error but no error callback:", JSON.stringify(result));
+                // 2 params - must be explicit code/message params.
+                errob = {code: code, message: message};
+              }
+              if (cberr) {
+                cberr(JSON.stringify(errob));
+              } else {
+                console.log("invokeService error but no error callback:", JSON.stringify(errob));
               }
             }
             try {
                 theWindow._MOZ_SERVICES[activity][message](args, cbshim, cberrshim);
             } catch (e) {
-                console.log("error invoking " + activity + "/" + message + " on app " + app.origin + "\n" + e.toString());
+                console.log("error invoking " + activity + "/" + message + " on app " + app.origin + ": " + e.toString());
                 // invoke the callback with an error object the content can see.
-                cberrshim({error: e.toString()});
+                cberrshim("runtime_error", e.toString());
             }
         });
     },
-    
+
     /**
      * removePanelsForWindow
      *
@@ -462,7 +480,7 @@ serviceInvocationHandler.prototype = {
         console.log("window closed - had", this._popups.length, "popups, now have", newPopups.length);
         this._popups = newPopups;
     },
-    
+
     get: function(contentWindowRef, methodName, args, successCB, errorCB) {
         for each (let popupCheck in this._popups) {
             if (contentWindowRef == popupCheck.contentWindow && methodName == popupCheck.methodName) {

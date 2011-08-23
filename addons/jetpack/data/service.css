@@ -69,10 +69,10 @@ body {
 * html .ui-helper-clearfix { height:1%; }
 .ui-helper-clearfix { display:block; }
 
-.ui-tabs 
-{ position: relative; 
-  padding: 0; zoom: 1; 
-} 
+.ui-tabs
+{ position: relative;
+  padding: 0; zoom: 1;
+}
 
 
 /* position: relative prevents IE scroll bug (element with position: relative inside container with overflow: auto appear as "fixed") */
@@ -84,10 +84,10 @@ body {
 .ui-tabs .ui-tabs-nav li a, .ui-tabs.ui-tabs-collapsible .ui-tabs-nav li.ui-tabs-selected a { cursor: pointer; } /* first selector in group seems obsolete, but required to overcome bug in Opera applying cursor: text overall if defined elsewhere... */
 
 
-.ui-tabs .ui-tabs-panel { 
-  display: block; 
-  border-width: 0; 
-  padding: 0; 
+.ui-tabs .ui-tabs-panel {
+  display: block;
+  border-width: 0;
+  padding: 0;
 /*  background: none; */
 }
 
@@ -154,4 +154,3 @@ body {
 .ui-autocomplete .ui-widget :active {
   outline: none;
 }
-
