@@ -1,4 +1,3 @@
-const {MediatorPanel} = require("services");
 const FFRepoImpl = require("api").FFRepoImplService;
 const {getOWA, installTestApp, getTestUrl} = require("./helpers/helpers");
 const {Cc, Ci, Cm, Cu, components} = require("chrome");
