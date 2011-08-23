@@ -28,12 +28,24 @@ function elem(type, clazz) {
   return e;
 }
 
+var pending = false;
 var appDict;
-navigator.apps.mgmt.list(function(aDict) {
-  appDict = aDict;
-  render();
-});
 
+function refresh() {
+  if (!pending) {
+    pending = true;
+    navigator.apps.mgmt.list(function(aDict) {
+      pending = false;
+      appDict = aDict;
+      render();
+    });
+  }
+}
+
+refresh();
+window.addEventListener("focus", function() { 
+  refresh();
+});
 
 function render()
 {
