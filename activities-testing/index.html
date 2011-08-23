@@ -1,8 +1,18 @@
 <head>
-  <script src="webactivities.js" type="text/javascript" />
+  <script src="webactivities.js" type="text/javascript"></script>
 
-  <script src="example-activity.js" type="text/javascript" />
+  <script src="example-activity.js" type="text/javascript"></script>
 
 </head>
 <body>
+  <form onsubmit="navigator.apps.services.testShare(this.message.value); return false;">
+    Message:<br />
+    <textarea name="message" rows=3 cols=80 wrap="soft">
+    </textarea><br />
+    <input type="submit" value="share" />
+  </form>
+<br /><br />
+Credentials:
+<div id="credentials">
+</div>
 </body>

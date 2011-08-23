@@ -9,6 +9,7 @@ navigator.apps = (function() {
   var isReady = false;
   var credential = null;
   var afterLoginFunc = null;
+  var loginWindow = null;
 
   var HANDLERS = {};
   
@@ -26,15 +27,17 @@ navigator.apps = (function() {
   };
 
   var doLogin = function(next) {
+    loginWindow = window.open("login.html");
+    afterLoginFunc = next;
   };
   
   // called once the user is logged in
-  var doShare = function() {
+  var doShare = function(message) {
     if (!credential) {
       // first do login, and then share
-      return doLogin(doShare);
+      return doLogin(function() {doShare(message);});
     }
-    
+
     var share_activity = HANDLERS["http://webactivities.org/share"]
     if (!share_activity)
       return;
@@ -47,25 +50,38 @@ navigator.apps = (function() {
     handler({
       activity: "http://webactivities.org/share",
       action: "doShare",
+      data: {message: message},
       postResult: function(result) {
+        alert('got successful result: ' + result.messagePosted);
       },
       postException: function(exception) {
+        alert('exception happened: ' + exception.toString());
       },
-    }, {message: "sharing test message"}, credential);
+    }, credential);
   };
   
   // this tests the share functionality
   // that's all
-  var test = function() {
-    if (!isReady)
+  var testShare = function(message) {
+    if (!isReady) {
+      alert('not ready');
       return;
+    }
 
-    doShare();
+    doShare(message);
   };
 
-  var storeCredential = function(c) {
+  var _internalStoreCredential= function(c) {
+    loginWindow.close();
     credential = c;
-    afterLoginFunc();
+    document.getElementById('credentials').innerHTML = JSON.stringify(c);
+    afterLoginFunc();    
+  };
+  
+  var storeCredential = function(c) {
+    // this is being called in the login page
+    // we make the assumption that we can reach into the caller
+    window.opener.navigator.apps.services._internalStoreCredential(c);
   };
   
   return {
@@ -73,7 +89,8 @@ navigator.apps = (function() {
       registerHandler: registerHandler,
       ready: ready,
       storeCredential: storeCredential,
-      test: test
+      _internalStoreCredential: _internalStoreCredential,
+      testShare: testShare
     }
   };
 })();

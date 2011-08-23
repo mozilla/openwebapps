@@ -14,7 +14,7 @@ navigator.apps.services.registerHandler(
     // activity.postException(activity.CREDENTIAL_FAILURE);
     
     // if successful:
-    activity.postResult({status:"ok"});
+    activity.postResult({status:"ok", messagePosted: activity.data.message});
     
     // if other failure:
     // activity.postException(activity.FAILURE);
