@@ -34,7 +34,20 @@ Service.prototype = {
       }
     }
     // Need to use unsafeWindow here for some reason.
-    unsafeWindow.navigator.apps.mediation._invokeService(this.iframe.contentWindow, this.service, activity, args, cbshim, cberrshim);
+    // TODO: turn this into a getter when all mediators are converted.  right
+    // now some mediators will expect the iframe to be given to them, with
+    // templatized mediators the iframe is created in the template.
+    let cw = this.iframe.contentWindow;
+    if (!cw) {
+      let frames = unsafeWindow.document.getElementsByTagName('iframe');
+      for (var i=0 ; i < frames.length; i++) {
+        if (frames[i].src == this.url) {
+          cw = frames[i];
+          break;
+        }
+      }
+    }
+    unsafeWindow.navigator.apps.mediation._invokeService(cw, this.service, activity, args, cbshim, cberrshim);
   },
 
   // Get the closest icon that is equal to or larger than the requested size,
@@ -97,6 +110,11 @@ window.navigator.apps.mediation.ready = function(invocationHandler) {
     unsafeWindow.navigator.apps.mediation._invocationid = msg.invocationid;
     let services = [];
     let document = unsafeWindow.document;
+
+    // TODO: do not create iframes when mediators are converted to templates,
+    // mediators should have an api to call to remove services rather than
+    // removing the iframes as we do here.
+
     for (var i = 0; i < msg.serviceList.length; i++) {
       var svc = msg.serviceList[i];
       let iframe = document.createElement("iframe");

@@ -2,13 +2,11 @@
 
 <html>
 <head>
-  <link rel="stylesheet" type="text/css" href="service.css">
-  <script src="jquery-1.4.4.min.js" charset="utf-8" type="text/javascript">
-</script>
-  <script src="jquery-ui-1.8.10.custom.min.js" charset="utf-8" type="text/javascript">
-</script>
-  <script src="service.js" charset="utf-8" type="text/javascript">
-</script>
+  <link rel="stylesheet" type="text/css" href="service.css" />
+  <script src="jquery-1.4.4.min.js" charset="utf-8" type="text/javascript"></script>
+  <script src="jquery-ui-1.8.10.custom.min.js" charset="utf-8" type="text/javascript"></script>
+  <script src="jquery.tmpl.min.js" charset="utf-8" type="text/javascript"></script>
+  <script src="service.js" charset="utf-8" type="text/javascript"></script>
 
   <title></title>
 </head>
@@ -27,5 +25,42 @@
       </div>
     </div><!-- end appbox -->
   </div><!-- end wrapper -->
+
+<script id="serviceTabs" type="text/x-jquery-tmpl">
+  <div id="services">
+    <ul id="services-tabs">
+      {{each( i, svc ) services}}
+      <li class="serviceTab">
+        <a href="#svc-tab-${i}">
+          <img src="${svc.getIconForSize(48)}" class="serviceIcon"/>
+          <div class="serviceTitle">${svc.app.manifest.name}</div>
+        </a>
+      </li>
+      {{/each}}
+    </ul>
+    {{each( i, svc ) services}}
+    <div id="svc-tab-${i}" class="serviceDiv">
+      <iframe id="svc-frame-${i}" src="${svc.url}" class="serviceFrame" />
+    </div>
+    {{/each}}
+  </div>
+</script>
+
+<script id="image_send" type="text/x-jquery-tmpl">
+  <div>
+    <img class="previewImg" src="${src}" />
+    <div class="previewText">
+      <div class="previewTitle">${args.title}</div>
+      <div class="previewDimensions">${dimensions}</div>
+      <div class="previewSize">${size}</div>
+    </div>
+    <div class="previewAction">${action}</div>
+  </div>
+</script>
+
+<script id="defaultAction" type="text/x-jquery-tmpl">
+  <div class="previewAction">${action}</div>
+</script>
+
 </body>
 </html>
