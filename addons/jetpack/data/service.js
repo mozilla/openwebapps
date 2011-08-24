@@ -5,108 +5,44 @@ var gServiceList;
 function renderRequestExplanation(requestMethod, args) {
   $("#requestInfo").empty();
 
-  if (requestMethod == "image.send") {
-    var box = $("<div/>");
-    var preview = $("<img style='margin:auto;border-left:2px solid #fafafa;border-top:2px solid #fafafa;border-right:2px solid #ddd;border-bottom:2px solid #ddd;max-width:96px;max-height:96px;display:inline-block'/>").appendTo(box);
+  var tmplName = requestMethod.replace('.', '_');
+  var actionTmpl = $("#" + tmplName);
+  if (!actionTmpl) actionTmpl = $("#defaultAction");
 
-    if (args.mimeType && args.data) {
-      preview.attr("src", "data:" + args.mimeType + ";base64," + args.data);
-    } else if (args.data) {
-      preview.attr("src", "data:;base64," + args.data);
-    }
-
-    var previewText = $("<div style='display:inline-block;vertical-align:top;margin-left:8px'>").appendTo(box);
-    var previewTitle = $("<div style='font-weight:bold;font-size:0.9em'/>").appendTo(previewText);
-
-    if (args.title) previewTitle.text(args.title);
-    var previewDimensions = $("<div style='font-size:0.7em;color:#888'>").appendTo(previewText);;
-
-    /*if (args.size) */
-    previewDimensions.text("640px x 960px"); // fake
-    var previewSize = $("<div style='font-size:0.7em;color:#888'>").appendTo(previewText);; /*if (args.size) */
-    previewSize.text("96 KB"); // fake
-    var action = $("<div style='margin-top:10px;margin-bottom:6px;font-weight:bold;font-size:1.1em'>").text("Send Image to:");
-    $("#requestInfo").append(box);
-    $("#requestInfo").append(action);
-  } else if (requestMethod == "image.get") {
-    var action = $("<div style='margin-top:10px;font-weight:bold;font-size:1.1em'>").text("Get Image from:");
-    $("#requestInfo").append(action);
-  } else if (requestMethod == "profile.get") {
-    var action = $("<div style='margin-top:10px;font-weight:bold;font-size:1.1em'>").text("Load Profile from:");
-    $("#requestInfo").append(action);
-  } else {
-    var action = $("<div style='margin-top:10px;font-weight:bold;font-size:1.1em'>").text(requestMethod);
-    $("#requestInfo").append(action);
+  var data = {
+    action: requestMethod,
+    requestMethod: requestMethod,
+    args: args
   }
+
+  if (requestMethod == "image.send") {
+    data.action = "Send Image to:";
+    data.dimensions = "640px x 960px"; // fake
+    data.size = "96 KB"; //fake
+    if (args.mimeType && args.data) {
+      data.src = "data:" + args.mimeType + ";base64," + args.data;
+    } else if (args.data) {
+      data.src = "data:;base64," + args.data;
+    }
+  } else if (requestMethod == "image.get") {
+    data.action = "Get Image from:";
+  } else if (requestMethod == "profile.get") {
+    data.action = "Load Profile from:";
+  }
+
+  actionTmpl.tmpl(data).appendTo("#requestInfo");
 }
 
 function handleSetup(method, args, serviceList) {
-  $("#requestDescription").empty().
-  append($("<div>Some page is asking for something from you.  Perhaps we could provide some more details about what is being requested here.</div>")).
-  append($("<div>Method name: " + method + "</div>")).
-  append($("<div>Arguments: " + args + "</div>"));
-
   gServiceList = serviceList;
 
   renderRequestExplanation(method, args);
-  $("#servicebox").append($("<div id='services'></div>"));
-  $("#services").append($("<ul id='services-tabs'></ul>"));
 
-  function createServiceTab(svc) {
-    var svcTab = document.createElement("li");
-    var svcTabLink = document.createElement("a");
-    svcTabLink.setAttribute("href", "#svc-tab-" + i);
-    var svcTabImg = document.createElement("img");
-
-    var icon = svc.getIconForSize(48);
-    svcTabImg.setAttribute("src", icon);
-    svcTabImg.setAttribute("style", "width:48px;height:48px;vertical-align:middle");
-    svcTabLink.appendChild(svcTabImg);
-
-    var svcTextDiv = document.createElement("div");
-    svcTextDiv.appendChild(document.createTextNode(svc.app.manifest.name));
-    svcTextDiv.setAttribute("style", "max-width:76px;vertical-align:middle;text-align:center;display:block;overflow-x:hidden");
-
-    svcTab.setAttribute("style", "text-align:center;max-width:76px;overflow-x:hidden;color:black;font:0.7em 'Lucida Grande',Tahoma,Arial,sans-serif");
-    svcTabLink.appendChild(svcTextDiv);
-
-    svcTab.appendChild(svcTabLink);
-    svcTab.appendChild(svcTabLink);
-    $("#services-tabs").append(svcTab);
-
-    // Create the service div (this is where the content will go)
-    var svcDiv = document.createElement("div");
-    svcDiv.setAttribute("id", "svc-tab-" + i);
-    svcDiv.classList.add("serviceDiv");
-    $("#services").append(svcDiv);
-    return svcDiv;
-  }
-
-  for (var i = 0; i < gServiceList.length; i++) {
-    var svc = gServiceList[i];
-    var svcDiv = createServiceTab(svc);
-    svc.iframe.classList.add("serviceFrame");
-    svc.iframe.setAttribute("id", "svc-frame-" + i);
-    svcDiv.appendChild(svc.iframe);
-
-    /***
-     // testing code:
-     if (this.location.href.indexOf("file:///") == 0) {
-     var anIframe = document.createElement("iframe");
-     anIframe.src = svc.url;
-     anIframe.classList.add("serviceFrame");
-     svcDiv.appendChild(anIframe);
-     }
-     ***/
-  }
-
-  // and then the "add services" tab
-  svcDiv = createServiceTab(addServicesService);
-  var serviceFinder = document.createElement("iframe");
-  serviceFinder.src = "http://localhost:8420/" + method + ".html";
-  serviceFinder.classList.add("serviceFrame");
-  svcDiv.appendChild(serviceFinder);
-
+  addServicesService.url = "http://localhost:8420/" + method + ".html";
+  var services = serviceList.concat(addServicesService);
+  $("#serviceTabs").tmpl({
+    'services': services
+  }).appendTo("#servicebox");
   $("#services").tabs();
 }
 
