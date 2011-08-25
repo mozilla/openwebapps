@@ -2,7 +2,7 @@
 
 Here we define the specifics of the Share Web Activity. Read up on [Web Activities](ACTIVITES.md).
 
-## getCapabilities
+## getParameters
 
 localized by the provider according to whatever they want.
 

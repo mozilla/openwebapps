@@ -2,16 +2,41 @@
  * An example activity registration
  */
 
+// capabilities
+navigator.apps.services.registerHandler(
+  'http://webactivities.org/share',
+  'getParameters',
+  function(activity, credentials) {
+    activity.postResult({
+      features: [],
+    });
+  }
+);
+
+// autocomplete recipients
+navigator.apps.services.registerHandler(
+  'http://webactivities.org/share',
+  'autocompleteRecipients',
+  function(activity, credentials) {
+    
+  }
+);
+
+// validate recipients
+navigator.apps.services.registerHandler(
+  'http://webactivities.org/share',
+  'validateRecipients',
+  function(activity, credentials) {
+    
+  }
+);
+
 navigator.apps.services.registerHandler(
   // the share activity (don't change this)
   'http://webactivities.org/share',
   // the specific action within that activity (don't change this either)
-  'doShare', 
+  'send', 
   function(activity, credential) {
-    // activity contains: url, message, type, data
-    // activity.data contains the named parameters to doShare
-    // credential contains the credential previously set up by the login activity
-
     // post the message to our server (e.g. MyShare) using AJAX
 
     // if successful:
