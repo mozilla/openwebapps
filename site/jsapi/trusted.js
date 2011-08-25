@@ -220,22 +220,6 @@
         Repo.saveState(t.origin, args.state, t.complete);
     });
 
-    chan.bind('loginStatus', function (t) {
-        verifyMgmtPermission(t.origin);
-        // FIXME: both these can take came_from=URL
-        var loginInfo = {
-            loginLink: location.protocol + '//' + location.host + '/login.html?return_to=' + encodeURIComponent(t.origin),
-            logoutLink: location.protocol + '//' + location.host + '/logout.html&return_to=' + encodeURIComponent(t.origin)
-        };
-        try {
-          var info = JSON.parse(localStorage.getItem('syncInfo'));
-          var userInfo = {email: info.email};
-        } catch (e) {
-          var userInfo = null;
-        }
-        return [userInfo, loginInfo];
-    });
-
     /**
        help with debugging issues
        We can eventually toggle this using a debug.myapps.org store

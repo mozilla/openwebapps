@@ -784,7 +784,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
                     var url = origin;
                     if (_lastListResults[origin].manifest.launch_path !== undefined)
                         url += _lastListResults[origin].manifest.launch_path;
-                    // generate a deterministic and portable name for the "name" of the launced window. 
+                    // generate a deterministic and portable name for the "name" of the launced window.
                     // this will prevent multiple launches of the same app from opening new windows.
                     // (NOTE: IE is fairly restrictive on what characters may occur in the window name argument)
                     var name = ("openwebapp_" + id).replace(/[.:]/g, "_").replace(/[^a-zA-Z0-9_]/g, "");
@@ -855,20 +855,6 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
             });
         }
 
-        function callLoginStatus(onsuccess, onerror) {
-            setupWindow();
-            chan.call({
-                method: "loginStatus",
-                params: {},
-                error: function(error, message) {
-                    deliverError(error, message, onerror);
-                },
-                success: function(v) {
-                    if (onsuccess !== undefined) onsuccess(v[0], v[1]);
-                }
-            });
-        }
-
         function callReady(args) {
         }
 
@@ -884,7 +870,6 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
             mgmt: {
                 launch: callLaunch,
                 loadState: callLoadState,
-                loginStatus: callLoginStatus,
                 list: callList,
                 uninstall: callUninstall,
                 saveState: callSaveState
@@ -892,7 +877,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
             services: {
                 ready: callReady,
                 registerHandler: callRegisterHandler,
-            },                
+            },
             html5Implementation: true,
             // a debugging routine which allows debugging or testing clients
             // to point at a repository location other than production.

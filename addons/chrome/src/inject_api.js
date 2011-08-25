@@ -116,9 +116,6 @@ function inject_api() {
                 loadState: function (onsuccess, onerror) {
                     sendToExtension('loadState', undefined, onsuccess, onerror);
                 },
-                loginStatus: function (onsuccess, onerror) {
-                    sendToExtension('loginStatus', undefined, onsuccess, onerror);
-                },
                 saveState: function (obj, onsuccess, onerror) {
                     sendToExtension('saveState', obj, onsuccess, onerror);
                 }

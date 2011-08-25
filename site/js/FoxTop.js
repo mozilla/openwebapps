@@ -42,7 +42,7 @@ var gApps = {};
 
 var gDashboardState = {};
 
-//pages is an array of 'page' objects, (in the order spacified in the array) 
+//pages is an array of 'page' objects, (in the order spacified in the array)
 // each of which are {"name":"<page name>", "apps":[apps]};
 // where the ordering of the apps on the page is also as specified in the array
 gDashboardState.pages = [];
@@ -67,7 +67,7 @@ function findInstallForOrigin32(origin32) {
 
 function keyCount(obj) {
   var n=0;
-  for (var p in obj) 
+  for (var p in obj)
       n += Object.prototype.hasOwnProperty.call(obj, p);
   return n;
 }
@@ -117,27 +117,27 @@ function wiggleApp(origin32) {
   var dockIcons = $(".appInDock[origin32=" + origin32 + "]");
   var listIcon = $(".app[origin32=" + origin32 + "] > .appClickBox > .icon");
   if (!listIcon.length) return;
-  
+
   var transformProp = getTransformProperty(listIcon[0]);
 
   var angles = [0, 5, 10, 5, 0, -5, -10, -5];
   var d = 0;
   var count = 0;
-    
+
   var intervalID = setInterval(function () {
                                               d = (d + 1) % 9;
                                               dockIcons.each(function(i, e) {
                                                 e.style[transformProp] = 'rotate(' + (angles[d]) + 'deg)';
                                               });
                                               if (listIcon.length) listIcon[0].style[transformProp] = 'rotate(' + (angles[d]) + 'deg)';
-                                              
-                                              count += d?0:1;
-                                              if (count > 6) { 
-                                                    clearInterval(intervalID); 
-                                                    gLastInstalledApp = origin32;  
-                                              };   
 
-                                            }, 
+                                              count += d?0:1;
+                                              if (count > 6) {
+                                                    clearInterval(intervalID);
+                                                    gLastInstalledApp = origin32;
+                                              };
+
+                                            },
                                             25 );
 }
 
@@ -152,9 +152,9 @@ $(document).ready(function() {
    if (w.JSON && w.postMessage) {
        try {
               updateDashboard();
-                
+
             } catch (e) {
-            
+
               if (typeof console !== "undefined") console.log(e);
             }
 
@@ -183,22 +183,22 @@ function checkSavedData(save) {
 function updateDashboard( completionCallback ) {
     //both the app list and dashboard data functions are asynchronous, so we need to do everything in the cal
       navigator.apps.mgmt.list( function (listOfInstalledApps) {
-          
+
           gApps = listOfInstalledApps;
 
           //now, in the list callback, load the dashboard state
           navigator.apps.mgmt.loadState( function (dashState) {
               gDashboardState = checkSavedData(dashState);
-              
+
               renderList();
-  
+
               var justInstalled = paramValue("emphasize");
               if (justInstalled.length) {
                 wiggleApp(Base32.encode(unescape(justInstalled)));
               }
               //and call the dream within a dream within a dream callback.  if it exists.
               if (completionCallback) { completionCallback(); };
-           });                      
+           });
       });
 }
 
@@ -226,79 +226,79 @@ function renderList(andLaunch) {
   //if (!gApps) return;
   //clear the list
   $('.app').remove();
-  
+
   var results = [];
-  
+
   for (origin in gApps) {
     try {
-      
+
       //BASE32 ENCODE HERE ONLY
-      if ( ! gApps[origin].origin32) { gApps[origin].origin32 = Base32.encode(origin); };      
+      if ( ! gApps[origin].origin32) { gApps[origin].origin32 = Base32.encode(origin); };
       results.push(gApps[origin]);
-      
+
     } catch (e) {
       if (typeof console !== "undefined") console.log("Error while creating list icon for app " + origin + ": " + e);
     }
   }
-  
+
   results.sort(function(a,b) {return (a.manifest.name > b.manifest.name) });
-  
+
   //now figure out how many icons per page.  for now, we overflow to a new page when a page is full.
   // at this time, there is no way to manipulate the position of an app
   //compute the number of icons per page by doing some modular math on the sidth and height.
   // our icon size is 88px x 88px for now.
-  
+
   var width = Math.floor($("#p1 .dash").width());
   var height = Math.floor($("html").attr("clientHeight") - $("#p1 .ui-header").attr("clientHeight"));
   //var height = Math.floor($("#p1 .ui-footer").position().top - $("#p1 .ui-header").attr("clientHeight"));  //if we have a footer, subtract it
 
   var iconsAcross = Math.floor(width / 88);
   var iconsDown = Math.floor(height / 88);
-  
-  var iconsPerPage = iconsAcross * iconsDown;
-  
-  var numPages = Math.ceil(results.length / iconsPerPage);
-        
-  // we already have page 1, but we need to be able to remove the back button later, so we ref it here
-  var newPage = $("#p1"); 
 
-  //first make pages, then fill them afterwards. 
+  var iconsPerPage = iconsAcross * iconsDown;
+
+  var numPages = Math.ceil(results.length / iconsPerPage);
+
+  // we already have page 1, but we need to be able to remove the back button later, so we ref it here
+  var newPage = $("#p1");
+
+  //first make pages, then fill them afterwards.
   for ( var i = 1; i < numPages + 1; i++ ) {
-    try { 
+    try {
         //kind of a kludge here, since we already have the first page
         if (i > 1) {
           $("#p1").find(".ui-btn-right").show();
-  
+
           //create as many additional pages as we need
           newPage = $("#p1").clone();
-  
+
           newPage.find(".appList").empty();
           newPage.removeClass("ui-page-active");
           newPage.attr("id", "p"+i);
           newPage.attr("data-url", "p"+i);
-          newPage.find("h1").text("Page "+i); 
-          
+          newPage.find("h1").text("Page "+i);
+
           newPage.find(".ui-btn-left").show();
-          
+
           newPage.appendTo($.mobile.pageContainer);
         }
-        
+
         //now add in the icons for this page
         var dashDiv = newPage.find(".appList");
-        
+
         for ( var j = ((i-1) * iconsPerPage); j < ((i) * iconsPerPage); j++ ) {
           dashDiv.append(createAppListItem(results[j]));
         }
 
-        
+
     } catch (e) {
       if (typeof console !== "undefined") console.log("Error while inserting list icon for app " + results[i].origin + ": " + e);
     }
   }
   //remove the forward button from the last page
   newPage.find(".ui-btn-right").hide();
-  
-  
+
+
   if (results.length == 1 && andLaunch)
   {
     navigator.apps.mgmt.launch(results[0].origin);
@@ -324,7 +324,7 @@ function getBigIcon(manifest) {
   if (manifest.icons) {
   //prefer 64
     if (manifest.icons["64"]) return manifest.icons["64"];
-    
+
     var bigSize = 0;
     for (z in manifest.icons) {
       var size = parseInt(z, 10);
@@ -347,23 +347,23 @@ function createAppListItem(install)
 
   var clickyIcon = $("<div/>").addClass("icon");
   var iconImg = getBigIcon(install.manifest);
-  
+
   if (iconImg.indexOf('/') === 0) {
-    clickyIcon.append($('<img width="45" height="45"/>').attr('src', install.origin + iconImg));  
+    clickyIcon.append($('<img width="45" height="45"/>').attr('src', install.origin + iconImg));
   } else {
-    clickyIcon.append($('<img width="45" height="45"/>').attr('src', iconImg));  
+    clickyIcon.append($('<img width="45" height="45"/>').attr('src', iconImg));
   }
-  
+
   displayBox.append(clickyIcon);
   //only launch by tapping on icon itself
   clickyIcon.click(makeOpenAppTabFn(install.origin32));
 
   //TODO: size text to fit
   var appName = $("<div/>").addClass("listLabel");
-  appName.text(install.manifest.name);  
+  appName.text(install.manifest.name);
 
   displayBox.append(appName);
-  
+
   return appContainer;
 }
 
@@ -381,19 +381,6 @@ function onMessage(event)
 function onFocus(event)
 {
   //updateDashboard( ) ;
-}
-
-function updateLoginStatus() {
-  navigator.apps.mgmt.loginStatus(function (userInfo, loginInfo) {
-    if (! userInfo) {
-      $('#login-link a').attr('href', loginInfo.loginLink);
-      $('#login-link').show();
-    } else {
-      $('#username').text(userInfo.email);
-      $('#signed-in a').attr('href', loginInfo.logoutLink);
-      $('#signed-in').show();
-    }
-  });
 }
 
 
@@ -415,27 +402,27 @@ if (window.addEventListener) {
 // function createAppInfoPane(origin32) {
 //       var infoBox = $("<div/>").addClass("appinfobox");
 //       var install = findInstallForOrigin32(origin32);
-// 
+//
 //       var appIcon = $('<div width="64" height="64"/>').addClass("dockIcon");
-//       var iconImg = getBigIcon(install.manifest);        
+//       var iconImg = getBigIcon(install.manifest);
 //       appIcon.append($('<img width="64" height="64"/>').attr('src', install.origin + iconImg));
 //       infoBox.append(appIcon);
-//       
-//       
+//
+//
 //       var labelBox = $("<div class='labelBox glowy-blue-text'/>");
-//       
+//
 //       var appName = $("<div/>").addClass("infoLabel ");
-//       appName.text(install.manifest.name);  
+//       appName.text(install.manifest.name);
 //       appName.disableSelection();
 //       labelBox.append(appName);
-// 
+//
 //       if (install.manifest.developer && install.manifest.developer.name) {
 //         var devName = $("<div/>").addClass("infoLabelSmall");
-//         devName.text(install.manifest.developer.name);  
+//         devName.text(install.manifest.developer.name);
 //         devName.disableSelection();
 //         labelBox.append(devName);
 //       }
-//       
+//
 //       if (install.manifest.developer && install.manifest.developer.url) {
 //         var devLink = $("<a/>").addClass("infoLabelSmall glowy-blue-text");
 //         devLink.attr("href", install.manifest.developer.url);
@@ -444,32 +431,32 @@ if (window.addEventListener) {
 //         labelBox.append(devLink);
 //       }
 //       infoBox.append(labelBox);
-// 
+//
 //       var descBox = $("<div/>").addClass("descriptionBox glowy-blue-text");
 //       descBox.text(install.manifest.description);
 //       infoBox.append(descBox);
-// 
+//
 //       var delButton = $("<div/>").addClass("deleteAppButton glowy-red-text");
 //       delButton.text("DELETE");
 //       delButton.disableSelection();
 //       delButton.mouseenter(function() {delButton.animate({ "font-size": 20 + "px", "padding-top": "6px", "padding-bottom": "2px"}, 50) });
 //       delButton.mouseleave(function() {delButton.text("DELETE"); delButton.animate({ "font-size": 14 + "px", "padding-top": "8px", "padding-bottom":"0px"}, 50) });
-// 
-// 
+//
+//
 //       //this really needs to be moved out into a function
 //       delButton.click( function() { if (delButton.text() == "DELETE") {
 //                                           delButton.text("DELETE ?");
 //                                         } else {
-//       
-//                                           navigator.apps.mgmt.uninstall( install.origin, function() { 
+//
+//                                           navigator.apps.mgmt.uninstall( install.origin, function() {
 //                                                                                             removeAppFromDock(install.origin32);
 //                                                                                             removeWidget(install.origin32);
 //                                                                                             saveDashboardState( function () {updateDashboard();} );
 //                                                                                             hideModal('modalPage')
-//                                                                                         }  
+//                                                                                         }
 //                                                                         ) }});
 //       infoBox.append(delButton);
-//       
+//
 //       if (install.manifest.widget) {
 //         var widgetButton = $("<div/>").addClass("widgetToggleButton glowy-red-text");
 //         widgetButton.text("WIDGET");
@@ -481,14 +468,14 @@ if (window.addEventListener) {
 //                                             widgetButton.addClass("glowy-green-text");
 //                                           } else {
 //                                             widgetButton.removeClass("glowy-green-text");
-//                                           }; 
+//                                           };
 //                                          });
-//                                          
+//
 //         widgetButton.mouseenter(function() {widgetButton.animate({ "font-size": 20 + "px", "padding-top": "6px", "padding-bottom": "2px"}, 50) });
 //         widgetButton.mouseleave(function() {widgetButton.animate({ "font-size": 14 + "px", "padding-top": "8px", "padding-bottom": "0px"}, 50) });
 //         infoBox.append(widgetButton);
 //       }
-// 
+//
 //       return infoBox;
 // }
 

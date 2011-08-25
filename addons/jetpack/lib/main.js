@@ -240,17 +240,6 @@ openwebapps.prototype = {
     });
     win.appinjector.register({
       apibase: "navigator.apps.mgmt",
-      name: "loginStatus",
-      script: null,
-      getapi: function(contentWindowRef) {
-        return function(args) {
-          repo.verifyMgmtPermission(contentWindowRef.location);
-          return repo.loginStatus(args);
-        }
-      }
-    });
-    win.appinjector.register({
-      apibase: "navigator.apps.mgmt",
       name: "loadState",
       script: null,
       getapi: function(contentWindowRef) {

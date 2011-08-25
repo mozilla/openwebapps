@@ -75,7 +75,7 @@ function computeLayoutVars() {
   screenWidth = getWindowWidth();
   pageWidth = screenWidth;//-4;
   screenHeight = getWindowHeight();
-  
+
   if (screenWidth > screenHeight)  {
     appBoxWidth = Math.floor(pageWidth / 5);
     appBoxHeight = Math.floor(screenHeight / 4);
@@ -83,12 +83,12 @@ function computeLayoutVars() {
     appBoxWidth = Math.floor(pageWidth / 4);
     appBoxHeight = Math.floor(screenHeight / 5);
   }
-  
+
   appIconSize = Math.floor(Math.min(appBoxWidth, appBoxHeight) / 2.5);
   appBorderSize = Math.floor(appIconSize/8);
   appNameSize = Math.floor(appBoxWidth * 0.8);
   appNameFontSize = Math.max(Math.ceil(appIconSize/6), 10);
-  
+
   console.log("screenWidth: " + screenWidth);
   console.log("screenHeight: " + screenHeight);
   console.log("pageWidth: " + pageWidth);
@@ -110,10 +110,10 @@ $(document).ready(function() {
   var downX = 0;
   var downY = 0;
   var appHit;
-  
+
 //   window.addEventListener("MozOrientation", function(e) {
 //       console.log("ROTATION EVENT");
-//       updateDashboard(); 
+//       updateDashboard();
 //       }, true);
 
 //   document.addEventListener("scroll", function(e) {
@@ -128,7 +128,7 @@ $(document).ready(function() {
     if (e.touches && e.touches.length) {
       downX = e.touches[0].clientX;
       downY = e.touches[0].clientY;
-      
+
       //now check to see if it hits on an icon, and if so, then highlight it
       // i know this is a bit fragile and ugly
       var theDiv = $(e.target.parentNode.parentNode);
@@ -141,12 +141,12 @@ $(document).ready(function() {
     } else {
       downX = 0;
       downY = 0;
-    } 
+    }
   }, false);
 
   document.addEventListener("touchmove", function(e) {
     if (appHit == undefined) return;
-    
+
     if (e.touches && e.touches.length && downX != 0) {
       if ( Math.abs(e.touches[0].clientX - downX) > 10 || Math.abs(e.touches[0].clientY - downY) > 10) {
         //un-highlight the tapped app
@@ -162,34 +162,34 @@ $(document).ready(function() {
 
 
   document.addEventListener("touchend", function(e) {
-  
+
     if (appHit != undefined) {
       appHit.removeClass("highlighted");
       appHit = undefined;
                                   console.log("UNhighlighted");
 
     }
-    
+
 //     var currentOffset = window.scrollX;
 //     var snapPage = 0;
-//     
+//
 //     if (currentOffset > 0) {
 //         var snapPage = Math.floor(currentOffset / screenWidth);
 //         var remainder = currentOffset - (snapPage * screenWidth);
-//         
+//
 //         if ( remainder > Math.floor(screenWidth / 2) ) {
 //           snapPage++;
 //         }
-//         
+//
 //     }
-//     
+//
 //     if (snapPage >= numPages) snapPage = numPages - 1;
 //     window.scrollTo(snapPage * screenWidth);
   }, true);
-  
-  
-  
-//////////////////////////////////////////////////////////////////  
+
+
+
+//////////////////////////////////////////////////////////////////
   // can this user use myapps?
    var w = window;
    if (w.JSON && w.postMessage) {
@@ -198,7 +198,7 @@ $(document).ready(function() {
           } catch (e) {
             if (typeof console !== "undefined") console.log(e);
           }
-          
+
    } else {
       if (typeof console !== "undefined") console.log("unsuported browser!");
    }
@@ -226,7 +226,7 @@ function findInstallForOrigin32(origin32) {
 
 function keyCount(obj) {
   var n=0;
-  for (var p in obj) 
+  for (var p in obj)
       n += Object.prototype.hasOwnProperty.call(obj, p);
   return n;
 }
@@ -254,22 +254,22 @@ function checkSavedData(save) {
 // and then proceeds to bring the visual depiction into synchrony with the data, with the least visual interruption.
 function updateDashboard( completionCallback ) {
     //both the app list and dashboard data functions are asynchronous, so we need to do everything in the callback
-    
+
       //calculate various sizes of elements based on the window size, and set the background
       computeLayoutVars();
       $(".background").css({width: screenWidth, height: screenHeight});
-      
+
       navigator.apps.mgmt.list( function (listOfInstalledApps) {
-          
+
           gApps = listOfInstalledApps;
 
           //tag them
           for (origin in gApps) {
             try {
                 //Tag the items with a base32 version of their url to use as an ID if they don't have it already
-                if (gApps[origin].origin32 == undefined) { 
-                  gApps[origin].origin32 = Base32.encode(origin); 
-                }        
+                if (gApps[origin].origin32 == undefined) {
+                  gApps[origin].origin32 = Base32.encode(origin);
+                }
             } catch (e) {
               if (typeof console !== "undefined") console.log("Error while adding base32 ID to app " + origin + ": " + e);
             }
@@ -277,16 +277,16 @@ function updateDashboard( completionCallback ) {
 
 
           //now, in the list callback, load the dashboard state
-          navigator.apps.mgmt.loadState( function (dashState) 
+          navigator.apps.mgmt.loadState( function (dashState)
           {
               gDashboardState = checkSavedData(dashState);
-              
+
               //if we get an empty dashboard state here, then we will just stuff everything into pages as we find them
               if (gDashboardState.pages == undefined) {
-              
+
                 //create the right number of pages to hold everything
                 gDashboardState.pages = [];
-                
+
                 //put 20 apps into each page, or as many as we have
                 var a=0;
                 for (origin in gApps) {
@@ -298,15 +298,15 @@ function updateDashboard( completionCallback ) {
                 //save this ias the new state
                 saveDashboardState();
               }
-              
+
               numPages = gDashboardState.pages.length;
 //               console.log("numPages: " + numPages);
 
               layoutPages();
-  
+
               //and call the dream within a dream within a dream callback.  if it exists.
               if (completionCallback) { completionCallback(); };
-           });                      
+           });
       });
 }
 
@@ -318,24 +318,24 @@ function layoutPages() {
   if (!gApps) return;
   //clear the list
   $('.page').remove();
-  
+
   $('.dashboard').css({width: (gDashboardState.pages.length * screenWidth), height: screenHeight});
-    
+
   //now for each page, build zero to 20 app icon items, and put them into the page
   for (var p = 0; p < gDashboardState.pages.length; p++) {
     //add the page div
     var nextPage = $("<div/>").addClass("page").attr("id", "page" + p);
-    
+
     $(".dashboard").append(nextPage);
     nextPage.css({width: screenWidth, height: screenHeight});
 
-    
-    
+
+
     //put the apps in
     for (var a = 0; a < gDashboardState.pages[p].length; a++) {
         nextPage.append(createAppItem( findInstallForOrigin32(gDashboardState.pages[p][a]) ));
     }
-    
+
   }
 }
 
@@ -350,7 +350,7 @@ function getBigIcon(manifest) {
   if (manifest.icons) {
   //prefer 96
     if (manifest.icons["96"]) return manifest.icons["96"];
-    
+
     var bigSize = 0;
     for (z in manifest.icons) {
       var size = parseInt(z, 10);
@@ -368,7 +368,7 @@ function getSmallIcon(manifest) {
   if (manifest.icons) {
   //prefer 32
     if (manifest.icons["32"]) return manifest.icons["32"];
-    
+
     var smallSize = 1000;
     for (z in manifest.icons) {
       var size = parseInt(z, 10);
@@ -385,39 +385,39 @@ function createAppItem(install)
 
   var appDisplayFrame = $("<div/>").addClass("appDisplayFrame");
   appDisplayFrame.css({width: appBoxWidth, height: appBoxHeight});
-  
+
   //helpers
   var borders = appBorderSize * 2;
   var wrapperSize = appIconSize + borders;
   var heightRem = appBoxHeight - wrapperSize;
   var widthRem = appBoxWidth - wrapperSize;
-  
-  var iconWrapper = $("<div/>").addClass("iconWrapper").css({width: wrapperSize, 
+
+  var iconWrapper = $("<div/>").addClass("iconWrapper").css({width: wrapperSize,
                                                               height: wrapperSize,
-                                                              marginTop: (heightRem/2) + "px", 
+                                                              marginTop: (heightRem/2) + "px",
                                                               marginBottom: "0px",
                                                               marginLeft: (widthRem/2) + "px",
-                                                              marginRight: (widthRem/2) + "px", 
-                                                              
+                                                              marginRight: (widthRem/2) + "px",
+
                                                               "-moz-border-radius": (wrapperSize/6) + "px",
                                                               "-webkit-border-radius": (wrapperSize/6) + "px",
                                                               "border-radius": (wrapperSize/6) + "px"
-                                                              
-                                                              
+
+
                                                               });
-  
+
   var clickyIcon = $("<div/>").addClass("icon");
   clickyIcon.attr("origin32", install.origin32);
 
-  clickyIcon.css({width: appIconSize, 
-                  height: appIconSize, 
+  clickyIcon.css({width: appIconSize,
+                  height: appIconSize,
                   margin: appBorderSize,
-                  
-//                   marginTop: ((appBoxHeight - appIconSize)/2) + "px", 
+
+//                   marginTop: ((appBoxHeight - appIconSize)/2) + "px",
 //                   marginBottom: ((appBoxHeight - appIconSize)/8) + "px",
 //                   marginLeft: ((appBoxWidth - appIconSize)/2) + "px",
-//                   marginRight: ((appBoxWidth - appIconSize)/2) + "px", 
-                  
+//                   marginRight: ((appBoxWidth - appIconSize)/2) + "px",
+
                   "-moz-border-radius": (appIconSize/6) + "px",
 	                "-webkit-border-radius": (appIconSize/6) + "px",
 	                "border-radius": (appIconSize/6) + "px"
@@ -425,32 +425,32 @@ function createAppItem(install)
                   });
 
   var iconImg = getBigIcon(install.manifest);
-  
+
   var appIcon = $("<img width='" + appIconSize + "' height='" + appIconSize + "'/>");
-  
+
   if (iconImg.indexOf('/') === 0) {
-    appIcon.attr('src', install.origin + iconImg);  
+    appIcon.attr('src', install.origin + iconImg);
   } else {
-    appIcon.attr('src', iconImg);  
+    appIcon.attr('src', iconImg);
   }
- 
+
   clickyIcon.click(function() {
     navigator.apps.mgmt.launch(install.origin);
   });
   clickyIcon.append(appIcon);
-  
+
   iconWrapper.append(clickyIcon);
   appDisplayFrame.append(iconWrapper);
 
 
   //TODO: size text to fit
   var appName = $("<div/>").addClass("listLabel");
-  appName.css({width: appNameSize, 
+  appName.css({width: appNameSize,
               "font-size":  appNameFontSize});
 
-  appName.text(install.manifest.name);  
+  appName.text(install.manifest.name);
   appDisplayFrame.append(appName);
-                          
+
 
   return appDisplayFrame;
 }
@@ -465,21 +465,21 @@ function createAppItem(install)
 
 // var downX = 0;			// mouse starting position
 // var downY = 0;
-// 
+//
 // var elementLeft = 0;			// current element offset
-// 
+//
 // var _dragElement;
 // var dragStartTime = 0;
-// 
-// 
-// 
+//
+//
+//
 // function OnMouseDown(e)
-// {    
+// {
 //   e.preventDefault();
 //   dragStartTime = e.timeStamp;
-//   
+//
 //   if (_dragElement == undefined) _dragElement = $(".dashboard");
-// 
+//
 //   // grab the mouse position
 //   if (e.touches && e.touches.length) {
 //     downX = e.touches[0].clientX;
@@ -488,46 +488,46 @@ function createAppItem(install)
 //     downX = e.clientX;
 //     downY = e.clientY;
 //   }
-// 		
+//
 //   // grab the clicked element's offset to begin with
 //   elementLeft = ExtractNumber(_dragElement.offset().left);
-// 				
+//
 // }
-// 
+//
 // function ExtractNumber(value)
 // {
 // 	var n = parseInt(value);
-// 	
+//
 // 	return n == null || isNaN(n) ? 0 : n;
 // }
-// 
+//
 // function OnMouseMove(e)
 // {
 //   if (dragStartTime == 0) { console.log("ignored move"); return; }
-//     
+//
 //   e.preventDefault();
-//   
-// 
+//
+//
 //   var curPos;
 //   if (e.touches && e.touches.length) {
 //     curPos = e.touches[0].clientX;
 //   } else {
 //     curPos = e.clientX;
 //   }
-// 
+//
 // 	// this is the actual "drag code"
 // 	var newPos = (elementLeft + curPos - downX) + 'px';
 // 	_dragElement.css("left", newPos);
-// 
+//
 // }
-// 
-// 
+//
+//
 // function OnMouseUp(e)
-// {    
+// {
 //   e.preventDefault();
-// 
+//
 //   var _endX, _endY;
-//   
+//
 //   if (e.changedTouches && e.changedTouches.length) {
 //     _endX = e.changedTouches[0].clientX;
 //     _endY = e.changedTouches[0].clientY;
@@ -535,14 +535,14 @@ function createAppItem(install)
 //     _endX = e.clientX;
 //     _endY = e.clientY;
 //   }
-// 
+//
 //   var quick = (e.timeStamp - dragStartTime < 200);
 //   var small = Math.abs(_endX - downX) < 10;
-//   
+//
 //   var flick = quick && !small;
 //   var tap =  small;
 //   var drag = !quick;
-//     
+//
 //   if (tap && (e.target.parentNode.className == "icon")) {
 //     //NEED TO CHECK Y OFFSET!  THEY MAY HAVE MOVED OFF ICON
 //     console.log("app tapped");
@@ -551,79 +551,66 @@ function createAppItem(install)
 //   } else if (flick) {
 //     //we go to the next page in the direction specified by the flick
 //     console.log("was flicked");
-// 
+//
 //     //left or right?
 //     var dir = (_endX - downX) > 0;
-//     
+//
 //     var newPos = elementLeft;
 //     if (dir) {
-//       newPos += screenWidth; 
+//       newPos += screenWidth;
 //       if (newPos > 0) newPos = 0;
 //     } else {
 //       newPos -= pageWidth;
 //       if (newPos < ((numPages - 1) * screenWidth * -1)) newPos = ((numPages - 1) * screenWidth * -1);
 //     }
-//         
+//
 //     _dragElement.animate({left: newPos}, 250);
-// 
+//
 //   } else { //drag, which may or may not go to the next page
 //     console.log("was dragged");
 //     e.preventDefault();
 //     var snapPage = 0;
-//     
+//
 //     if (_dragElement.position().left < 0) {
 //         var offset = Math.abs(_dragElement.position().left);
 //         var snapPage = Math.floor(offset / screenWidth);
 //         var remainder = offset - (snapPage * screenWidth);
-//         
+//
 //         if ( remainder > Math.floor(screenWidth / 2) ) {
 //           snapPage++;
 //         }
-//         
+//
 //     }
-//     
+//
 //     if (snapPage >= numPages) snapPage = numPages - 1;
-//     
+//
 //     _dragElement.animate({left: (snapPage * screenWidth * -1) }, 250);
 //   }
-//   
+//
 //   //_dragElement = null;
 //   dragStartTime = 0;
 // }
-// 
-// 
+//
+//
 // ////////////////
-// 
-// 
+//
+//
 // function onFocus(event)
 // {
 // //  updateDashboard( ) ;
 // //   $("#filter").focus();
 // }
-// 
-// function updateLoginStatus() {
-//   navigator.apps.mgmt.loginStatus(function (userInfo, loginInfo) {
-//     if (! userInfo) {
-//       $('#login-link a').attr('href', loginInfo.loginLink);
-//       $('#login-link').show();
-//     } else {
-//       $('#username').text(userInfo.email);
-//       $('#signed-in a').attr('href', loginInfo.logoutLink);
-//       $('#signed-in').show();
-//     }
-//   });
-// }
-// 
-// 
+//
+//
 // if (window.addEventListener) {
 //     window.addEventListener('message', onMessage, false);
 // } else if(window.attachEvent) {
 //     window.attachEvent('onmessage', onMessage);
 // }
-// 
+//
 // if (window.addEventListener) {
 //     window.addEventListener('focus', onFocus, false);
 // } else if(window.attachEvent) {
 //     window.attachEvent('onfocus', onFocus);
 // }
-// 
+//
