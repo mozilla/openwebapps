@@ -55,9 +55,12 @@ Clients interact with the `startActivity` method to start processing:
 
      // Used by providers to receive messages on the other end:
      void registerHandler(in string action, 
+                          in optional message,
                           in function handler);
     };
     Navigator implements AppServices;
+
+The registerHandler method must always receive the `action` and `handler` arguments.  If the `message` parameter is present, the handler will only be invoked for activities that have that message; if no `message` parameter is present, the handler will only be invoked for activities for which the message is null.  The default mediator (which is used for activities about which the User Agent has no special knowledge) never sends a `message` activity.
 
 Applications are expected to register their ability to perform activity services
 by defining one or more service elements in their application manifest:
@@ -145,7 +148,7 @@ Providers are free to implement multiple activities in a single URL, or to creat
 
 When the handler is invoked, the Activity object is passed to it, along with a message and an optional credential object.  The message indicates which step of the activity is being performed, for multi-step activities. The credential object, if it exists, is one that was previously created by this provider and stored in the browser, and which was selected by the user during a mediator-initiated display.
 
-_ed: Need more specific use cases for the message.  Login is one; account-balance is another; more?_
+_ed: Need more specific use cases for the message.  Login is one; account-balance is another; more?  Yes - share needs capabilities, autocomplete, validate, send_
 
 For example:
 
