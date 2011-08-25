@@ -8,12 +8,14 @@ navigator.apps.services.registerHandler(
   // the specific action within that activity (don't change this either)
   'doShare', 
   function(activity, credential) {
-    // post the message back to server using AJAX
+    // activity contains: url, message, type, data
     // activity.data contains the named parameters to doShare
     // credential contains the credential previously set up by the login activity
-    
+
+    // post the message to our server (e.g. MyShare) using AJAX
+
     // if successful:
-    activity.postResult({status:"ok", messagePosted: activity.data.message});
+    activity.postResult({messagePosted: activity.data.message});
     
     // if not logged (credential is bad, expired, or inexistent)
     // activity.postException(activity.CREDENTIAL_FAILURE);

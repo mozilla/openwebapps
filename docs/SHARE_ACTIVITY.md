@@ -7,12 +7,14 @@ Here we define the specifics of the Share Web Activity. Read up on [Web Activiti
 no parameters, returns an objects with:
 
 inputs in mediator
+
 * subject
 * textLimit
 * includeURL: whether URL must be displayed in message box
 * shortURLLength: size of urls when shortened, or null
 
 properties of item being shared (all form elements)
+
 * image
 * imageURL
 * title
@@ -20,6 +22,7 @@ properties of item being shared (all form elements)
 * description
 
 share types
+
 * type: official name of the share
 * name: display name
 * toLabel: label of the "to" field
@@ -43,6 +46,7 @@ returns true if validate, otherwise details of exception in postException.
 ## send
 
 takes:
+
 * url
 * share type
 * list of recipients if necessary
@@ -50,4 +54,5 @@ takes:
 * an object with all the form fields specified by the capabilities
 
 returns to mediator:
+
 * messagePosted: with shortened URLs in particular
