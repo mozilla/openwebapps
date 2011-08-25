@@ -62,15 +62,16 @@ var nextinvocationid = 0;
  * This class controls the mediator panel UI.  There is one per tab
  * per mediator, created only when needed.
  */
-function MediatorPanel(window, contentWindowRef, methodName, args, successCB, errorCB) {
+function MediatorPanel(window, contentWindowRef, activity, successCB, errorCB) {
     this.window = window; // the window the panel is attached to
     this.contentWindow = contentWindowRef; // ???
-    this.methodName = methodName;
+    this.methodName = activity.action;
+    this.activity = activity;
     this.successCB = successCB;
     this.errorCB = errorCB;
 
     // Update the content for the new invocation
-    this.args = this.updateargs(args);
+    this.args = this.updateargs(activity.data);
     this.mediator = mediators[this.methodName];
 
     this.panel = null;
@@ -131,8 +132,7 @@ MediatorPanel.prototype = {
     onReady: function(msg) {
         FFRepoImplService.findServices(this.methodName, function(serviceList) {
           this.panel.port.emit("setup", {
-                          method: this.methodName,
-                          args: this.args,
+                          activity: this.activity,
                           serviceList: serviceList,
                           caller: this.contentWindow.location.href,
                           invocationid: this.invocationid
@@ -279,7 +279,20 @@ serviceInvocationHandler.prototype = {
      *
      */
     registerMediator: function(methodName, mediator) {
+      // need to nuke any cached mediators here?
       mediators[methodName] = mediator;
+
+      let newPopups = [];
+      for each (let popupCheck in this._popups) {
+        if (popupCheck.methodName === methodName) {
+          // this popup record must die.
+          let nukePanel = popupCheck.panel;
+          nukePanel.destroy();
+        } else {
+          newPopups.push(popupCheck);
+        }
+      }
+      this._popups = newPopups;
     },
 
     /**
@@ -363,7 +376,7 @@ serviceInvocationHandler.prototype = {
     },
 
     // when an app registers a service handler
-    registerServiceHandler: function(contentWindowRef, activity, message, func) {
+    registerServiceHandler: function(contentWindowRef, action, func) {
         // check that this is indeed an app
         FFRepoImplService.getAppByUrl(contentWindowRef.location, function(app) {
 
@@ -375,59 +388,62 @@ serviceInvocationHandler.prototype = {
               var theWindow = contentWindowRef;
               if (!theWindow._MOZ_NOAPP_SERVICES)
                   theWindow._MOZ_NOAPP_SERVICES = {};
-              if (!theWindow._MOZ_NOAPP_SERVICES[activity])
-                  theWindow._MOZ_NOAPP_SERVICES[activity] = {};
-              theWindow._MOZ_NOAPP_SERVICES[activity][message] = func;
+              if (!theWindow._MOZ_NOAPP_SERVICES[action])
+                  theWindow._MOZ_NOAPP_SERVICES[action] = {};
+              theWindow._MOZ_NOAPP_SERVICES[action] = func;
               return;
             }
 
             // make sure the app supports this activity
-            if (!(app.services && app.services[activity])) {
-                console.log("app attempted to register handler for activity " + activity + " but not declared in manifest");
+            if (!(app.services && app.services[action])) {
+                console.log("app attempted to register handler for activity action " + action + " but not declared in manifest");
                 return;
             }
-            //console.log("Registering handler for " + app.origin + " " + activity + " / " + message);
+            //console.log("Registering handler for " + app.origin + " " + activity;
 
             if (!theWindow._MOZ_SERVICES)
                 theWindow._MOZ_SERVICES = {};
 
-            if (!theWindow._MOZ_SERVICES[activity])
-                theWindow._MOZ_SERVICES[activity] = {};
+            if (!theWindow._MOZ_SERVICES[action])
+                theWindow._MOZ_SERVICES[action] = {};
 
-            theWindow._MOZ_SERVICES[activity][message] = func;
+            theWindow._MOZ_SERVICES[action]= func;
         });
     },
 
     // this call means to invoke a specific call within a given app
-    invokeService: function(contentWindow, activity, message, args, cb, cberr, privileged) {
+    invokeService: function(contentWindow, activity, cb, cberr, privileged) {
+        dump("invokeService invoked for " + activity.action + "; message is " + activity.message + "\n")
         FFRepoImplService.getAppByUrl(contentWindow.location, function(app) {
             var theWindow = contentWindow;
 
             if (!app) {
               if (privileged) {
                 try {
-                    theWindow._MOZ_NOAPP_SERVICES[activity][message](args, cb);
+                    theWindow._MOZ_NOAPP_SERVICES[activity.action](activity);
                 } catch (e) {
-                    console.log("error invoking " + activity + "/" + message + " in privileged invocation\n" + e.toString());
+                    console.log("error invoking " + activity.action + "/" + message + " in privileged invocation\n" + e.toString());
                 }
               }
               return;
             }
 
             // make sure the app supports this activity
-            if (!(app.services && app.services[activity])) {
-                console.log("attempted to send message to app for activity " + activity + " but app doesn't support it");
+            if (!(app.services && app.services[activity.action])) {
+                console.log("attempted to send message to app for activity " + activity.action + " but app doesn't support it");
                 return;
             }
 
             let cbshim = function(result) {
+              dump("cbshim was invoked inside invokeService\n")
               cb(JSON.stringify(result));
             };
-            let cberrshim = function(code, message) {
+            let cberrshim = function(code, errmsg) {
               // Following the lead from jschannel, the errback might be invoked
-              // as either: errback(code, message) or errback({code: "code", message: message})
+              // as either: errback(code, errmsg) or errback({code: "code", message: errmsg})
+              dump("cberrshim was invoked inside invokeService\n")
               let errob;
-              if (typeof message === 'undefined') {
+              if (typeof errmsg === 'undefined') {
                 if (typeof code === 'string') {
                   errob = {code: code};
                 } else {
@@ -435,7 +451,7 @@ serviceInvocationHandler.prototype = {
                 }
               } else {
                 // 2 params - must be explicit code/message params.
-                errob = {code: code, message: message};
+                errob = {code: code, message: errmsg};
               }
               if (cberr) {
                 cberr(JSON.stringify(errob));
@@ -444,9 +460,11 @@ serviceInvocationHandler.prototype = {
               }
             }
             try {
-                theWindow._MOZ_SERVICES[activity][message](args, cbshim, cberrshim);
+                activity.postResult = cbshim;
+                activity.postException = cberrshim;
+                theWindow._MOZ_SERVICES[activity.action](activity);
             } catch (e) {
-                console.log("error invoking " + activity + "/" + message + " on app " + app.origin + ": " + e.toString());
+                console.log("error invoking " + activity.action + "/" + activity.message + " on app " + app.origin + ": " + e.toString());
                 // invoke the callback with an error object the content can see.
                 cberrshim("runtime_error", e.toString());
             }
@@ -479,15 +497,15 @@ serviceInvocationHandler.prototype = {
         this._popups = newPopups;
     },
     
-    get: function(contentWindowRef, methodName, args, successCB, errorCB) {
+    get: function(contentWindowRef, activity, successCB, errorCB) {
         for each (let popupCheck in this._popups) {
-            if (contentWindowRef == popupCheck.contentWindow && methodName == popupCheck.methodName) {
+            if (contentWindowRef == popupCheck.contentWindow && activity.action == popupCheck.methodName) {
                 return popupCheck;
             }
         }
         // if we didn't find it, create it
-        let agent = agentCreators[methodName] ? agentCreators[methodName] : MediatorPanel;
-        let panel = new agent(this._window, contentWindowRef, methodName, args, successCB, errorCB);
+        let agent = agentCreators[activity.action] ? agentCreators[activity.action] : MediatorPanel;
+        let panel = new agent(this._window, contentWindowRef, activity, successCB, errorCB);
         // attach our response listeners
         panel.attachHandlers();
         this._popups.push(panel);
@@ -502,10 +520,10 @@ serviceInvocationHandler.prototype = {
      *
      * show the panel for a mediator, creating one if necessary.
      */
-    invoke: function(contentWindowRef, methodName, args, successCB, errorCB) {
+    invoke: function(contentWindowRef, activity, successCB, errorCB) {
       try {
         // Do we already have a panel for this service for this content window?
-        let panel = this.get(contentWindowRef, methodName, args, successCB, errorCB);
+        let panel = this.get(contentWindowRef, activity, successCB, errorCB);
         panel.hideErrorNotification();
         panel.show();
       } catch (e) {

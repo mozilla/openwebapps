@@ -43,16 +43,16 @@ function renderRequestExplanation(requestMethod, args)
     }
 }
 
-function handleSetup(method, args, serviceList)
+function handleSetup(activity, serviceList)
 {
     $("#requestDescription").empty().
         append($("<div>Some page is asking for something from you.  Perhaps we could provide some more details about what is being requested here.</div>")).
-        append($("<div>Method name: " + method + "</div>")).
-        append($("<div>Arguments: " + args + "</div>"));
+        append($("<div>Method name: " + activity.action + "</div>")).
+        append($("<div>Arguments: " + activity.data + "</div>"));
     
     gServiceList = serviceList;
 
-    renderRequestExplanation(method, args);
+    renderRequestExplanation(activity.action, activity.data);
     $("#servicebox").append($("<div id='services'></div>"));
     $("#services").append($("<ul id='services-tabs'></ul>"));
 
@@ -107,7 +107,7 @@ function handleSetup(method, args, serviceList)
     // and then the "add services" tab
     svcDiv = createServiceTab(addServicesService);
     var serviceFinder = document.createElement("iframe");
-    serviceFinder.src = "http://localhost:8420/" + method + ".html";
+    serviceFinder.src = "http://localhost:8420/" + activity.action + ".html";
     serviceFinder.classList.add("serviceFrame");
     svcDiv.appendChild(serviceFinder);
 
@@ -149,7 +149,7 @@ $(function() {
 });
 
 window.navigator.apps.mediation.ready(
-    function(method, args, services) {
+    function(activity, services) {
         $("#services").remove();// this will remove old iframes from DOM
         for (var i = 0; i < services.length; i++) {
             var service = services[i];
@@ -160,6 +160,6 @@ window.navigator.apps.mediation.ready(
                })
             });
         }
-        handleSetup(method, args, services);
+        handleSetup(activity, services);
     }
 );

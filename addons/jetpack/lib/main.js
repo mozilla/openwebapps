@@ -158,10 +158,10 @@ openwebapps.prototype = {
         });
 
         win.appinjector.register({
-            apibase: "navigator.apps", name: "invokeService", script: null,
+            apibase: "navigator.apps", name: "startActivity", script: null,
             getapi: function (contentWindowRef) {
-                return function (methodName, args, successCB, errorCB) {
-                  self._services.invoke(contentWindowRef, methodName, args, successCB, errorCB);
+                return function (methodName, activity, successCB, errorCB) {
+                  self._services.invoke(contentWindowRef, activity, successCB, errorCB);
                 }
             }
         });
@@ -170,11 +170,14 @@ openwebapps.prototype = {
         // pass a content object (eg, the iframe or the frame's content window).
         // Attempting to pass it via self.emit() fails...
         win.appinjector.register({
-            apibase: "navigator.apps.mediation", name: "_invokeService", script: null,
+            apibase: "navigator.apps.mediation", name: "_startActivity", script: null,
             getapi: function (contentWindowRef) {
-                return function (iframe, activity, message, args, cb, cberr) {
-                  args = JSON.parse(JSON.stringify(args));
-                  self._services.invokeService(iframe.wrappedJSObject, activity, message, args, cb, cberr)
+                return function (iframe, activity, message, cb, cberr) {
+                  activity.message = message; // XX remove?
+                  if (activity.data) {
+                   activity.data = JSON.parse(JSON.stringify(activity.data)); // flatten and reinflate...
+                  }
+                  self._services.invokeService(iframe.wrappedJSObject, activity, cb, cberr);
                 }
             }
         });
@@ -192,8 +195,8 @@ openwebapps.prototype = {
         win.appinjector.register({
             apibase: "navigator.apps.services", name: "registerHandler", script: null,
             getapi: function(contentWindowRef) {
-                return function(activity, message, func) {
-                    self._services.registerServiceHandler(contentWindowRef.wrappedJSObject, activity, message, func);
+                return function(activity, func) {
+                    self._services.registerServiceHandler(contentWindowRef.wrappedJSObject, activity, func);
                 }
             }
         });
