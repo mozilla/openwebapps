@@ -23,7 +23,7 @@ function Service(svcinfo, iframe) {
 unsafeWindow.Service = Service;
 
 Service.prototype = {
-  call: function(activity, args, cb, cberr) {
+  call: function(activity, message, cb, cberr) {
     function cbshim(result) {
       cb(JSON.parse(result));
     }
@@ -47,7 +47,7 @@ Service.prototype = {
         }
       }
     }
-    unsafeWindow.navigator.apps.mediation._invokeService(cw, this.service, activity, args, cbshim, cberrshim);
+    unsafeWindow.navigator.apps.mediation._startActivity(cw, activity, message, cbshim, cberrshim);
   },
 
   // Get the closest icon that is equal to or larger than the requested size,
@@ -124,7 +124,7 @@ window.navigator.apps.mediation.ready = function(invocationHandler) {
       services.push(svcob);
       allServices[svc.url] = svcob;
     }
-    invocationHandler(msg.method, msg.args, services);
+    invocationHandler(msg.activity, services);
     self.port.once("reconfigure", function() {
       // nuke all iframes.
       for (let url in allServices) {
@@ -168,15 +168,14 @@ window.navigator.apps.mediation.emit = function(event, args) {
 
 unsafeWindow.navigator.apps.mediation.emit = window.navigator.apps.mediation.emit;
 
-window.navigator.apps.mediation.invokeService = function(iframe, method, activity, args, callback) {
+window.navigator.apps.mediation.startActivity = function(iframe, activity, message, callback) {//XX error cb?
   function callbackShim(result) {
-    dump("mediator shim got" + (typeof result) + "\n");
     callback(JSON.parse(result));
   }
   // ideally we could use the port mechanism, but this is stymied by the
   // inability to pass iframe or iframe.contentWindow in args to emit().
   // Need to use unsafeWindow here for some reason.
-  unsafeWindow.navigator.apps.mediation._invokeService(iframe.contentWindow, method, activity, args, callbackShim);
+  unsafeWindow.navigator.apps.mediation._startActivity(iframe.contentWindow, activity, message, callbackShim);
 };
 
-unsafeWindow.navigator.apps.mediation.invokeService = window.navigator.apps.mediation.invokeService;
+unsafeWindow.navigator.apps.mediation.startActivity = window.navigator.apps.mediation.startActivity;

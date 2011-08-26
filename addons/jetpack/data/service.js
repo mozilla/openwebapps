@@ -2,43 +2,40 @@
 /* vim: set ts=2 et sw=2 tw=80: */
 var gServiceList;
 
-function renderRequestExplanation(requestMethod, args) {
+function renderRequestExplanation(activity) {
   $("#requestInfo").empty();
 
-  var tmplName = requestMethod.replace('.', '_');
+  var tmplName = activity.action.replace('.', '_');
   var actionTmpl = $("#" + tmplName);
   if (!actionTmpl) actionTmpl = $("#defaultAction");
 
   var data = {
-    action: requestMethod,
-    requestMethod: requestMethod,
-    args: args
+    activity: activity
   }
-
-  if (requestMethod == "image.send") {
+  if (activity.action == "image.send") {
     data.action = "Send Image to:";
     data.dimensions = "640px x 960px"; // fake
     data.size = "96 KB"; //fake
-    if (args.mimeType && args.data) {
-      data.src = "data:" + args.mimeType + ";base64," + args.data;
-    } else if (args.data) {
-      data.src = "data:;base64," + args.data;
+    if (activity.data.mimeType && activity.data.data) {
+      data.src = "data:" + activity.data.mimeType + ";base64," + activity.data.data;
+    } else if (activity.data.data) {
+      data.src = "data:;base64," + activity.data.data;
     }
-  } else if (requestMethod == "image.get") {
+  } else if (activity.action == "image.get") {
     data.action = "Get Image from:";
-  } else if (requestMethod == "profile.get") {
+  } else if (activity.action == "profile.get") {
     data.action = "Load Profile from:";
   }
 
   actionTmpl.tmpl(data).appendTo("#requestInfo");
 }
 
-function handleSetup(method, args, serviceList) {
+function handleSetup(activity, serviceList) {
   gServiceList = serviceList;
 
-  renderRequestExplanation(method, args);
+  renderRequestExplanation(activity);
 
-  addServicesService.url = "http://localhost:8420/" + method + ".html";
+  addServicesService.url = "http://localhost:8420/" + activity.action + ".html";
   var services = serviceList.concat(addServicesService);
   $("#serviceTabs").tmpl({
     'services': services
@@ -77,7 +74,7 @@ $(function() {
 
 window.navigator.apps.mediation.ready(
 
-function(method, args, services) {
+function(activity, services) {
   $("#services").remove(); // this will remove old iframes from DOM
   for (var i = 0; i < services.length; i++) {
     var service = services[i];
@@ -88,5 +85,5 @@ function(method, args, services) {
       })
     });
   }
-  handleSetup(method, args, services);
+  handleSetup(activity, services);
 });
