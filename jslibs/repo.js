@@ -393,7 +393,6 @@ Repo = (function() {
               if (one_service.endpoint && one_service.endpoint.indexOf("resource://") == 0) svcObj.url = one_service.endpoint;
 
               if (!installedServices.hasOwnProperty(service_key)) {
-                dump("creating list for " + service_key + "\n");
                 installedServices[service_key] = [];
               } else {
                 // does this svc already exist in the list (supports list *update*)?
