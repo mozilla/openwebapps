@@ -50,6 +50,7 @@ function createServer(obj) {
     var hostname = request.headers['host'].toString("utf8");
     var port = parseInt(hostname.split(':')[1]);
     var host = hostname.split(':')[0];
+    template_loader.flush();
 
     // normalize 'localhost', so it just works.
     if (host === 'localhost') {
@@ -189,7 +190,11 @@ console.log("Starting test apps:");
 // bind the "primary" testing webserver to a fixed local port, it'll
 // be the place from which tests are run, and it's the repository host
 // for the purposes of testing.
-var PRIMARY_PORT = 60172;
+if (process.env.PRIMARY_PORT) {
+  var PRIMARY_PORT = parseInt(process.env.PRIMARY_PORT);
+} else {
+  var PRIMARY_PORT = 60172;
+}
 
 // The interface address to bind, and will appear in all urls
 var PRIMARY_HOST = "127.0.0.1";
@@ -260,6 +265,8 @@ function serveFile(filename, response) {
 
       data = data.replace(/https?:\/\/(stage\.)?myapps\.mozillalabs\.com/ig,
                           "http://" + PRIMARY_HOST + ":" + PRIMARY_PORT);
+      data = data.replace(/var TESTING_MODE = false/,
+                          "var TESTING_MODE = true");
 
       response.writeHead(200, {"Content-Type": mimeType});
       response.write(data, "binary");
