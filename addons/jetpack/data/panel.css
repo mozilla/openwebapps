@@ -20,8 +20,6 @@ body {
   border: 0px;
   padding: 0px;
 
-  left: 23;
-  top: 53;
   width: 720;
   height: 110;
   clip: rect(0px, 720px, 110px, 0px);
@@ -46,28 +44,6 @@ body {
   overflow: hidden;
 }
 
-.pageLeft {
-  margin: 0px;
-  border: 0px;
-  padding: 0px;
-
-  position: absolute;
-  left: 2px;
-  width: 12px;
-  height: 100px;
-}
-
-.pageRight {
-  margin: 0px;
-  border: 0px;
-  padding: 0px;
-
-  position: absolute;
-  left: 738px;
-  
-  width: 12px;
-  height: 100px;
-}
 
 .appDisplayFrame {
   border: 0px;
