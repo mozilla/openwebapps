@@ -615,6 +615,12 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
     // END jschannel.js
     ////////////////////////////////////////////////////////////
 
+    // This controls whether functions are available that should only be
+    // available in "testing" mode, like functions to set the repo origin
+    // and set the repo testing mode response.  This value must be changed
+    // at the source level (i.e., rewriting the following line):
+    var TESTING_MODE = false;
+
     // Reference shortcut so minifier can save on characters
     var win = window;
 
@@ -947,7 +953,7 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
     }
 
     // Return AppClient object with exposed API calls
-    return {
+    var api = {
       install: callInstall,
       invokeService: callInvokeService,
       amInstalled: callAmInstalled,
@@ -964,13 +970,46 @@ if (!navigator.apps.install || navigator.apps.html5Implementation) {
         ready: callReady,
         registerHandler: callRegisterHandler
       },
-      html5Implementation: true,
+      html5Implementation: true
+    };
+    if (TESTING_MODE) {
       // a debugging routine which allows debugging or testing clients
       // to point at a repository location other than production.
       // this can be a relative path or a full url.
-      setRepoOrigin: function(o) {
+      api.setRepoOrigin = function(o) {
         AppRepositoryOrigin = o;
-      }
-    };
+      };
+      api.setMockResponse = function(response, onsuccess, onerror) {
+        setupWindow();
+        chan.call({
+          method: "setMockResponse",
+          params: response,
+          error: function (error, message) {
+            deliverError(error, message, onerror);
+          },
+          success: function () {
+            if (onsuccess) {
+              onsuccess();
+            }
+          }
+        });
+      };
+      api.setApplicationChooser = function(response, onsuccess, onerror) {
+        setupWindow();
+        chan.call({
+          method: "setApplicationChooser",
+          params: response,
+          error: function (error, message) {
+            deliverError(error, message, onerror);
+          },
+          success: function () {
+            if (onsuccess) {
+              onsuccess();
+            }
+          }
+        });
+      };
+    }
+    return api;
   })();
 }
