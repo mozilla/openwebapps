@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Install Apps</title>
+<style type="text/css" media="screen">
+
+html {
+    background-color:   #aaaaaa;
+    overflow: hidden;
+}
+
+body
+{
+    font-family:sans-serif;
+    margin: 0px;
+    padding: 0px;
+}
+
+.dialog {
+    position:fixed;
+    top: 0;
+    left: 0;
+ 	-moz-border-radius: 8px;
+    -webkit-border-radius: 8px;
+    border-radius: 8px 8px 8px 8px;
+    background-color: white;
+    margin: 8px;
+}
+
+#header {
+    height:80px;
+}
+
+#maincontent {
+    height:120px;
+    margin-left:10px;
+    margin-right:10px;
+    background-color: #f0f0f0;
+    -moz-border-radius: 1em;
+    -webkit-border-radius: 1em;
+    border-radius: 1em 1em 1em 1em;
+    border: 1px solid rgba(0,0,0,0.3);
+    white-space: nowrap;
+    position:relative;
+}
+
+#footer {
+   height:112px;
+}
+
+#repologo {
+    width:48px;
+    height:48px;
+    float:left;
+    padding:12px;
+    padding-right:20px;
+}
+
+#installrequest
+{
+    font-size: 12pt;
+    font-weight: bold;
+    padding:20px;
+}
+
+#appicon
+{
+    position:absolute;
+    left:20px;
+    top:11px;
+}
+
+#apptitle
+{
+    position:absolute;
+    font-size: 14pt;
+    font-weight: bold;
+    left:136px;
+    max-width: 232px;
+    top:20px;
+    overflow: hidden;
+}
+
+#base_url
+{
+    font-size: 9pt;
+    position:absolute;
+    left:136px;
+    top: 44px;
+    width:225px;
+    word-wrap:break-word;
+    white-space:normal;
+}
+
+#warning
+{
+    font-size: 12pt;
+    padding:20px;
+}
+
+#site {
+    color: #F00;
+}
+
+.button {
+    -moz-border-radius:0.5em 0.5em 0.5em 0.5em;
+    -webkit-border-radius:0.5em 0.5em 0.5em 0.5em;
+    border-radius:0.5em 0.5em 0.5em 0.5em;
+    height:12px;
+    width:100px;
+    font:bold 10pt Helvetica, arial;
+    color:white;
+    cursor:pointer;
+    padding:8px 8px 8px 8px;
+    text-align:center;
+    margin-left:12px;
+    margin-right:12px;
+}
+
+.yesbutton {
+    background-color:rgb(6,188,36);
+    float:right;
+}
+
+.nobutton {
+    background-color:rgb(188,6,36);
+    float:left;
+}
+
+</style>
+</head>
+<body>
+<div id="installconfirm" class="dialog">
+  <div id="header">
+    <div id="repologo"><img src="logo.png"></div>
+
+    <div id="installrequest">
+      <span id="site"></span> wants to <span id="install_verb">install</span> the application:
+    </div>
+  </div>
+
+  <div id="maincontent">
+    <img id="appicon" width="96" height="96">
+    <div id="apptitle"><span id="appname"></span></div>
+    <div id="base_url"></div>
+  </div>
+
+  <div id="footer">
+    <div id="warning">
+      You should only approve the <span id="install_noun">installation</span> if you trust this site.
+    </div>
+
+    <div id="cancelButton" class="nobutton button">Cancel</div>
+    <div id="installButton" class="yesbutton button">Install</div>
+  </div>
+</div>
+<div id="appchooser" class="dialog">
+  Do you want to allow <span id="ac_requestor" class="requestor"></span>
+  to "<span id="ac_service_name"></span>" with:
+  <ul id="ac_options">
+  </ul>
+</div>
+<script>
+
+function displayInstallPrompt(installOrigin, appOrigin, manifest, isUpdate, clientCB)
+{
+  document.getElementById("appchooser").style.display = "none";
+  document.getElementById("installconfirm").style.display = "inline";
+
+  // whenever client's callback is invoked, we should first cleanup (and hide the dialog)
+  var cb = function() {
+    document.getElementById("installButton").removeEventListener('click', cb, false);
+    document.getElementById("cancelButton").removeEventListener('click', cb, false);
+    ClientBridge.hideDialog();
+    clientCB(this.id === 'installButton');
+  };
+
+  var textAttrName = "textContent";
+  if (undefined === document.getElementById("site").textContent) textAttrName = "innerText";
+
+  document.getElementById("site")[textAttrName] = installOrigin;
+  document.getElementById("appname")[textAttrName] = manifest.name;
+  document.getElementById("base_url")[textAttrName] = appOrigin;
+
+  document.getElementById("install_verb")[textAttrName] = isUpdate ? "update" : "install";
+  document.getElementById("install_noun")[textAttrName] = isUpdate ? "update" : "installation";
+
+  var iconURL = "default_app_icon.png";
+
+  if (manifest.icons) {
+    // prefer to use 48-pixel icon
+    var icon;
+    if (manifest.icons["48"]) icon = manifest.icons["48"];
+    else
+    {
+      var last;
+      for (var size in manifest.icons)
+      {
+        try {
+          var num = Math.floor(size);
+          last = num;
+          if (num >= 48) icon = manifest.icons[size];
+        } catch (e) {}
+        if (icon) break;
+      }
+      if (!icon)
+        icon = manifest.icons[last];
+    }
+    if (icon.indexOf("data:") !== 0) icon = appOrigin + icon;
+    iconURL = icon;
+  }
+  document.getElementById("appicon").src = iconURL;
+
+  // now that the content is setup, message untrusted javascript to display us
+  ClientBridge.showDialog();
+
+  document.getElementById("installButton").addEventListener('click', cb, false);
+  document.getElementById("cancelButton").addEventListener('click', cb, false);
+}
+
+function displayAppChooser(requestor, serviceName, apps, onsuccess, onerror)
+{
+  document.getElementById("installconfirm").style.display = "none";
+  document.getElementById("appchooser").style.display = "inline";
+
+  // whenever client's callback is invoked, we should first cleanup (and hide the dialog)
+  var cb = function(r) {
+    ClientBridge.hideDialog();
+    onsuccess(r);
+  };
+
+  var textAttrName = "textContent";
+  if (undefined === document.getElementById("ac_requestor").textContent) textAttrName = "innerText";
+
+  document.getElementById("ac_requestor")[textAttrName] = requestor;
+
+  document.getElementById("ac_service_name")[textAttrName] = serviceName;
+
+  var ul = document.getElementById("ac_options");
+  while (ul.firstChild) ul.removeChild(ul.firstChild);
+
+  for (var i in apps) {
+    var e = document.createElement("a");
+    e.href = "#";
+    e.onclick = (function() {
+      var _app = apps[i];
+      return function(ev) {
+        ev.preventDefault();
+        cb(_app);
+        return false;
+      }
+    })();
+    e[textAttrName] = apps[i];
+    var li = document.createElement("li");
+    li.appendChild(e);
+    ul.appendChild(li);
+  }
+
+  // now add a nothing option
+  var e = document.createElement("a");
+  e.href = "#";
+  e[textAttrName] = "nothing";
+  e.onclick = function(ev) {
+      ev.preventDefault();
+      cb(undefined);
+      return false;
+  };
+  var li = document.createElement("li");
+  li.appendChild(e);
+  ul.appendChild(li);
+
+  ClientBridge.showDialog();
+}
+
+</script>
+<!-- TODO There should be a build step which minifies and inlines these
+     bits for production -->
+<script src="urlmatch.js"></script>
+<script src="manifest.js"></script>
+<script src="jschannel.js"></script>
+<script src="eventmixin.js"></script>
+<script src="typed-storage.js"></script>
+<!-- FIXME: Need to just extract the base64/bytes stuff: -->
+<script src="conduit.js"></script>
+<script src="repo.js"></script>
+
+<script src="trusted.js"></script>
+
+</body>
+</html>
