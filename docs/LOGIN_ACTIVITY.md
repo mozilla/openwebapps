@@ -9,7 +9,30 @@ handlers.
 
 ## getParameters
 
+returns
 
+    {
+      type: "dialog",
+      url: "/login.html"
+    }
+
+or
+
+    {
+      type: "browserid"
+    }
+
+or
+
+    {
+      type: "oauth",
+    
+      // loginURL includes client_id
+      loginURL: "https://...",
+    
+      // redirectURL is where we should expect to see the token in the fragment
+      redirectURL: "https://...",
+    }
 
 ## getCredentials
 
