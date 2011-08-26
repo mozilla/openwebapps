@@ -57,10 +57,6 @@ chrome.extension.onConnect.addListener(function(port) {
                     verifyMgmtAuthorized(origin);
                     LaunchApp(msg.args);
                     break;
-                case 'loginStatus':
-                    verifyMgmtAuthorized(origin);
-                    sendResponse(msg, null);
-                    break;
                 case 'saveState':
                     verifyMgmtAuthorized(origin);
                     Repo.saveState(origin, msg.args, function(v) {

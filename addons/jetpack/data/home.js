@@ -1216,20 +1216,6 @@ function onFocus(event) {
   $("#filter").focus();
 }
 
-function updateLoginStatus() {
-  navigator.apps.mgmt.loginStatus(function(userInfo, loginInfo) {
-    if (!userInfo) {
-      $('#login-link a').attr('href', loginInfo.loginLink);
-      $('#login-link').show();
-    } else {
-      $('#username').text(userInfo.email);
-      $('#signed-in a').attr('href', loginInfo.logoutLink);
-      $('#signed-in').show();
-    }
-  });
-}
-
-
 if (window.addEventListener) {
   window.addEventListener('message', onMessage, false);
 } else if (window.attachEvent) {
