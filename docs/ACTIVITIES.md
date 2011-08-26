@@ -31,6 +31,9 @@ The client begins an activity by constructing an Activity and passing it to the 
      object data;
 
      void postResult(in object data);
+     void postException(in string type, in string message);
+     
+     /* exception types TBD... */
     }
 
 * `action`: A string that specifies the activity to be launched.
