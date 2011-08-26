@@ -63,7 +63,9 @@ function createServer(obj) {
     var siteroot = getWebRootDir(host, port);
 
     // unknown site?  really?
-    if (!siteroot) return fourOhFour(response, "No site on this port");
+    if (!siteroot) {
+      return fourOhFour(response, "No site on this port");
+    }
 
     // hook to fetch manifests for HTML5 repos
     var parsedURI = url.parse(request.url, true);
@@ -121,7 +123,7 @@ function createServer(obj) {
     if (parsedURI.pathname == '/servers.js') {
       var serverToUrlMap = {};
       for (var i = 0; i < boundServers.length; i++) {
-        var o = boundServers[i]
+        var o = boundServers[i];
         var a = o.server.address();
         serverToUrlMap[o.name] = "http://" + a.address + ":" + a.port;
       }
@@ -131,11 +133,11 @@ function createServer(obj) {
       response.end();
       return;
     }
-    
+
     if(obj.handler) {
-        obj.handler(request, response);
-        return;
-    }   
+      obj.handler(request, response);
+      return;
+    }
 
     var filename = path.join(siteroot, url.parse(request.url).pathname);
 
@@ -201,35 +203,35 @@ for (var i = 0; i < process.argv.length; i++) {
 }
 
 function primaryHandler(req, resp) {
-    var urlpath = url.parse(req.url).pathname;
+  var urlpath = url.parse(req.url).pathname;
 
-    /* We only want to use the template_loader for HTML
-     * files, all other files use the standard serveFileIndex
-     * since all the background work for mime types is set up.
-     */
-    if(urlpath.match(/\.html$/)) {
-        var specs = getSpecs();
-        var tests = [];
-        specs.forEach( function( spec, index ) {
-            if( spec !== 'run-all.html' ) {
-                tests.push( spec );
-            }
-        } );
-        template_loader.load_and_render(urlpath, { 
-            specs: specs,
-            tests: tests 
-        }, function(err, result) {
-            resp.end(result);
-        });
-    } else {
-        urlpath = path.join(__dirname, '..', urlpath);
-        serveFileIndex(urlpath, resp);
-    }
+  /* We only want to use the template_loader for HTML
+   * files, all other files use the standard serveFileIndex
+   * since all the background work for mime types is set up.
+   */
+  if(urlpath.match(/\.html$/)) {
+    var specs = getSpecs();
+    var tests = [];
+    specs.forEach(function (spec, index) {
+      if (spec !== 'run-all.html') {
+        tests.push( spec );
+      }
+    });
+    template_loader.load_and_render(urlpath, {
+      specs: specs,
+      tests: tests
+    }, function(err, result) {
+      resp.end(result);
+    });
+  } else {
+    urlpath = path.join(__dirname, '..', urlpath);
+    serveFileIndex(urlpath, resp);
+  }
 }
 
 function serveFile(filename, response) {
   path.exists(filename, function(exists) {
-    if(!exists) {
+    if (!exists) {
       response.writeHead(404, {"Content-Type": "text/plain"});
       response.write("404 Not Found");
       response.end();
@@ -256,8 +258,8 @@ function serveFile(filename, response) {
       var ext = path.extname(filename);
       var mimeType = exts[ext] || "application/octet-stream";
 
-	  data = data.replace(/https?:\/\/(stage\.)?myapps\.mozillalabs\.com/ig,
-                              "http://" + PRIMARY_HOST + ":" + PRIMARY_PORT);
+      data = data.replace(/https?:\/\/(stage\.)?myapps\.mozillalabs\.com/ig,
+                          "http://" + PRIMARY_HOST + ":" + PRIMARY_PORT);
 
       response.writeHead(200, {"Content-Type": mimeType});
       response.write(data, "binary");
@@ -269,18 +271,18 @@ function serveFile(filename, response) {
 function serveFileIndex(filename, response) {
   // automatically serve index.html if this is a directory
   fs.stat(filename, function(err, s) {
-	if (err === null && s.isDirectory()) {
-	  serveFile(path.join(filename, "index.html"), response);
-	} else {
-	  serveFile(filename, response);
-	}
+    if (err === null && s.isDirectory()) {
+      serveFile(path.join(filename, "index.html"), response);
+    } else {
+      serveFile(filename, response);
+    }
   });
 }
 
 
 boundServers.push({
   name: "_primary",
-  server: createServer({ 
+  server: createServer({
     port: PRIMARY_PORT,
     handler: primaryHandler
   })
@@ -321,6 +323,6 @@ console.log("\nTesting server started, to run tests go to: "
             + formatLink("_primary", "/tests/index.html"));
 
 function getSpecs() {
-    var dirs = fs.readdirSync(path.join(__dirname, 'spec'));
-    return dirs;
+  var dirs = fs.readdirSync(path.join(__dirname, 'spec'));
+  return dirs;
 }
