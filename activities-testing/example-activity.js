@@ -72,7 +72,15 @@ navigator.apps.services.registerHandler(
     // post the message to our server (e.g. MyShare) using AJAX
 
     // if successful:
-    activity.postResult({messagePosted: activity.data.message, messageURL: "http://example.com/" + Math.round(Math.random() * 10000)});
+    var result = {messagePosted: activity.data.message,
+                  messageURL: "http://example.com/" + Math.round(Math.random() * 10000)};
+
+    // look at recipients
+    if (activity.data.recipients) {
+      result['recipients'] = _.map(activity.data.recipients, function(r) {return "@" + r;});
+    }
+    
+    activity.postResult(result);
     
     // if not logged (credential is bad, expired, or inexistent)
     // activity.postException(activity.CREDENTIAL_FAILURE);

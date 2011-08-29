@@ -54,6 +54,12 @@ navigator.apps = (function() {
       }
     }, credential);
   };
+
+  var currentShareType = function() {
+    return _.select(SHARE_TYPES, function(st) {
+      return st.type == $('#shareType option:selected').val();
+    })[0];
+  };
   
   var setup = function(cb) {
     // get parameters
@@ -66,9 +72,7 @@ navigator.apps = (function() {
         _.each(SHARE_TYPES, function(shareType) {
           $('#shareType').append($('<option>', {value: shareType.type}).text(shareType.name));
           $('#shareType').change(function() {
-            var shareType = _.select(SHARE_TYPES, function(st) {
-              return st.type == $('#shareType option:selected').val();
-            })[0];
+            var shareType = currentShareType();
             if (shareType.toLabel) {
               $('#recipient').show();
               $('#toLabel').html(shareType.toLabel);
@@ -110,11 +114,25 @@ navigator.apps = (function() {
   
   // called once the user is logged in
   var doShare = function(message) {
+    var args = {
+      message:message
+    };
+
+    var shareType = currentShareType();
+    
+    if (shareType.toLabel) {
+      args['recipients'] = _.map($('#recipients_input').val().split(","), function(r) {return r.trim()});
+    }
+    
     makeCall("http://webactivities.org/share",
              "send",
-             {message: message},
+             args,
              function(result) {
-               document.getElementById("log").innerHTML+= "posted <em>" + result.messagePosted + "</em><br />";
+               $('#log').append("posted <em>" + result.messagePosted + "</em>");
+               if (result.recipients) {
+                 $('#log').append(" to <em>" + result.recipients.join(", ") + "</em>");
+               }
+               $('#log').append("<br />");
              },
              function(exception) {
                alert('exception happened: ' + exception.toString());
