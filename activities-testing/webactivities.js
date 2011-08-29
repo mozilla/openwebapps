@@ -18,6 +18,9 @@ navigator.apps = (function() {
 
   var SHARE_TYPES = null;
 
+  var LOGIN_PAGE = null;
+  var SHARE_PAGE = null;
+
   var makeCall = function(activity, message, args, onsuccess, onerror) {
     if (!credential) {
       // first do login, and then share
@@ -94,7 +97,12 @@ navigator.apps = (function() {
   };
   
   var ready = function() {
-    isReady = true;
+    // quick hack for Twitter
+    $.get("/twitter.webapp", function(result) {
+      var manifest = JSON.parse(result);
+      LOGIN_PAGE = manifest.services['http://webactivities.org/login'].path;
+      SHARE_PAGE = manifest.services['http://webactivities.org/share'].path;
+    });
   };
 
   var registerHandler = function(activity, action, handler) {
