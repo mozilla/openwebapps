@@ -7,7 +7,7 @@ function renderRequestExplanation(activity) {
 
   var tmplName = activity.action.replace('.', '_');
   var actionTmpl = $("#" + tmplName);
-  if (!actionTmpl) actionTmpl = $("#defaultAction");
+  if (!actionTmpl || !actionTmpl[0]) actionTmpl = $("#defaultAction");
 
   var data = {
     activity: activity
