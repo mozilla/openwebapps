@@ -42,7 +42,7 @@ Service.prototype = {
       let frames = unsafeWindow.document.getElementsByTagName('iframe');
       for (var i=0 ; i < frames.length; i++) {
         if (frames[i].src == this.url) {
-          cw = frames[i];
+          cw = frames[i].contentWindow;
           break;
         }
       }
