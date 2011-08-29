@@ -115,8 +115,8 @@ navigator.apps = (function() {
   };
 
   var doLogin = function(next) {
-    loginWindow = window.open("login.html", "activities-login", "status=0,toolbar=0,menubar=0,height=200,width=500");
-    loginWindow.moveTo(200,200);
+    loginWindow = window.open(LOGIN_PAGE, "activities-login", "status=0,toolbar=0,menubar=0,height=350,width=320");
+    loginWindow.moveTo(100,100);
     afterLoginFunc = next;
   };
   
