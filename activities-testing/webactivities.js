@@ -160,7 +160,11 @@ navigator.apps = (function() {
   var storeCredential = function(c) {
     // this is being called in the login page
     // we make the assumption that we can reach into the caller
-    window.opener.navigator.apps.services._internalStoreCredential(c);
+    try {
+      window.opener.navigator.apps.services._internalStoreCredential(c);
+    } catch (e) {
+      console.log("couldn't store credential in WebActivities test framework: " + e.toString());
+    }
   };
   
   return {
