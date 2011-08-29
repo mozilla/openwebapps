@@ -1,11 +1,11 @@
 # Web Activities
 
-Web Activities is a service discovery mechanism and light-weight RPC system 
+Web Activities is a service discovery mechanism and light-weight RPC system
 between web apps and browsers.  In the system, a client creates an Activity
 describing the action it wants to be handled, and submits it to the browser
 for resolution.  The browser presents an interface that allows the user
 to select which service to use, and then submits the Activity to the
-service provider selected by the user.  The service may return data 
+service provider selected by the user.  The service may return data
 that is returned to the client.  The browser may optionally inspect
 or modifying the data as it flows between the client and the service.
 
@@ -29,12 +29,12 @@ The client begins an activity by constructing an Activity and passing it to the 
      string action;
      string type;
      object data;
-     
+
      /* Only visible to the service provider: */
      optional string message;
      void postResult(in object data);
      void postException(in object data);
-     
+
      /* exception constants TBD */
     }
 
@@ -54,7 +54,7 @@ Clients interact with the `startActivity` method to start processing:
                         in optional errorCallback);
 
      // Used by providers to receive messages on the other end:
-     void registerHandler(in string action, 
+     void registerHandler(in string action,
                           in optional message,
                           in function handler);
     };
@@ -83,7 +83,7 @@ In this example, SharingApp declares that it supports the well-understood "share
 
 *ed: in the current prototype, the startActivity method is called invokeService and is a member of *navigator.apps.  Nomenclature changes TBD!*
 
-It has been proposed by the Chromium team (see [proposal](http://dev.chromium.org/developers/design-documents/webintentsapi)) that services (or "intents") can also be declared in markup.  This approach is being prototyped and considered, though it contains some lifecycle management and user experience challenges.  
+It has been proposed by the Chromium team (see [proposal](http://dev.chromium.org/developers/design-documents/webintentsapi)) that services (or "intents") can also be declared in markup.  This approach is being prototyped and considered, though it contains some lifecycle management and user experience challenges.
 
 ## Client Invocation
 
@@ -100,13 +100,13 @@ calling syntax may be slightly different depending on library packaging).
 When the service has been successfully invoked, the success callback
 function is called with a set of values that depend on the specific action.
 If the invocation fails, the error callback is called with an exception
-object. 
+object.
 
 *ed: match canonical error callback behavior from other web APIs*
 
 ## Service Mediator
 
-The service mediator is browser-based logic and interface elements that are loaded after service invocation.  The mediator helps the user pick a service and interact with it.  
+The service mediator is browser-based logic and interface elements that are loaded after service invocation.  The mediator helps the user pick a service and interact with it.
 
 It is expected that user agents will provide a default mediator that presents a reasonable "picker" interface.  User agents may optionally provide other mediators, or provide APIs to extension developers, which will register to handle certain activity actions.
 
@@ -120,17 +120,17 @@ The API provided by a user agent to a mediator implementation is not subject to 
 
     // called by the mediator when it is ready
     // to accept an activity:
-    navigator.apps.mediation.ready(startActivityFn); 
+    navigator.apps.mediation.ready(startActivityFn);
 
-    function startActivityFn(anActivity, 
-                             availableProviders, 
+    function startActivityFn(anActivity,
+                             availableProviders,
                              availableCredentials) {
        // display an interface by reading anActivity
        // using the map of services and credentials as needed
        // for example:
        for (providerOrigin in availableProviders) {
          makeServicePickerRow(
-                availableProviders[providerOrigin], 
+                availableProviders[providerOrigin],
                 availableCredentials[providerOrigin]);
       }
     }
@@ -153,13 +153,13 @@ _ed: Need more specific use cases for the message.  Login is one; account-balanc
 For example:
 
     navigator.apps.services.registerHandler(
-      'http://webactivities.org/share', 
+      'http://webactivities.org/share',
       function(activity, credential)
       {
         my_ajax.post_share({
-          url: activity.data.url, 
-          title: activity.data.title, 
-          comment: activity.data.comment, 
+          url: activity.data.url,
+          title: activity.data.title,
+          comment: activity.data.comment,
           credential: credential,
           success: function() {
             activity.postResult({status:"ok"});
@@ -168,20 +168,20 @@ For example:
             if (statusCode == 403) {
               activity.postException(activity.CREDENTIAL_FAILURE);
             } else {
-              activity.postException(activity.FAILURE); 
+              activity.postException(activity.FAILURE);
             }
           }
         });
       }
      );
-          
+
 ## Account Management
 
 This Activities system is intended to facilitate communication between web content and services which have been personalized for the user.  To facilitate this personalization, an *account management* system is defined here.
 
 This system is implemented by the browser, and allows an activity provider to direct the browser to initiate a provider-defined login process, and to persist a data structure on the provider's behalf.
 
-A provider indicates its ability to participate in account management by implementing the "http://webactivities.org/login" activity.  
+A provider indicates its ability to participate in account management by implementing the "http://webactivities.org/login" activity.
 
 The provider is further expected to add a *credentialRequired* property with a value of *true* to all service declarations that require a credential. *XXX: Support for anonymous-or-account?  That would require being in the mediator's list, but then throwing some sort of "logMeInNow" exception.*
 
