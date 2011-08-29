@@ -29,14 +29,21 @@ The client begins an activity by constructing an Activity and passing it to the 
      string action;
      string type;
      object data;
-
+     
+     /* Only visible to the service provider: */
+     optional string message;
      void postResult(in object data);
+     void postException(in object data);
+     
+     /* exception constants TBD */
     }
 
 * `action`: A string that specifies the activity to be launched.
 * `type`: An optional MIME type that further defines the type of the payload data. e.g., “image/png” if data is a PNG image.
 * `data`: A structured clone that constitutes the payload to send to the service.
-* `postResult`: The method used by the service to return data to the client. This method is provided by the browser, and is only useful in the context of the service.  The client should (*ed: must?*) not set this.
+* `message`: An optional string argument that is used in mediator-to-service coordination
+* `postResult`: The method used by the service to return data to the client. This method is provided by the browser, and is only useful in the context of the service.  The client MAY NOT not set this.
+* `postException`: The method used by the service to signal an error to the client.  This method is provided by the browser, and is only useful in the context of the service.  The client MAY NOT set this.
 
 Clients interact with the `startActivity` method to start processing:
 
@@ -47,9 +54,13 @@ Clients interact with the `startActivity` method to start processing:
                         in optional errorCallback);
 
      // Used by providers to receive messages on the other end:
-     void registerHandler(in string action, in string message, in handler);
+     void registerHandler(in string action, 
+                          in optional message,
+                          in function handler);
     };
     Navigator implements AppServices;
+
+The registerHandler method must always receive the `action` and `handler` arguments.  If the `message` parameter is present, the handler will only be invoked for activities that have that message; if no `message` parameter is present, the handler will only be invoked for activities for which the message is null.  The default mediator (which is used for activities about which the User Agent has no special knowledge) never sends a `message` activity.
 
 Applications are expected to register their ability to perform activity services
 by defining one or more service elements in their application manifest:
@@ -103,7 +114,7 @@ The exact user experience provided by a mediator can vary depending on the activ
 
 The authors believe that this is a natural place to assist users with account selection tasks.  We propose that, when a mediator is invoked, it is given read/write access to the activity, a read-only list of services that can serve that activity, and an optional list of credential lists, which describe the accounts that are available to this browser at each of the named activities.  See the *Account Management* section, below, for more on this flow.
 
-The mediator is intended to provide a place for message coordination, so that interactions which require the exchange of multiple messages with a provider need not return data and control to the calling client.
+The mediator is intended to provide a place for message coordination, so that interactions which require the exchange of multiple messages with a provider need not return data and control to the calling client.  The `message` field of the Activity is provided to allow the mediator to tell the provider which stage of an interaction is being requested.
 
 The API provided by a user agent to a mediator implementation is not subject to standardization (_ed: yet?_), but in general, it will need to support the following flow of control:
 
@@ -137,14 +148,13 @@ Providers are free to implement multiple activities in a single URL, or to creat
 
 When the handler is invoked, the Activity object is passed to it, along with a message and an optional credential object.  The message indicates which step of the activity is being performed, for multi-step activities. The credential object, if it exists, is one that was previously created by this provider and stored in the browser, and which was selected by the user during a mediator-initiated display.
 
-_ed: Need more specific use cases for the message.  Login is one; account-balance is another; more?_
+_ed: Need more specific use cases for the message.  Login is one; account-balance is another; more?  Yes - share needs capabilities, autocomplete, validate, send_
 
 For example:
 
     navigator.apps.services.registerHandler(
       'http://webactivities.org/share', 
-      'doShare', 
-      function(activity, message, credential)
+      function(activity, credential)
       {
         my_ajax.post_share({
           url: activity.data.url, 
