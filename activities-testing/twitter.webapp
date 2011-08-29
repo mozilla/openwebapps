@@ -1,0 +1,15 @@
+{
+   "name": "Twitter",
+   "icons": {
+     "32": "/icons/32.png"
+   },
+   "services": {
+     "http://webactivities.org/login": {
+        "path": "/login.html"
+     },
+     "http://webactivities.org/share": {
+        "type": [ "application/url", "text/*", "image/*" ],
+        "path": "/example-activity.html"
+     }
+   }
+ }
