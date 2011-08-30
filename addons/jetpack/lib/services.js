@@ -65,190 +65,190 @@ var nextinvocationid = 0;
  * per mediator, created only when needed.
  */
 function MediatorPanel(window, contentWindowRef, activity, successCB, errorCB) {
-    this.window = window; // the window the panel is attached to
-    this.contentWindow = contentWindowRef; // ???
-    this.methodName = activity.action;
-    this.activity = activity;
-    this.successCB = successCB;
-    this.errorCB = errorCB;
+  this.window = window; // the window the panel is attached to
+  this.contentWindow = contentWindowRef; // ???
+  this.methodName = activity.action;
+  this.activity = activity;
+  this.successCB = successCB;
+  this.errorCB = errorCB;
 
-    // Update the content for the new invocation
-    this.args = this.updateargs(activity.data);
-    this.mediator = mediators[this.methodName];
+  // Update the content for the new invocation
+  this.args = this.updateargs(activity.data);
+  this.mediator = mediators[this.methodName];
 
-    this.panel = null;
-    this.configured = false;
-    this.haveAddedListener = false; // is the message handler installed?
-    this.isConfigured = false;
-    this.invocationid = nextinvocationid++;
+  this.panel = null;
+  this.configured = false;
+  this.haveAddedListener = false; // is the message handler installed?
+  this.isConfigured = false;
+  this.invocationid = nextinvocationid++;
 
-    this._createPopupPanel();
+  this._createPopupPanel();
 }
 MediatorPanel.prototype = {
-    /* OWA Mediator Agents may subclass the following: */
+  /* OWA Mediator Agents may subclass the following: */
 
-    /**
-     * what the panel gets attached to
-     * */
-    get anchor() { return this.window.document.getElementById('identity-box') },
+  /**
+   * what the panel gets attached to
+   * */
+  get anchor() { return this.window.document.getElementById('identity-box') },
 
-    /**
-     * update the arguments that get sent to a mediator
-     */
-    updateargs: function(args) {
-        return args;
-    },
-    /**
-     * handlers for show/hide of the panel - will be hooked up if a subclass
-     * defines them.
-     * XXX - rename these to _on_panel_shown etc?
-     */
-    //_panelShown: function() {},
-    //_panelHidden: function() {},
+  /**
+   * update the arguments that get sent to a mediator
+   */
+  updateargs: function(args) {
+    return args;
+  },
+  /**
+   * handlers for show/hide of the panel - will be hooked up if a subclass
+   * defines them.
+   * XXX - rename these to _on_panel_shown etc?
+   */
+  //_panelShown: function() {},
+  //_panelHidden: function() {},
 
-    /**
-     * onResult
-     *
-     * the result data is sent back to the content that invoked the service,
-     * this may result in data going back to some 3rd party content.  Eg, a
-     * website invokes the share mechanism via a share button in its content.
-     * the user clicks on the share button in the content, the share panel
-     * appears.  When the user complets the share, the result of that share
-     * is returned via on_result.
-     */
-    onResult: function(msg) {
-        this.panel.hide();
-        if (this.successCB)
-            this.successCB(msg);
-    },
+  /**
+   * onResult
+   *
+   * the result data is sent back to the content that invoked the service,
+   * this may result in data going back to some 3rd party content.  Eg, a
+   * website invokes the share mechanism via a share button in its content.
+   * the user clicks on the share button in the content, the share panel
+   * appears.  When the user complets the share, the result of that share
+   * is returned via on_result.
+   */
+  onResult: function(msg) {
+    this.panel.hide();
+    if (this.successCB)
+      this.successCB(msg);
+  },
 
-    onClose: function(msg) {
-        this.panel.hide();
-    },
+  onClose: function(msg) {
+    this.panel.hide();
+  },
 
-    onError: function(msg) {
-        console.error("mediator reported invocation error:", msg)
-        this.showErrorNotification(msg);
-    },
+  onError: function(msg) {
+    console.error("mediator reported invocation error:", msg)
+    this.showErrorNotification(msg);
+  },
 
-    onReady: function(msg) {
-        FFRepoImplService.findServices(this.methodName, function(serviceList) {
-          this.panel.port.emit("setup", {
-                          activity: this.activity,
-                          serviceList: serviceList,
-                          caller: this.contentWindow.location.href,
-                          invocationid: this.invocationid
-          });
-        }.bind(this));
-    },
+  onReady: function(msg) {
+    FFRepoImplService.findServices(this.methodName, function(serviceList) {
+      this.panel.port.emit("setup", {
+              activity: this.activity,
+              serviceList: serviceList,
+              caller: this.contentWindow.location.href,
+              invocationid: this.invocationid
+      });
+    }.bind(this));
+  },
 
-    onSizeToContent: function (args) {
-        this.panel.resize(args.width, args.height);
-    },
+  onSizeToContent: function (args) {
+    this.panel.resize(args.width, args.height);
+  },
 
-    attachHandlers: function() {
-        this.panel.port.on("result", this.onResult.bind(this));
-        this.panel.port.on("error", this.onError.bind(this));
-        this.panel.port.on("close", this.onClose.bind(this));
-        this.panel.port.on("ready", this.onReady.bind(this));
-        this.panel.port.on("sizeToContent", this.onSizeToContent.bind(this));
-    },
-    /* end message api */
+  attachHandlers: function() {
+    this.panel.port.on("result", this.onResult.bind(this));
+    this.panel.port.on("error", this.onError.bind(this));
+    this.panel.port.on("close", this.onClose.bind(this));
+    this.panel.port.on("ready", this.onReady.bind(this));
+    this.panel.port.on("sizeToContent", this.onSizeToContent.bind(this));
+  },
+  /* end message api */
 
-    _createPopupPanel: function() {
-        let data = require("self").data;
-        let contentScriptFile = [data.url("mediatorapi.js")];
-        let contentScript;
+  _createPopupPanel: function() {
+    let data = require("self").data;
+    let contentScriptFile = [data.url("mediatorapi.js")];
+    let contentScript;
 
-        // XXX - update mediator registration to also include
-        // additional contentScriptFiles.
-        let url = this.mediator && this.mediator.url;
-        if (!url) {
-            url = require("self").data.url("service2.html");
-        } else {
-          if (this.mediator.contentScriptFile) {
-            contentScriptFile = contentScriptFile.concat(this.mediator.contentScriptFile);
-          }
-          contentScript = this.mediator.contentScript;
-        }
-        let thePanel = require("panel").Panel({
-          contentURL: url,
-          contentScriptFile: contentScriptFile,
-          contentScript: contentScript,
-          contentScriptWhen: "start",
-          width: 484, height: 484
-        });
-
-        if (this._panelShown) {
-            thePanel.on("show", this._panelShown.bind(this));
-        }
-        if (this._panelHidden) {
-            thePanel.on("hide", this._panelHidden.bind(this));
-        }
-        this.panel = thePanel;
-    },
-
-    /**
-     * show
-     *
-     * show the mediator popup
-     */
-    show: function() {
-        if (!this.isConfigured) {
-            this.panel.port.emit("reconfigure");
-            this.isConfigured = true;
-        }
-        this.panel.show(this.anchor);
-    },
-
-    /**
-     * showErrorNotification
-     *
-     * show an error notification for this mediator
-     */
-    showErrorNotification: function(data) {
-        let nId = "openwebapp-error-" + this.methodName;
-        let nBox = this.window.gBrowser.getNotificationBox();
-        let notification = nBox.getNotificationWithValue(nId);
-
-        // Check that we aren't already displaying our notification
-        if (!notification) {
-            let message;
-            if (data && data.msg)
-                message = data.msg;
-            else if (this.mediator && this.mediator.notificationErrorText)
-                message = this.mediator.notificationErrorText;
-            else
-                message = "42";
-
-            let self = this;
-            buttons = [{
-                label: "try again",
-                accessKey: null,
-                callback: function () {
-                    self.window.setTimeout(function () {
-                        self.show();
-                    }, 0);
-                }
-            }];
-            nBox.appendNotification(message, nId, null,
-                                    nBox.PRIORITY_WARNING_MEDIUM, buttons);
-        }
-    },
-
-    /**
-     * hideErrorNotification
-     *
-     * hide notifications from this mediator
-     */
-    hideErrorNotification: function() {
-        let nId = "openwebapp-error-" + this.methodName;
-        let nb = this.window.gBrowser.getNotificationBox();
-        let notification = nb.getNotificationWithValue(nId);
-        if (notification) {
-            nb.removeNotification(notification);
-        }
+    // XXX - update mediator registration to also include
+    // additional contentScriptFiles.
+    let url = this.mediator && this.mediator.url;
+    if (!url) {
+      url = require("self").data.url("service2.html");
+    } else {
+      if (this.mediator.contentScriptFile) {
+      contentScriptFile = contentScriptFile.concat(this.mediator.contentScriptFile);
+      }
+      contentScript = this.mediator.contentScript;
     }
+    let thePanel = require("panel").Panel({
+      contentURL: url,
+      contentScriptFile: contentScriptFile,
+      contentScript: contentScript,
+      contentScriptWhen: "start",
+      width: 484, height: 484
+    });
+
+    if (this._panelShown) {
+      thePanel.on("show", this._panelShown.bind(this));
+    }
+    if (this._panelHidden) {
+      thePanel.on("hide", this._panelHidden.bind(this));
+    }
+    this.panel = thePanel;
+  },
+
+  /**
+   * show
+   *
+   * show the mediator popup
+   */
+  show: function() {
+    if (!this.isConfigured) {
+      this.panel.port.emit("reconfigure");
+      this.isConfigured = true;
+    }
+    this.panel.show(this.anchor);
+  },
+
+  /**
+   * showErrorNotification
+   *
+   * show an error notification for this mediator
+   */
+  showErrorNotification: function(data) {
+    let nId = "openwebapp-error-" + this.methodName;
+    let nBox = this.window.gBrowser.getNotificationBox();
+    let notification = nBox.getNotificationWithValue(nId);
+
+    // Check that we aren't already displaying our notification
+    if (!notification) {
+      let message;
+      if (data && data.msg)
+        message = data.msg;
+      else if (this.mediator && this.mediator.notificationErrorText)
+        message = this.mediator.notificationErrorText;
+      else
+        message = "42";
+
+      let self = this;
+      buttons = [{
+        label: "try again",
+        accessKey: null,
+        callback: function () {
+          self.window.setTimeout(function () {
+            self.show();
+          }, 0);
+        }
+      }];
+      nBox.appendNotification(message, nId, null,
+                  nBox.PRIORITY_WARNING_MEDIUM, buttons);
+    }
+  },
+
+  /**
+   * hideErrorNotification
+   *
+   * hide notifications from this mediator
+   */
+  hideErrorNotification: function() {
+    let nId = "openwebapp-error-" + this.methodName;
+    let nb = this.window.gBrowser.getNotificationBox();
+    let notification = nb.getNotificationWithValue(nId);
+    if (notification) {
+      nb.removeNotification(notification);
+    }
+  }
 }
 
 
@@ -264,275 +264,275 @@ MediatorPanel.prototype = {
  */
 function serviceInvocationHandler(win)
 {
-    this._window = win;
-    this._popups = []; // save references to popups we've created already
+  this._window = win;
+  this._popups = []; // save references to popups we've created already
 
-    let observerService = Cc["@mozilla.org/observer-service;1"].getService(Ci.nsIObserverService);
-    observerService.addObserver(this, "openwebapp-installed", false);
-    observerService.addObserver(this, "openwebapp-uninstalled", false);
+  let observerService = Cc["@mozilla.org/observer-service;1"].getService(Ci.nsIObserverService);
+  observerService.addObserver(this, "openwebapp-installed", false);
+  observerService.addObserver(this, "openwebapp-uninstalled", false);
 }
 serviceInvocationHandler.prototype = {
 
-    /**
-     * registerMediator
-     *
-     * this is conceptually a 'static' method - once called it will affect
-     * all future and current instances of the serviceInvocationHandler.
-     *
-     */
-    registerMediator: function(methodName, mediator) {
-      // need to nuke any cached mediators here?
-      mediators[methodName] = mediator;
+  /**
+   * registerMediator
+   *
+   * this is conceptually a 'static' method - once called it will affect
+   * all future and current instances of the serviceInvocationHandler.
+   *
+   */
+  registerMediator: function(methodName, mediator) {
+    // need to nuke any cached mediators here?
+    mediators[methodName] = mediator;
 
-      let newPopups = [];
-      for each (let popupCheck in this._popups) {
-        if (popupCheck.methodName === methodName) {
-          // this popup record must die.
-          let nukePanel = popupCheck.panel;
-          nukePanel.destroy();
-        } else {
-          newPopups.push(popupCheck);
-        }
-      }
-      this._popups = newPopups;
-    },
+    let newPopups = [];
+    for each (let popupCheck in this._popups) {
+    if (popupCheck.methodName === methodName) {
+      // this popup record must die.
+      let nukePanel = popupCheck.panel;
+      nukePanel.destroy();
+    } else {
+      newPopups.push(popupCheck);
+    }
+    }
+    this._popups = newPopups;
+  },
 
-    /**
-     * registerAgent
-     *
-     * this is conceptually a 'static' method - once called it will affect
-     * all future and current instances of the serviceInvocationHandler.
-     *
-     */
-    registerAgent: function(methodName, callback) {
-      agentCreators[methodName] = callback;
-    },
+  /**
+   * registerAgent
+   *
+   * this is conceptually a 'static' method - once called it will affect
+   * all future and current instances of the serviceInvocationHandler.
+   *
+   */
+  registerAgent: function(methodName, callback) {
+    agentCreators[methodName] = callback;
+  },
 
-    /**
-     * initApp
-     *
-     * reset our mediators if an app is installed or uninstalled
-     */
-    observe: function(subject, topic, data) {
-      if (topic === "openwebapp-installed" || topic === "openwebapp-uninstalled")
-      {
-        // All visible panels need to be reconfigured now, while invisible
-        // ones can wait until they are re-shown.
-        for each (let popupCheck in this._popups) {
-          if (popupCheck.panel.isShowing) {
-            popupCheck.panel.port.emit("reconfigure");
-          } else {
-            popupCheck.isConfigured = false;
-          }
-        }
-      }
-    },
-
-    /**
-     * initApp
-     *
-     * called when an app tells us it's ready to go
-     */
-    initApp: function(contentWindowRef) {
-        let self = this;
-        // check that this is indeed an app
-        FFRepoImplService.getAppByUrl(contentWindowRef.location, function(app) {
-            if (!app) return;
-
-            // at this point, all services should be registered
-
-            // we invoke the login one if it's supported
-            if (app.services && app.services.login) {
-                // FIXME: what do we do with tons of IFRAMEs? Do they all get the login message?
-                self.invokeService(contentWindowRef, 'login', 'doLogin', {'credentials' : null}, function(result) {
-                    // if result is status ok, we're good
-                    if (result.status == 'ok') {
-                        console.log("app is logged in");
-                        return;
-                    }
-
-                    // if result is status dialog, we need to open a popup.
-                    if (result.status == 'notloggedin') {
-                        if (app.services.login.dialog) {
-                            // open up a dialog
-                            var windows = require("windows").browserWindows;
-                            windows.open({
-                                url: app.login_dialog_url,
-                                onOpen: function(window) {
-                            }});
-                        }
-                    }
-                });
-            }
-            // If this app's window has a parent which lives in one of our
-            // panels, message the panel about the readiness.
-            if (contentWindowRef.parent) {
-              for each (let popupCheck in self._popups) {
-                if (popupCheck.invocationid === contentWindowRef.parent.navigator.apps.mediation._invocationid) {
-                  popupCheck.panel.port.emit("app_ready", contentWindowRef.location.href);
-                  break;
-                }
-              }
-            }
-        });
-    },
-
-    // when an app registers a service handler
-    registerServiceHandler: function(contentWindowRef, action, func) {
-        // check that this is indeed an app
-        FFRepoImplService.getAppByUrl(contentWindowRef.location, function(app) {
-
-            // do we need to unwrap it?
-            var theWindow = contentWindowRef;
-
-            if (!app) {
-              // We register handlers for things that aren't apps
-              var theWindow = contentWindowRef;
-              if (!theWindow._MOZ_NOAPP_SERVICES)
-                  theWindow._MOZ_NOAPP_SERVICES = {};
-              if (!theWindow._MOZ_NOAPP_SERVICES[action])
-                  theWindow._MOZ_NOAPP_SERVICES[action] = {};
-              theWindow._MOZ_NOAPP_SERVICES[action] = func;
-              return;
-            }
-
-            // make sure the app supports this activity
-            if (!(app.services && app.services[action])) {
-                console.log("app attempted to register handler for activity action " + action + " but not declared in manifest");
-                return;
-            }
-            //console.log("Registering handler for " + app.origin + " " + activity;
-
-            if (!theWindow._MOZ_SERVICES)
-                theWindow._MOZ_SERVICES = {};
-
-            if (!theWindow._MOZ_SERVICES[action])
-                theWindow._MOZ_SERVICES[action] = {};
-
-            theWindow._MOZ_SERVICES[action]= func;
-        });
-    },
-
-    // this call means to invoke a specific call within a given app
-    invokeService: function(contentWindow, activity, cb, cberr, privileged) {
-        dump("invokeService invoked for " + activity.action + "; message is " + activity.message + "\n")
-        FFRepoImplService.getAppByUrl(contentWindow.location, function(app) {
-            var theWindow = contentWindow;
-
-            if (!app) {
-              if (privileged) {
-                try {
-                    theWindow._MOZ_NOAPP_SERVICES[activity.action](activity);
-                } catch (e) {
-                    console.log("error invoking " + activity.action + "/" + activity.message + " in privileged invocation\n" + e.toString());
-                }
-              }
-              return;
-            }
-
-            // make sure the app supports this activity
-            if (!(app.services && app.services[activity.action])) {
-                console.log("attempted to send message to app for activity " + activity.action + " but app doesn't support it");
-                return;
-            }
-
-            let cbshim = function(result) {
-              dump("cbshim was invoked inside invokeService\n")
-              cb(JSON.stringify(result));
-            };
-            let cberrshim = function(code, errmsg) {
-              // Following the lead from jschannel, the errback might be invoked
-              // as either: errback(code, errmsg) or errback({code: "code", message: errmsg})
-              dump("cberrshim was invoked inside invokeService\n")
-              let errob;
-              if (typeof errmsg === 'undefined') {
-                if (typeof code === 'string') {
-                  errob = {code: code};
-                } else {
-                  errob = code;
-                }
-              } else {
-                // 2 params - must be explicit code/message params.
-                errob = {code: code, message: errmsg};
-              }
-              if (cberr) {
-                cberr(JSON.stringify(errob));
-              } else {
-                console.log("invokeService error but no error callback:", JSON.stringify(errob));
-              }
-            }
-            try {
-                activity.postResult = cbshim;
-                activity.postException = cberrshim;
-                theWindow._MOZ_SERVICES[activity.action](activity);
-            } catch (e) {
-                console.log("error invoking " + activity.action + "/" + activity.message + " on app " + app.origin + ": " + e.toString());
-                // invoke the callback with an error object the content can see.
-                cberrshim("runtime_error", e.toString());
-            }
-        });
-    },
-
-    /**
-     * removePanelsForWindow
-     *
-     * window unload handler that removes any popup panels attached to the
-     * window from our list of managed panels
-     */
-    removePanelsForWindow: function(evt) {
-        // this window is unloading
-        // nuke any popups targetting this window.
-        // XXX - this probably needs tweaking - what if the app is still
-        // "working" as the user navigates away from the page?  Currently
-        // there is no reasonable way to detect this though.
-        let newPopups = [];
-        for each (let popupCheck in this._popups) {
-          if (popupCheck.contentWindow === evt.currentTarget) {
-            // this popup record must die.
-            let nukePanel = popupCheck.panel;
-            nukePanel.destroy();
-          } else {
-            newPopups.push(popupCheck);
-          }
-        }
-        console.log("window closed - had", this._popups.length, "popups, now have", newPopups.length);
-        this._popups = newPopups;
-    },
-
-    get: function(contentWindowRef, activity, successCB, errorCB) {
-        for each (let popupCheck in this._popups) {
-            if (contentWindowRef == popupCheck.contentWindow && activity.action == popupCheck.methodName) {
-                return popupCheck;
-            }
-        }
-        // if we didn't find it, create it
-        let agent = agentCreators[activity.action] ? agentCreators[activity.action] : MediatorPanel;
-        let panel = new agent(this._window, contentWindowRef, activity, successCB, errorCB);
-        // attach our response listeners
-        panel.attachHandlers();
-        this._popups.push(panel);
-        // add an unload listener so we can nuke this popup info as the window closes.
-        contentWindowRef.addEventListener("unload",
-                           this.removePanelsForWindow.bind(this), true);
-        return panel;
-    },
-
-    /**
-     * invoke
-     *
-     * show the panel for a mediator, creating one if necessary.
-     */
-    invoke: function(contentWindowRef, activity, successCB, errorCB) {
-      try {
-        // Do we already have a panel for this service for this content window?
-        let panel = this.get(contentWindowRef, activity, successCB, errorCB);
-        panel.hideErrorNotification();
-        panel.show();
-      } catch (e) {
-        dump(e + "\n");
-        dump(e.stack + "\n");
+  /**
+   * initApp
+   *
+   * reset our mediators if an app is installed or uninstalled
+   */
+  observe: function(subject, topic, data) {
+    if (topic === "openwebapp-installed" || topic === "openwebapp-uninstalled")
+    {
+    // All visible panels need to be reconfigured now, while invisible
+    // ones can wait until they are re-shown.
+    for each (let popupCheck in this._popups) {
+      if (popupCheck.panel.isShowing) {
+      popupCheck.panel.port.emit("reconfigure");
+      } else {
+      popupCheck.isConfigured = false;
       }
     }
+    }
+  },
+
+  /**
+   * initApp
+   *
+   * called when an app tells us it's ready to go
+   */
+  initApp: function(contentWindowRef) {
+    let self = this;
+    // check that this is indeed an app
+    FFRepoImplService.getAppByUrl(contentWindowRef.location, function(app) {
+      if (!app) return;
+
+      // at this point, all services should be registered
+
+      // we invoke the login one if it's supported
+      if (app.services && app.services.login) {
+        // FIXME: what do we do with tons of IFRAMEs? Do they all get the login message?
+        self.invokeService(contentWindowRef, 'login', 'doLogin', {'credentials' : null}, function(result) {
+          // if result is status ok, we're good
+          if (result.status == 'ok') {
+            console.log("app is logged in");
+            return;
+          }
+
+          // if result is status dialog, we need to open a popup.
+          if (result.status == 'notloggedin') {
+            if (app.services.login.dialog) {
+              // open up a dialog
+              var windows = require("windows").browserWindows;
+              windows.open({
+                url: app.login_dialog_url,
+                onOpen: function(window) {
+              }});
+            }
+          }
+        });
+      }
+      // If this app's window has a parent which lives in one of our
+      // panels, message the panel about the readiness.
+      if (contentWindowRef.parent) {
+        for each (let popupCheck in self._popups) {
+        if (popupCheck.invocationid === contentWindowRef.parent.navigator.apps.mediation._invocationid) {
+          popupCheck.panel.port.emit("app_ready", contentWindowRef.location.href);
+          break;
+        }
+        }
+      }
+    });
+  },
+
+  // when an app registers a service handler
+  registerServiceHandler: function(contentWindowRef, action, func) {
+    // check that this is indeed an app
+    FFRepoImplService.getAppByUrl(contentWindowRef.location, function(app) {
+
+      // do we need to unwrap it?
+      var theWindow = contentWindowRef;
+
+      if (!app) {
+        // We register handlers for things that aren't apps
+        var theWindow = contentWindowRef;
+        if (!theWindow._MOZ_NOAPP_SERVICES)
+          theWindow._MOZ_NOAPP_SERVICES = {};
+        if (!theWindow._MOZ_NOAPP_SERVICES[action])
+          theWindow._MOZ_NOAPP_SERVICES[action] = {};
+        theWindow._MOZ_NOAPP_SERVICES[action] = func;
+        return;
+      }
+
+      // make sure the app supports this activity
+      if (!(app.services && app.services[action])) {
+        console.log("app attempted to register handler for activity action " + action + " but not declared in manifest");
+        return;
+      }
+      //console.log("Registering handler for " + app.origin + " " + activity;
+
+      if (!theWindow._MOZ_SERVICES)
+        theWindow._MOZ_SERVICES = {};
+
+      if (!theWindow._MOZ_SERVICES[action])
+        theWindow._MOZ_SERVICES[action] = {};
+
+      theWindow._MOZ_SERVICES[action]= func;
+    });
+  },
+
+  // this call means to invoke a specific call within a given app
+  invokeService: function(contentWindow, activity, cb, cberr, privileged) {
+    dump("invokeService invoked for " + activity.action + "; message is " + activity.message + "\n")
+    FFRepoImplService.getAppByUrl(contentWindow.location, function(app) {
+      var theWindow = contentWindow;
+
+      if (!app) {
+        if (privileged) {
+        try {
+          theWindow._MOZ_NOAPP_SERVICES[activity.action](activity);
+        } catch (e) {
+          console.log("error invoking " + activity.action + "/" + activity.message + " in privileged invocation\n" + e.toString());
+        }
+        }
+        return;
+      }
+
+      // make sure the app supports this activity
+      if (!(app.services && app.services[activity.action])) {
+        console.log("attempted to send message to app for activity " + activity.action + " but app doesn't support it");
+        return;
+      }
+
+      let cbshim = function(result) {
+        dump("cbshim was invoked inside invokeService\n")
+        cb(JSON.stringify(result));
+      };
+      let cberrshim = function(code, errmsg) {
+        // Following the lead from jschannel, the errback might be invoked
+        // as either: errback(code, errmsg) or errback({code: "code", message: errmsg})
+        dump("cberrshim was invoked inside invokeService\n")
+        let errob;
+        if (typeof errmsg === 'undefined') {
+        if (typeof code === 'string') {
+          errob = {code: code};
+        } else {
+          errob = code;
+        }
+        } else {
+        // 2 params - must be explicit code/message params.
+        errob = {code: code, message: errmsg};
+        }
+        if (cberr) {
+        cberr(JSON.stringify(errob));
+        } else {
+        console.log("invokeService error but no error callback:", JSON.stringify(errob));
+        }
+      }
+      try {
+        activity.postResult = cbshim;
+        activity.postException = cberrshim;
+        theWindow._MOZ_SERVICES[activity.action](activity);
+      } catch (e) {
+        console.log("error invoking " + activity.action + "/" + activity.message + " on app " + app.origin + ": " + e.toString());
+        // invoke the callback with an error object the content can see.
+        cberrshim("runtime_error", e.toString());
+      }
+    });
+  },
+
+  /**
+   * removePanelsForWindow
+   *
+   * window unload handler that removes any popup panels attached to the
+   * window from our list of managed panels
+   */
+  removePanelsForWindow: function(evt) {
+    // this window is unloading
+    // nuke any popups targetting this window.
+    // XXX - this probably needs tweaking - what if the app is still
+    // "working" as the user navigates away from the page?  Currently
+    // there is no reasonable way to detect this though.
+    let newPopups = [];
+    for each (let popupCheck in this._popups) {
+      if (popupCheck.contentWindow === evt.currentTarget) {
+      // this popup record must die.
+      let nukePanel = popupCheck.panel;
+      nukePanel.destroy();
+      } else {
+      newPopups.push(popupCheck);
+      }
+    }
+    console.log("window closed - had", this._popups.length, "popups, now have", newPopups.length);
+    this._popups = newPopups;
+  },
+
+  get: function(contentWindowRef, activity, successCB, errorCB) {
+    for each (let popupCheck in this._popups) {
+      if (contentWindowRef == popupCheck.contentWindow && activity.action == popupCheck.methodName) {
+        return popupCheck;
+      }
+    }
+    // if we didn't find it, create it
+    let agent = agentCreators[activity.action] ? agentCreators[activity.action] : MediatorPanel;
+    let panel = new agent(this._window, contentWindowRef, activity, successCB, errorCB);
+    // attach our response listeners
+    panel.attachHandlers();
+    this._popups.push(panel);
+    // add an unload listener so we can nuke this popup info as the window closes.
+    contentWindowRef.addEventListener("unload",
+               this.removePanelsForWindow.bind(this), true);
+    return panel;
+  },
+
+  /**
+   * invoke
+   *
+   * show the panel for a mediator, creating one if necessary.
+   */
+  invoke: function(contentWindowRef, activity, successCB, errorCB) {
+    try {
+    // Do we already have a panel for this service for this content window?
+    let panel = this.get(contentWindowRef, activity, successCB, errorCB);
+    panel.hideErrorNotification();
+    panel.show();
+    } catch (e) {
+    dump(e + "\n");
+    dump(e.stack + "\n");
+    }
+  }
 };
 
 var EXPORTED_SYMBOLS = ["serviceInvocationHandler"];
