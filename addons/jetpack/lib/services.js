@@ -460,7 +460,7 @@ serviceInvocationHandler.prototype = {
       } catch (e) {
         console.log("error invoking " + activity.action + "/" + message + " on app " + app.origin + ": " + e.toString());
         // invoke the callback with an error object the content can see.
-        cberrshim("runtime_error", e.toString());
+        cberrshim({code: "runtime_error", message: e.toString()});
       }
     });
   },
