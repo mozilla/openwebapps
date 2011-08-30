@@ -13,17 +13,25 @@ let allServices = {} // keyed by handler URL.
 // launch_url: The end-point of the service itself.
 
 
-function Service(svcinfo, iframe) {
+function Service(svcinfo, activity, iframe) {
   for (let name in svcinfo) {
     this[name] = svcinfo[name];
   }
   this.iframe = iframe;
   this._onHandlers = {}
+  this.activity = activity;
 };
 unsafeWindow.Service = Service;
 
 Service.prototype = {
-  call: function(activity, message, cb, cberr) {
+  call: function(action, args, cb, cberr) {
+    let activity = {
+      action: this.activity.action,
+      type: this.activity.type,
+      message: action,
+      data: args
+    }
+
     function cbshim(result) {
       cb(JSON.parse(result));
     }
@@ -47,7 +55,7 @@ Service.prototype = {
         }
       }
     }
-    unsafeWindow.navigator.apps.mediation._invokeService(cw, activity, message, cbshim, cberrshim);
+    unsafeWindow.navigator.apps.mediation._invokeService(cw, activity, action, cbshim, cberrshim);
   },
 
   // Get the closest icon that is equal to or larger than the requested size,
@@ -120,7 +128,7 @@ window.navigator.apps.mediation.ready = function(invocationHandler) {
       let iframe = document.createElement("iframe");
       iframe.src = svc.url;
 
-      let svcob = new Service(svc, iframe);
+      let svcob = new Service(svc, msg.activity, iframe);
       services.push(svcob);
       allServices[svc.url] = svcob;
     }
