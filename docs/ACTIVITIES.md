@@ -34,6 +34,8 @@ The client begins an activity by constructing an Activity and passing it to the 
 * `postResult`: The method used by the service to return data to the client. This method is provided by the browser, and is only useful in the context of the service.  The client MAY NOT not set this.
 * `postException`: The method used by the service to signal an error to the client.  This method is provided by the browser, and is only useful in the context of the service.  The client MAY NOT set this.
 
+*ed: rename `message`; maybe to `stage`.  Review order of parameters*
+
 Clients interact with the `startActivity` method to start processing, and Providers in turn register their ability to handle a service with `registerHandler`:
 
     interface AppServices {
@@ -97,7 +99,7 @@ Or a concrete (but theoretical) example:
           alert('Sharing failed :( ' + errorResult));
         });
 
-This call might be made by content, or from browser chrome (in browser chrome the class `Activity` and the functions in `navigator.apps` might need to be imported). When the service has been successfully invoked, the success callback function is called with a set of values that depend on the specific action. If the invocation fails, the error callback is called with an exception object.
+This call might be made by content, or from browser chrome (in browser chrome the class `Activity` and the functions in `navigator.apps` might need to be imported). When the service has been successfully invoked, the success callback function is a single argument that was returned by the provider; the meaning of the argument is specific to the action. If the invocation fails, the error callback is called with an exception object.
 
 *ed: match canonical error callback behavior from other web APIs*
 
