@@ -139,15 +139,15 @@ TestMediatorError = {
 };
 
 // A helper for the error tests.
-function testError(test, testType, errchecker) {
-  dump("\n\nBEGIN TEST " + testType + "\n");
+function testError(test, errchecker) {
+  dump("\n\nBEGIN TEST postError\n");
   test.waitUntilDone();
   installTestApp(test, "apps/basic/basic.webapp", function() {
     let services = getOWA()._services;
     services.registerMediator("test.basic", TestMediatorError);
     let panel = services.get(
       getContentWindow(),
-      {action:"test.basic", data:{type: testType}}, // simulate an activity
+      {action:"test.basic", data:{}}, // simulate an activity
       function(result) { // success cb
         dump("\n\ntestError success callback invoked!\n");
         services._popups.pop();
@@ -164,26 +164,11 @@ function testError(test, testType, errchecker) {
   });
 }
 
-exports.test_invoke_error_explicit_ob = function(test) {
-  testError(test, "explicit_errob", function(errob) {
+exports.test_invoke_error = function(test) {
+  testError(test, function(errob) {
     test.assertEqual(errob.code, "testable_error");
     test.assertEqual(errob.message, "a testable error");
     test.done();
   });
 };
 
-exports.test_invoke_error_explicit_params = function(test) {
-  testError(test, "explicit_params", function(errob) {
-    test.assertEqual(errob.code, "testable_error");
-    test.assertEqual(errob.message, "a testable error 2");
-    test.done();
-  });
-};
-
-exports.test_invoke_error_implicit_string_exception = function(test) {
-  testError(test, "implicit_string_exception", function(errob) {
-    test.assertEqual(errob.code, "runtime_error");
-    test.assertEqual(errob.message, "a testable error 3");
-    test.done();
-  });
-};

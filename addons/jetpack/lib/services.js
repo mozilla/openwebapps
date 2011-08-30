@@ -378,7 +378,8 @@ serviceInvocationHandler.prototype = {
   },
 
   // when an app registers a service handler
-  registerServiceHandler: function(contentWindowRef, action, func) {
+  registerServiceHandler: function(contentWindowRef, action, message, func) {
+    dump("registerServiceHandler for " + action + "; message is " + message + "\n")
     // check that this is indeed an app
     FFRepoImplService.getAppByUrl(contentWindowRef.location, function(app) {
 
@@ -392,7 +393,7 @@ serviceInvocationHandler.prototype = {
           theWindow._MOZ_NOAPP_SERVICES = {};
         if (!theWindow._MOZ_NOAPP_SERVICES[action])
           theWindow._MOZ_NOAPP_SERVICES[action] = {};
-        theWindow._MOZ_NOAPP_SERVICES[action] = func;
+        theWindow._MOZ_NOAPP_SERVICES[action][message] = func;
         return;
       }
 
@@ -409,22 +410,22 @@ serviceInvocationHandler.prototype = {
       if (!theWindow._MOZ_SERVICES[action])
         theWindow._MOZ_SERVICES[action] = {};
 
-      theWindow._MOZ_SERVICES[action]= func;
+      theWindow._MOZ_SERVICES[action][message] = func;
     });
   },
 
   // this call means to invoke a specific call within a given app
-  invokeService: function(contentWindow, activity, cb, cberr, privileged) {
-    dump("invokeService invoked for " + activity.action + "; message is " + activity.message + "\n")
+  invokeService: function(contentWindow, activity, message, cb, cberr, privileged) {
+    dump("invokeService invoked for " + activity.action + "; message is " + message + "\n")
     FFRepoImplService.getAppByUrl(contentWindow.location, function(app) {
       var theWindow = contentWindow;
 
       if (!app) {
         if (privileged) {
         try {
-          theWindow._MOZ_NOAPP_SERVICES[activity.action](activity);
+          theWindow._MOZ_NOAPP_SERVICES[activity.action][message](activity);
         } catch (e) {
-          console.log("error invoking " + activity.action + "/" + activity.message + " in privileged invocation\n" + e.toString());
+          console.log("error invoking " + activity.action + "/" + message + " in privileged invocation\n" + e.toString());
         }
         }
         return;
@@ -440,33 +441,24 @@ serviceInvocationHandler.prototype = {
         dump("cbshim was invoked inside invokeService\n")
         cb(JSON.stringify(result));
       };
-      let cberrshim = function(code, errmsg) {
-        // Following the lead from jschannel, the errback might be invoked
-        // as either: errback(code, errmsg) or errback({code: "code", message: errmsg})
+      let cberrshim = function(errob) {
+        // errback({code: "code", message: errmsg})
         dump("cberrshim was invoked inside invokeService\n")
-        let errob;
-        if (typeof errmsg === 'undefined') {
-        if (typeof code === 'string') {
-          errob = {code: code};
-        } else {
-          errob = code;
-        }
-        } else {
-        // 2 params - must be explicit code/message params.
-        errob = {code: code, message: errmsg};
-        }
         if (cberr) {
-        cberr(JSON.stringify(errob));
+          cberr(JSON.stringify(errob));
         } else {
-        console.log("invokeService error but no error callback:", JSON.stringify(errob));
+          console.log("invokeService error but no error callback:", JSON.stringify(errob));
         }
       }
       try {
+        activity.FAILURE = 0;
+        activity.CREDENTIAL_FAILURE = 1;
         activity.postResult = cbshim;
         activity.postException = cberrshim;
-        theWindow._MOZ_SERVICES[activity.action](activity);
+        activity.message = message;
+        theWindow._MOZ_SERVICES[activity.action][message](activity);
       } catch (e) {
-        console.log("error invoking " + activity.action + "/" + activity.message + " on app " + app.origin + ": " + e.toString());
+        console.log("error invoking " + activity.action + "/" + message + " on app " + app.origin + ": " + e.toString());
         // invoke the callback with an error object the content can see.
         cberrshim("runtime_error", e.toString());
       }

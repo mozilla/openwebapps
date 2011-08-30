@@ -47,7 +47,7 @@ Service.prototype = {
         }
       }
     }
-    unsafeWindow.navigator.apps.mediation._startActivity(cw, activity, message, cbshim, cberrshim);
+    unsafeWindow.navigator.apps.mediation._invokeService(cw, activity, message, cbshim, cberrshim);
   },
 
   // Get the closest icon that is equal to or larger than the requested size,
@@ -168,14 +168,14 @@ window.navigator.apps.mediation.emit = function(event, args) {
 
 unsafeWindow.navigator.apps.mediation.emit = window.navigator.apps.mediation.emit;
 
-window.navigator.apps.mediation.startActivity = function(iframe, activity, message, callback) {//XX error cb?
+window.navigator.apps.mediation.invokeService = function(iframe, activity, message, callback) {//XX error cb?
   function callbackShim(result) {
     callback(JSON.parse(result));
   }
   // ideally we could use the port mechanism, but this is stymied by the
   // inability to pass iframe or iframe.contentWindow in args to emit().
   // Need to use unsafeWindow here for some reason.
-  unsafeWindow.navigator.apps.mediation._startActivity(iframe.contentWindow, activity, message, callbackShim);
+  unsafeWindow.navigator.apps.mediation._invokeService(iframe.contentWindow, activity, message, callbackShim);
 };
 
-unsafeWindow.navigator.apps.mediation.startActivity = window.navigator.apps.mediation.startActivity;
+unsafeWindow.navigator.apps.mediation.invokeService = window.navigator.apps.mediation.invokeService;

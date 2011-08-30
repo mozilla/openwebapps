@@ -182,15 +182,14 @@ openwebapps.prototype = {
     // Attempting to pass it via self.emit() fails...
     win.appinjector.register({
       apibase: "navigator.apps.mediation",
-      name: "_startActivity",
+      name: "_invokeService",
       script: null,
       getapi: function(contentWindowRef) {
         return function (iframe, activity, message, cb, cberr) {
-          activity.message = message; // XX remove?
           if (activity.data) {
            activity.data = JSON.parse(JSON.stringify(activity.data)); // flatten and reinflate...
           }
-          self._services.invokeService(iframe.wrappedJSObject, activity, cb, cberr);
+          self._services.invokeService(iframe.wrappedJSObject, activity, message, cb, cberr);
         }
       }
     });
@@ -212,8 +211,8 @@ openwebapps.prototype = {
       name: "registerHandler",
       script: null,
       getapi: function(contentWindowRef) {
-        return function(activity, func) {
-          self._services.registerServiceHandler(contentWindowRef.wrappedJSObject, activity, func);
+        return function(activity, message, func) {
+          self._services.registerServiceHandler(contentWindowRef.wrappedJSObject, activity, message, func);
         }
       }
     });
