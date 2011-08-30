@@ -24,7 +24,7 @@ TestMediator = {
     "  unsafeWindow.document.getElementById('servicebox').appendChild(service.iframe);" +
     "  service.on('ready', function() {" +
     "    dump('TestMediator calling now\\n');" +
-    "    service.call(activity, 'echoArgs', function(result) {" +
+    "    service.call('echoArgs', activity.data, function(result) {" +
     "      dump('TestMediator success callback - emitting result\\n');" +
     "      self.port.emit('result', result);" +
     "    }, function(errob) {" +
@@ -129,7 +129,7 @@ TestMediatorError = {
     "  unsafeWindow.document.getElementById('servicebox').appendChild(service.iframe);" +
     "  service.on('ready', function() {" +
     "    dump('TestMediatorError calling now\\n');" +
-    "    service.call(activity, 'testErrors', function(result) {" +
+    "    service.call('testErrors', activity.data, function(result) {" +
     "      self.port.emit('result', {code: 'test_failure', msg: 'unexpected success callback'});" +
     "    }, function(errob) {" +
     "      self.port.emit('result', errob);" +
