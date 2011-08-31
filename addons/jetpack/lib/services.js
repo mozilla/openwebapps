@@ -439,25 +439,29 @@ serviceInvocationHandler.prototype = {
       }
 
       let cbshim = function(result) {
-        dump("cbshim was invoked inside invokeService\n")
         cb(JSON.stringify(result));
       };
       let cberrshim = function(errob) {
         // errback({code: "code", message: errmsg})
-        dump("cberrshim was invoked inside invokeService\n")
         if (cberr) {
           cberr(JSON.stringify(errob));
         } else {
           console.log("invokeService error but no error callback:", JSON.stringify(errob));
         }
       }
+      // We can't pass this activity directly as it originated from a
+      // different principal - so knock up a copy to pass to the app.
+      let appActivity = {action: activity.action,
+                         data: activity.data,
+                         message: message,
+                         postResult: cbshim,
+                         postException: cberrshim,
+                         // XXX - what are these?
+                         FAILURE: 0,
+                         CREDENTIAL_FAILURE: 1
+      };
       try {
-        activity.FAILURE = 0;
-        activity.CREDENTIAL_FAILURE = 1;
-        activity.postResult = cbshim;
-        activity.postException = cberrshim;
-        activity.message = message;
-        theWindow._MOZ_SERVICES[activity.action][message](activity);
+        theWindow._MOZ_SERVICES[activity.action][message](appActivity);
       } catch (e) {
         console.log("error invoking " + activity.action + "/" + message + " on app " + app.origin + ": " + e.toString());
         // invoke the callback with an error object the content can see.
