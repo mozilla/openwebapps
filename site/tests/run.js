@@ -6,8 +6,8 @@ http = require("http"),
 url = require("url"),
 path = require("path"),
 fs = require("fs"),
-template = require("./serverjs/template"),
-template_loader = require("./serverjs/loader");
+template = require("./serverjs/djangode/template/template"),
+template_loader = require("./serverjs/djangode/template/loader");
 
 const SPEC_DIR = path.join(path.dirname(__dirname), "spec");
 const STATIC_DIR = path.join(path.dirname(__dirname));
