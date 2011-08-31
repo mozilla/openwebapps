@@ -348,11 +348,8 @@ serviceInvocationHandler.prototype = {
           // if result is status ok, we're good
           if (result.status == 'ok') {
             console.log("app is logged in");
-            return;
-          }
-
-          // if result is status dialog, we need to open a popup.
-          if (result.status == 'notloggedin') {
+          } else if (result.status == 'notloggedin') {
+            // if result is status dialog, we need to open a popup.
             if (app.services.login.dialog) {
               // open up a dialog
               var windows = require("windows").browserWindows;
@@ -361,6 +358,10 @@ serviceInvocationHandler.prototype = {
                 onOpen: function(window) {
               }});
             }
+          } else {
+            // XXX - should we consider this a "failure" and not pass the
+            // app_ready event to the mediator?
+            console.warn("ignoring unexpected doLogin result status", result.status);
           }
         });
       }
