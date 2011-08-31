@@ -44,7 +44,7 @@ function fourOhFour(resp, reason) {
   return undefined;
 }
 
-function createServer(obj) {
+function createServer(obj, callback) {
   var port = obj.port;
   var myserver = http.createServer(function(obj, request, response) {
     var hostname = request.headers['host'].toString("utf8");
@@ -156,7 +156,7 @@ function createServer(obj) {
       serveFileIndex(filename, response);
     }
   }.bind(null,obj));
-  myserver.listen(port, PRIMARY_HOST);
+  myserver.listen(port, PRIMARY_HOST, callback);
   return myserver;
 };
 
@@ -292,6 +292,12 @@ boundServers.push({
   server: createServer({
     port: PRIMARY_PORT,
     handler: primaryHandler
+  },
+  function () {
+    console.log('Primary Server:');
+    console.log('  ' + formatLink("_primary"));
+    console.log("\nTesting server started, to run tests go to: "
+                + formatLink("_primary", "/tests/index.html"));
   })
 });
 
@@ -307,10 +313,6 @@ function formatLink(nameOrServer, extraPath) {
   return url;
 }
 
-
-console.log('Primary server:');
-console.log('  ' + formatLink("_primary"));
-
 var lastTitle = null;
 dirs.forEach(function(dirObj) {
   if (!fs.statSync(dirObj.path).isDirectory()) return;
@@ -320,14 +322,17 @@ dirs.forEach(function(dirObj) {
   }
   boundServers.push({
     path: dirObj.path,
-    server: createServer({ port: 0 }),
+    server: createServer({ port: 0 },
+                         function() {
+                           serverCreated(dirObj.name);
+                         }),
     name: dirObj.name
   });
-  console.log("  " + dirObj.name + ": " + formatLink(dirObj.name));
-});
 
-console.log("\nTesting server started, to run tests go to: "
-            + formatLink("_primary", "/tests/index.html"));
+});
+function serverCreated(name) {
+    console.log("  " + name + ": " + formatLink(name));
+}
 
 function getSpecs() {
   var dirs = fs.readdirSync(path.join(__dirname, 'spec'));
