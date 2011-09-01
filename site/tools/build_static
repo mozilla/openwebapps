@@ -1,0 +1,86 @@
+#!/bin/bash
+
+# quit if there are any errors:
+set -e
+# show each command as it is executed:
+#set -x
+
+abspath () {
+    python -c "import os, sys; print os.path.abspath(sys.argv[1])" "$1"
+}
+
+regex_escape () {
+    python -c "import re, sys; print re.escape(sys.argv[1])" "$1"
+}
+
+SITE="$(dirname $(dirname $(abspath $BASH_SOURCE)))"
+HOST="https://myapps.mozillalabs.com"
+ORIG_HOST="$HOST"
+
+help () {
+    echo "Usage: $(basename $0) [-H https://...] DEST"
+    echo "Builds the site in $SITE and puts it in DEST"
+}
+
+while getopts H:h o ; do
+    case "$o" in
+        H)
+            HOST="$OPTARG"
+            ;;
+        h)
+            help
+            exit
+            ;;
+        ?)
+            echo "Error in option: $OPTARG"
+            help
+            exit 1
+            ;;
+    esac
+done
+shift $(expr $OPTIND - 1)
+
+DEST="$1"
+if [ -z "$DEST" ] ; then
+    echo "Error: you must give a DEST"
+    help
+    exit 1
+fi
+
+if [ "$DEST" = "$SITE" ] ; then
+    echo "Error: DEST must not be the same as $SITE"
+    help
+    exit 1
+fi
+
+echo "Building the site from $SITE"
+if [ ! -e "$DEST" ] ; then
+    echo "Creating ${DEST}/"
+    mkdir -p "$DEST"
+fi
+
+cp --recursive ${SITE}/*.html ${SITE}/css ${SITE}/fonts ${SITE}/img ${SITE}/js ${SITE}/jsapi $DEST
+
+if [ "$HOST" != "$ORIG_HOST" ] ; then
+    echo "Replacing $ORIG_HOST with $HOST"
+    find "$DEST" \( -name "*.js" -o -name "*.html" \) -exec \
+        sed -i "s!$(regex_escape "$ORIG_HOST")!${HOST}!g" {} \;
+fi
+
+COMP_DIR="${SITE}/tools/build-compressor"
+if [ ! -e "$COMP_DIR" ] ; then
+    mkdir -p "$COMP_DIR"
+    echo "Fetching compressor tools"
+    wget http://htmlcompressor.googlecode.com/files/htmlcompressor-0.9.8.jar -O "${COMP_DIR}/htmlcompressor-0.9.8.jar"
+    wget http://yui.zenfs.com/releases/yuicompressor/yuicompressor-2.4.2.zip -O "${COMP_DIR}/yuicompressor-2.4.2.zip"
+    (cd $COMP_DIR ; unzip -j yuicompressor-2.4.2.zip yuicompressor-2.4.2/build/yuicompressor-2.4.2.jar)
+fi
+
+echo "Creating minified jsapi/include.html"
+cp ${DEST}/jsapi/include.html ${DEST}/jsapi/include.complete.html
+${SITE}/tools/compress_html.py ${DEST}/jsapi/include.html -o ${DEST}/jsapi/include.html --compress --compressor-dir "$COMP_DIR" --comment "The original (unminified) source is at ${HOST}/jsapi/include.complete.html"
+
+echo "Creating minified jsapi/include.js"
+cp ${DEST}/jsapi/include.js ${DEST}/jsapi/include.complete.js
+echo "/* For unminified source see ${HOST}/jsapi/include.complete.js */" > ${DEST}/jsapi/include.js
+java -jar ${COMP_DIR}/yuicompressor-2.4.2.jar ${DEST}/jsapi/include.complete.js >> ${DEST}/jsapi/include.js
