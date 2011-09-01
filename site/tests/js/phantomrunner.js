@@ -1,4 +1,4 @@
-var TESTS = ['typed-storage.html', 'repo_api.html', 'manifest.html', 'conduit.html'];
+var TESTS = ['typed-storage.html', 'repo_api.html', 'manifest.html'];
 var TEST_LOCATION = '/tests/spec/';
 var TEST_TIMEOUT = 10000;
 
