@@ -59,7 +59,7 @@ if [ ! -e "$DEST" ] ; then
     mkdir -p "$DEST"
 fi
 
-cp --recursive ${SITE}/*.html ${SITE}/css ${SITE}/fonts ${SITE}/img ${SITE}/js ${SITE}/jsapi $DEST
+cp --recursive --dereference ${SITE}/*.html ${SITE}/css ${SITE}/fonts ${SITE}/img ${SITE}/js ${SITE}/jsapi $DEST
 
 if [ "$HOST" != "$ORIG_HOST" ] ; then
     echo "Replacing $ORIG_HOST with $HOST"
