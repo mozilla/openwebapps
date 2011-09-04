@@ -80,24 +80,8 @@ function openwebapps(win, getUrlCB) {
     this.pendingRegistrations = null;
   }
 
-  // Keep an eye out for LINK headers that contain manifests:
-  this._linkListenerAttached = false;
-  Services.obs.addObserver(this, "content-document-global-created", false);
-
-  this._ui = new ui.openwebappsUI(win, getUrlCB, this._repo);
-
-  // Prompt user if we detect that the page has an app via tabs module
-  let self = this;
-  tabs.on('activate', function(tab) {
-    // If user switches tab via keyboard shortcuts, it does not dismiss
-    // the offer panel (clicking does); so hide it if present
-    self._ui._hideOffer();
-
-    let cUrl = url.URLParse(tab.url).originOnly().toString();
-    let record = simple.storage.links[cUrl];
-    dump("APPS | onTabActivate | Checking url " + cUrl + " - found stored record " + JSON.stringify(record) + "\n");
-    if (record) self.offerInstallIfNeeded(cUrl);
-  });
+  /* initialize demo support code */
+  this._ui = new ui.openwebappsUI(win, getUrlCB, this);
 
   // TODO: Figure out a way to do this without waiting for 500ms.
   // Also, intercept document loads that don't open in a new tab
@@ -119,6 +103,26 @@ function openwebapps(win, getUrlCB) {
       });
     }, 500, e);
   }, false);
+
+
+  // Handle the case of our special app tab being selected so we
+  // can hide the URL bar etc.
+  let container = this._window.gBrowser.tabContainer;
+  let ss = Cc["@mozilla.org/browser/sessionstore;1"].getService(Ci.nsISessionStore);
+  let wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
+
+  function appifyTab(evt) {
+    let win = wm.getMostRecentWindow("navigator:browser");
+    let box = win.document.getElementById("nav-bar");
+
+    if (ss.getTabValue(evt.target, "appURL")) {
+      box.setAttribute("collapsed", true);
+    } else {
+      box.setAttribute("collapsed", false);
+    }
+  }
+
+  container.addEventListener("TabSelect", appifyTab, false);
 }
 
 openwebapps.prototype = {
@@ -284,121 +288,6 @@ openwebapps.prototype = {
     });
   },
 
-  observe: function(subject, topic, data) {
-    if (topic == "content-document-global-created") {
-
-      let mainWindow = subject.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIWebNavigation).QueryInterface(Ci.nsIDocShellTreeItem).rootTreeItem.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIDOMWindow);
-
-      let self = this;
-      if (this._window != mainWindow) { // exclude other windows
-        return;
-      }
-      if (subject != this._window.content) { //exclude jetpack panels and iframes
-        return;
-      }
-      if (self._linkListenerAttached) { // don't fire more than once
-        return;
-      }
-
-      let linkHandler = function(aEvent) {
-        // Links could come in any order!  Be ready for that.
-        if (aEvent.target.rel == "application-manifest" || aEvent.target.rel == "application-preferred-store") {
-          let href = aEvent.target.href;
-          let page = url.URLParse(aEvent.target.baseURI);
-          page = page.normalize().originOnly().toString();
-
-          if (!simple.storage.links[page]) {
-            // XXX: Should we restrict the href to be associated in
-            // a limited way with the page?
-            // Yes, perhaps .well-known or at the very least same origin
-            simple.storage.links[page] = {
-              "show": true,
-              "url": href
-            };
-          }
-
-          // If we just found this on the currently active page,
-          // manually call UI hook because tabs.on('activate') will
-          // not be called for this page
-          let cUrl = url.URLParse(tabs.activeTab.url);
-          cUrl = cUrl.normalize().originOnly().toString();
-
-          if (cUrl == page) {
-            if (aEvent.target.rel == "application-manifest") {
-              self.offerInstallIfNeeded(page);
-            } else if (aEvent.target.rel == "application-preferred-store") {
-              // TODO do nothing if we're installed already
-              // let the UI know we've got a store here
-              simple.storage.links[page].store = href;
-              self._ui._showPageHasStoreApp(page, self);
-
-              // create a hidden iframe to talk to the store:
-              let doc = self._window.document;
-              let XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
-              let xulPanel = doc.createElementNS(XUL_NS, "panel");
-              xulPanel.setAttribute("type", "arrow"); // <-- this is mandatory.  why??
-              let frame = doc.createElementNS(XUL_NS, "browser");
-              frame.setAttribute("type", "content");
-              xulPanel.appendChild(frame);
-              doc.getElementById("mainPopupSet").appendChild(xulPanel);
-              frame.setAttribute("src", href);
-              xulPanel.sizeTo(0, 0);
-
-              frame.addEventListener("DOMContentLoaded", function(event) {
-                // and ask the store for details:
-                self._services.invokeService(frame.contentWindow.wrappedJSObject, "appstore", "getOffer", {
-                  domain: cUrl
-                }, function(result) {
-                  //dump("APPS | appstore.getOffer service | Got getOffer result for " + page + ": " + JSON.stringify(result) + "\n");
-                  simple.storage.links[page].offer = result;
-                  self._ui._showPageHasStoreApp(page, self);
-                }, true /* is privileged */ );
-              }, false);
-            }
-          }
-        }
-      };
-      mainWindow.addEventListener("DOMLinkAdded", linkHandler, false);
-      self._linkListenerAttached = true;
-    }
-  },
-
-  performPurchaseActivity: function(store, domain, cb) {
-    let self = this;
-
-    // HACK: This is really kind of gross, I don't want to have to do this here.
-    // create a hidden iframe to talk to the store:
-    let doc = self._window.document;
-    let XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
-    let xulPanel = doc.createElementNS(XUL_NS, "panel");
-    xulPanel.setAttribute("type", "arrow"); // <-- this is mandatory.  why??
-    let frame = doc.createElementNS(XUL_NS, "browser");
-    frame.setAttribute("type", "content");
-    xulPanel.appendChild(frame);
-    doc.getElementById("mainPopupSet").appendChild(xulPanel);
-    frame.setAttribute("src", store);
-    xulPanel.sizeTo(0, 0);
-
-    frame.addEventListener("DOMContentLoaded", function(event) {
-      // and ask the store for details:
-      self._services.invokeService(frame.contentWindow.wrappedJSObject, "appstore", "purchase", {
-        domain: domain
-      }, function(result) {
-        dump("APPS | performPurchaseActivity | Purchase completed - result is " + result);
-        cb(result);
-      }, true /* is privileged */ );
-    }, false);
-  },
-
-  // TODO: Don't be so annoying and display the offer everytime the app site
-  // is visited. If the user says 'no', don't display again for the session
-  offerInstallIfNeeded: function(origin) {
-    let self = this;
-    this._repo.getAppByUrl(origin, function(app) {
-      if (!app) self._ui._showPageHasApp(origin, self);
-    });
-  },
-
   registerBuiltInApp: function(domain, app, injector) {
     if (!this._repo) {
       if (!this.pendingRegistrations) this.pendingRegistrations = [];
@@ -482,8 +371,6 @@ let unloaders = [];
 function startup(getUrlCB) { /* Initialize simple storage */
   if (!simple.storage.links) simple.storage.links = {};
   Services.obs.notifyObservers(null, "openwebapps-mediator-init", "");
-
-  ui.dashboard.init();
 
   /* We use winWatcher to create an instance per window (current and future) */
   let iter = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator).getEnumerator("navigator:browser");
