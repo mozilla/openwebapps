@@ -36,6 +36,14 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+
+
+// XXX demo code warning!  code in this file is for demo purposes only.  it provides UI elements to make
+// demo's easy, but this will all be replaced by html based dashboards, and proper store integration when
+// the store is available.  DO NOT place any code intended to be permenant in this file!  If any of this
+// code does survive, it will need some refactoring and cleanup.
+
+
 const { Cc, Ci, Cm, Cu } = require("chrome");
 const tabs = require("tabs");
 const widgets = require("widget");
@@ -104,9 +112,14 @@ getString.init = function(getUrlCB, getAlternate) {
  *
  * the dashboard widget is created once during the addon startup.  addon sdk
  * handles adding the widget to each new window
+ *
+ *
+ * XXX DELETE this, the builtin demo dashboard will not be used
  */
 var dashboard = {
   init: function() {
+    if (this._panel) return;
+
     let tmp = {};
     tmp = require("./api");
     this._repo = tmp.FFRepoImplService;
@@ -198,20 +211,18 @@ var dashboard = {
   }
 }
 
-
-function openwebappsUI(win, getUrlCB, repo) {
-  this._repo = repo;
+function openwebappsUI(win, getUrlCB, owa) {
+  this._repo = owa._repo;
   this._window = win;
   this._getUrlCB = getUrlCB;
 
   /* Setup l10n */
   getString.init(getUrlCB);
   this._overlay();
-  this._setupTabHandling();
 
-  /* Offer to install */
-  this._offerAppPanel = null;
-  this._installInProgress = false;
+  /* init the dashboard and offer panel for demo purposes */
+  this.offerPanel = new OfferPanel(owa);
+  dashboard.init();
 }
 openwebappsUI.prototype = {
   _overlay: function() {
@@ -220,51 +231,67 @@ openwebappsUI.prototype = {
     let doc = this._window.document;
     let pi = doc.createProcessingInstruction("xml-stylesheet", "href=\"" + this._getUrlCB("skin/overlay.css") + "\" type=\"text/css\"");
     doc.insertBefore(pi, doc.firstChild);
+  }
+};
+
+
+// XXX DELETE this, the builtin demo dashboard will not be used
+// however, we will hold onto the offer panel for demo purposes until we have finished the store and integration with it
+function OfferPanel(owa) {
+  this._window = owa._window;
+  this._repo = owa._repo;
+  this._services = owa._services;
+  
+  Services.obs.addObserver(this, "content-document-global-created", false);
+
+  // Prompt user if we detect that the page has an app via tabs module
+  let self = this;
+  tabs.on('activate', function(tab) {
+    // If user switches tab via keyboard shortcuts, it does not dismiss
+    // the offer panel (clicking does); so hide it if present
+    self.hide();
+
+    let cUrl = url.URLParse(tab.url).originOnly().toString();
+    let record = simple.storage.links[cUrl];
+    dump("APPS | onTabActivate | Checking url " + cUrl + " - found stored record " + JSON.stringify(record) + "\n");
+    if (record) self.installIfNeeded(cUrl);
+  });
+}
+OfferPanel.prototype = {
+  /* Offer to install */
+  _offerAppPanel: null,
+  _installInProgress: false,
+  _repo: null,
+  _services: null,
+  // Keep an eye out for LINK headers that contain manifests:
+  _linkListenerAttached: false,
+
+  // TODO: Don't be so annoying and display the offer everytime the app site
+  // is visited. If the user says 'no', don't display again for the session
+  installIfNeeded: function(origin) {
+    let self = this;
+    this._repo.getAppByUrl(origin, function(app) {
+      if (!app) self.show(origin);
+    });
   },
 
-  _setupTabHandling: function() {
-    // Handle the case of our special app tab being selected so we
-    // can hide the URL bar etc.
-    let container = this._window.gBrowser.tabContainer;
-    let ss = Cc["@mozilla.org/browser/sessionstore;1"].getService(Ci.nsISessionStore);
-    let wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
-
-    function appifyTab(evt) {
-      let win = wm.getMostRecentWindow("navigator:browser");
-      let box = win.document.getElementById("nav-bar");
-
-      if (ss.getTabValue(evt.target, "appURL")) {
-        box.setAttribute("collapsed", true);
-      } else {
-        box.setAttribute("collapsed", false);
-      }
-    }
-
-    container.addEventListener("TabSelect", appifyTab, false);
-    // unloaders.push(container.removeEventListener("TabSelect", appifyTab,
-    // false);
-  },
-
-  _hideOffer: function() {
+  hide: function() {
     if (this._offerAppPanel) {
       this._offerAppPanel.destroy();
       delete this._offerAppPanel;
     }
   },
 
-  _showPageHasApp: function(page, owa) { // XX I'm not happy that I need to pass in owa here, but I need it for the purchase activity. Refactor?
+  show: function(page) { // XX I'm not happy that I need to pass in owa here, but I need it for the purchase activity. Refactor?
     let link = simple.storage.links[page];
     if (!link.show || this._installInProgress) return;
 
-    if (this._offerAppPanel) {
-      this._offerAppPanel.destroy();
-      delete this._offerAppPanel;
-    }
+    this.hide();
     this._offerAppPanel = require("panel").Panel({
       height: 180,
       width: 300,
       contentURL: require("self").data.url("offer.html"),
-      contentScript: 'let actions = ["yes", "no", "never"];' + 'for (let i = 0; i < actions.length; i++) { ' + '   document.getElementById(actions[i]).onclick = ' + '       (function(i) { return function() { ' + '           self.port.emit(actions[i]);' + '       }})(i); ' + '}' + 'self.port.on("setup", function(data) {' + 'document.getElementById("store_offer").innerHTML = "";' + 'document.getElementById("self_published").style.display = "block";' + 'document.getElementById("store").style.display = "none";' + 'document.getElementById("store_offer").style.display = "block";' + 'document.getElementById("store_progress").style.display = "block";' + 'document.getElementById("login_status").style.display = "none";' + '});' + 'function renderOffer(offer) {' + '  var s="";' + '  if (offer.purchased) {' + '     s += "You have already purchased this application.  Reinstall now?";' + '  }  else { ' + '    s += "Purchase for $" + offer.price + "?";' + '  }' + '  document.getElementById("store_offer").innerHTML = s;' + '  document.getElementById("store_offer").style.display = "block";' + '  document.getElementById("store_progress").style.display = "none";' + ' ' + '  var acct="";' + '  if (offer.account) {' + '    acct = "Logged in to " + offer.storeName + " as <i>" + offer.account + "</i>";' + '  } else {' + '    acct = "You will be asked to log in to " + offer.storeName + " if you install.";' + '  }' + '  document.getElementById("login_status").innerHTML = acct;' + '  document.getElementById("login_status").style.display = "block";' + '}' + 'self.port.on("store", function(data) {' + '  document.getElementById("self_published").style.display="none";' + '  document.getElementById("store").style.display="block";' + '  if (data.offer) { renderOffer(data.offer) };' + '});'
+      contentScriptFile:  require("self").data.url("offer.js")
     });
 
     /* Setup callbacks */
@@ -286,7 +313,7 @@ openwebappsUI.prototype = {
           let domain = url.URLParse(page);
           domain = domain.normalize().originOnly().toString();
           self._offerAppPanel.hide();
-          owa.performPurchaseActivity(link.store, domain, function(result) {
+          self.performPurchaseActivity(link.store, domain, function(result) {
             self._installInProgress = false;
           });
 
@@ -360,7 +387,7 @@ openwebappsUI.prototype = {
     /* Prepare to anchor panel to apps widget */
     let WM = Cc['@mozilla.org/appshell/window-mediator;1'].getService(Ci.nsIWindowMediator);
     let doc = WM.getMostRecentWindow("navigator:browser").document;
-    let bar = doc.getElementById("widget:" + require("self").id + "-openwebapps-toolbar-button");
+    let bar = doc.getElementById('identity-box');
 
     this._offerAppPanel.show(bar);
 
@@ -372,7 +399,7 @@ openwebappsUI.prototype = {
     }
   },
 
-  _showPageHasStoreApp: function(page, store) {
+  showPageHasStoreApp: function(page) {
     let link = simple.storage.links[page];
     if (!link.show || this._installInProgress) return;
     if (this._offerAppPanel) {
@@ -381,9 +408,114 @@ openwebappsUI.prototype = {
         offer: link.offer
       });
     }
+  },
 
+  observe: function(subject, topic, data) {
+    if (topic == "content-document-global-created") {
+
+      let mainWindow = subject.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIWebNavigation).QueryInterface(Ci.nsIDocShellTreeItem).rootTreeItem.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIDOMWindow);
+
+      let self = this;
+      if (this._window != mainWindow) { // exclude other windows
+        return;
+      }
+      if (subject != this._window.content) { //exclude jetpack panels and iframes
+        return;
+      }
+      if (self._linkListenerAttached) { // don't fire more than once
+        return;
+      }
+
+      let linkHandler = function(aEvent) {
+        // Links could come in any order!  Be ready for that.
+        if (aEvent.target.rel == "application-manifest" || aEvent.target.rel == "application-preferred-store") {
+          let href = aEvent.target.href;
+          let page = url.URLParse(aEvent.target.baseURI);
+          page = page.normalize().originOnly().toString();
+
+          if (!simple.storage.links[page]) {
+            // XXX: Should we restrict the href to be associated in
+            // a limited way with the page?
+            // Yes, perhaps .well-known or at the very least same origin
+            simple.storage.links[page] = {
+              "show": true,
+              "url": href
+            };
+          }
+
+          // If we just found this on the currently active page,
+          // manually call UI hook because tabs.on('activate') will
+          // not be called for this page
+          let cUrl = url.URLParse(tabs.activeTab.url);
+          cUrl = cUrl.normalize().originOnly().toString();
+
+          if (cUrl == page) {
+            if (aEvent.target.rel == "application-manifest") {
+              self._ui.offerPanel.installIfNeeded(page);
+            } else if (aEvent.target.rel == "application-preferred-store") {
+              // TODO do nothing if we're installed already
+              // let the UI know we've got a store here
+              simple.storage.links[page].store = href;
+              self._ui.offerPanel.showPageHasStoreApp(page);
+
+              // create a hidden iframe to talk to the store:
+              let doc = self._window.document;
+              let XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
+              let xulPanel = doc.createElementNS(XUL_NS, "panel");
+              xulPanel.setAttribute("type", "arrow"); // <-- this is mandatory.  why??
+              let frame = doc.createElementNS(XUL_NS, "browser");
+              frame.setAttribute("type", "content");
+              xulPanel.appendChild(frame);
+              doc.getElementById("mainPopupSet").appendChild(xulPanel);
+              frame.setAttribute("src", href);
+              xulPanel.sizeTo(0, 0);
+
+              frame.addEventListener("DOMContentLoaded", function(event) {
+                // and ask the store for details:
+                self._services.invokeService(frame.contentWindow.wrappedJSObject, "appstore", "getOffer", {
+                  domain: cUrl
+                }, function(result) {
+                  //dump("APPS | appstore.getOffer service | Got getOffer result for " + page + ": " + JSON.stringify(result) + "\n");
+                  simple.storage.links[page].offer = result;
+                  self._ui._showPageHasStoreApp(page, self);
+                }, true /* is privileged */ );
+              }, false);
+            }
+          }
+        }
+      };
+      mainWindow.addEventListener("DOMLinkAdded", linkHandler, false);
+      self._linkListenerAttached = true;
+    }
+  },
+
+  performPurchaseActivity: function(store, domain, cb) {
+    let self = this;
+
+    // HACK: This is really kind of gross, I don't want to have to do this here.
+    // create a hidden iframe to talk to the store:
+    let doc = self._window.document;
+    let XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
+    let xulPanel = doc.createElementNS(XUL_NS, "panel");
+    xulPanel.setAttribute("type", "arrow"); // <-- this is mandatory.  why??
+    let frame = doc.createElementNS(XUL_NS, "browser");
+    frame.setAttribute("type", "content");
+    xulPanel.appendChild(frame);
+    doc.getElementById("mainPopupSet").appendChild(xulPanel);
+    frame.setAttribute("src", store);
+    xulPanel.sizeTo(0, 0);
+
+    frame.addEventListener("DOMContentLoaded", function(event) {
+      // and ask the store for details:
+      self._services.invokeService(frame.contentWindow.wrappedJSObject, "appstore", "purchase", {
+        domain: domain
+      }, function(result) {
+        dump("APPS | performPurchaseActivity | Purchase completed - result is " + result);
+        cb(result);
+      }, true /* is privileged */ );
+    }, false);
   }
-};
+
+}
 
 exports.openwebappsUI = openwebappsUI;
-exports.dashboard = dashboard;
