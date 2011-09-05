@@ -106,7 +106,7 @@ MediatorPanel.prototype = {
   //_panelHidden: function() {},
 
   /**
-   * onResult
+   * onOWASuccess
    *
    * the result data is sent back to the content that invoked the service,
    * this may result in data going back to some 3rd party content.  Eg, a
@@ -115,24 +115,24 @@ MediatorPanel.prototype = {
    * appears.  When the user complets the share, the result of that share
    * is returned via on_result.
    */
-  onResult: function(msg) {
+  onOWASuccess: function(msg) {
     this.panel.hide();
     if (this.successCB)
       this.successCB(msg);
   },
 
-  onClose: function(msg) {
+  onOWAClose: function(msg) {
     this.panel.hide();
   },
 
-  onError: function(msg) {
+  onOWAFailure: function(msg) {
     console.error("mediator reported invocation error:", msg)
     this.showErrorNotification(msg);
   },
 
-  onReady: function(msg) {
+  onOWAReady: function(msg) {
     FFRepoImplService.findServices(this.methodName, function(serviceList) {
-      this.panel.port.emit("setup", {
+      this.panel.port.emit("owa.mediation.setup", {
               method: this.methodName,
               args: this.args,
               serviceList: serviceList,
@@ -142,16 +142,16 @@ MediatorPanel.prototype = {
     }.bind(this));
   },
 
-  onSizeToContent: function (args) {
+  onOWASizeToContent: function (args) {
     this.panel.resize(args.width, args.height);
   },
 
   attachHandlers: function() {
-    this.panel.port.on("result", this.onResult.bind(this));
-    this.panel.port.on("error", this.onError.bind(this));
-    this.panel.port.on("close", this.onClose.bind(this));
-    this.panel.port.on("ready", this.onReady.bind(this));
-    this.panel.port.on("sizeToContent", this.onSizeToContent.bind(this));
+    this.panel.port.on("owa.success", this.onOWASuccess.bind(this));
+    this.panel.port.on("owa.failure", this.onOWAFailure.bind(this));
+    this.panel.port.on("owa.close", this.onOWAClose.bind(this));
+    this.panel.port.on("owa.mediation.ready", this.onOWAReady.bind(this));
+    this.panel.port.on("owa.mediation.sizeToContent", this.onOWASizeToContent.bind(this));
   },
   /* end message api */
 
@@ -195,7 +195,7 @@ MediatorPanel.prototype = {
    */
   show: function() {
     if (!this.isConfigured) {
-      this.panel.port.emit("reconfigure");
+      this.panel.port.emit("owa.mediation.reconfigure");
       this.isConfigured = true;
     }
     this.panel.show(this.anchor);
@@ -307,7 +307,7 @@ serviceInvocationHandler.prototype = {
     // ones can wait until they are re-shown.
     for each (let popupCheck in this._popups) {
       if (popupCheck.panel.isShowing) {
-      popupCheck.panel.port.emit("reconfigure");
+      popupCheck.panel.port.emit("owa.mediation.reconfigure");
       } else {
       popupCheck.isConfigured = false;
       }
@@ -356,7 +356,7 @@ serviceInvocationHandler.prototype = {
       if (contentWindowRef.parent) {
         for each (let popupCheck in self._popups) {
         if (popupCheck.invocationid === contentWindowRef.parent.navigator.apps.mediation._invocationid) {
-          popupCheck.panel.port.emit("app_ready", contentWindowRef.location.href);
+          popupCheck.panel.port.emit("owa.app.ready", contentWindowRef.location.href);
           break;
         }
         }
