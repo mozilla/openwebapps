@@ -152,7 +152,7 @@ MediatorPanel.prototype = {
       try {
         let self = this;
         this.oauthAuthorize(params, function(result) {
-          self.panel.port.emit("onLogin", result);
+          self.panel.port.emit("owa.mediation.onLogin", result);
         });
       } catch(e) {
         dump("onLogin fail "+e+"\n");
@@ -171,7 +171,7 @@ MediatorPanel.prototype = {
       win.focus();
     } else {
       dump("XXX UNSUPPORTED LOGIN TYPE\n");
-      self.panel.port.emit("onLogin", {});
+      this.panel.port.emit("owa.mediation.onLogin", {});
     }
   },
 

@@ -101,14 +101,14 @@ Service.prototype = {
 };
 
 window.navigator.apps.mediation.startLogin = function(origin) {
-  self.port.once("onLogin", function(params) {
+  self.port.once("owa.mediation.onLogin", function(params) {
     allServices[origin].call("setAuthorization", params, function() {
       // dispatch servicechanged
       allServices[origin]._invokeOn("serviceChanged");
     });
   });
   allServices[origin].call("getParameters", {}, function(params) {
-    self.port.emit("doLogin", params)
+    self.port.emit("owa.mediation.doLogin", params)
   });
 }
 unsafeWindow.navigator.apps.mediation.startLogin = window.navigator.apps.mediation.startLogin;
