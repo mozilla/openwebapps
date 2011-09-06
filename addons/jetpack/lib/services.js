@@ -42,6 +42,7 @@
 const {Cu, Ci, Cc} = require("chrome");
 var {FFRepoImplService} = require("api");
 let {URLParse} = require("openwebapps/urlmatch");
+let {OAuthConsumer} = require("oauthorizer/oauthconsumer");
 
 // a mediator is what provides the UI for a service.  It is normal "untrusted"
 // content (although from the user's POV it is somewhat trusted)
@@ -145,6 +146,34 @@ MediatorPanel.prototype = {
   onOWASizeToContent: function (args) {
     this.panel.resize(args.width, args.height);
   },
+  
+  onOWALogin: function(params) {
+    if (params.type == 'oauth') {
+      try {
+        let self = this;
+        this.oauthAuthorize(params, function(result) {
+          self.panel.port.emit("onLogin", result);
+        });
+      } catch(e) {
+        dump("onLogin fail "+e+"\n");
+      }
+    } else
+    if (params.type == 'dialog') {
+      // I don't see how to set width/height with addon-sdk windows, so
+      // we'll just do it the old fashioned way.  We use a full browser
+      // window so that we get the urlbar, security status, etc.
+      var url = params.url,
+        w = params.width || 600,
+        h = params.height || 600,
+        win = window.open(url,
+            "owaLoginWindow",
+            "dialog=no, modal=yes, width="+w+", height="+h+", scrollbars=yes");
+      win.focus();
+    } else {
+      dump("XXX UNSUPPORTED LOGIN TYPE\n");
+      self.panel.port.emit("onLogin", {});
+    }
+  },
 
   attachHandlers: function() {
     this.panel.port.on("owa.success", this.onOWASuccess.bind(this));
@@ -152,6 +181,7 @@ MediatorPanel.prototype = {
     this.panel.port.on("owa.close", this.onOWAClose.bind(this));
     this.panel.port.on("owa.mediation.ready", this.onOWAReady.bind(this));
     this.panel.port.on("owa.mediation.sizeToContent", this.onOWASizeToContent.bind(this));
+    this.panel.port.on("owa.mediation.doLogin", this.onOWALogin.bind(this));
   },
   /* end message api */
 
@@ -247,6 +277,37 @@ MediatorPanel.prototype = {
     let notification = nb.getNotificationWithValue(nId);
     if (notification) {
       nb.removeNotification(notification);
+    }
+  },
+
+  _makeOauthProvider: function(config) {
+    try {
+      // this is very much a copy of OAuthConsumer.authorize, but we have to
+      // create a provider service object ourselves.  this should move into
+      // oauthorizer.
+      var svc = OAuthConsumer.makeProvider("f1-" + config.name, config.displayName, config.key, config.secret, config.completionURI, config.calls, true);
+      svc.version = config.version;
+      svc.tokenRx = new RegExp(config.tokenRx, "gi");
+
+      if (config.params) svc.requestParams = config.params;
+      return svc;
+    } catch (e) {
+      dump("_makeOauthProvider: "+e + "\n");
+    }
+    return null;
+  },
+
+  oauthAuthorize: function(config, callback) {
+    try {
+      var svc = this._makeOauthProvider(config);
+      var self = this;
+      var handler = OAuthConsumer.getAuthorizer(svc, callback);
+
+      this.window.setTimeout(function() {
+        handler.startAuthentication();
+      }, 1);
+    } catch (e) {
+      dump("oauthAuthorize: "+e + "\n");
     }
   }
 }
@@ -370,7 +431,7 @@ serviceInvocationHandler.prototype = {
       if (contentWindowRef.parent) {
         for each (let popupCheck in self._popups) {
         if (popupCheck.invocationid === contentWindowRef.parent.navigator.apps.mediation._invocationid) {
-          popupCheck.panel.port.emit("owa.app.ready", contentWindowRef.location.href);
+          popupCheck.panel.port.emit("owa.app.ready", app.origin);
           break;
         }
         }

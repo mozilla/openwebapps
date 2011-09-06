@@ -197,6 +197,23 @@ openwebapps.prototype = {
         }
       }
     });
+    
+    // XXX TEMPORARY HACK to allow our builtin apps to work for the all-hands demo
+    var {OAuthConsumer} = require("oauthorizer/oauthconsumer");
+    win.appinjector.register({
+      apibase: "navigator.apps.oauth",
+      name: "call",
+      script: null,
+      getapi: function(contentWindowRef) {
+        return function(svc, message, callback) {
+          OAuthConsumer.call(svc, message, function(req) {
+            //dump("oauth call response "+req.status+" "+req.statusText+" "+req.responseText+"\n");
+            let response = JSON.parse(req.responseText);
+            callback(response);
+          });
+        }
+      }
+    });
 
     // services APIs
     win.appinjector.register({
