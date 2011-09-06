@@ -146,7 +146,7 @@ MediatorPanel.prototype = {
   onOWASizeToContent: function (args) {
     this.panel.resize(args.width, args.height);
   },
-  
+
   onOWALogin: function(params) {
     if (params.type == 'oauth') {
       try {
@@ -441,7 +441,7 @@ serviceInvocationHandler.prototype = {
 
   // when an app registers a service handler
   registerServiceHandler: function(contentWindowRef, action, message, func) {
-    dump("registerServiceHandler for " + action + "; message is " + message + "\n")
+    //dump("registerServiceHandler for " + action + "; message is " + message + "\n")
     // check that this is indeed an app
     FFRepoImplService.getAppByUrl(contentWindowRef.location, function(app) {
 
@@ -478,7 +478,7 @@ serviceInvocationHandler.prototype = {
 
   // this call means to invoke a specific call within a given app
   invokeService: function(contentWindow, activity, message, cb, cberr, privileged) {
-    dump("invokeService invoked for " + activity.action + "; message is " + message + "\n")
+    //dump("invokeService invoked for " + activity.action + "; message is " + message + "\n")
     FFRepoImplService.getAppByUrl(contentWindow.location, function(app) {
       var theWindow = contentWindow;
 
