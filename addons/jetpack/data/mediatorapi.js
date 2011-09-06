@@ -104,8 +104,8 @@ Service.prototype = {
 // again as the configuration of apps changes (ie, as apps are added or
 // removed).
 window.navigator.apps.mediation.ready = function(invocationHandler) {
-  self.port.on("app_ready", function(href) {
-    console.log("app_ready for", href);
+  self.port.on("owa.app.ready", function(href) {
+    console.log("owa.app.ready for", href);
     if (allServices[href]) {
       allServices[href]._invokeOn("ready");
     }
@@ -133,7 +133,7 @@ window.navigator.apps.mediation.ready = function(invocationHandler) {
       allServices[svc.url] = svcob;
     }
     invocationHandler(msg.activity, services);
-    self.port.once("reconfigure", function() {
+    self.port.once("owa.mediation.reconfigure", function() {
       // nuke all iframes.
       for (let url in allServices) {
         let iframe = allServices[url].iframe;
@@ -148,8 +148,8 @@ window.navigator.apps.mediation.ready = function(invocationHandler) {
   };
 
   let doSetup = function() {
-    self.port.once("setup", setupHandler);
-    self.port.emit("ready");
+    self.port.once("owa.mediation.setup", setupHandler);
+    self.port.emit("owa.mediation.ready");
   };
 
   doSetup();
@@ -162,8 +162,10 @@ unsafeWindow.navigator.apps.mediation.ready = window.navigator.apps.mediation.re
 window.navigator.apps.mediation.emit = function(event, args) {
   // A hack for sizeToContent - as the panel doesn't expose the window
   // object for its iframe, we need to calculate it here.
-  if (event === "sizeToContent" && !args) {
-    let body = document.getElementsByTagName('body')[0];
+  if (event === "owa.mediation.sizeToContent" && !args) {
+    // hrmph - we used to use document.getElementsByTagName('body')[0], but
+    // sometimes that returns undefined while document.body always works.
+    let body = document.body;
     if (body) {
       args = {
         width: body.scrollWidth,

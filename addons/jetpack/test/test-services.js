@@ -26,10 +26,10 @@ TestMediator = {
     "    dump('TestMediator calling now\\n');" +
     "    service.call('echoArgs', activity.data, function(result) {" +
     "      dump('TestMediator success callback - emitting result\\n');" +
-    "      self.port.emit('result', result);" +
+    "      self.port.emit('owa.success', result);" +
     "    }, function(errob) {" +
     "      dump('TestMediator failure callback - emitting result\\n');" +
-    "      self.port.emit('result', errob);" +
+    "      self.port.emit('owa.failure', errob);" +
     "    });" +
     "  });" +
     "});"
@@ -130,9 +130,9 @@ TestMediatorError = {
     "  service.on('ready', function() {" +
     "    dump('TestMediatorError calling now\\n');" +
     "    service.call('testErrors', activity.data, function(result) {" +
-    "      self.port.emit('result', {code: 'test_failure', msg: 'unexpected success callback'});" +
+    "      self.port.emit('owa.success', {code: 'test_failure', msg: 'unexpected success callback'});" +
     "    }, function(errob) {" +
-    "      self.port.emit('result', errob);" +
+    "      self.port.emit('owa.success', errob);" +
     "    });" +
     "  });" +
     "});"
