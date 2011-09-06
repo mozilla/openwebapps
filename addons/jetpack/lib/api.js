@@ -464,29 +464,6 @@ FFRepoImpl.prototype = {
   }
 };
 
-
-function MessagePort(window, targetDomain) {
-  this.window = window;
-  this.targetDomain = targetDomain;
-}
-
-MessagePort.prototype = {
-  postMessage: function(msg) {
-    if (this.window) {
-      this.window.postMessage(JSON.stringify(msg), "*");
-      //TODO: get domain targeting right, do not use until this is done!    (+/- this.targetDomain?)
-    }
-  },
-
-  close: function() {
-    this.window = null;
-  }
-}
-
-MessagePort.__defineSetter__("onmessage", function(val) {
-  this.window.addEventListener('message', val, false);
-});
-
 // Declare the singleton
 if (!FFRepoImplService) {
   var EXPORTED_SYMBOLS = ["FFRepoImplService"];
