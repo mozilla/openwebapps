@@ -23,7 +23,7 @@ TestMediator = {
     "  unsafeWindow.document.getElementById('servicebox').appendChild(service.iframe);" +
     "  service.on('ready', function() {" +
     "    service.call('echoArgs', args, function(result) {" +
-    "      self.port.emit('result', result);" +
+    "      self.port.emit('owa.success', result);" +
     "    });" +
     "  });" +
     "});"
@@ -122,9 +122,9 @@ TestMediatorError = {
     "  unsafeWindow.document.getElementById('servicebox').appendChild(service.iframe);" +
     "  service.on('ready', function() {" +
     "    service.call('testErrors', args, function(result) {" +
-    "      self.port.emit('result', {code: 'test_failure', msg: 'unexpected success callback'});" +
+    "      self.port.emit('owa.success', {code: 'test_failure', msg: 'unexpected success callback'});" +
     "    }, function(errob) {" +
-    "      self.port.emit('result', errob);" +
+    "      self.port.emit('owa.success', errob);" +
     "    });" +
     "  });" +
     "});"
