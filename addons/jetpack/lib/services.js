@@ -87,6 +87,8 @@ function MediatorPanel(window, contentWindowRef, activity, successCB, errorCB) {
 }
 MediatorPanel.prototype = {
   /* OWA Mediator Agents may subclass the following: */
+  get width() 484,
+  get height() 484,
 
   /**
    * what the panel gets attached to
@@ -206,7 +208,7 @@ MediatorPanel.prototype = {
       contentScriptFile: contentScriptFile,
       contentScript: contentScript,
       contentScriptWhen: "start",
-      width: 484, height: 484
+      width: this.width, height: this.height
     });
 
     if (this._panelShown) {
