@@ -38,14 +38,6 @@
       );
     });
 
-    chan.bind("loginStatus", function(trans) {
-      trans.delayReturn(true);
-      navigator.apps.mgmt.loginStatus(
-        function(v) { trans.complete(v); },
-        function(errObj) { trans.error(errObj.code, errObj.message) }
-      );
-    });
-
     chan.bind("list", function(trans) {
       trans.delayReturn(true);
       navigator.apps.mgmt.list(

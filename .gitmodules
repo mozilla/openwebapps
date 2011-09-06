@@ -2,3 +2,6 @@
 	path = site/tests/doctestjs
 	url = http://github.com/ianb/doctestjs.git
 
+[submodule "site/tests/serverjs/djangode"]
+	path = site/tests/serverjs/djangode
+	url = https://github.com/simonw/djangode.git

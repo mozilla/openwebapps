@@ -1,0 +1,163 @@
+#!/bin/bash
+
+## This script sets up a server ala myapps.mozillalabs.com This
+## includes the JSAPI, the HTML implementation, the dashboard, and
+## /getmanifest (a small Python app)
+
+## This all has been tested with Ubuntu Natty Narwhal.  It doesn't
+## work with some older versions, though probably only because of
+## package name changes.
+
+# quit if there are any errors:
+set -e
+
+############################################################
+## Argument and ssh handling:
+############################################################
+
+help () {
+    echo "Usage: $(basename $0) [-s] [SERVER_NAME]"
+    echo "Sets up the server, using SERVER_NAME as the domain name."
+    echo "If you use -s, then it will ssh to SERVER_NAME and set it up in-place."
+    echo "Use 'SSL=on $(basename $0) ...' to setup an SSL server (default HTTP)."
+    echo "If you set \$OWA_REPO then that will be checked out during deployment"
+    echo "If you set \$OWA_BRANCH then that branch will be checked out"
+}
+
+if [ "$1" = "-h" ] ; then
+    help
+    exit
+fi
+
+if [ "$1" = "-s" ] ; then
+    SSH=yes
+    shift
+fi
+
+if [ ! -z "$1" ] ; then
+    SERVER_NAME="$1"
+fi
+
+if [ -z "$SERVER_NAME" ] ; then
+    echo "You must set \$SERVER_NAME or pass it as the first argument"
+    help
+    exit 1
+fi
+
+if [ -z "$OWA_REPO" ] ; then
+    OWA_REPO="https://github.com/mozilla/openwebapps.git"
+fi
+
+if [ ! -z "$SSH" ] ; then
+    SCRIPT="
+SERVER_NAME='$SERVER_NAME'
+SSL='$SSL'
+OWA_REPO='$OWA_REPO'
+OWA_BRANCH='$OWA_BRANCH'
+VERBOSE=1
+
+$(cat $0)
+"
+    echo "sshing to $SERVER_NAME"
+    echo ----------------------------------------
+    ssh root@$SERVER_NAME "$SCRIPT"
+    exit
+fi
+
+############################################################
+## Start the real script:
+############################################################
+
+# First we have to setup some standard packages for the system:
+
+apt-get update
+apt-get --yes install \
+    git-core \
+    nginx-full \
+    daemontools-run \
+    python-tornado \
+    unzip \
+    openjdk-6-jre-headless \
+    python-lxml
+
+if [ -e /etc/nginx/sites-enabled/default ] ; then
+    rm /etc/nginx/sites-enabled/default
+fi
+
+BASE="
+  root /var/www/htdocs;
+  index index.html;
+  server_name $SERVER_NAME;
+  location /getmanifest {
+    proxy_pass http://127.0.0.1:8700/getmanifest;
+  }
+  #error_page 404 /404.html;
+"
+
+if [ ! -z "$SSL" ] ; then
+    CONFIG="
+server {
+  listen 443;
+  ssl on;
+  ssl_certificate cert.pem;
+  ssl_certificate_key cert.key;
+  ssl_session_timeout 5m;
+  ssl_protocols SSLv3 TLSv1;
+  ssl_ciphers ALL:!ADH:!EXPORT56:RC4+RSA:+HIGH:+MEDIUM:+LOW:+SSLv3:+EXP;
+  ssl_prefer_server_ciphers on;
+
+$BASE
+}"
+else
+    CONFIG="
+server {
+$BASE
+}"
+fi
+
+if [ ! -z "$VERBOSE" ] ; then
+    set -x
+fi
+
+echo "$CONFIG" > /etc/nginx/sites-available/${SERVER_NAME}.conf
+if [ ! -e /etc/nginx/sites-enabled/${SERVER_NAME}.conf ] ; then
+    (cd /etc/nginx/sites-enabled
+     ln -s ../sites-available/${SERVER_NAME}.conf
+    )
+fi
+
+adduser --system manager || echo "manager already exists"
+
+install -o manager -g www-data -d /var/www /var/www/src /var/www/htdocs /var/www/getmanifest-service
+install -o www-data -g www-data -d /var/www/log
+install -o manager -g www-data -d /var/
+(cd /var/www/src
+ if [ ! -d openwebapps ] ; then
+     git clone $OWA_REPO
+ else
+     cd openwebapps
+     git pull
+ fi
+)
+if [ ! -z "$OWA_BRANCH" ] ; then
+    (cd /var/www/src/openwebapps
+     git checkout $OWA_BRANCH
+    )
+fi
+rm -rf /var/www/htdocs/*
+/var/www/src/openwebapps/site/tools/build_static /var/www/htdocs
+chown -R manager:www-data /var/www/htdocs
+
+
+
+echo "#!/bin/sh
+
+cd /var/www/src/openwebapps/site/server
+exec su www-data -c 'python server.py /var/www/logs/getmanifest.log >> /var/www/log/getmanifest.log 2>&1'
+" > /var/www/getmanifest-service/run
+chmod +x /var/www/getmanifest-service/run
+
+update-service --add /var/www/getmanifest-service
+
+start svscan || echo "svscan already started"
+/etc/init.d/nginx restart

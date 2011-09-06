@@ -9,9 +9,14 @@
   <script src="/jschannel.js"></script>
   <!-- finally, define our handlers that'll be invoked over jschannel by the parent -->
   <script>
+  var responseMocked = false;
+
   function myonload() {
     // update repo origin for the test environment
     navigator.apps.setRepoOrigin(SERVERS['_primary']);
+    navigator.apps.setMockResponse(true, function () {
+      responseMocked = true;
+    });
 
     var chan = Channel.build({
       window: window.parent,
@@ -21,6 +26,14 @@
 
     chan.bind("install", function(trans, p) {
       trans.delayReturn(true);
+      if (! responseMocked) {
+        // Darn, somehow install got through before our call to navicator.apps.setMockResponse
+        var me = arguments.callee;
+        setTimeout(function () {
+          me(trans, p)
+        }, 100);
+        return;
+      }
       navigator.apps.install({
         url: "/manifest.webapp",
         onsuccess: function() { trans.complete(); },

@@ -83,6 +83,8 @@ navigator.apps.mgmt.saveState
 navigator.apps.mgmt.uninstall
 navigator.apps.services.ready
 navigator.apps.services.registerHandler
+navigator.apps.setApplicationChooser
+navigator.apps.setMockResponse
 navigator.apps.setRepoOrigin
 </pre>
 </section>
@@ -149,7 +151,7 @@ apps.mgmt.loadState({apps: ["are", "super", "awesome"], open: "web"})
 <h3>Uninstall non-existant app should fail</h3>
 
 <pre class="doctest">
-$ navigator.apps.mgmt.uninstall("http://not.really.installed", 
+$ navigator.apps.mgmt.uninstall("http://not.really.installed",
 >      Spy('uninstall/success', {wait: false, wrapArgs: true}),
 >      Spy('uninstall/failure', {wait: true, wrapArgs: true}));
 uninstall/failure({
@@ -173,6 +175,8 @@ Error: install missing required url argument
 <h3>Install a basic application</h3>
 
 <pre class="doctest">
+$ navigator.apps.setMockResponse(true, Spy('setMockResponse', {wait: true}));
+setMockResponse()
 $ navigator.apps.install(
 >   {url: SERVERS['basic_app'] + "/manifest.webapp",
 >    onsuccess: Spy('apps.install', {wait: true})
@@ -198,6 +202,8 @@ this should be considered an "upgrade", because we may not have
 two manifests per origin.
 
 <pre class="doctest">
+$ navigator.apps.setMockResponse(true, Spy('setMockResponse', {wait: true}));
+setMockResponse()
 $ navigator.apps.install(
 >   {url: SERVERS['basic_app'] + "/manifest2.webapp",
 >    onsuccess: Spy('apps.install', {wait: true})
@@ -391,8 +397,6 @@ $ // first let's add an iframe with the child to the document */
 error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repository")
 $ chan.call(buildJSChanArgs("loadState", false));
 error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repository")
-$ chan.call(buildJSChanArgs("loginStatus", false));
-error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repository")
 $ chan.call(buildJSChanArgs("list", false));
 error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repository")
 $ chan.call(buildJSChanArgs("uninstall", false));
@@ -471,6 +475,8 @@ apps.install()
 <h3>Invoke the profile provider service</h3>
 
 <pre class="doctest">
+$ navigator.apps.setApplicationChooser(0, Spy('setApplicationChooser', {wait: true}));
+setApplicationChooser()
 $ navigator.apps.invokeService(
 >   "profile.get", [ "displayName" ],
 >    Spy('success', {wait: true}),
