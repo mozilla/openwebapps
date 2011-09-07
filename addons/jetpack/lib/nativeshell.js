@@ -333,7 +333,7 @@ MacNativeShell.prototype = {
 
   createAppNativeLauncher : function(app)
   {
-    console.log("APPS | nativeshell.mac | Creating app native launcher\n");
+    dump("APPS | nativeshell.mac | Creating app native launcher\n");
     this.createExecutable(app);
   },
 
@@ -379,14 +379,14 @@ MacNativeShell.prototype = {
     // write the image into a temp file and convert it
     var filePath = Cc["@mozilla.org/file/directory_service;1"].getService(Ci.nsIProperties).
                get("TmpD", Ci.nsIFile);
-    console.log("APPS | nativeshell.mac | Got temporary path " + filePath + "\n");
+    dump("APPS | nativeshell.mac | Got temporary path " + filePath + "\n");
 
     if (icon.indexOf("data:") === 0) {
 
       // Guess the file type
       var tIndex = icon.indexOf(";");
       var type = icon.substring(5, tIndex);
-      console.log("APPS | nativeshell.mac | type is " + type + "\n");
+      dump("APPS | nativeshell.mac | type is " + type + "\n");
 
       var tSuffix="";
       if (type.indexOf("/png") > 0) tSuffix = ".png";
@@ -397,7 +397,7 @@ MacNativeShell.prototype = {
       // Decode base64
       var base64 = icon.indexOf("base64,");
       if (base64 < 0) {
-        console.log("Non-base64 data URLs are not supported!\n");
+        dump("Non-base64 data URLs are not supported!\n");
         return;
       }
       var data = icon.substring(base64 + 7);
@@ -406,7 +406,7 @@ MacNativeShell.prototype = {
       
       // Stream data into it
       filePath.createUnique(Ci.nsIFile.NORMAL_FILE_TYPE, 0600);
-      console.log("APPS | nativeshell.mac | Creating temporary icon at " + filePath.path + "\n");
+      dump("APPS | nativeshell.mac | Creating temporary icon at " + filePath.path + "\n");
 
       var stream = Cc["@mozilla.org/network/safe-file-output-stream;1"].
                    createInstance(Ci.nsIFileOutputStream);
@@ -432,7 +432,7 @@ MacNativeShell.prototype = {
       else if (icon.indexOf(".jpg") > 0) tSuffix = ".jpg";
       filePath.append("tmpicon" + tSuffix);
       filePath.createUnique(Ci.nsIFile.NORMAL_FILE_TYPE, 0600);
-      console.log("APPS | nativeshell.mac | Creating temporary icon at " + filePath.path + "\n");
+      dump("APPS | nativeshell.mac | Creating temporary icon at " + filePath.path + "\n");
       var ostream = Cc["@mozilla.org/network/safe-file-output-stream;1"].
                    createInstance(Ci.nsIFileOutputStream);
       ostream.init(filePath, 0x04 | 0x08 | 0x20, 0600, 0); // readwrite, create, truncate
@@ -441,12 +441,12 @@ MacNativeShell.prototype = {
       var iconPath = app.origin + icon;    
       var netutil={};
       Cu.import("resource://gre/modules/NetUtil.jsm", netutil);
-      console.log("APPS | createExecutable | Retrieving icon from " + iconPath + "\n");
+      dump("APPS | createExecutable | Retrieving icon from " + iconPath + "\n");
       netutil.NetUtil.asyncFetch(iconPath, function(inputStream, resultCode, request) {
         try {
           if (!components.isSuccessCode(resultCode)) {
             // Handle error
-            console.log("APPS | createExecutable | Unable to get icon - error during request\n");
+            dump("APPS | createExecutable | Unable to get icon - error during request\n");
             return;
           } else {
             netutil.NetUtil.asyncCopy(inputStream, ostream, function(aResult) {
@@ -464,7 +464,7 @@ MacNativeShell.prototype = {
 
           }
         } catch (e) {
-          console.log("ERROR : " + e + "\n");
+          dump("ERROR : " + e + "\n");
         }
       });
 
