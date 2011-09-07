@@ -238,7 +238,7 @@ WinNativeShell.prototype = {
 
       let outStrType = ctypes.ArrayType(WCHAR);
       console.log("APPS | nativeshell.Win | outStrType=" + outStrType);
-      let expandEnvironmentStrings = 
+      let expandEnvironmentStrings =
         kernel32.declare("ExpandEnvironmentStringsW",
             ctypes.default_abi,
             DWORD,

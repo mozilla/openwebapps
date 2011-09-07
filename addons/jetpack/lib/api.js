@@ -240,18 +240,20 @@ FFRepoImpl.prototype = {
                     );
                     
                     // create OS-local application
+                    /*
                     dump("APPS | jetpack.install | Getting app by URL now\n");
                     Repo.getAppById(origin, function(app) {
                         dump("APPS | jetpack.install | getAppByUrl returned " + app + "\n");
                         if (app) {
                           dump("APPS | jetpack.install | Calling NativeShell.CreateNativeShell\n");
                           try {
-                            NativeShell.CreateNativeShell(app);   
+                            NativeShell.CreateNativeShell(app);
                           } catch (e) {
                             dump("APPS | NativeShell | Aborted: " + e);
                           }
                         }
                     });
+                    */
 
                     if (args.onsuccess) {
                         (1,args.onsuccess)();
