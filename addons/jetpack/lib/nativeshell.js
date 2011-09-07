@@ -3,15 +3,12 @@ const file = require("file");
 const self = require("self");
 const url = require("url");
 
-
-
 NativeShell = (function() {
-
   function CreateNativeShell(domain, appManifest)
   {
     // TODO: Select Mac or Windows
-    new MacNativeShell().createAppNativeLauncher(domain, appManifest);
-    //new WinNativeShell().createAppNativeLauncher(domain, appManifest);
+    //new MacNativeShell().createAppNativeLauncher(domain, appManifest);
+    new WinNativeShell().createAppNativeLauncher(domain, appManifest);
   }
 
   return {
@@ -224,10 +221,52 @@ WinNativeShell.prototype = {
 
   createExecutable : function(app)
   {
-    // TODO: baseDir should point to %APPDATA%\WEB_APPS_DIRNAME
-    // see `ExpandEnvironmentStrings` (invoke through js-ctypes)
-    //   http://msdn.microsoft.com/en-us/library/ms724265.aspx
-    var baseDir = "C:\\" + WEB_APPS_DIRNAME;
+    console.log("APPS | nativeshell.Win | Entered createExecutable");
+    components.utils.import("resource://gre/modules/ctypes.jsm");
+    console.log("APPS | nativeshell.Win | Imported ctypes");
+    let baseDir = "%APPDATA%\\" + WEB_APPS_DIRNAME;
+    console.log("APPS | nativeshell.Win | baseDir=" + baseDir);
+    let kernel32 = ctypes.open("Kernel32");
+    console.log("APPS | nativeshell.Win | kernel32=" + kernel32);
+    try {
+      const DWORD = ctypes.uint32_t;
+      console.log("APPS | nativeshell.Win | Declared DWORD");
+      const WCHAR = ctypes.jschar;
+      console.log("APPS | nativeshell.Win | Declared WCHAR");
+      const MAX_PATH = 260;
+      console.log("APPS | nativeshell.Win | Declared MAX_PATH");
+
+      let outStrType = ctypes.ArrayType(WCHAR);
+      console.log("APPS | nativeshell.Win | outStrType=" + outStrType);
+      let expandEnvironmentStrings = 
+        kernel32.declare("ExpandEnvironmentStringsW",
+            ctypes.default_abi,
+            DWORD,
+            WCHAR.ptr,
+            WCHAR.ptr,
+            DWORD);
+      console.log("APPS | nativeshell.Win | expandEnvironmentStrings=" + expandEnvironmentStrings);
+
+      let baseDirCStr = ctypes.jschar.array()(baseDir);
+      let out = new outStrType(MAX_PATH);
+
+      if(0 === expandEnvironmentStrings(baseDirCStr,
+            out,
+                                        MAX_PATH)) {
+        throw("Error in ExpandEnvironmentStringsW");
+      } else {
+        baseDir = out.readString();
+      }
+      console.log("APPS | nativeshell.Win | baseDir=" + baseDir);
+    } catch (e) {
+      console.log("APPS | nativeshell.Win | Error setting download path: " + e);
+      return;
+    } finally {
+      console.log("APPS | nativeshell.Win | Closing kernel32");
+      kernel32.close();
+      console.log("APPS | nativeshell.Win | Closed kernel32");
+    }
+
     console.log("APPS | nativeshell.Win | baseDir=" + baseDir);
     if (!file.exists(baseDir))
     {
@@ -261,6 +300,7 @@ WinNativeShell.prototype = {
     // TODO: Organize this so it's not in "mac-app-template"
     winRecursiveFileCopy("mac-app-template", "", filePath, substitutions);
     //this.synthesizeIcon(app, filePath + "/Contents/Resources/appicon.icns");
+
   },
   
   synthesizeIcon : function(app, destinationFile)
@@ -293,7 +333,7 @@ MacNativeShell.prototype = {
 
   createAppNativeLauncher : function(app)
   {
-    dump("APPS | nativeshell.mac | Creating app native launcher\n");
+    console.log("APPS | nativeshell.mac | Creating app native launcher\n");
     this.createExecutable(app);
   },
 
@@ -339,14 +379,14 @@ MacNativeShell.prototype = {
     // write the image into a temp file and convert it
     var filePath = Cc["@mozilla.org/file/directory_service;1"].getService(Ci.nsIProperties).
                get("TmpD", Ci.nsIFile);
-    dump("APPS | nativeshell.mac | Got temporary path " + filePath + "\n");
+    console.log("APPS | nativeshell.mac | Got temporary path " + filePath + "\n");
 
     if (icon.indexOf("data:") === 0) {
 
       // Guess the file type
       var tIndex = icon.indexOf(";");
       var type = icon.substring(5, tIndex);
-      dump("APPS | nativeshell.mac | type is " + type + "\n");
+      console.log("APPS | nativeshell.mac | type is " + type + "\n");
 
       var tSuffix="";
       if (type.indexOf("/png") > 0) tSuffix = ".png";
@@ -357,7 +397,7 @@ MacNativeShell.prototype = {
       // Decode base64
       var base64 = icon.indexOf("base64,");
       if (base64 < 0) {
-        dump("Non-base64 data URLs are not supported!\n");
+        console.log("Non-base64 data URLs are not supported!\n");
         return;
       }
       var data = icon.substring(base64 + 7);
@@ -366,7 +406,7 @@ MacNativeShell.prototype = {
       
       // Stream data into it
       filePath.createUnique(Ci.nsIFile.NORMAL_FILE_TYPE, 0600);
-      dump("APPS | nativeshell.mac | Creating temporary icon at " + filePath.path + "\n");
+      console.log("APPS | nativeshell.mac | Creating temporary icon at " + filePath.path + "\n");
 
       var stream = Cc["@mozilla.org/network/safe-file-output-stream;1"].
                    createInstance(Ci.nsIFileOutputStream);
@@ -392,7 +432,7 @@ MacNativeShell.prototype = {
       else if (icon.indexOf(".jpg") > 0) tSuffix = ".jpg";
       filePath.append("tmpicon" + tSuffix);
       filePath.createUnique(Ci.nsIFile.NORMAL_FILE_TYPE, 0600);
-      dump("APPS | nativeshell.mac | Creating temporary icon at " + filePath.path + "\n");
+      console.log("APPS | nativeshell.mac | Creating temporary icon at " + filePath.path + "\n");
       var ostream = Cc["@mozilla.org/network/safe-file-output-stream;1"].
                    createInstance(Ci.nsIFileOutputStream);
       ostream.init(filePath, 0x04 | 0x08 | 0x20, 0600, 0); // readwrite, create, truncate
@@ -401,12 +441,12 @@ MacNativeShell.prototype = {
       var iconPath = app.origin + icon;    
       var netutil={};
       Cu.import("resource://gre/modules/NetUtil.jsm", netutil);
-      dump("APPS | createExecutable | Retrieving icon from " + iconPath + "\n");
+      console.log("APPS | createExecutable | Retrieving icon from " + iconPath + "\n");
       netutil.NetUtil.asyncFetch(iconPath, function(inputStream, resultCode, request) {
         try {
           if (!components.isSuccessCode(resultCode)) {
             // Handle error
-            dump("APPS | createExecutable | Unable to get icon - error during request\n");
+            console.log("APPS | createExecutable | Unable to get icon - error during request\n");
             return;
           } else {
             netutil.NetUtil.asyncCopy(inputStream, ostream, function(aResult) {
@@ -424,7 +464,7 @@ MacNativeShell.prototype = {
 
           }
         } catch (e) {
-          dump("ERROR : " + e + "\n");
+          console.log("ERROR : " + e + "\n");
         }
       });
 
