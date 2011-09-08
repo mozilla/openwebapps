@@ -349,13 +349,13 @@ serviceInvocationHandler.prototype = {
 
     let newPopups = [];
     for each (let popupCheck in this._popups) {
-    if (popupCheck.methodName === methodName) {
-      // this popup record must die.
-      let nukePanel = popupCheck.panel;
-      nukePanel.destroy();
-    } else {
-      newPopups.push(popupCheck);
-    }
+      if (popupCheck.methodName === methodName) {
+        // this popup record must die.
+        let nukePanel = popupCheck.panel;
+        nukePanel.destroy();
+      } else {
+        newPopups.push(popupCheck);
+      }
     }
     this._popups = newPopups;
   },
@@ -443,7 +443,6 @@ serviceInvocationHandler.prototype = {
 
   // when an app registers a service handler
   registerServiceHandler: function(contentWindowRef, action, message, func) {
-    //dump("registerServiceHandler for " + action + "; message is " + message + "\n")
     // check that this is indeed an app
     FFRepoImplService.getAppByUrl(contentWindowRef.location, function(app) {
 
@@ -466,7 +465,6 @@ serviceInvocationHandler.prototype = {
         console.log("app attempted to register handler for activity action " + action + " but not declared in manifest");
         return;
       }
-      //console.log("Registering handler for " + app.origin + " " + activity;
 
       if (!theWindow._MOZ_SERVICES)
         theWindow._MOZ_SERVICES = {};
@@ -480,7 +478,6 @@ serviceInvocationHandler.prototype = {
 
   // this call means to invoke a specific call within a given app
   invokeService: function(contentWindow, activity, message, cb, cberr, privileged) {
-    //dump("invokeService invoked for " + activity.action + "; message is " + message + "\n")
     FFRepoImplService.getAppByUrl(contentWindow.location, function(app) {
       var theWindow = contentWindow;
 

@@ -23,12 +23,9 @@ TestMediator = {
     // XXX - why is unsafeWindow needed here???
     "  unsafeWindow.document.getElementById('servicebox').appendChild(service.iframe);" +
     "  service.on('ready', function() {" +
-    "    dump('TestMediator calling now\\n');" +
     "    service.call('echoArgs', activity.data, function(result) {" +
-    "      dump('TestMediator success callback - emitting result\\n');" +
     "      self.port.emit('owa.success', result);" +
     "    }, function(errob) {" +
-    "      dump('TestMediator failure callback - emitting result\\n');" +
     "      self.port.emit('owa.failure', errob);" +
     "    });" +
     "  });" +
@@ -128,7 +125,6 @@ TestMediatorError = {
     // XXX - why is unsafeWindow needed here???
     "  unsafeWindow.document.getElementById('servicebox').appendChild(service.iframe);" +
     "  service.on('ready', function() {" +
-    "    dump('TestMediatorError calling now\\n');" +
     "    service.call('testErrors', activity.data, function(result) {" +
     "      self.port.emit('owa.success', {code: 'test_failure', msg: 'unexpected success callback'});" +
     "    }, function(errob) {" +
@@ -140,7 +136,6 @@ TestMediatorError = {
 
 // A helper for the error tests.
 function testError(test, errchecker) {
-  dump("\n\nBEGIN TEST postError\n");
   test.waitUntilDone();
   installTestApp(test, "apps/basic/basic.webapp", function() {
     let services = getOWA()._services;
@@ -149,12 +144,10 @@ function testError(test, errchecker) {
       getContentWindow(),
       {action:"test.basic", data:{}}, // simulate an activity
       function(result) { // success cb
-        dump("\n\ntestError success callback invoked!\n");
         services._popups.pop();
         errchecker(result);
       },
       function(errob) { // error callback
-        dump("\n\ntestError failure callback invoked!\n");
         test.fail("error callback invoked");
         services._popups.pop();
         test.done();
