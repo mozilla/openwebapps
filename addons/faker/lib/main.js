@@ -45,7 +45,13 @@ const {Cc, Ci, Cu} = require("chrome");
  * get the addon directory location in jetpack)
  */
 var FAKE_APPS = {
-    "http://nytimes.com": ["nytimes.manifest", "*.nytimes.com", "nytimes.js"],
+    "http://nytimes.com": ["nytimes.manifest", "*.nytimes.com", "nytimes.js",
+                           // set up the smooth transition stuff
+                           'var head = document.getElementsByTagName("head")[0];' +
+                           'var el = document.createElement("script");' +
+                           'el.setAttribute("type", "text/javascript");' +
+                           'el.setAttribute("src", "' + self.data.url("nytimes-inline.js") + '");' +
+                           'head.appendChild(el);'],
     "http://twitter.com": ["twitter.manifest", "*.twitter.com", "twitter.js"],
     "http://chrome.angrybirds.com" : ["angrybirds.manifest", "*.angrybirds.com", "angrybirds.js"]
 };
@@ -54,16 +60,21 @@ var FAKE_APPS = {
 function injectAsInstallable()
 {
     for (let origin in FAKE_APPS) {
+        let contentScript = [
+            'var head = document.getElementsByTagName("head")[0];' +
+            'var el = document.createElement("link");' +
+            'el.setAttribute("rel", "application-manifest");' +
+            'el.setAttribute("href", "' +
+            self.data.url(FAKE_APPS[origin][0]) + '");' +
+            'head.appendChild(el);'
+        ];
+        if (FAKE_APPS[origin][3]) {
+            contentScript.push(FAKE_APPS[origin][3]);
+        }
         pageMod.PageMod({
             include: FAKE_APPS[origin][1],
             contentScriptFile: self.data.url(FAKE_APPS[origin][2]),
-            contentScript:
-                'var head = document.getElementsByTagName("head")[0];' +
-                'var el = document.createElement("link");' +
-                'el.setAttribute("rel", "application-manifest");' +
-                'el.setAttribute("href", "' +
-                self.data.url(FAKE_APPS[origin][0]) + '");' +
-                'head.appendChild(el);'
+            contentScript: contentScript
         });
     }
 }

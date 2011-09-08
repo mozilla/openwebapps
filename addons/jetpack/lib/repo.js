@@ -77,8 +77,8 @@ function App(app_obj) {
   this.install_time = this._app_obj.install_time;
   this.manifest = this._app_obj.manifest;
 
-  if ("experimental" in this.manifest && "services" in this.manifest.experimental) {
-    this.services = this.manifest.experimental.services;
+  if ("services" in this.manifest) {
+    this.services = this.manifest.services;
 
     if (this.services.login) {
       this.login_dialog_url = this.origin + this.services.login.dialog;
@@ -428,7 +428,7 @@ Repo = (function() {
 
             var svcObj = {
               // null out the URL when no endpoint
-              url: one_service.endpoint ? appendPath(appid, one_service.endpoint) : null,
+              url: one_service.path ? appendPath(appid, one_service.path) : null,
               app: app,
               service: service_key
             }

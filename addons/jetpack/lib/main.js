@@ -172,11 +172,11 @@ openwebapps.prototype = {
 
     win.appinjector.register({
       apibase: "navigator.apps",
-      name: "invokeService",
+      name: "startActivity",
       script: null,
       getapi: function(contentWindowRef) {
-        return function(methodName, args, successCB, errorCB) {
-          self._services.invoke(contentWindowRef, methodName, args, successCB, errorCB);
+        return function(activity, successCB, errorCB) {
+          self._services.invoke(contentWindowRef, activity, successCB, errorCB);
         }
       }
     });
@@ -189,9 +189,28 @@ openwebapps.prototype = {
       name: "_invokeService",
       script: null,
       getapi: function(contentWindowRef) {
-        return function(iframe, activity, message, args, cb, cberr) {
-          args = JSON.parse(JSON.stringify(args));
-          self._services.invokeService(iframe.wrappedJSObject, activity, message, args, cb, cberr)
+        return function (iframe, activity, message, cb, cberr) {
+          if (activity.data) {
+           activity.data = JSON.parse(JSON.stringify(activity.data)); // flatten and reinflate...
+          }
+          self._services.invokeService(iframe.wrappedJSObject, activity, message, cb, cberr);
+        }
+      }
+    });
+    
+    // XXX TEMPORARY HACK to allow our builtin apps to work for the all-hands demo
+    var {OAuthConsumer} = require("oauthorizer/oauthconsumer");
+    win.appinjector.register({
+      apibase: "navigator.apps.oauth",
+      name: "call",
+      script: null,
+      getapi: function(contentWindowRef) {
+        return function(svc, message, callback) {
+          OAuthConsumer.call(svc, message, function(req) {
+            //dump("oauth call response "+req.status+" "+req.statusText+" "+req.responseText+"\n");
+            let response = JSON.parse(req.responseText);
+            callback(response);
+          });
         }
       }
     });
