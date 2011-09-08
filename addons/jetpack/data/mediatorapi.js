@@ -108,7 +108,11 @@ window.navigator.apps.mediation.startLogin = function(origin) {
     });
   });
   allServices[origin].call("getParameters", {}, function(params) {
-    self.port.emit("owa.mediation.doLogin", params)
+    // due to a limitation in our implementation, this getParameters call is
+    // actually made on the "main" service rather than on the login specific
+    // service - so for now we assume the auth specific data is wrapped in
+    // an 'auth' element in the result.
+    self.port.emit("owa.mediation.doLogin", params.auth)
   });
 }
 unsafeWindow.navigator.apps.mediation.startLogin = window.navigator.apps.mediation.startLogin;
