@@ -7,8 +7,8 @@ NativeShell = (function() {
   function CreateNativeShell(domain, appManifest)
   {
     // TODO: Select Mac or Windows
-    new MacNativeShell().createAppNativeLauncher(domain, appManifest);
-    //new WinNativeShell().createAppNativeLauncher(domain, appManifest);
+    //new MacNativeShell().createAppNativeLauncher(domain, appManifest);
+    new WinNativeShell().createAppNativeLauncher(domain, appManifest);
   }
 
   return {
@@ -70,6 +70,77 @@ function makeMenuBar(manifest)
   return toolbox;
 }
 
+function expandWindowsEnvironmentStrings(toExpand)
+{
+  components.utils.import("resource://gre/modules/ctypes.jsm");
+  let kernel32 = ctypes.open("Kernel32");
+  try {
+    const DWORD = ctypes.uint32_t;
+    const WCHAR = ctypes.jschar;
+    const MAX_PATH = 260;
+
+    let outStrType = ctypes.ArrayType(WCHAR);
+    let expandEnvironmentStrings =
+      kernel32.declare("ExpandEnvironmentStringsW",
+          ctypes.default_abi,
+          DWORD,
+          WCHAR.ptr,
+          WCHAR.ptr,
+          DWORD);
+
+    let cstr = ctypes.jschar.array()(toExpand);
+    let out = new outStrType(MAX_PATH);
+
+    if(0 === expandEnvironmentStrings(cstr,
+          out,
+          MAX_PATH)) {
+      throw("Error in ExpandEnvironmentStringsW");
+    } else {
+      return out.readString();
+    }
+  } finally {
+    kernel32.close();
+  }
+}
+
+function createWindowsShortcut(loc, target, description)
+{
+  console.log("APPS | nativeshell.win | Entered createWindowsShortcut");
+  console.log("APPS | nativeshell.win | loc=" + loc);
+  console.log("APPS | nativeshell.win | target=" + target);
+  console.log("APPS | nativeshell.win | description=" + description);
+  components.utils.import("resource://gre/modules/ctypes.jsm");
+
+  var shellLinkURL = self.data.url("ShellLinkCreator.dll");
+  console.log("ZOMG THE URL IS: " + shellLinkURL);
+
+  var ioService = components.classes["@mozilla.org/network/io-service;1"].getService(components.interfaces.nsIIOService);
+  var theURI = ioService.newURI(shellLinkURL, null, null);
+  theURI.QueryInterface(components.interfaces.nsIFileURL);
+  var hopefullyThePath = theURI.file.path;
+
+  console.log("ZOMG THE PATH IS: " + hopefullyThePath);
+
+  let shellLinkCreator = ctypes.open(hopefullyThePath);
+  try {
+    const WCHAR = ctypes.jschar;
+
+    let createLink =
+      shellLinkCreator.declare("CreateLink",
+          ctypes.default_abi,
+          ctypes.long,
+          WCHAR.ptr,
+          WCHAR.ptr,
+          WCHAR.ptr);
+
+    if(0 > createLink(target, loc, description)) {
+      throw("Error in CreateLink!");
+    }
+  }
+  finally {
+    shellLinkCreator.close();
+  }
+}
 
 function winRecursiveFileCopy(sourceBase, sourcePath, destPath, substitutions)
 {
@@ -134,8 +205,6 @@ function winRecursiveFileCopy(sourceBase, sourcePath, destPath, substitutions)
   }
 }
 
-// XXX TODO use platform appropriate file divider everywhere!!!!!!
-
 function recursiveFileCopy(sourceBase, sourcePath, destPath, substitutions)
 {
   var srcFile = url.toFilename(self.data.url(sourceBase + "/" + sourcePath));
@@ -194,10 +263,9 @@ const WEB_APPS_DIRNAME = "Web Apps";
 // Windows implementation
 //
 // Our Windows strategy:
-//    Copy our XUL app and generic launcher to user's machine
-//       Currently C:\Web Apps, eventually %APPDATA%
+//    Copy our XUL app and generic launcher to this dir on user's machine:
+//                    "%APPDATA%\Web Apps"
 //    TODO: Add registry entry for Add/Remove programs
-//    TODO: Create shortcut somewhere useful (desktop?)
 //    TODO: Update exe resources with correct icon
 
 function WinNativeShell() {
@@ -222,52 +290,12 @@ WinNativeShell.prototype = {
   createExecutable : function(app)
   {
     console.log("APPS | nativeshell.Win | Entered createExecutable");
-    components.utils.import("resource://gre/modules/ctypes.jsm");
-    console.log("APPS | nativeshell.Win | Imported ctypes");
-    let baseDir = "%APPDATA%\\" + WEB_APPS_DIRNAME;
-    console.log("APPS | nativeshell.Win | baseDir=" + baseDir);
-    let kernel32 = ctypes.open("Kernel32");
-    console.log("APPS | nativeshell.Win | kernel32=" + kernel32);
-    try {
-      const DWORD = ctypes.uint32_t;
-      console.log("APPS | nativeshell.Win | Declared DWORD");
-      const WCHAR = ctypes.jschar;
-      console.log("APPS | nativeshell.Win | Declared WCHAR");
-      const MAX_PATH = 260;
-      console.log("APPS | nativeshell.Win | Declared MAX_PATH");
+    let unexpandedBaseDir = "%APPDATA%\\Web Apps";
 
-      let outStrType = ctypes.ArrayType(WCHAR);
-      console.log("APPS | nativeshell.Win | outStrType=" + outStrType);
-      let expandEnvironmentStrings =
-        kernel32.declare("ExpandEnvironmentStringsW",
-            ctypes.default_abi,
-            DWORD,
-            WCHAR.ptr,
-            WCHAR.ptr,
-            DWORD);
-      console.log("APPS | nativeshell.Win | expandEnvironmentStrings=" + expandEnvironmentStrings);
+    console.log("ASDF");
+    let baseDir = expandWindowsEnvironmentStrings(unexpandedBaseDir);
+    console.log("baseDir="+baseDir);
 
-      let baseDirCStr = ctypes.jschar.array()(baseDir);
-      let out = new outStrType(MAX_PATH);
-
-      if(0 === expandEnvironmentStrings(baseDirCStr,
-            out,
-                                        MAX_PATH)) {
-        throw("Error in ExpandEnvironmentStringsW");
-      } else {
-        baseDir = out.readString();
-      }
-      console.log("APPS | nativeshell.Win | baseDir=" + baseDir);
-    } catch (e) {
-      console.log("APPS | nativeshell.Win | Error setting download path: " + e);
-      return;
-    } finally {
-      console.log("APPS | nativeshell.Win | Closing kernel32");
-      kernel32.close();
-      console.log("APPS | nativeshell.Win | Closed kernel32");
-    }
-
-    console.log("APPS | nativeshell.Win | baseDir=" + baseDir);
     if (!file.exists(baseDir))
     {
       file.mkpath(baseDir);
@@ -301,6 +329,14 @@ WinNativeShell.prototype = {
     winRecursiveFileCopy("mac-app-template", "", filePath, substitutions);
     //this.synthesizeIcon(app, filePath + "/Contents/Resources/appicon.icns");
 
+    let shortcutLocation = expandWindowsEnvironmentStrings("%UserProfile%\\desktop\\" + sanitizeWinFileName(app.manifest.name + ".lnk"));
+
+    console.log("CREATING DESKTOP SHORTCUT");
+    try {
+      createWindowsShortcut(shortcutLocation,filePath+"\\foxlauncher.exe","It's the bee's knees!");
+    } catch (e) {
+      console.log("APPS | nativeshell.Win | Error in createWindowsShortcut: " + e);
+    }
   },
   
   synthesizeIcon : function(app, destinationFile)
