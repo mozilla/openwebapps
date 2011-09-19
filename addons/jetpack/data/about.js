@@ -24,6 +24,20 @@
  * Contributor(s):
  **/
 
+self.port.on('data-url', function(baseurl) {
+  // attach our css file
+  var fileref=document.createElement("link")
+  fileref.setAttribute("rel", "stylesheet")
+  fileref.setAttribute("type", "text/css")
+  fileref.setAttribute("href", baseurl+"skin/about.css");
+  document.getElementsByTagName("head")[0].appendChild(fileref)
+
+  // XXX TODO
+  // get access to the injected api's, will remove later when api
+  // injection method changes.
+  window.navigator.apps = unsafeWindow.navigator.apps;
+});
+
 function elem(type, clazz) {
   var e = document.createElement(type);
   if (clazz) e.setAttribute("class", clazz);
@@ -44,7 +58,6 @@ function refresh() {
   }
 }
 
-refresh();
 window.addEventListener("focus", function() {
   refresh();
 });
@@ -73,7 +86,7 @@ function render() {
 
         function renderValue(parent, key, val, aBox) {
           if (parent == "icons") {
-            aBox.setAttribute("style", "margin:4px;width:" + key + "px;height:" + key + "px;background-image:url(\"" + theApp.origin + val + "\")");
+            aBox.setAttribute("style", "margin:4px;width:" + key + "px;height:" + key + "px;background-image:url(\"" + val + "\")");
 
           } else if (key == "installTime") {
             aBox.appendChild(document.createTextNode("" + new Date(val) + " - " + val));
