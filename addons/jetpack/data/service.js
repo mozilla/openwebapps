@@ -80,7 +80,7 @@ function(activity, services) {
     var service = services[i];
     service.on("ready", function() {
       console.log("service", service.url, "is ready - initializing it");
-      service.call("init", args, function() {
+      service.call("init", activity.data, function() {
         console.log("service init complete");
       })
     });
