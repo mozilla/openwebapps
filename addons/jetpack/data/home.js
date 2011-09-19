@@ -149,13 +149,23 @@ let gSearchEngine;
 // XX TODO figure out how to default this right
 if (localStorage["search-engine"] == undefined) localStorage["search-engine"] = "\"Google\"";
 
-function onLoad(event) {
+self.port.on('data-url', function(baseurl) {
+  dump("load skin "+baseurl+"home.css"+"\n");
+
+  var fileref=document.createElement("link")
+  fileref.setAttribute("rel", "stylesheet")
+  fileref.setAttribute("type", "text/css")
+  fileref.setAttribute("href", baseurl+"home.css");
+  document.getElementsByTagName("head")[0].appendChild(fileref)
+
+  window.navigator.apps = unsafeWindow.navigator.apps;
+
   setupSearchEngine();
   document.getElementById("searchText").focus();
 
   //  loadSnippets();
   loadApps();
-}
+});
 
 
 function onSearchSubmit(aEvent) {
