@@ -384,7 +384,7 @@ let unloaders = [];
 function setupAboutPageMods() {
   var pageMod = require("page-mod");
   pageMod.PageMod({
-    include: ["about:apps"],
+    include: ["about:apps*"],
     contentScriptWhen: 'start',
     contentScriptFile: addon.data.url('about.js'),
     onAttach: function onAttach(worker) {
@@ -393,7 +393,7 @@ function setupAboutPageMods() {
   });
 
   pageMod.PageMod({
-    include: ["about:appshome"],
+    include: ["about:appshome*"],
     contentScriptWhen: 'start',
     contentScriptFile: [addon.data.url('jquery-1.4.2.min.js'),
                         addon.data.url('base32.js'),
