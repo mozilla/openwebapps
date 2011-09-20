@@ -197,7 +197,7 @@ openwebapps.prototype = {
         }
       }
     });
-    
+
     // XXX TEMPORARY HACK to allow our builtin apps to work for the all-hands demo
     var {OAuthConsumer} = require("oauthorizer/oauthconsumer");
     win.appinjector.register({
@@ -375,6 +375,38 @@ let AboutAppsHome = {
 let unloaders = [];
 
 /**
+ * setupAboutPageMods
+ *
+ * since the pages will get a location that is "about:apps" we need to
+ * pagemod them and send them the actual resource url so css, images, etc.
+ * will continue to load correctly without hard-coded resource urls.
+ */
+function setupAboutPageMods() {
+  var pageMod = require("page-mod");
+  pageMod.PageMod({
+    include: ["about:apps*"],
+    contentScriptWhen: 'start',
+    contentScriptFile: addon.data.url('about.js'),
+    onAttach: function onAttach(worker) {
+      worker.port.emit('data-url', addon.data.url());
+    }
+  });
+
+  pageMod.PageMod({
+    include: ["about:appshome*"],
+    contentScriptWhen: 'start',
+    contentScriptFile: [addon.data.url('jquery-1.4.2.min.js'),
+                        addon.data.url('base32.js'),
+                        addon.data.url('home.js')],
+    onAttach: function onAttach(worker) {
+      worker.port.emit('data-url', addon.data.url());
+    }
+  });
+
+}
+
+
+/**
  * startup
  *
  * all per-instance initialization should be started from here.  The window
@@ -424,6 +456,8 @@ function startup(getUrlCB) { /* Initialize simple storage */
     Cm.QueryInterface(Ci.nsIComponentRegistrar).unregisterFactory(
     AboutAppsHomeUUID, AboutAppsHomeFactory);
   });
+
+  setupAboutPageMods();
 
   // Broadcast that we're done, in case anybody is listening
   let tmp = require("api");
