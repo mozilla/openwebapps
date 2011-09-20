@@ -1,6 +1,6 @@
 # Sync
 
-This is a description of sync in open web apps, ideally thorough enough to double as a specification.
+This is a description of sync in open web apps, ideally thorough enough to double as a specification.  This documentation describes how sync *will* be implemented, not (at this time) any current implementation.
 
 As a quick overview, this specifies several aspects of the protocol:
 
