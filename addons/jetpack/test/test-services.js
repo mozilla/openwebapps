@@ -14,16 +14,19 @@ function getContentWindow() {
   return element.contentWindow.wrappedJSObject;
 }
 
+
 TestMediator = {
   url: getTestUrl("apps/testable_mediator.html"),
   contentScript:
-    "window.navigator.apps.mediation.ready(function(method, args, services) {" +
+    "window.navigator.apps.mediation.ready(function(activity, services) {" +
     "  let service = services[0];" +
     // XXX - why is unsafeWindow needed here???
     "  unsafeWindow.document.getElementById('servicebox').appendChild(service.iframe);" +
     "  service.on('ready', function() {" +
-    "    service.call('echoArgs', args, function(result) {" +
-    "      self.port.emit('result', result);" +
+    "    service.call('echoArgs', activity.data, function(result) {" +
+    "      self.port.emit('owa.success', result);" +
+    "    }, function(errob) {" +
+    "      self.port.emit('owa.failure', errob);" +
     "    });" +
     "  });" +
     "});"
@@ -38,7 +41,7 @@ exports.test_invoke = function(test) {
     services.registerMediator("test.basic", TestMediator);
     let panel = services.get(
       getContentWindow(),
-      "test.basic", {hello: "world"}, // serviceName, args
+      {action:"test.basic", data: {hello: "world"}}, // simulate an Activity object
       function(result) { // success cb
         test.assertEqual(result.hello, "world");
         test.done();
@@ -50,6 +53,7 @@ exports.test_invoke = function(test) {
     panel.show();
   });
 };
+
 
 // Test that having 2 tabs, each with its own panel, works as expected.
 exports.test_invoke_twice = function(test) {
@@ -65,7 +69,7 @@ exports.test_invoke_twice = function(test) {
           // first tab is open - create and invoke our test app.
           let panel1 = services.get(
             getContentWindow(),
-            "test.basic", {hello: "world"}, // serviceName, args
+            {action:"test.basic", data:{hello: "world"}}, // simulate an Activity object
             function(result) { // success cb
               if (seenTab1Callback) {
                 test.fail("first tab got success callback twice");
@@ -82,7 +86,7 @@ exports.test_invoke_twice = function(test) {
                   tab2.on('ready', function(){
                     let panel2 = services.get(
                       getContentWindow(),
-                      "test.basic", {hello: "world"}, // serviceName, args
+                      {action:"test.basic", data:{hello: "world"}}, // simulate an Activity object
                       function(result) { // success cb
                         test.assertEqual(result.hello, "world");
                         // yay - worked in the second tab too - all done!
@@ -116,29 +120,29 @@ exports.test_invoke_twice = function(test) {
 TestMediatorError = {
   url: getTestUrl("apps/testable_mediator.html"),
   contentScript:
-    "window.navigator.apps.mediation.ready(function(method, args, services) {" +
+    "window.navigator.apps.mediation.ready(function(activity, services) {" +
     "  let service = services[0];" +
     // XXX - why is unsafeWindow needed here???
     "  unsafeWindow.document.getElementById('servicebox').appendChild(service.iframe);" +
     "  service.on('ready', function() {" +
-    "    service.call('testErrors', args, function(result) {" +
-    "      self.port.emit('result', {code: 'test_failure', msg: 'unexpected success callback'});" +
+    "    service.call('testErrors', activity.data, function(result) {" +
+    "      self.port.emit('owa.success', {code: 'test_failure', msg: 'unexpected success callback'});" +
     "    }, function(errob) {" +
-    "      self.port.emit('result', errob);" +
+    "      self.port.emit('owa.success', errob);" +
     "    });" +
     "  });" +
     "});"
 };
 
 // A helper for the error tests.
-function testError(test, testType, errchecker) {
+function testError(test, errchecker) {
   test.waitUntilDone();
   installTestApp(test, "apps/basic/basic.webapp", function() {
     let services = getOWA()._services;
     services.registerMediator("test.basic", TestMediatorError);
     let panel = services.get(
       getContentWindow(),
-      "test.basic", {type: testType}, // serviceName, args
+      {action:"test.basic", data:{}}, // simulate an activity
       function(result) { // success cb
         services._popups.pop();
         errchecker(result);
@@ -153,26 +157,11 @@ function testError(test, testType, errchecker) {
   });
 }
 
-exports.test_invoke_error_explicit_ob = function(test) {
-  testError(test, "explicit_errob", function(errob) {
+exports.test_invoke_error = function(test) {
+  testError(test, function(errob) {
     test.assertEqual(errob.code, "testable_error");
     test.assertEqual(errob.message, "a testable error");
     test.done();
   });
 };
 
-exports.test_invoke_error_explicit_params = function(test) {
-  testError(test, "explicit_params", function(errob) {
-    test.assertEqual(errob.code, "testable_error");
-    test.assertEqual(errob.message, "a testable error");
-    test.done();
-  });
-};
-
-exports.test_invoke_error_implicit_string_exception = function(test) {
-  testError(test, "implicit_string_exception", function(errob) {
-    test.assertEqual(errob.code, "runtime_error");
-    test.assertEqual(errob.message, "a testable error");
-    test.done();
-  });
-};

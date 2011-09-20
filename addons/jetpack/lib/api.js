@@ -41,11 +41,13 @@ Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
 var { TypedStorage } = require("typed_storage");
 
-var console = {
-  log: function(s) {
-    dump(s + "\n");
-  }
-};
+if (!console || !console.log) {
+  var console = {
+    log: function(s) {
+      dump(s + "\n");
+    }
+  };
+}
 
 var { Manifest } = require("./manifest");
 var { URLParse } = require("./urlmatch");
@@ -328,11 +330,18 @@ FFRepoImpl.prototype = {
                 try {
                   var services = require("./services");
                   var serviceInterface = new services.serviceInvocationHandler(browserWin);
-                  serviceInterface.invokeService(brs.contentWindow.wrappedJSObject, 'link.transition', 'transition', {
-                    'url': url
-                  }, function(result) {});
+                  let activity = {
+                    action: 'link.transition',
+                    data: {url: url}
+                  };
+                  serviceInterface.invokeService(brs.contentWindow.wrappedJSObject, activity, 'transition',
+                    function(result) {},
+                    function(errob) {
+                      console.log("Failed to invoke link.transition", errob);
+                    }
+                  );
                 } catch (e) {
-                  console.log(e);
+                  console.log("Failed to invoke link.transition", e);
                 }
               } else {
                 brs.loadURI(url, null, null); // Referrer is broken
@@ -370,15 +379,24 @@ FFRepoImpl.prototype = {
                 //TODO: this feels hacky. see line 425 for discussion
                 if (brs.contentWindow.wrappedJSObject._MOZ_SERVICES != undefined) {
                   //console.log("services were ready");
-                  serviceInterface.invokeService(brs.contentWindow.wrappedJSObject, 'link.transition', 'transition', {
-                    'url': url
-                  }, function(result) {});
+                  let activity = {
+                    action: 'link.transition',
+                    data: {url: url}
+                  };
+                  serviceInterface.invokeService(brs.contentWindow.wrappedJSObject, activity, 'transition',
+                    function(result) {},
+                    function(errob) {
+                      console.log("failed to invoke link.transition service", errob);
+                    }
+                  );
                 } else {
                   //console.log("services weren't ready");
+                  // XXX - but what if it never becomes ready - we probably need
+                  // a retry counter with some limit...
                   recentWindow.setTimeout(launchService, 500, false);
                 }
               } catch (e) {
-                console.log(e);
+                console.log("error invoking link.transition service", e);
               }
               recentWindow.document.removeEventListener("DOMContentLoaded", launchService, false);
             };
@@ -463,29 +481,6 @@ FFRepoImpl.prototype = {
     this.currentPageAppManifest = null;
   }
 };
-
-
-function MessagePort(window, targetDomain) {
-  this.window = window;
-  this.targetDomain = targetDomain;
-}
-
-MessagePort.prototype = {
-  postMessage: function(msg) {
-    if (this.window) {
-      this.window.postMessage(JSON.stringify(msg), "*");
-      //TODO: get domain targeting right, do not use until this is done!    (+/- this.targetDomain?)
-    }
-  },
-
-  close: function() {
-    this.window = null;
-  }
-}
-
-MessagePort.__defineSetter__("onmessage", function(val) {
-  this.window.addEventListener('message', val, false);
-});
 
 // Declare the singleton
 if (!FFRepoImplService) {

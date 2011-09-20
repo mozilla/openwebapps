@@ -42,6 +42,7 @@
 const {Cu, Ci, Cc} = require("chrome");
 var {FFRepoImplService} = require("api");
 let {URLParse} = require("openwebapps/urlmatch");
+let {OAuthConsumer} = require("oauthorizer/oauthconsumer");
 
 // a mediator is what provides the UI for a service.  It is normal "untrusted"
 // content (although from the user's POV it is somewhat trusted)
@@ -64,15 +65,16 @@ var nextinvocationid = 0;
  * This class controls the mediator panel UI.  There is one per tab
  * per mediator, created only when needed.
  */
-function MediatorPanel(window, contentWindowRef, methodName, args, successCB, errorCB) {
+function MediatorPanel(window, contentWindowRef, activity, successCB, errorCB) {
   this.window = window; // the window the panel is attached to
   this.contentWindow = contentWindowRef; // ???
-  this.methodName = methodName;
+  this.methodName = activity.action;
+  this.activity = activity;
   this.successCB = successCB;
   this.errorCB = errorCB;
 
   // Update the content for the new invocation
-  this.args = this.updateargs(args);
+  this.args = this.updateargs(activity.data);
   this.mediator = mediators[this.methodName];
 
   this.panel = null;
@@ -85,6 +87,8 @@ function MediatorPanel(window, contentWindowRef, methodName, args, successCB, er
 }
 MediatorPanel.prototype = {
   /* OWA Mediator Agents may subclass the following: */
+  get width() 484,
+  get height() 484,
 
   /**
    * what the panel gets attached to
@@ -106,7 +110,7 @@ MediatorPanel.prototype = {
   //_panelHidden: function() {},
 
   /**
-   * onResult
+   * onOWASuccess
    *
    * the result data is sent back to the content that invoked the service,
    * this may result in data going back to some 3rd party content.  Eg, a
@@ -115,26 +119,25 @@ MediatorPanel.prototype = {
    * appears.  When the user complets the share, the result of that share
    * is returned via on_result.
    */
-  onResult: function(msg) {
+  onOWASuccess: function(msg) {
     this.panel.hide();
     if (this.successCB)
       this.successCB(msg);
   },
 
-  onClose: function(msg) {
+  onOWAClose: function(msg) {
     this.panel.hide();
   },
 
-  onError: function(msg) {
+  onOWAFailure: function(msg) {
     console.error("mediator reported invocation error:", msg)
     this.showErrorNotification(msg);
   },
 
-  onReady: function(msg) {
+  onOWAReady: function(msg) {
     FFRepoImplService.findServices(this.methodName, function(serviceList) {
-      this.panel.port.emit("setup", {
-              method: this.methodName,
-              args: this.args,
+      this.panel.port.emit("owa.mediation.setup", {
+              activity: this.activity,
               serviceList: serviceList,
               caller: this.contentWindow.location.href,
               invocationid: this.invocationid
@@ -142,16 +145,45 @@ MediatorPanel.prototype = {
     }.bind(this));
   },
 
-  onSizeToContent: function (args) {
+  onOWASizeToContent: function (args) {
     this.panel.resize(args.width, args.height);
   },
 
+  onOWALogin: function(params) {
+    if (params.type == 'oauth') {
+      try {
+        let self = this;
+        this.oauthAuthorize(params, function(result) {
+          self.panel.port.emit("owa.mediation.onLogin", result);
+        });
+      } catch(e) {
+        dump("onLogin fail "+e+"\n");
+      }
+    } else
+    if (params.type == 'dialog') {
+      // I don't see how to set width/height with addon-sdk windows, so
+      // we'll just do it the old fashioned way.  We use a full browser
+      // window so that we get the urlbar, security status, etc.
+      var url = params.url,
+        w = params.width || 600,
+        h = params.height || 600,
+        win = window.open(url,
+            "owaLoginWindow",
+            "dialog=no, modal=yes, width="+w+", height="+h+", scrollbars=yes");
+      win.focus();
+    } else {
+      dump("XXX UNSUPPORTED LOGIN TYPE\n");
+      this.panel.port.emit("owa.mediation.onLogin", {});
+    }
+  },
+
   attachHandlers: function() {
-    this.panel.port.on("result", this.onResult.bind(this));
-    this.panel.port.on("error", this.onError.bind(this));
-    this.panel.port.on("close", this.onClose.bind(this));
-    this.panel.port.on("ready", this.onReady.bind(this));
-    this.panel.port.on("sizeToContent", this.onSizeToContent.bind(this));
+    this.panel.port.on("owa.success", this.onOWASuccess.bind(this));
+    this.panel.port.on("owa.failure", this.onOWAFailure.bind(this));
+    this.panel.port.on("owa.close", this.onOWAClose.bind(this));
+    this.panel.port.on("owa.mediation.ready", this.onOWAReady.bind(this));
+    this.panel.port.on("owa.mediation.sizeToContent", this.onOWASizeToContent.bind(this));
+    this.panel.port.on("owa.mediation.doLogin", this.onOWALogin.bind(this));
   },
   /* end message api */
 
@@ -176,7 +208,7 @@ MediatorPanel.prototype = {
       contentScriptFile: contentScriptFile,
       contentScript: contentScript,
       contentScriptWhen: "start",
-      width: 484, height: 484
+      width: this.width, height: this.height
     });
 
     if (this._panelShown) {
@@ -195,7 +227,7 @@ MediatorPanel.prototype = {
    */
   show: function() {
     if (!this.isConfigured) {
-      this.panel.port.emit("reconfigure");
+      this.panel.port.emit("owa.mediation.reconfigure");
       this.isConfigured = true;
     }
     this.panel.show(this.anchor);
@@ -248,6 +280,37 @@ MediatorPanel.prototype = {
     if (notification) {
       nb.removeNotification(notification);
     }
+  },
+
+  _makeOauthProvider: function(config) {
+    try {
+      // this is very much a copy of OAuthConsumer.authorize, but we have to
+      // create a provider service object ourselves.  this should move into
+      // oauthorizer.
+      var svc = OAuthConsumer.makeProvider("f1-" + config.name, config.displayName, config.key, config.secret, config.completionURI, config.calls, true);
+      svc.version = config.version;
+      svc.tokenRx = new RegExp(config.tokenRx, "gi");
+
+      if (config.params) svc.requestParams = config.params;
+      return svc;
+    } catch (e) {
+      dump("_makeOauthProvider: "+e + "\n");
+    }
+    return null;
+  },
+
+  oauthAuthorize: function(config, callback) {
+    try {
+      var svc = this._makeOauthProvider(config);
+      var self = this;
+      var handler = OAuthConsumer.getAuthorizer(svc, callback);
+
+      this.window.setTimeout(function() {
+        handler.startAuthentication();
+      }, 1);
+    } catch (e) {
+      dump("oauthAuthorize: "+e + "\n");
+    }
   }
 }
 
@@ -281,7 +344,20 @@ serviceInvocationHandler.prototype = {
    *
    */
   registerMediator: function(methodName, mediator) {
+    // need to nuke any cached mediators here?
     mediators[methodName] = mediator;
+
+    let newPopups = [];
+    for each (let popupCheck in this._popups) {
+      if (popupCheck.methodName === methodName) {
+        // this popup record must die.
+        let nukePanel = popupCheck.panel;
+        nukePanel.destroy();
+      } else {
+        newPopups.push(popupCheck);
+      }
+    }
+    this._popups = newPopups;
   },
 
   /**
@@ -307,7 +383,7 @@ serviceInvocationHandler.prototype = {
     // ones can wait until they are re-shown.
     for each (let popupCheck in this._popups) {
       if (popupCheck.panel.isShowing) {
-      popupCheck.panel.port.emit("reconfigure");
+      popupCheck.panel.port.emit("owa.mediation.reconfigure");
       } else {
       popupCheck.isConfigured = false;
       }
@@ -335,11 +411,8 @@ serviceInvocationHandler.prototype = {
           // if result is status ok, we're good
           if (result.status == 'ok') {
             console.log("app is logged in");
-            return;
-          }
-
-          // if result is status dialog, we need to open a popup.
-          if (result.status == 'notloggedin') {
+          } else if (result.status == 'notloggedin') {
+            // if result is status dialog, we need to open a popup.
             if (app.services.login.dialog) {
               // open up a dialog
               var windows = require("windows").browserWindows;
@@ -348,6 +421,10 @@ serviceInvocationHandler.prototype = {
                 onOpen: function(window) {
               }});
             }
+          } else {
+            // XXX - should we consider this a "failure" and not pass the
+            // app_ready event to the mediator?
+            console.warn("ignoring unexpected doLogin result status", result.status);
           }
         });
       }
@@ -356,7 +433,7 @@ serviceInvocationHandler.prototype = {
       if (contentWindowRef.parent) {
         for each (let popupCheck in self._popups) {
         if (popupCheck.invocationid === contentWindowRef.parent.navigator.apps.mediation._invocationid) {
-          popupCheck.panel.port.emit("app_ready", contentWindowRef.location.href);
+          popupCheck.panel.port.emit("owa.app.ready", app.origin);
           break;
         }
         }
@@ -365,7 +442,7 @@ serviceInvocationHandler.prototype = {
   },
 
   // when an app registers a service handler
-  registerServiceHandler: function(contentWindowRef, activity, message, func) {
+  registerServiceHandler: function(contentWindowRef, action, message, func) {
     // check that this is indeed an app
     FFRepoImplService.getAppByUrl(contentWindowRef.location, function(app) {
 
@@ -377,80 +454,78 @@ serviceInvocationHandler.prototype = {
         var theWindow = contentWindowRef;
         if (!theWindow._MOZ_NOAPP_SERVICES)
           theWindow._MOZ_NOAPP_SERVICES = {};
-        if (!theWindow._MOZ_NOAPP_SERVICES[activity])
-          theWindow._MOZ_NOAPP_SERVICES[activity] = {};
-        theWindow._MOZ_NOAPP_SERVICES[activity][message] = func;
+        if (!theWindow._MOZ_NOAPP_SERVICES[action])
+          theWindow._MOZ_NOAPP_SERVICES[action] = {};
+        theWindow._MOZ_NOAPP_SERVICES[action][message] = func;
         return;
       }
 
       // make sure the app supports this activity
-      if (!(app.services && app.services[activity])) {
-        console.log("app attempted to register handler for activity " + activity + " but not declared in manifest");
+      if (!(app.services && app.services[action])) {
+        console.log("app attempted to register handler for activity action " + action + " but not declared in manifest");
         return;
       }
-      //console.log("Registering handler for " + app.origin + " " + activity + " / " + message);
 
       if (!theWindow._MOZ_SERVICES)
         theWindow._MOZ_SERVICES = {};
 
-      if (!theWindow._MOZ_SERVICES[activity])
-        theWindow._MOZ_SERVICES[activity] = {};
+      if (!theWindow._MOZ_SERVICES[action])
+        theWindow._MOZ_SERVICES[action] = {};
 
-      theWindow._MOZ_SERVICES[activity][message] = func;
+      theWindow._MOZ_SERVICES[action][message] = func;
     });
   },
 
   // this call means to invoke a specific call within a given app
-  invokeService: function(contentWindow, activity, message, args, cb, cberr, privileged) {
+  invokeService: function(contentWindow, activity, message, cb, cberr, privileged) {
     FFRepoImplService.getAppByUrl(contentWindow.location, function(app) {
       var theWindow = contentWindow;
 
       if (!app) {
         if (privileged) {
         try {
-          theWindow._MOZ_NOAPP_SERVICES[activity][message](args, cb);
+          theWindow._MOZ_NOAPP_SERVICES[activity.action][message](activity);
         } catch (e) {
-          console.log("error invoking " + activity + "/" + message + " in privileged invocation\n" + e.toString());
+          console.log("error invoking " + activity.action + "/" + message + " in privileged invocation\n" + e.toString());
         }
         }
         return;
       }
 
       // make sure the app supports this activity
-      if (!(app.services && app.services[activity])) {
-        console.log("attempted to send message to app for activity " + activity + " but app doesn't support it");
+      if (!(app.services && app.services[activity.action])) {
+        console.log("attempted to send message to app for activity " + activity.action + " but app doesn't support it");
         return;
       }
 
       let cbshim = function(result) {
         cb(JSON.stringify(result));
       };
-      let cberrshim = function(code, message) {
-        // Following the lead from jschannel, the errback might be invoked
-        // as either: errback(code, message) or errback({code: "code", message: message})
-        let errob;
-        if (typeof message === 'undefined') {
-        if (typeof code === 'string') {
-          errob = {code: code};
-        } else {
-          errob = code;
-        }
-        } else {
-        // 2 params - must be explicit code/message params.
-        errob = {code: code, message: message};
-        }
+      let cberrshim = function(errob) {
+        // errback({code: "code", message: errmsg})
         if (cberr) {
-        cberr(JSON.stringify(errob));
+          cberr(JSON.stringify(errob));
         } else {
-        console.log("invokeService error but no error callback:", JSON.stringify(errob));
+          console.log("invokeService error but no error callback:", JSON.stringify(errob));
         }
       }
+      // We can't pass this activity directly as it originated from a
+      // different principal - so knock up a copy to pass to the app.
+      let appActivity = {action: activity.action,
+                         data: activity.data,
+                         message: message,
+                         postResult: cbshim,
+                         postException: cberrshim,
+                         // XXX - what are these?
+                         FAILURE: 0,
+                         CREDENTIAL_FAILURE: 1
+      };
       try {
-        theWindow._MOZ_SERVICES[activity][message](args, cbshim, cberrshim);
+        theWindow._MOZ_SERVICES[activity.action][message](appActivity);
       } catch (e) {
-        console.log("error invoking " + activity + "/" + message + " on app " + app.origin + ": " + e.toString());
+        console.log("error invoking " + activity.action + "/" + message + " on app " + app.origin + ": " + e.toString());
         // invoke the callback with an error object the content can see.
-        cberrshim("runtime_error", e.toString());
+        cberrshim({code: "runtime_error", message: e.toString()});
       }
     });
   },
@@ -481,15 +556,15 @@ serviceInvocationHandler.prototype = {
     this._popups = newPopups;
   },
 
-  get: function(contentWindowRef, methodName, args, successCB, errorCB) {
+  get: function(contentWindowRef, activity, successCB, errorCB) {
     for each (let popupCheck in this._popups) {
-      if (contentWindowRef == popupCheck.contentWindow && methodName == popupCheck.methodName) {
+      if (contentWindowRef == popupCheck.contentWindow && activity.action == popupCheck.methodName) {
         return popupCheck;
       }
     }
     // if we didn't find it, create it
-    let agent = agentCreators[methodName] ? agentCreators[methodName] : MediatorPanel;
-    let panel = new agent(this._window, contentWindowRef, methodName, args, successCB, errorCB);
+    let agent = agentCreators[activity.action] ? agentCreators[activity.action] : MediatorPanel;
+    let panel = new agent(this._window, contentWindowRef, activity, successCB, errorCB);
     // attach our response listeners
     panel.attachHandlers();
     this._popups.push(panel);
@@ -504,10 +579,10 @@ serviceInvocationHandler.prototype = {
    *
    * show the panel for a mediator, creating one if necessary.
    */
-  invoke: function(contentWindowRef, methodName, args, successCB, errorCB) {
+  invoke: function(contentWindowRef, activity, successCB, errorCB) {
     try {
     // Do we already have a panel for this service for this content window?
-    let panel = this.get(contentWindowRef, methodName, args, successCB, errorCB);
+    let panel = this.get(contentWindowRef, activity, successCB, errorCB);
     panel.hideErrorNotification();
     panel.show();
     } catch (e) {

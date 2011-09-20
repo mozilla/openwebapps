@@ -13,17 +13,40 @@ let allServices = {} // keyed by handler URL.
 // launch_url: The end-point of the service itself.
 
 
-function Service(svcinfo, iframe) {
+function Service(svcinfo, activity, iframe) {
   for (let name in svcinfo) {
     this[name] = svcinfo[name];
   }
   this.iframe = iframe;
   this._onHandlers = {}
+  this.activity = activity;
 };
 unsafeWindow.Service = Service;
 
 Service.prototype = {
-  call: function(activity, args, cb, cberr) {
+  _getServiceFrame: function() {
+    // Need to use unsafeWindow here for some reason.
+    // TODO: turn this into a getter when all mediators are converted.  right
+    // now some mediators will expect the iframe to be given to them, with
+    // templatized mediators the iframe is created in the template.
+    let cw = this.iframe.contentWindow;
+    let frames = unsafeWindow.document.getElementsByTagName('iframe');
+    for (var i=0 ; i < frames.length; i++) {
+      if (frames[i].src == this.url) {
+        return frames[i].contentWindow;
+        break;
+      }
+    }
+    return this.iframe.contentWindow
+  },
+  call: function(action, args, cb, cberr) {
+    let activity = {
+      action: this.activity.action,
+      type: this.activity.type,
+      message: action,
+      data: args
+    }
+
     function cbshim(result) {
       cb(JSON.parse(result));
     }
@@ -33,21 +56,7 @@ Service.prototype = {
         cberr(JSON.parse(result));
       }
     }
-    // Need to use unsafeWindow here for some reason.
-    // TODO: turn this into a getter when all mediators are converted.  right
-    // now some mediators will expect the iframe to be given to them, with
-    // templatized mediators the iframe is created in the template.
-    let cw = this.iframe.contentWindow;
-    if (!cw) {
-      let frames = unsafeWindow.document.getElementsByTagName('iframe');
-      for (var i=0 ; i < frames.length; i++) {
-        if (frames[i].src == this.url) {
-          cw = frames[i];
-          break;
-        }
-      }
-    }
-    unsafeWindow.navigator.apps.mediation._invokeService(cw, this.service, activity, args, cbshim, cberrshim);
+    unsafeWindow.navigator.apps.mediation._invokeService(this._getServiceFrame(), activity, action, cbshim, cberrshim);
   },
 
   // Get the closest icon that is equal to or larger than the requested size,
@@ -91,15 +100,32 @@ Service.prototype = {
   }
 };
 
+window.navigator.apps.mediation.startLogin = function(origin) {
+  self.port.once("owa.mediation.onLogin", function(params) {
+    allServices[origin].call("setAuthorization", params, function() {
+      // dispatch servicechanged
+      allServices[origin]._invokeOn("serviceChanged");
+    });
+  });
+  allServices[origin].call("getParameters", {}, function(params) {
+    // due to a limitation in our implementation, this getParameters call is
+    // actually made on the "main" service rather than on the login specific
+    // service - so for now we assume the auth specific data is wrapped in
+    // an 'auth' element in the result.
+    self.port.emit("owa.mediation.doLogin", params.auth)
+  });
+}
+unsafeWindow.navigator.apps.mediation.startLogin = window.navigator.apps.mediation.startLogin;
+
 // The API called by the mediator when it is ready to go.
 // Note the invocation handler will be called once initially, and possibly
 // again as the configuration of apps changes (ie, as apps are added or
 // removed).
 window.navigator.apps.mediation.ready = function(invocationHandler) {
-  self.port.on("app_ready", function(href) {
-    console.log("app_ready for", href);
-    if (allServices[href]) {
-      allServices[href]._invokeOn("ready");
+  self.port.on("owa.app.ready", function(origin) {
+    console.log("owa.app.ready for", origin);
+    if (allServices[origin]) {
+      allServices[origin]._invokeOn("ready");
     }
   });
 
@@ -120,19 +146,19 @@ window.navigator.apps.mediation.ready = function(invocationHandler) {
       let iframe = document.createElement("iframe");
       iframe.src = svc.url;
 
-      let svcob = new Service(svc, iframe);
+      let svcob = new Service(svc, msg.activity, iframe);
       services.push(svcob);
-      allServices[svc.url] = svcob;
+      allServices[svc.app.origin] = svcob;
     }
-    invocationHandler(msg.method, msg.args, services);
-    self.port.once("reconfigure", function() {
+    invocationHandler(msg.activity, services);
+    self.port.once("owa.mediation.reconfigure", function() {
       // nuke all iframes.
-      for (let url in allServices) {
-        let iframe = allServices[url].iframe;
+      for (let origin in allServices) {
+        let iframe = allServices[origin].iframe;
         if (iframe.parentNode) {
           iframe.parentNode.removeChild(iframe);
         }
-        allServices[url].iframe = null;
+        allServices[origin].iframe = null;
       }
       allServices = {};
       doSetup();
@@ -140,8 +166,8 @@ window.navigator.apps.mediation.ready = function(invocationHandler) {
   };
 
   let doSetup = function() {
-    self.port.once("setup", setupHandler);
-    self.port.emit("ready");
+    self.port.once("owa.mediation.setup", setupHandler);
+    self.port.emit("owa.mediation.ready");
   };
 
   doSetup();
@@ -154,8 +180,10 @@ unsafeWindow.navigator.apps.mediation.ready = window.navigator.apps.mediation.re
 window.navigator.apps.mediation.emit = function(event, args) {
   // A hack for sizeToContent - as the panel doesn't expose the window
   // object for its iframe, we need to calculate it here.
-  if (event === "sizeToContent" && !args) {
-    let body = document.getElementsByTagName('body')[0];
+  if (event === "owa.mediation.sizeToContent" && !args) {
+    // hrmph - we used to use document.getElementsByTagName('body')[0], but
+    // sometimes that returns undefined while document.body always works.
+    let body = document.body;
     if (body) {
       args = {
         width: body.scrollWidth,
@@ -168,15 +196,14 @@ window.navigator.apps.mediation.emit = function(event, args) {
 
 unsafeWindow.navigator.apps.mediation.emit = window.navigator.apps.mediation.emit;
 
-window.navigator.apps.mediation.invokeService = function(iframe, method, activity, args, callback) {
+window.navigator.apps.mediation.invokeService = function(iframe, activity, message, callback) {//XX error cb?
   function callbackShim(result) {
-    dump("mediator shim got" + (typeof result) + "\n");
     callback(JSON.parse(result));
   }
   // ideally we could use the port mechanism, but this is stymied by the
   // inability to pass iframe or iframe.contentWindow in args to emit().
   // Need to use unsafeWindow here for some reason.
-  unsafeWindow.navigator.apps.mediation._invokeService(iframe.contentWindow, method, activity, args, callbackShim);
+  unsafeWindow.navigator.apps.mediation._invokeService(iframe.contentWindow, activity, message, callbackShim);
 };
 
 unsafeWindow.navigator.apps.mediation.invokeService = window.navigator.apps.mediation.invokeService;

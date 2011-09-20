@@ -153,6 +153,9 @@ var Manifest = (function() {
       experimental: {
         required: false
       },
+      services: {
+        required: false
+      },
       description: {
         may_overlay: true,
         check: nonEmptyStringWithMaxLengthCheck(1024)
