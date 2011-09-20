@@ -81,8 +81,10 @@ function openwebapps(win, getUrlCB) {
   }
 
   /* initialize demo support code */
-  this._ui = new ui.openwebappsUI(win, getUrlCB, this);
 
+/* disable ui for fx-share q3 release
+
+  this._ui = new ui.openwebappsUI(win, getUrlCB, this);
   // TODO: Figure out a way to do this without waiting for 500ms.
   // Also, intercept document loads that don't open in a new tab
   // (this should be done in the content-document-global-created observer?)
@@ -123,6 +125,10 @@ function openwebapps(win, getUrlCB) {
   }
 
   container.addEventListener("TabSelect", appifyTab, false);
+
+end disable of ui
+*/
+
 }
 
 openwebapps.prototype = {
@@ -131,6 +137,7 @@ openwebapps.prototype = {
     let win = this._window;
     let self = this;
 
+/* disable unwanted APIs for fx-share q3 release
     win.appinjector.register({
       apibase: "navigator.apps",
       name: "install",
@@ -180,6 +187,8 @@ openwebapps.prototype = {
         }
       }
     });
+
+end disabling APIs for fx-share */
 
     // this one kinda sucks - but it is the only way markh can find to
     // pass a content object (eg, the iframe or the frame's content window).
@@ -238,6 +247,7 @@ openwebapps.prototype = {
       }
     });
 
+/* disable unwanted APIs for fx-share q3 release
     // management APIs:
     win.appinjector.register({
       apibase: "navigator.apps.mgmt",
@@ -305,6 +315,7 @@ openwebapps.prototype = {
         }
       }
     });
+end disabling APIs for fx-share */
   },
 
   registerBuiltInApp: function(domain, app, injector) {
@@ -445,6 +456,7 @@ function startup(getUrlCB) { /* Initialize simple storage */
   Services.ww.registerNotification(winWatcher);
   unloaders.push(function() Services.ww.unregisterNotification(winWatcher));
 
+/* disable ui for fx-share q3 release
   Cm.QueryInterface(Ci.nsIComponentRegistrar).registerFactory(
   AboutAppsUUID, "About Apps", AboutAppsContract, AboutAppsFactory);
   Cm.QueryInterface(Ci.nsIComponentRegistrar).registerFactory(
@@ -458,6 +470,7 @@ function startup(getUrlCB) { /* Initialize simple storage */
   });
 
   setupAboutPageMods();
+*/
 
   // Broadcast that we're done, in case anybody is listening
   let tmp = require("api");
