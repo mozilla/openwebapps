@@ -55,12 +55,15 @@ SSL='$SSL'
 OWA_REPO='$OWA_REPO'
 OWA_BRANCH='$OWA_BRANCH'
 VERBOSE=1
+if [ \$(whoami) != root ] ; then
+  exit sudo -u root $0
+fi
 
 $(cat $0)
 "
     echo "sshing to $SERVER_NAME"
     echo ----------------------------------------
-    ssh root@$SERVER_NAME "$SCRIPT"
+    ssh $SERVER_NAME "$SCRIPT"
     exit
 fi
 
