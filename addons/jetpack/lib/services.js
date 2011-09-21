@@ -335,6 +335,13 @@ function serviceInvocationHandler(win)
   let observerService = Cc["@mozilla.org/observer-service;1"].getService(Ci.nsIObserverService);
   observerService.addObserver(this, "openwebapp-installed", false);
   observerService.addObserver(this, "openwebapp-uninstalled", false);
+  
+  // if we open a new tab, close any mediator panels
+  win.gBrowser.tabContainer.addEventListener("TabOpen", function(e) {
+    for each (let mediator in this._popups) {
+      if (mediator.panel.isShowing) mediator.panel.hide();
+    }
+  }.bind(this));
 }
 serviceInvocationHandler.prototype = {
 
