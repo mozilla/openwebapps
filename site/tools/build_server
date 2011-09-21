@@ -48,6 +48,9 @@ if [ -z "$OWA_REPO" ] ; then
     OWA_REPO="https://github.com/mozilla/openwebapps.git"
 fi
 
+echo "Checking out source from:"
+echo "  $OWA_REPO branch $OWA_BRANCH"
+
 if [ ! -z "$SSH" ] ; then
     SCRIPT="
 SERVER_NAME='$SERVER_NAME'
@@ -55,17 +58,29 @@ SSL='$SSL'
 OWA_REPO='$OWA_REPO'
 OWA_BRANCH='$OWA_BRANCH'
 VERBOSE=1
-if [ \$(whoami) != root ] ; then
-  exit sudo -u root $0
-fi
 
 $(cat $0)
 "
     echo "sshing to $SERVER_NAME"
     echo ----------------------------------------
-    ssh $SERVER_NAME "$SCRIPT"
+    ssh root@$SERVER_NAME "$SCRIPT"
     exit
 fi
+
+VERSION="$(awk '{print $2}' < /etc/issue)"
+
+case "$VERSION" in
+    10.04.1)
+        # On later versions it's "nginx-full"
+        NGINX_NAME="nginx"
+        # On later versions it's "python-tornado"
+        TORNADO_NAME=""
+        ;;
+    *)
+        echo "Unknown Ubuntu version: $VERSION"
+        exit 2
+        ;;
+esac
 
 ############################################################
 ## Start the real script:
@@ -76,9 +91,9 @@ fi
 apt-get update
 apt-get --yes install \
     git-core \
-    nginx-full \
+    $NGINX_NAME \
     daemontools-run \
-    python-tornado \
+    $TORNADO_NAME \
     unzip \
     openjdk-6-jre-headless \
     python-lxml
@@ -139,23 +154,44 @@ install -o manager -g www-data -d /var/
      git clone $OWA_REPO
  else
      cd openwebapps
-     git pull
+     if [ -z "$OWA_BRANCH" ] ; then
+         git pull
+     else
+         #git pull origin/$OWA_BRANCH $OWA_BRANCH
+         echo hey
+     fi
  fi
 )
 if [ ! -z "$OWA_BRANCH" ] ; then
     (cd /var/www/src/openwebapps
-     git checkout $OWA_BRANCH
+     if git branch | grep -q $OWA_BRANCH ; then
+         # The branch is already checked out
+         git checkout $OWA_BRANCH
+     else
+         git checkout -b $OWA_BRANCH origin/$OWA_BRANCH
+     fi
     )
 fi
 rm -rf /var/www/htdocs/*
 /var/www/src/openwebapps/site/tools/build_static /var/www/htdocs
 chown -R manager:www-data /var/www/htdocs
 
-
+if [ -z "$TORNADO_NAME" ] ; then
+    (
+        cd /var/www/src/openwebapps/site/server
+        mkdir deps
+        cd deps
+        wget https://github.com/downloads/facebook/tornado/tornado-2.1.tar.gz
+        tar zfx tornado-2.1.tar.gz && rm tornado-2.1.tar.gz
+        cd tornado-2.1
+        python setup.py install --install-lib=/var/www/site/server/deps
+    )
+fi
 
 echo "#!/bin/sh
 
 cd /var/www/src/openwebapps/site/server
+PYTHONPATH=$PYTHONPATH:/var/www/src/openwebapps/site/server/deps
 exec su www-data -c 'python server.py /var/www/logs/getmanifest.log >> /var/www/log/getmanifest.log 2>&1'
 " > /var/www/getmanifest-service/run
 chmod +x /var/www/getmanifest-service/run
