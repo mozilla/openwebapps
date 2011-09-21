@@ -494,7 +494,7 @@ function _onMouseUp(e) {
       if (self && self.port) {
         self.port.emit("launch", Base32.decode(origin32));
       } else {
-        navigator.apps.mgmt.launch(Base32.decode(origin32));
+        navigator.mozApps.mgmt.launch(Base32.decode(origin32));
       }
     } else if (flick) {
       //we go to the next page in the direction specified by the flick
@@ -572,7 +572,7 @@ function saveDashboardState(state) {
   if (self && self.port) {
     self.port.emit("saveState", state);
   } else {
-    navigator.apps.mgmt.saveState(gDashboardState, function() {
+    navigator.mozApps.mgmt.saveState(gDashboardState, function() {
       console.log("OWA: dashboard state saved");
     });
   }
@@ -601,7 +601,7 @@ function keyCount(obj) {
 
 function updateDashboard() {
   if (!self || !self.port) {
-    navigator.apps.mgmt.list(function(allApps) {
+    navigator.mozApps.mgmt.list(function(allApps) {
       redrawDashboard(allApps);
     });
   }
@@ -659,7 +659,7 @@ function redrawDashboard(listOfInstalledApps) {
   if (self && self.port) {
     self.port.emit("loadState");
   } else {
-    navigator.apps.mgmt.loadState(updateState);
+    navigator.mozApps.mgmt.loadState(updateState);
   }
 }
 

@@ -238,7 +238,7 @@ Repo = (function() {
   // trigger application installation.
   //     origin -- the URL of the site requesting installation
   //     args -- the argument object provided by the calling site upon invocation of
-  //             navigator.apps.install()
+  //             navigator.mozApps.install()
   //     promptDisplayFunc -- is a callback function that will be invoked to display a
   //             user prompt.    the function should accept 4 arguments which are:
   //             installOrigin --

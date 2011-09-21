@@ -1,8 +1,8 @@
 /* -*- Mode: JavaScript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 /* vim: set ts=2 et sw=2 tw=80: */
 // The mediation API.  This script is injected by jetpack into all mediators.
-if (!window.navigator.apps) window.navigator.apps = {}
-if (!window.navigator.apps.mediation) window.navigator.apps.mediation = {}
+if (!window.navigator.mozApps) window.navigator.mozApps = {}
+if (!window.navigator.mozApps.mediation) window.navigator.mozApps.mediation = {}
 
 let allServices = {} // keyed by handler URL.
 // This object should look very much like the Service object in repo.js
@@ -56,7 +56,7 @@ Service.prototype = {
         cberr(JSON.parse(result));
       }
     }
-    unsafeWindow.navigator.apps.mediation._invokeService(this._getServiceFrame(), activity, action, cbshim, cberrshim);
+    unsafeWindow.navigator.mozApps.mediation._invokeService(this._getServiceFrame(), activity, action, cbshim, cberrshim);
   },
 
   // Get the closest icon that is equal to or larger than the requested size,
@@ -100,7 +100,7 @@ Service.prototype = {
   }
 };
 
-window.navigator.apps.mediation.startLogin = function(origin) {
+window.navigator.mozApps.mediation.startLogin = function(origin) {
   self.port.once("owa.mediation.onLogin", function(params) {
     allServices[origin].call("setAuthorization", params, function() {
       // dispatch servicechanged
@@ -115,13 +115,13 @@ window.navigator.apps.mediation.startLogin = function(origin) {
     self.port.emit("owa.mediation.doLogin", params.auth)
   });
 }
-unsafeWindow.navigator.apps.mediation.startLogin = window.navigator.apps.mediation.startLogin;
+unsafeWindow.navigator.mozApps.mediation.startLogin = window.navigator.mozApps.mediation.startLogin;
 
 // The API called by the mediator when it is ready to go.
 // Note the invocation handler will be called once initially, and possibly
 // again as the configuration of apps changes (ie, as apps are added or
 // removed).
-window.navigator.apps.mediation.ready = function(invocationHandler) {
+window.navigator.mozApps.mediation.ready = function(invocationHandler) {
   self.port.on("owa.app.ready", function(origin) {
     console.log("owa.app.ready for", origin);
     if (allServices[origin]) {
@@ -133,7 +133,7 @@ window.navigator.apps.mediation.ready = function(invocationHandler) {
     console.log("setup event has", msg.serviceList.length, "services");
     // We record the invocation ID in the mediator window so we can later
     // link the "app ready" calls back to the specific mediator instance.
-    unsafeWindow.navigator.apps.mediation._invocationid = msg.invocationid;
+    unsafeWindow.navigator.mozApps.mediation._invocationid = msg.invocationid;
     let services = [];
     let document = unsafeWindow.document;
 
@@ -175,9 +175,9 @@ window.navigator.apps.mediation.ready = function(invocationHandler) {
   // event per app.
 };
 
-unsafeWindow.navigator.apps.mediation.ready = window.navigator.apps.mediation.ready;
+unsafeWindow.navigator.mozApps.mediation.ready = window.navigator.mozApps.mediation.ready;
 
-window.navigator.apps.mediation.emit = function(event, args) {
+window.navigator.mozApps.mediation.emit = function(event, args) {
   // A hack for sizeToContent - as the panel doesn't expose the window
   // object for its iframe, we need to calculate it here.
   if (event === "owa.mediation.sizeToContent" && !args) {
@@ -194,16 +194,16 @@ window.navigator.apps.mediation.emit = function(event, args) {
   self.port.emit(event, args)
 }
 
-unsafeWindow.navigator.apps.mediation.emit = window.navigator.apps.mediation.emit;
+unsafeWindow.navigator.mozApps.mediation.emit = window.navigator.mozApps.mediation.emit;
 
-window.navigator.apps.mediation.invokeService = function(iframe, activity, message, callback) {//XX error cb?
+window.navigator.mozApps.mediation.invokeService = function(iframe, activity, message, callback) {//XX error cb?
   function callbackShim(result) {
     callback(JSON.parse(result));
   }
   // ideally we could use the port mechanism, but this is stymied by the
   // inability to pass iframe or iframe.contentWindow in args to emit().
   // Need to use unsafeWindow here for some reason.
-  unsafeWindow.navigator.apps.mediation._invokeService(iframe.contentWindow, activity, message, callbackShim);
+  unsafeWindow.navigator.mozApps.mediation._invokeService(iframe.contentWindow, activity, message, callbackShim);
 };
 
-unsafeWindow.navigator.apps.mediation.invokeService = window.navigator.apps.mediation.invokeService;
+unsafeWindow.navigator.mozApps.mediation.invokeService = window.navigator.mozApps.mediation.invokeService;

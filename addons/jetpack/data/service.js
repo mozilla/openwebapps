@@ -55,7 +55,7 @@ var addServicesService = new Service({
 });
 
 function confirm() {
-  var emit = window.navigator.apps.mediation.emit;
+  var emit = window.navigator.mozApps.mediation.emit;
   var selected = $("#services").tabs('option', 'selected'); // => 0
   var service = gServiceList[selected].call("confirm", {}, function(status) {
     var messageData = {
@@ -72,7 +72,7 @@ $(function() {
   document.getElementById("confirmclicker").onclick = confirm;
 });
 
-window.navigator.apps.mediation.ready(
+window.navigator.mozApps.mediation.ready(
 
 function(activity, services) {
   $("#services").remove(); // this will remove old iframes from DOM
