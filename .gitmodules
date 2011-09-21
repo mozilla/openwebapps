@@ -2,3 +2,6 @@
 	path = site/tests/doctestjs
 	url = http://github.com/ianb/doctestjs.git
 
+[submodule "site/tests/jstestnet"]
+	path = site/tests/jstestnet
+	url = git://github.com/kumar303/jstestnet.git
