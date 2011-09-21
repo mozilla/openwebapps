@@ -132,7 +132,7 @@ openwebapps.prototype = {
     let self = this;
 
     win.appinjector.register({
-      apibase: "navigator.apps",
+      apibase: "navigator.mozApps",
       name: "install",
       script: null,
       getapi: function(contentWindowRef) {
@@ -142,7 +142,7 @@ openwebapps.prototype = {
       }
     });
     win.appinjector.register({
-      apibase: "navigator.apps",
+      apibase: "navigator.mozApps",
       name: "amInstalled",
       script: null,
       getapi: function(contentWindowRef) {
@@ -152,7 +152,7 @@ openwebapps.prototype = {
       }
     });
     win.appinjector.register({
-      apibase: "navigator.apps",
+      apibase: "navigator.mozApps",
       name: "getInstalledBy",
       script: null,
       getapi: function(contentWindowRef) {
@@ -162,7 +162,7 @@ openwebapps.prototype = {
       }
     });
     win.appinjector.register({
-      apibase: "navigator.apps",
+      apibase: "navigator.mozApps",
       name: "setRepoOrigin",
       script: null,
       getapi: function() {
@@ -171,7 +171,7 @@ openwebapps.prototype = {
     });
 
     win.appinjector.register({
-      apibase: "navigator.apps",
+      apibase: "navigator.mozApps",
       name: "startActivity",
       script: null,
       getapi: function(contentWindowRef) {
@@ -185,7 +185,7 @@ openwebapps.prototype = {
     // pass a content object (eg, the iframe or the frame's content window).
     // Attempting to pass it via self.emit() fails...
     win.appinjector.register({
-      apibase: "navigator.apps.mediation",
+      apibase: "navigator.mozApps.mediation",
       name: "_invokeService",
       script: null,
       getapi: function(contentWindowRef) {
@@ -201,7 +201,7 @@ openwebapps.prototype = {
     // XXX TEMPORARY HACK to allow our builtin apps to work for the all-hands demo
     var {OAuthConsumer} = require("oauthorizer/oauthconsumer");
     win.appinjector.register({
-      apibase: "navigator.apps.oauth",
+      apibase: "navigator.mozApps.oauth",
       name: "call",
       script: null,
       getapi: function(contentWindowRef) {
@@ -217,7 +217,7 @@ openwebapps.prototype = {
 
     // services APIs
     win.appinjector.register({
-      apibase: "navigator.apps.services",
+      apibase: "navigator.mozApps.services",
       name: "ready",
       script: null,
       getapi: function(contentWindowRef) {
@@ -228,7 +228,7 @@ openwebapps.prototype = {
     });
 
     win.appinjector.register({
-      apibase: "navigator.apps.services",
+      apibase: "navigator.mozApps.services",
       name: "registerHandler",
       script: null,
       getapi: function(contentWindowRef) {
@@ -240,7 +240,7 @@ openwebapps.prototype = {
 
     // management APIs:
     win.appinjector.register({
-      apibase: "navigator.apps.mgmt",
+      apibase: "navigator.mozApps.mgmt",
       name: "launch",
       script: null,
       getapi: function(contentWindowRef) {
@@ -251,7 +251,7 @@ openwebapps.prototype = {
       }
     });
     win.appinjector.register({
-      apibase: "navigator.apps.mgmt",
+      apibase: "navigator.mozApps.mgmt",
       name: "list",
       script: null,
       getapi: function(contentWindowRef) {
@@ -262,7 +262,7 @@ openwebapps.prototype = {
       }
     });
     win.appinjector.register({
-      apibase: "navigator.apps.mgmt",
+      apibase: "navigator.mozApps.mgmt",
       name: "loginStatus",
       script: null,
       getapi: function(contentWindowRef) {
@@ -273,7 +273,7 @@ openwebapps.prototype = {
       }
     });
     win.appinjector.register({
-      apibase: "navigator.apps.mgmt",
+      apibase: "navigator.mozApps.mgmt",
       name: "loadState",
       script: null,
       getapi: function(contentWindowRef) {
@@ -284,7 +284,7 @@ openwebapps.prototype = {
       }
     });
     win.appinjector.register({
-      apibase: "navigator.apps.mgmt",
+      apibase: "navigator.mozApps.mgmt",
       name: "saveState",
       script: null,
       getapi: function(contentWindowRef) {
@@ -295,7 +295,7 @@ openwebapps.prototype = {
       }
     });
     win.appinjector.register({
-      apibase: "navigator.apps.mgmt",
+      apibase: "navigator.mozApps.mgmt",
       name: "uninstall",
       script: null,
       getapi: function(contentWindowRef) {
