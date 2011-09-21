@@ -290,7 +290,9 @@ MediatorPanel.prototype = {
       var svc = OAuthConsumer.makeProvider("f1-" + config.name, config.displayName, config.key, config.secret, config.completionURI, config.calls, true);
       svc.version = config.version;
       svc.tokenRx = new RegExp(config.tokenRx, "gi");
-
+      if (config.deniedRx) {
+        svc.deniedRx = new RegExp(config.deniedRx, "gi");
+      }
       if (config.params) svc.requestParams = config.params;
       return svc;
     } catch (e) {
