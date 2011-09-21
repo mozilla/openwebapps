@@ -434,7 +434,7 @@ serviceInvocationHandler.prototype = {
       // panels, message the panel about the readiness.
       if (contentWindowRef.parent) {
         for each (let popupCheck in self._popups) {
-        if (popupCheck.invocationid === contentWindowRef.parent.navigator.apps.mediation._invocationid) {
+        if (popupCheck.invocationid === contentWindowRef.parent.navigator.mozApps.mediation._invocationid) {
           popupCheck.panel.port.emit("owa.app.ready", app.origin);
           break;
         }
