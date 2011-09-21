@@ -19,11 +19,11 @@ App Repo API Tests
 
 <p> These API tests run in a local environment provided by a test
   server.  There are multiple local bound ports which coincide with
-  different running apps.  By including /servers.js from the test
+  different running mozApps.  By including /servers.js from the test
   server, window.SERVERS is populated with a map of server names
   (directory names) to URL where that app can be accessed.  (Look at
   the first test to match the dynamic ports against the specific
-  apps.)  </p>
+  mozApps.)  </p>
 
 <p> Note: you must manually hit "install" three times during this test
   for it to be successful.  If you don't, or hit them too slowly, you
@@ -53,7 +53,7 @@ $ writeln(SERVERS);
 <section class="test">
 <h3>Presence of functions</h3>
 
-Are all of the functions present that we would expect on the navigator.apps object?
+Are all of the functions present that we would expect on the navigator.mozApps object?
 
 <pre class="doctest">
 $ // We'll show all the methods we're testing
@@ -65,45 +65,45 @@ $ // We'll show all the methods we're testing
 >   }
 > }
 >
-> iterateMethods("navigator.apps.", navigator.apps);
-> iterateMethods("navigator.apps.mgmt.", navigator.apps.mgmt);
-> iterateMethods("navigator.apps.services.", navigator.apps.services);
+> iterateMethods("navigator.mozApps.", navigator.mozApps);
+> iterateMethods("navigator.mozApps.mgmt.", navigator.mozApps.mgmt);
+> iterateMethods("navigator.mozApps.services.", navigator.mozApps.services);
 >
 > arr = arr.sort();
 > for (var i = 0; i < arr.length; i++) writeln(arr[i]);
-navigator.apps.amInstalled
-navigator.apps.getInstalledBy
-navigator.apps.install
-navigator.apps.invokeService
-navigator.apps.mgmt.launch
-navigator.apps.mgmt.list
-navigator.apps.mgmt.loadState
-navigator.apps.mgmt.loginStatus
-navigator.apps.mgmt.saveState
-navigator.apps.mgmt.uninstall
-navigator.apps.services.ready
-navigator.apps.services.registerHandler
-navigator.apps.setRepoOrigin
+navigator.mozApps.amInstalled
+navigator.mozApps.getInstalledBy
+navigator.mozApps.install
+navigator.mozApps.invokeService
+navigator.mozApps.mgmt.launch
+navigator.mozApps.mgmt.list
+navigator.mozApps.mgmt.loadState
+navigator.mozApps.mgmt.loginStatus
+navigator.mozApps.mgmt.saveState
+navigator.mozApps.mgmt.uninstall
+navigator.mozApps.services.ready
+navigator.mozApps.services.registerHandler
+navigator.mozApps.setRepoOrigin
 </pre>
 </section>
 
 <section class="test">
 <h3>Clear All Apps</h3>
 
-Delete all applications and then verify that list() yields no apps.
+Delete all applications and then verify that list() yields no mozApps.
 
 <pre class="doctest setup">
 $ // Out of curiosity we'll see what's installed:
-> navigator.apps.mgmt.list(Spy('list', {wait: true}));
+> navigator.mozApps.mgmt.list(Spy('list', {wait: true}));
 list(...)
 $ var finished = false;
-$ navigator.apps.mgmt.list(function(m) {
+$ navigator.mozApps.mgmt.list(function(m) {
 >  var total = 0;
 >  for (var k in m) if (m.hasOwnProperty(k)) total++;
 >  finished = (total === 0);
 >  for (var k in m) {
 >    if (!m.hasOwnProperty(k)) continue;
->    navigator.apps.mgmt.uninstall(k, function(r) {
+>    navigator.mozApps.mgmt.uninstall(k, function(r) {
 >      finished = (--total === 0);
 >    }, function (e) {
 >      finished = true;
@@ -114,8 +114,8 @@ $ navigator.apps.mgmt.list(function(m) {
 > });
 $ wait(function() { return finished; });
 $ finished = false;
-$ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true}));
-apps.mgmt.list({})
+$ navigator.mozApps.mgmt.list(Spy('mozApps.mgmt.list', {wait: true}));
+mozApps.mgmt.list({})
 </pre>
 
 </section>
@@ -123,25 +123,25 @@ apps.mgmt.list({})
 <section class="test">
 <h3>Dashboard Storage</h3>
 
-navigator.apps.mgmt.{load|save}State() provide an html dashboard with a mechanism to store
+navigator.mozApps.mgmt.{load|save}State() provide an html dashboard with a mechanism to store
 state inside the application repository.  This can be useful because it allows the app
 repo to synchronize this state across sessions on different browsers.
 
 <pre class="doctest">
-$ navigator.apps.mgmt.saveState(null, Spy('apps.mgmt.saveState', {wait: true}));
-apps.mgmt.saveState(true)
+$ navigator.mozApps.mgmt.saveState(null, Spy('mozApps.mgmt.saveState', {wait: true}));
+mozApps.mgmt.saveState(true)
 $ var obj = null;
-> navigator.apps.mgmt.loadState(Spy('apps.mgmt.loadState', {wait: true}));
-apps.mgmt.loadState(null)
-$ navigator.apps.mgmt.saveState(undefined, Spy('apps.mgmt.saveState', {wait: true}));
-apps.mgmt.saveState(true)
+> navigator.mozApps.mgmt.loadState(Spy('mozApps.mgmt.loadState', {wait: true}));
+mozApps.mgmt.loadState(null)
+$ navigator.mozApps.mgmt.saveState(undefined, Spy('mozApps.mgmt.saveState', {wait: true}));
+mozApps.mgmt.saveState(true)
 $ var obj = null;
-> navigator.apps.mgmt.loadState(Spy('apps.mgmt.loadState', {wait: true}));
-apps.mgmt.loadState(undefined)
-$ navigator.apps.mgmt.saveState({ open: "web", apps: [ "are", "super", "awesome" ] }, function() { });
+> navigator.mozApps.mgmt.loadState(Spy('mozApps.mgmt.loadState', {wait: true}));
+mozApps.mgmt.loadState(undefined)
+$ navigator.mozApps.mgmt.saveState({ open: "web", mozApps: [ "are", "super", "awesome" ] }, function() { });
 $ wait();
-$ navigator.apps.mgmt.loadState(Spy('apps.mgmt.loadState', {wait: true}));
-apps.mgmt.loadState({apps: ["are", "super", "awesome"], open: "web"})
+$ navigator.mozApps.mgmt.loadState(Spy('mozApps.mgmt.loadState', {wait: true}));
+mozApps.mgmt.loadState({mozApps: ["are", "super", "awesome"], open: "web"})
 </pre>
 </section>
 
@@ -149,7 +149,7 @@ apps.mgmt.loadState({apps: ["are", "super", "awesome"], open: "web"})
 <h3>Uninstall non-existant app should fail</h3>
 
 <pre class="doctest">
-$ navigator.apps.mgmt.uninstall("http://not.really.installed", 
+$ navigator.mozApps.mgmt.uninstall("http://not.really.installed", 
 >      Spy('uninstall/success', {wait: false, wrapArgs: true}),
 >      Spy('uninstall/failure', {wait: true, wrapArgs: true}));
 uninstall/failure({
@@ -163,7 +163,7 @@ uninstall/failure({
 <h3>Install missing required arguments will throw</h3>
 
 <pre class="doctest">
-$ navigator.apps.install();
+$ navigator.mozApps.install();
 Error: install missing required url argument
 </pre>
 
@@ -173,13 +173,13 @@ Error: install missing required url argument
 <h3>Install a basic application</h3>
 
 <pre class="doctest">
-$ navigator.apps.install(
+$ navigator.mozApps.install(
 >   {url: SERVERS['basic_app'] + "/manifest.webapp",
->    onsuccess: Spy('apps.install', {wait: true})
+>    onsuccess: Spy('mozApps.install', {wait: true})
 >   });
-apps.install()
-$ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true, wrapArgs: true}));
-apps.mgmt.list({
+mozApps.install()
+$ navigator.mozApps.mgmt.list(Spy('mozApps.mgmt.list', {wait: true, wrapArgs: true}));
+mozApps.mgmt.list({
   http://...:...: {
     install_origin: "http://...:...",
     install_time: ...,
@@ -198,13 +198,13 @@ this should be considered an "upgrade", because we may not have
 two manifests per origin.
 
 <pre class="doctest">
-$ navigator.apps.install(
+$ navigator.mozApps.install(
 >   {url: SERVERS['basic_app'] + "/manifest2.webapp",
->    onsuccess: Spy('apps.install', {wait: true})
+>    onsuccess: Spy('mozApps.install', {wait: true})
 >   });
-apps.install()
-$ navigator.apps.mgmt.list(Spy('apps.mgmt.list', {wait: true, wrapArgs: true}));
-apps.mgmt.list({
+mozApps.install()
+$ navigator.mozApps.mgmt.list(Spy('mozApps.mgmt.list', {wait: true, wrapArgs: true}));
+mozApps.mgmt.list({
   http://...:...: {
     install_origin: "http://...:...",
     install_time: ...,
@@ -220,8 +220,8 @@ apps.mgmt.list({
 <h3>We installed it, getInstalledBy should return it.</h3>
 
 <pre class="doctest">
-$ navigator.apps.getInstalledBy(Spy('apps.getInstalledBy', {wait: true}));
-apps.getInstalledBy([
+$ navigator.mozApps.getInstalledBy(Spy('mozApps.getInstalledBy', {wait: true}));
+mozApps.getInstalledBy([
   {
     install_origin: "http://...:...",
     install_time: ...,
@@ -234,8 +234,8 @@ apps.getInstalledBy([
 <h3>amInstalled should not.</h3>
 
 <pre class="doctest">
-$ navigator.apps.amInstalled(Spy('apps.amInstalled', {wait: true}));
-apps.amInstalled(null)
+$ navigator.mozApps.amInstalled(Spy('mozApps.amInstalled', {wait: true}));
+mozApps.amInstalled(null)
 </pre>
 
 <h3>getInstalled from basic app's domain *should* show the new app</h3>
@@ -257,12 +257,12 @@ success({
 <h3>Installation of an app with a syntax error in manifest</h3>
 
 <pre class="doctest">
-$ navigator.apps.install(
+$ navigator.mozApps.install(
 >   {url: SERVERS['json_syntax_error'] + "/manifest.webapp",
->    onsuccess: Spy('apps.install.success', {wait: false}),
->    onerror: Spy('apps.install.error', {wait: true})
+>    onsuccess: Spy('mozApps.install.success', {wait: false}),
+>    onerror: Spy('mozApps.install.error', {wait: true})
 >   });
-apps.install.error({code: "manifestParseError", message: "couldn't parse manifest JSON from http://...:.../manifest.webapp"})
+mozApps.install.error({code: "manifestParseError", message: "couldn't parse manifest JSON from http://...:.../manifest.webapp"})
 </pre>
 
 </section>
@@ -271,12 +271,12 @@ apps.install.error({code: "manifestParseError", message: "couldn't parse manifes
 <h3>Installation of an app with a malformed manifest (missing key)</h3>
 
 <pre class="doctest">
-$ navigator.apps.install(
+$ navigator.mozApps.install(
 >   {url: SERVERS['missing_required_field'] + "/manifest.webapp",
->    onsuccess: Spy('apps.install.success', {wait: false}),
->    onerror: Spy('apps.install.error', {wait: true})
+>    onsuccess: Spy('mozApps.install.success', {wait: false}),
+>    onerror: Spy('mozApps.install.error', {wait: true})
 >   });
-apps.install.error({code: "invalidManifest", message: "couldn't validate your manifest: missing \"name\" property"})
+mozApps.install.error({code: "invalidManifest", message: "couldn't validate your manifest: missing \"name\" property"})
 </pre>
 
 </section>
@@ -285,12 +285,12 @@ apps.install.error({code: "invalidManifest", message: "couldn't validate your ma
 <h3>Installation of an app without required HTTP Content-Type</h3>
 
 <pre class="doctest">
-$ navigator.apps.install(
+$ navigator.mozApps.install(
 >   {url: SERVERS['bad_content_type'] + "/manifest.json",
->    onsuccess: Spy('apps.install.success', {wait: false}),
->    onerror: Spy('apps.install.error', {wait: true})
+>    onsuccess: Spy('mozApps.install.success', {wait: false}),
+>    onerror: Spy('mozApps.install.error', {wait: true})
 >   });
-apps.install.error({
+mozApps.install.error({
   code: "invalidManifest",
   message: "application manifests must be of Content-Type \"application/x-web-app-manifest+json\""
 })
@@ -302,12 +302,12 @@ apps.install.error({
 <h3>Installation of an app without delegated installation permissions</h3>
 
 <pre class="doctest">
-$ navigator.apps.install(
+$ navigator.mozApps.install(
 >   {url: SERVERS['no_delegated_install'] + "/manifest.webapp",
->    onsuccess: Spy('apps.install.success', {wait: false}),
->    onerror: Spy('apps.install.error', {wait: true})
+>    onsuccess: Spy('mozApps.install.success', {wait: false}),
+>    onerror: Spy('mozApps.install.error', {wait: true})
 >   });
-apps.install.error({code: "permissionDenied", message: "origin 'http://...:...' may not install this app"})
+mozApps.install.error({code: "permissionDenied", message: "origin 'http://...:...' may not install this app"})
 </pre>
 
 </section>
@@ -353,8 +353,8 @@ success([
 <h3>getInstalled by from origin shouldn't show second app</h3>
 
 <pre class="doctest">
-$ navigator.apps.getInstalledBy(Spy('apps.getInstalledBy', {wait: true}));
-apps.getInstalledBy([
+$ navigator.mozApps.getInstalledBy(Spy('mozApps.getInstalledBy', {wait: true}));
+mozApps.getInstalledBy([
   {
     install_origin: "http://...:...",
     install_time: ...,
@@ -364,14 +364,14 @@ apps.getInstalledBy([
 ])
 </pre>
 
-<h3>list should now contain two apps</h3>
+<h3>list should now contain two mozApps</h3>
 
 <pre class="doctest">
 $ var spy = Spy('list');
-> navigator.apps.mgmt.list(function(apps) {
+> navigator.mozApps.mgmt.list(function(mozApps) {
 >   var i = 0;
->   for (var origin in apps) {
->     if (apps.hasOwnProperty(origin)) i++;
+>   for (var origin in mozApps) {
+>     if (mozApps.hasOwnProperty(origin)) i++;
 >     writeln('Origin: ', origin);
 >   }
 >   spy.func(i);
@@ -388,17 +388,17 @@ list(2)
 $ // first let's add an iframe with the child to the document */
 > var chan = embedIFrameAndStartChannel(SERVERS['no_mgmt_api_off_repo_origin'] + "/include.html");
 > chan.call(buildJSChanArgs("launch", false));
-error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repository")
+error("permissionDenied", "to access open web mozApps management apis, you must be on the same domain as the application repository")
 $ chan.call(buildJSChanArgs("loadState", false));
-error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repository")
+error("permissionDenied", "to access open web mozApps management apis, you must be on the same domain as the application repository")
 $ chan.call(buildJSChanArgs("loginStatus", false));
-error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repository")
+error("permissionDenied", "to access open web mozApps management apis, you must be on the same domain as the application repository")
 $ chan.call(buildJSChanArgs("list", false));
-error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repository")
+error("permissionDenied", "to access open web mozApps management apis, you must be on the same domain as the application repository")
 $ chan.call(buildJSChanArgs("uninstall", false));
-error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repository")
+error("permissionDenied", "to access open web mozApps management apis, you must be on the same domain as the application repository")
 $ chan.call(buildJSChanArgs("saveState", false));
-error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repository")
+error("permissionDenied", "to access open web mozApps management apis, you must be on the same domain as the application repository")
 </pre>
 
 </section>
@@ -406,7 +406,7 @@ error("permissionDenied", "to access open web apps management apis, you must be 
 <section class="test">
 <h3>Verify proper errors from uninstall()</h3>
 <pre class="doctest">
-$ navigator.apps.mgmt.uninstall(
+$ navigator.mozApps.mgmt.uninstall(
 >    "http://nosuch.app",
 >    Spy('success', {wait: false}),
 >    Spy('error', {wait: true}));
@@ -422,9 +422,9 @@ All args are optional to uninstall.  To test this we'll uninstall an app (basic_
 then verify that list returns a single app.
 
 <pre class="doctest">
-$ navigator.apps.mgmt.uninstall(SERVERS['basic_app']);
+$ navigator.mozApps.mgmt.uninstall(SERVERS['basic_app']);
 > wait(100);
-$ navigator.apps.mgmt.list(Spy('list', {wait: true, wrapArgs: true}));
+$ navigator.mozApps.mgmt.list(Spy('list', {wait: true, wrapArgs: true}));
 list({
   http://...:...: {
     install_origin: "http://...:...",
@@ -443,12 +443,12 @@ list({
 <h3>Install an app with a UTF-8 BOM in the manifest</h3>
 
 <pre class="doctest">
-$ navigator.apps.install(
+$ navigator.mozApps.install(
 >   {url: SERVERS['manifest_with_bom'] + "/manifest.webapp",
->    onsuccess: Spy('apps.install', {wait: true}),
->    onerror: Spy('apps.install.error', {wait: false})
+>    onsuccess: Spy('mozApps.install', {wait: true}),
+>    onerror: Spy('mozApps.install.error', {wait: false})
 >   });
-apps.install()
+mozApps.install()
 </section>
 
 
@@ -457,12 +457,12 @@ apps.install()
 <h3>Install an application that contains a profile provider service</h3>
 
 <pre class="doctest">
-$ navigator.apps.install(
+$ navigator.mozApps.install(
 >   {url: SERVERS['app_with_simple_service'] + "/manifest.webapp",
->    onsuccess: Spy('apps.install', {wait: true}),
->    onerror: Spy('apps.install.error', {wait: false})
+>    onsuccess: Spy('mozApps.install', {wait: true}),
+>    onerror: Spy('mozApps.install.error', {wait: false})
 >   });
-apps.install()
+mozApps.install()
 </pre>
 </section>
 
@@ -471,7 +471,7 @@ apps.install()
 <h3>Invoke the profile provider service</h3>
 
 <pre class="doctest">
-$ navigator.apps.invokeService(
+$ navigator.mozApps.invokeService(
 >   "profile.get", [ "displayName" ],
 >    Spy('success', {wait: true}),
 >    Spy('error', {wait: false})
@@ -485,12 +485,12 @@ success({displayName: "Mork Hashimoto"})
 <h3>Install an application that contains an image sink service</h3>
 
 <pre class="doctest">
-$ navigator.apps.install(
+$ navigator.mozApps.install(
 >   {url: SERVERS['app_that_eats_images'] + "/manifest.webapp",
->    onsuccess: Spy('apps.install', {wait: true}),
->    onerror: Spy('apps.install.error', {wait: false})
+>    onsuccess: Spy('mozApps.install', {wait: true}),
+>    onerror: Spy('mozApps.install.error', {wait: false})
 >   });
-apps.install()
+mozApps.install()
 </pre>
 </section>
 
@@ -498,7 +498,7 @@ apps.install()
 <h3>push an image to that app</h3>
 
 <pre class="doctest">
-$ navigator.apps.invokeService(
+$ navigator.mozApps.invokeService(
 >   "image.send",
 >   {
 >     title: "the ever productive lizzie",
@@ -526,7 +526,7 @@ success("iVBORw0KGgoAAAANSUhEUgAAAEsAAABqCAMAAADDYFxLAAAAMFBMVEVnAQSQAQi3AAiUamr
 <h3>See if the services are ready</h4>
 
 <pre class="doctest">
-$ navigator.apps.services.ready();
+$ navigator.mozApps.services.ready();
 </pre>
 
 </section>
@@ -535,7 +535,7 @@ $ navigator.apps.services.ready();
 <h3>Try to register a service handler</h4>
 
 <pre class="doctest">
-$ typeof navigator.apps.services.registerHandler
+$ typeof navigator.mozApps.services.registerHandler
 "function"
 </pre>
 
@@ -545,7 +545,7 @@ $ typeof navigator.apps.services.registerHandler
 
 {% block extrajs %}
 <script type="text/javascript">
-  navigator.apps.setRepoOrigin(SERVERS['_primary']);
+  navigator.mozApps.setRepoOrigin(SERVERS['_primary']);
 
   // a utility function to make it quick to attach iframes and establish jschannels to them:
   // this serves as the basis for several different types of cross-origin tests

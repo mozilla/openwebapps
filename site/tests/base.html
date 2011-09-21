@@ -22,22 +22,22 @@
     <script type="text/javascript"> 
 function param(name)
 {
-    name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
-    var regexS = "[\\?&]"+name+"=([^\\?&#]*)";
-    var regex = new RegExp( regexS );
-    var results = regex.exec( window.location.href );
-    if( results == null )
-        return "";
-    else
-        return results[1];
+  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+  var regexS = "[\\?&]"+name+"=([^\\?&#]*)";
+  var regex = new RegExp( regexS );
+  var results = regex.exec( window.location.href );
+  if( results == null )
+      return "";
+  else
+      return results[1];
 }
 
 if (param("runnerType") == "jstestnet") {
-    var headID = document.getElementsByTagName("head")[0];         
-    var newScript = document.createElement('script');
-    newScript.type = 'text/javascript';
-    newScript.src = '/tests/jstestnet/adapter/jstestnet.js';
-    headID.appendChild(newScript);
+  var headID = document.getElementsByTagName("head")[0];         
+  var newScript = document.createElement('script');
+  newScript.type = 'text/javascript';
+  newScript.src = '/tests/jstestnet/adapter/jstestnet.js';
+  headID.appendChild(newScript);
 }
 </script> 
 

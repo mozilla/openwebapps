@@ -208,18 +208,18 @@ function primaryHandler(req, resp) {
      * since all the background work for mime types is set up.
      */
     if(urlpath.match(/\.html$/)) {
-        var specs = getSpecs();
-        var tests = [];
-        specs.forEach( function( spec, index ) {
-            if( spec !== 'run-all.html' ) {
-                tests.push( spec );
-            }
-        } );
-        template_loader.load_and_render(urlpath, { 
-            specs: specs,
-            tests: tests 
-        }, function(err, result) {
-            resp.end(result);
+      var specs = getSpecs();
+      var tests = [];
+      specs.forEach( function( spec, index ) {
+        if( spec !== 'run-all.html' ) {
+        	tests.push( spec );
+        }
+      });
+      template_loader.load_and_render(urlpath, {
+					specs: specs,
+					tests: tests 
+      }, function(err, result) {
+					resp.end(result);
         });
     } else {
         urlpath = path.join(__dirname, '..', urlpath);
@@ -256,7 +256,7 @@ function serveFile(filename, response) {
       var ext = path.extname(filename);
       var mimeType = exts[ext] || "application/octet-stream";
 
-	  data = data.replace(/https?:\/\/(stage\.)?myapps\.mozillalabs\.com/ig,
+	    data = data.replace(/https?:\/\/(stage\.)?myapps\.mozillalabs\.com/ig,
                               "http://" + PRIMARY_HOST + ":" + PRIMARY_PORT);
 
       response.writeHead(200, {"Content-Type": mimeType});
@@ -286,8 +286,8 @@ boundServers.push({
   },function() {
 	console.log('Primary Server:');
 	console.log('  ' + formatLink("_primary"));
-        console.log("\nTesting server started, to run tests go to: "
-            + formatLink("_primary", "/tests/index.html"));
+  console.log("\nTesting server started, to run tests go to: " 
+						+ formatLink("_primary", "/tests/index.html"));
 
     }
   )
@@ -322,10 +322,10 @@ dirs.forEach(function(dirObj) {
     
 });
 function serverCreated(name) {
-    console.log("  " + name + ": " + formatLink(name));
+  console.log("  " + name + ": " + formatLink(name));
 }
 
 function getSpecs() {
-    var dirs = fs.readdirSync(path.join(__dirname, 'spec'));
-    return dirs;
+  var dirs = fs.readdirSync(path.join(__dirname, 'spec'));
+  return dirs;
 }
