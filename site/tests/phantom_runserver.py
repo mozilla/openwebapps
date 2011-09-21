@@ -32,10 +32,11 @@ def main():
         phantom_proc = subprocess.Popen(
             ['pyphantomjs', 'js/phantomrunner.js', '--server-port', str(SERVER_PORT)], cwd=here)
         phantom_proc.communicate()
+        returncode = phantom_proc.returncode
         phantom_proc = None
         os.kill(server_proc.pid, signal.SIGKILL)
         server_proc = None
-        sys.exit(phantom_proc.returncode)
+        sys.exit(returncode)
     finally:
         if server_proc is not None:
             print 'Killing node server'

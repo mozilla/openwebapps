@@ -13,8 +13,8 @@
 
   function myonload() {
     // update repo origin for the test environment
-    navigator.apps.setRepoOrigin(SERVERS['_primary']);
-    navigator.apps.setMockResponse(true, function () {
+    navigator.mozApps.setRepoOrigin(SERVERS['_primary']);
+    navigator.mozApps.setMockResponse(true, function () {
       responseMocked = true;
     });
 
@@ -34,7 +34,7 @@
         }, 100);
         return;
       }
-      navigator.apps.install({
+      navigator.mozApps.install({
         url: "/manifest.webapp",
         onsuccess: function() { trans.complete(); },
         onerror: function(errObj) { trans.error(errObj.code, errObj.message) }
@@ -43,7 +43,7 @@
 
     chan.bind("amInstalled", function(trans) {
       trans.delayReturn(true);
-      navigator.apps.amInstalled(
+      navigator.mozApps.amInstalled(
         function(v) { trans.complete(v); },
         function(errObj) { trans.error(errObj.code, errObj.message) }
       );
@@ -51,7 +51,7 @@
 
     chan.bind("getInstalledBy", function(trans) {
       trans.delayReturn(true);
-      navigator.apps.getInstalledBy(
+      navigator.mozApps.getInstalledBy(
         function(v) { trans.complete(v); },
         function(errObj) { trans.error(errObj.code, errObj.message) }
       );

@@ -43,17 +43,17 @@
    -Lloyd Hilaiel. Mozilla
 **/
 
-// inject into navigator.apps if it doesn't exist
-if (!navigator.apps) {
-  navigator.apps = {};
+// inject into navigator.mozApps if it doesn't exist
+if (!navigator.mozApps) {
+  navigator.mozApps = {};
 }
 
-// inject if navigator.apps.install isn't defined or if
-// navigator.apps.html5Implementation is true  (this latter check
+// inject if navigator.mozApps.install isn't defined or if
+// navigator.mozApps.html5Implementation is true  (this latter check
 // works around bad firefox behavior which doesn't properly
 // restoring navigator.XXX to a pristine state upon reload)
-if (!navigator.apps.install || navigator.apps.html5Implementation) {
-  navigator.apps = (function() {
+if (!navigator.mozApps.install || navigator.mozApps.html5Implementation) {
+  navigator.mozApps = (function() {
 
     ////////////////////////////////////////////////////////////
     // an inline copy of jschannel - http://github.com/mozilla/jschannel

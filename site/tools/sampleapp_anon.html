@@ -121,9 +121,9 @@ var gManifest = {
 };
 
 $(document).ready(function() {
-    navigator.apps.setRepoOrigin("..");
+    navigator.mozApps.setRepoOrigin("..");
 
-    navigator.apps.getInstalledBy(function(result) {
+    navigator.mozApps.getInstalledBy(function(result) {
         var installed = false;
         if (result) {
             for (var i=0;i<result.length;i++)
@@ -137,7 +137,7 @@ $(document).ready(function() {
         if (!installed) {
             $("#install_button").show();
             $("#install_button").click(function() {
-                navigator.apps.install({manifest: gManifest, callback: function() {
+                navigator.mozApps.install({manifest: gManifest, callback: function() {
                     $("#install_button").text("INSTALLED!").unbind('click');
                 }});
             });

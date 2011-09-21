@@ -33,7 +33,7 @@ navigator.allApps = (function() {
 
     function doList(onsuccess, onerror) {
         // First get list of web apps
-        navigator.apps.mgmt.list(
+        navigator.mozApps.mgmt.list(
             function(webapps) {
                 getNativeApps(webapps, onsuccess, onerror);
             },
@@ -51,7 +51,7 @@ navigator.allApps = (function() {
             );
             onsuccess(true);
         } else {
-            navigator.apps.mgmt.launch(id, onsuccess, onerror);
+            navigator.mozApps.mgmt.launch(id, onsuccess, onerror);
         }
     }
 
@@ -59,9 +59,9 @@ navigator.allApps = (function() {
         mgmt: {
             list: doList,
             launch: doLaunch,
-            loadState: navigator.apps.mgmt.loadState,
-            saveState: navigator.apps.mgmt.saveState,
-            uninstall: navigator.apps.mgmt.uninstall,
+            loadState: navigator.mozApps.mgmt.loadState,
+            saveState: navigator.mozApps.mgmt.saveState,
+            uninstall: navigator.mozApps.mgmt.uninstall,
         }
     };
 })();
