@@ -1,0 +1,31 @@
+{
+    "name": "Open Web Apps",
+    "version": "0.1",
+    "description": "Provides rich browser support for open web applications.",
+    "browser_action": {
+        "default_icon": "/img/rocket_24.png",
+        "default_title": "Open Web Apps",
+        "default_popup": "/src/launcher.html"
+    },
+    "omnibox": { "keyword" : "app" },
+    "icons": {
+        "128": "/img/rocket_128.png",
+        "48": "/img/rocket_48.png",
+        "16": "/img/rocket_16.png"
+    },
+    "background_page": "/src/background.html",
+    "permissions": [
+        "tabs",
+        "http://*/",
+        "https://*/"
+    ],
+    "content_scripts": [
+        {
+            "run_at": "document_start",
+            "matches": [ "<all_urls>" ],
+            "js": [ "/src/inject_api.js" ],
+            "all_frames": true
+        }
+    ],
+    "update_url": "https://apps.mozillalabs.com/addons/chrome_updates.xml"
+}
