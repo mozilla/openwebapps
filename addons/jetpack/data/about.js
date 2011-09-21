@@ -35,7 +35,7 @@ self.port.on('data-url', function(baseurl) {
   // XXX TODO
   // get access to the injected api's, will remove later when api
   // injection method changes.
-  window.navigator.apps = unsafeWindow.navigator.apps;
+  window.navigator.mozApps = unsafeWindow.navigator.mozApps;
 });
 
 function elem(type, clazz) {
@@ -50,7 +50,7 @@ var appDict;
 function refresh() {
   if (!pending) {
     pending = true;
-    navigator.apps.mgmt.list(function(aDict) {
+    navigator.mozApps.mgmt.list(function(aDict) {
       pending = false;
       appDict = aDict;
       render();
@@ -180,13 +180,13 @@ function render() {
 
       function makeLaunchFn(appID) {
         return function() {
-          navigator.apps.mgmt.launch(appID);
+          navigator.mozApps.mgmt.launch(appID);
         }
       }
 
       function makeDeleteFn(appID, container) {
         return function() {
-          navigator.apps.mgmt.uninstall(appID, function() {});
+          navigator.mozApps.mgmt.uninstall(appID, function() {});
           container.style.minHeight = "0px";
           container.style.height = container.clientHeight + "px";
           window.setTimeout(function() {

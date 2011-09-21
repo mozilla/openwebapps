@@ -139,7 +139,7 @@ openwebapps.prototype = {
 
 /* disable unwanted APIs for fx-share q3 release
     win.appinjector.register({
-      apibase: "navigator.apps",
+      apibase: "navigator.mozApps",
       name: "install",
       script: null,
       getapi: function(contentWindowRef) {
@@ -149,7 +149,7 @@ openwebapps.prototype = {
       }
     });
     win.appinjector.register({
-      apibase: "navigator.apps",
+      apibase: "navigator.mozApps",
       name: "amInstalled",
       script: null,
       getapi: function(contentWindowRef) {
@@ -159,7 +159,7 @@ openwebapps.prototype = {
       }
     });
     win.appinjector.register({
-      apibase: "navigator.apps",
+      apibase: "navigator.mozApps",
       name: "getInstalledBy",
       script: null,
       getapi: function(contentWindowRef) {
@@ -169,7 +169,7 @@ openwebapps.prototype = {
       }
     });
     win.appinjector.register({
-      apibase: "navigator.apps",
+      apibase: "navigator.mozApps",
       name: "setRepoOrigin",
       script: null,
       getapi: function() {
@@ -178,7 +178,7 @@ openwebapps.prototype = {
     });
 
     win.appinjector.register({
-      apibase: "navigator.apps",
+      apibase: "navigator.mozApps",
       name: "startActivity",
       script: null,
       getapi: function(contentWindowRef) {
@@ -194,7 +194,7 @@ end disabling APIs for fx-share */
     // pass a content object (eg, the iframe or the frame's content window).
     // Attempting to pass it via self.emit() fails...
     win.appinjector.register({
-      apibase: "navigator.apps.mediation",
+      apibase: "navigator.mozApps.mediation",
       name: "_invokeService",
       script: null,
       getapi: function(contentWindowRef) {
@@ -210,7 +210,7 @@ end disabling APIs for fx-share */
     // XXX TEMPORARY HACK to allow our builtin apps to work for the all-hands demo
     var {OAuthConsumer} = require("oauthorizer/oauthconsumer");
     win.appinjector.register({
-      apibase: "navigator.apps.oauth",
+      apibase: "navigator.mozApps.oauth",
       name: "call",
       script: null,
       getapi: function(contentWindowRef) {
@@ -226,7 +226,7 @@ end disabling APIs for fx-share */
 
     // services APIs
     win.appinjector.register({
-      apibase: "navigator.apps.services",
+      apibase: "navigator.mozApps.services",
       name: "ready",
       script: null,
       getapi: function(contentWindowRef) {
@@ -237,7 +237,7 @@ end disabling APIs for fx-share */
     });
 
     win.appinjector.register({
-      apibase: "navigator.apps.services",
+      apibase: "navigator.mozApps.services",
       name: "registerHandler",
       script: null,
       getapi: function(contentWindowRef) {
@@ -250,7 +250,7 @@ end disabling APIs for fx-share */
 /* disable unwanted APIs for fx-share q3 release
     // management APIs:
     win.appinjector.register({
-      apibase: "navigator.apps.mgmt",
+      apibase: "navigator.mozApps.mgmt",
       name: "launch",
       script: null,
       getapi: function(contentWindowRef) {
@@ -261,7 +261,7 @@ end disabling APIs for fx-share */
       }
     });
     win.appinjector.register({
-      apibase: "navigator.apps.mgmt",
+      apibase: "navigator.mozApps.mgmt",
       name: "list",
       script: null,
       getapi: function(contentWindowRef) {
@@ -272,7 +272,7 @@ end disabling APIs for fx-share */
       }
     });
     win.appinjector.register({
-      apibase: "navigator.apps.mgmt",
+      apibase: "navigator.mozApps.mgmt",
       name: "loginStatus",
       script: null,
       getapi: function(contentWindowRef) {
@@ -283,7 +283,7 @@ end disabling APIs for fx-share */
       }
     });
     win.appinjector.register({
-      apibase: "navigator.apps.mgmt",
+      apibase: "navigator.mozApps.mgmt",
       name: "loadState",
       script: null,
       getapi: function(contentWindowRef) {
@@ -294,7 +294,7 @@ end disabling APIs for fx-share */
       }
     });
     win.appinjector.register({
-      apibase: "navigator.apps.mgmt",
+      apibase: "navigator.mozApps.mgmt",
       name: "saveState",
       script: null,
       getapi: function(contentWindowRef) {
@@ -305,7 +305,7 @@ end disabling APIs for fx-share */
       }
     });
     win.appinjector.register({
-      apibase: "navigator.apps.mgmt",
+      apibase: "navigator.mozApps.mgmt",
       name: "uninstall",
       script: null,
       getapi: function(contentWindowRef) {
