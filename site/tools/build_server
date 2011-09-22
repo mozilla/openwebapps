@@ -18,7 +18,6 @@ set -e
 help () {
     echo "Usage: $(basename $0) [-s] [SERVER_NAME]"
     echo "Sets up the server, using SERVER_NAME as the domain name."
-    echo "If you use -s, then it will ssh to SERVER_NAME and set it up in-place."
     echo "Use 'SSL=on $(basename $0) ...' to setup an SSL server (default HTTP)."
     echo "If you set \$OWA_REPO then that will be checked out during deployment"
     echo "If you set \$OWA_BRANCH then that branch will be checked out"
@@ -27,11 +26,6 @@ help () {
 if [ "$1" = "-h" ] ; then
     help
     exit
-fi
-
-if [ "$1" = "-s" ] ; then
-    SSH=yes
-    shift
 fi
 
 if [ ! -z "$1" ] ; then
@@ -51,25 +45,9 @@ fi
 echo "Checking out source from:"
 echo "  $OWA_REPO branch $OWA_BRANCH"
 
-if [ ! -z "$SSH" ] ; then
-    SCRIPT="
-SERVER_NAME='$SERVER_NAME'
-SSL='$SSL'
-OWA_REPO='$OWA_REPO'
-OWA_BRANCH='$OWA_BRANCH'
-VERBOSE=1
+OS_VERSION="$(awk '{print $2}' < /etc/issue)"
 
-$(cat $0)
-"
-    echo "sshing to $SERVER_NAME"
-    echo ----------------------------------------
-    ssh root@$SERVER_NAME "$SCRIPT"
-    exit
-fi
-
-VERSION="$(awk '{print $2}' < /etc/issue)"
-
-case "$VERSION" in
+case "$OS_VERSION" in
     10.04.1)
         # On later versions it's "nginx-full"
         NGINX_NAME="nginx"
@@ -77,7 +55,7 @@ case "$VERSION" in
         TORNADO_NAME=""
         ;;
     *)
-        echo "Unknown Ubuntu version: $VERSION"
+        echo "Unknown Ubuntu version: $OS_VERSION"
         exit 2
         ;;
 esac
@@ -184,14 +162,15 @@ if [ -z "$TORNADO_NAME" ] ; then
         wget https://github.com/downloads/facebook/tornado/tornado-2.1.tar.gz
         tar zfx tornado-2.1.tar.gz && rm tornado-2.1.tar.gz
         cd tornado-2.1
-        python setup.py install --install-lib=/var/www/site/server/deps
+        python setup.py install --install-lib=/var/www/openwebapps/site/server/deps
     )
 fi
 
 echo "#!/bin/sh
 
 cd /var/www/src/openwebapps/site/server
-PYTHONPATH=$PYTHONPATH:/var/www/src/openwebapps/site/server/deps
+PYTHONPATH=\$PYTHONPATH:/var/www/src/openwebapps/site/server/deps
+export PYTHONPATH
 exec su www-data -c 'python server.py /var/www/logs/getmanifest.log >> /var/www/log/getmanifest.log 2>&1'
 " > /var/www/getmanifest-service/run
 chmod +x /var/www/getmanifest-service/run
