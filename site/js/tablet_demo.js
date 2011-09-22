@@ -226,7 +226,7 @@ $(document).ready(function() {
 
 
 function saveDashboardState( callback ) {
-  navigator.apps.mgmt.saveState(gDashboardState, callback);
+  navigator.mozApps.mgmt.saveState(gDashboardState, callback);
 }
 
 
@@ -277,7 +277,7 @@ function updateDashboard( completionCallback ) {
       computeLayoutVars();
       $(".background").css({width: screenWidth, height: screenHeight});
       
-      navigator.apps.mgmt.list( function (listOfInstalledApps) {
+      navigator.mozApps.mgmt.list( function (listOfInstalledApps) {
           
           gApps = listOfInstalledApps;
 
@@ -295,7 +295,7 @@ function updateDashboard( completionCallback ) {
 
 
           //now, in the list callback, load the dashboard state
-          navigator.apps.mgmt.loadState( function (dashState) 
+          navigator.mozApps.mgmt.loadState( function (dashState) 
           {
               gDashboardState = checkSavedData(dashState);
               
@@ -469,7 +469,7 @@ function createAppItem(install)
   }
  
   clickyIcon.click(function() {
-    navigator.apps.mgmt.launch(install.origin);
+    navigator.mozApps.mgmt.launch(install.origin);
   });
   clickyIcon.append(appIcon);
   
@@ -581,7 +581,7 @@ function createAppItem(install)
 //     //NEED TO CHECK Y OFFSET!  THEY MAY HAVE MOVED OFF ICON
 //     console.log("app tapped");
 //     var origin32 = $(e.target.parentNode).attr("origin32");
-//     navigator.apps.mgmt.launch(Base32.decode(origin32));
+//     navigator.mozApps.mgmt.launch(Base32.decode(origin32));
 //   } else if (flick) {
 //     //we go to the next page in the direction specified by the flick
 //     console.log("was flicked");
@@ -636,7 +636,7 @@ function createAppItem(install)
 // }
 // 
 // function updateLoginStatus() {
-//   navigator.apps.mgmt.loginStatus(function (userInfo, loginInfo) {
+//   navigator.mozApps.mgmt.loginStatus(function (userInfo, loginInfo) {
 //     if (! userInfo) {
 //       $('#login-link a').attr('href', loginInfo.loginLink);
 //       $('#login-link').show();

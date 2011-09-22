@@ -56,9 +56,9 @@
 // check if ambient TypedStorage or not
 // by looking for 'require' keyword from jetpack
 if (typeof require !== 'undefined') {
-  var { TypedStorage } = require("./typed_storage");
-  var { URLParse } = require("./urlmatch");
-  var { Manifest } = require("./manifest");
+  var TypedStorage = require("./typed_storage").TypedStorage;
+  var URLParse = require("./urlmatch").URLParse;
+  var Manifest = require("./manifest").Manifest;
 }
 
 // An App data structure
@@ -393,7 +393,6 @@ Repo = (function() {
               if (one_service.endpoint && one_service.endpoint.indexOf("resource://") == 0) svcObj.url = one_service.endpoint;
 
               if (!installedServices.hasOwnProperty(service_key)) {
-                dump("creating list for " + service_key + "\n");
                 installedServices[service_key] = [];
               } else {
                 // does this svc already exist in the list (supports list *update*)?

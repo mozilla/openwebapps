@@ -19,10 +19,15 @@ TypedStorage Tests
 <div class="test">
 
 <pre class="doctest">
-$ function printRepoLength() {
->   this.keys(function(keys) {
+$ function printRepoLength(repo) {
+>   repo.keys(function(keys) {
 >       writeln(keys.length);
 >   });
+> }
+$ function boundPrint(repo) {
+>   return function () {
+>     printRepoLength(repo);
+>   };
 > }
 > var printRepoItem = function(name) {
 >   this.get(name, function(outItem) {
@@ -35,20 +40,19 @@ $ function printRepoLength() {
 >   });
 > };
 $ var testRepo = TypedStorage().open("testObjectType");
-> var printTestRepoLength = printRepoLength.bind(testRepo);
 > testRepo.clear();
-> printTestRepoLength();
+> printRepoLength(testRepo);
 0
 $ var thing1 = { "foo":"bar", "baz":"flam", 'plink':4.7};
-> testRepo.put("thing1", thing1, printTestRepoLength);
+> testRepo.put("thing1", thing1, boundPrint(testRepo));
 1
 $ var thing2 = { 'first':{ "a":78, "b":23, "c":"foobar"}, "other":{"alice":'girl', "bob":'boy'}};
-> testRepo.put("thing2", thing2, printTestRepoLength);
+> testRepo.put("thing2", thing2, boundPrint(testRepo));
 2
 $ var thing3 = { "frotz":"mailbox", 'joe':{'fruit':4, 'bread':2, 'vegetable':6}};
-> testRepo.put("thing3", thing3, printTestRepoLength);
+> testRepo.put("thing3", thing3, boundPrint(testRepo));
 3
-$ testRepo.clear(printTestRepoLength);
+$ testRepo.clear(boundPrint(testRepo));
 0
 </pre>
 
@@ -59,7 +63,7 @@ $ testRepo.clear(printTestRepoLength);
 <div class="test">
 <pre class="doctest setup">
 $ var testRepo = TypedStorage().open("testObjectType");
-> var printTestRepoLength = printRepoLength.bind(testRepo);
+> var printTestRepoLength = boundPrint(testRepo);
 >
 > testRepo.clear();
 >
@@ -108,12 +112,12 @@ $ var testRepo1 = TypedStorage().open("fakeType");
 > testRepo1.clear();
 >
 > var thing1 = { "foo":"bar", "baz":"flam", 'plink':4.7};
-> testRepo1.put("thing1", thing1, printRepoLength.bind(testRepo1));
+> testRepo1.put("thing1", thing1, boundPrint(testRepo1));
 1
 $ var testRepo2 = TypedStorage().open("bogusType");
 > testRepo2.clear();
 >
-> testRepo2.put("thing1", thing1, printRepoLength.bind(testRepo2));
+> testRepo2.put("thing1", thing1, boundPrint(testRepo2));
 1
 $ var i=0;
 $ for ( i = 0; i &lt; window.localStorage.length; i++) {

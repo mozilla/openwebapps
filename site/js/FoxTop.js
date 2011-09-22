@@ -51,7 +51,7 @@ gDashboardState.pages = [];
 var gLastInstalledApp = "";
 
 function saveDashboardState( callback ) {
-  navigator.apps.mgmt.saveState(gDashboardState, callback);
+  navigator.mozApps.mgmt.saveState(gDashboardState, callback);
 }
 
 
@@ -182,12 +182,12 @@ function checkSavedData(save) {
 // and then proceeds to bring the visual depiction into synchrony with the data, with the least visual interruption.
 function updateDashboard( completionCallback ) {
     //both the app list and dashboard data functions are asynchronous, so we need to do everything in the cal
-      navigator.apps.mgmt.list( function (listOfInstalledApps) {
+      navigator.mozApps.mgmt.list( function (listOfInstalledApps) {
           
           gApps = listOfInstalledApps;
 
           //now, in the list callback, load the dashboard state
-          navigator.apps.mgmt.loadState( function (dashState) {
+          navigator.mozApps.mgmt.loadState( function (dashState) {
               gDashboardState = checkSavedData(dashState);
               
               renderList();
@@ -213,7 +213,7 @@ function makeOpenAppTabFn(origin32)
              $(this).removeClass("ui-draggable-dragged");
              return false;
          }
-        navigator.apps.mgmt.launch(Base32.decode(origin32));
+        navigator.mozApps.mgmt.launch(Base32.decode(origin32));
     }
   } catch (e) {
       if (typeof console !== "undefined") console.log("error launching: " + e);
@@ -301,7 +301,7 @@ function renderList(andLaunch) {
   
   if (results.length == 1 && andLaunch)
   {
-    navigator.apps.mgmt.launch(results[0].origin);
+    navigator.mozApps.mgmt.launch(results[0].origin);
   }
 }
 
@@ -384,7 +384,7 @@ function onFocus(event)
 }
 
 function updateLoginStatus() {
-  navigator.apps.mgmt.loginStatus(function (userInfo, loginInfo) {
+  navigator.mozApps.mgmt.loginStatus(function (userInfo, loginInfo) {
     if (! userInfo) {
       $('#login-link a').attr('href', loginInfo.loginLink);
       $('#login-link').show();
@@ -461,7 +461,7 @@ if (window.addEventListener) {
 //                                           delButton.text("DELETE ?");
 //                                         } else {
 //       
-//                                           navigator.apps.mgmt.uninstall( install.origin, function() { 
+//                                           navigator.mozApps.mgmt.uninstall( install.origin, function() { 
 //                                                                                             removeAppFromDock(install.origin32);
 //                                                                                             removeWidget(install.origin32);
 //                                                                                             saveDashboardState( function () {updateDashboard();} );
