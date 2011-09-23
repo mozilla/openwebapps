@@ -1,7 +1,7 @@
 function updateApps() {
     $('#applist > div').remove();
 
-    navigator.apps.mgmt.list(function(l) {
+    navigator.mozApps.mgmt.list(function(l) {
         for (key in l) {
             (function() {
                 var id = l[key].id;
@@ -10,11 +10,11 @@ function updateApps() {
                 app.append($('<span class="appname"/>').text(l[key].name + ": "));
                 app.append($("<a>launch</a>").attr('href', '#').click(function(e) {
                     e.preventDefault();
-                    navigator.apps.mgmt.launch(id);
+                    navigator.mozApps.mgmt.launch(id);
                 }));
                 app.append($("<a>remove</a>").attr('href', '#').click(function(e) {
                     e.preventDefault();
-                    navigator.apps.mgmt.remove(id, function() {
+                    navigator.mozApps.mgmt.remove(id, function() {
                         updateApps();
                     });
                 }));
