@@ -601,8 +601,12 @@ function keyCount(obj) {
 
 function updateDashboard() {
   if (!self || !self.port) {
-    navigator.mozApps.mgmt.list(function(allApps) {
-      redrawDashboard(allApps);
+    navigator.mozApps.mgmt.list(function(aList) {
+      var aDict = {};
+      for (var i = 0; i < aList.length; i++) {
+        aDict[aList[i].origin] = aList[i];
+      }
+      redrawDashboard(aDict);
     });
   }
 }

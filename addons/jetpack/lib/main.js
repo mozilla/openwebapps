@@ -136,7 +136,11 @@ openwebapps.prototype = {
       name: "install",
       script: null,
       getapi: function(contentWindowRef) {
-        return function(args) {
+        return function(origin, data, onsuccess, onerror) {
+          let args = {
+            url: origin, install_data: data,
+            onsuccess: onsuccess, onerror: onerror
+          };
           repo.install(contentWindowRef.location, args, win);
         }
       }
@@ -159,14 +163,6 @@ openwebapps.prototype = {
         return function(callback) {
           repo.getInstalledBy(contentWindowRef.location, callback);
         }
-      }
-    });
-    win.appinjector.register({
-      apibase: "navigator.mozApps",
-      name: "setRepoOrigin",
-      script: null,
-      getapi: function() {
-        return function(args) {}
       }
     });
 
@@ -302,6 +298,28 @@ openwebapps.prototype = {
         return function(key, callback, onerror) {
           repo.verifyMgmtPermission(contentWindowRef.location);
           repo.uninstall(key, callback, onerror);
+        }
+      }
+    });
+    win.appinjector.register({
+      apibase: "navigator.mozApps.mgmt",
+      name: "watchUpdates",
+      script: null,
+      getapi: function(contentWindowRef) {
+        return function(callback) {
+          repo.verifyMgmtPermission(contentWindowRef.location);
+          return repo.watchUpdates(callback);
+        }
+      }
+    });
+    win.appinjector.register({
+      apibase: "navigator.mozApps.mgmt",
+      name: "clearWatch",
+      script: null,
+      getapi: function(contentWindowRef) {
+        return function(id) {
+          repo.verifyMgmtPermission(contentWindowRef.location);
+          repo.clearWatch(id);
         }
       }
     });

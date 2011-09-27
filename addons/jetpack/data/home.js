@@ -641,9 +641,12 @@ function checkSavedData(save) {
 
 function updateDashboard(completionCallback) {
   //both the app list and dashboard data functions are asynchronous, so we need to do everything in the cal
-  navigator.mozApps.mgmt.list(function(listOfInstalledApps) {
-
-    gApps = listOfInstalledApps;
+  navigator.mozApps.mgmt.list(function(aList) {
+    let aDict = {};
+    for (let i = 0; i < aList.length; i++) {
+      aDict[aList[i].origin] = aList[i];
+    }
+    gApps = aDict;
 
     //now, in the list callback, load the dashboard state
     navigator.mozApps.mgmt.loadState(function(dashState) {
