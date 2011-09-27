@@ -58,16 +58,17 @@ Are all of the functions present that we would expect on the navigator.mozApps o
 <pre class="doctest">
 $ // We'll show all the methods we're testing
 > var arr = [];
-> function iterateMethods(label, root) {
->   for(var f in root) {
->       if(typeof root[f] === 'function')
+> function iterateMethods(label, root, suppress) {
+>   for (var f in root) {
+>       if (suppress && suppress.indexOf(f) != -1)
+>           continue;
+>       if (typeof root[f] === 'function')
 >           arr.push(label + f);
 >   }
 > }
 >
-> iterateMethods("navigator.mozApps.", navigator.mozApps);
+> iterateMethods("navigator.mozApps.", navigator.mozApps, ['setApplicationChooser', 'setRepoOrigin', 'setMockResponse']);
 > iterateMethods("navigator.mozApps.mgmt.", navigator.mozApps.mgmt);
-> iterateMethods("navigator.mozApps.services.", navigator.mozApps.services);
 >
 > arr = arr.sort();
 > for (var i = 0; i < arr.length; i++) writeln(arr[i]);
@@ -77,15 +78,7 @@ navigator.mozApps.install
 navigator.mozApps.invokeService
 navigator.mozApps.mgmt.launch
 navigator.mozApps.mgmt.list
-navigator.mozApps.mgmt.loadState
-navigator.mozApps.mgmt.loginStatus
-navigator.mozApps.mgmt.saveState
 navigator.mozApps.mgmt.uninstall
-navigator.mozApps.services.ready
-navigator.mozApps.services.registerHandler
-navigator.mozApps.setApplicationChooser
-navigator.mozApps.setMockResponse
-navigator.mozApps.setRepoOrigin
 </pre>
 </section>
 
@@ -99,52 +92,28 @@ $ // Out of curiosity we'll see what's installed:
 > navigator.mozApps.mgmt.list(Spy('list', {wait: true}));
 list(...)
 $ var finished = false;
-$ navigator.mozApps.mgmt.list(function(m) {
->  var total = 0;
->  for (var k in m) if (m.hasOwnProperty(k)) total++;
->  finished = (total === 0);
->  for (var k in m) {
->    if (!m.hasOwnProperty(k)) continue;
->    navigator.mozApps.mgmt.uninstall(k, function(r) {
->      finished = (--total === 0);
->    }, function (e) {
->      finished = true;
->      writeln('Error:', e);
->      throw('Failed');
->    });
->  }
-> });
+$ function uninstallAll() {
+>   navigator.mozApps.mgmt.list(function(m) {
+>     var total = m.length;
+>     finished = (total === 0);
+>     for (var i=0; i&lt;m.length; i++) {
+>       navigator.mozApps.mgmt.uninstall(m[i].origin, function(r) {
+>         finished = (--total === 0);
+>       }, function (e) {
+>         finished = true;
+>         writeln('Error:', e);
+>         throw('Failed');
+>       });
+>     }
+>   });
+> }
+$ uninstallAll();
 $ wait(function() { return finished; });
 $ finished = false;
 $ navigator.mozApps.mgmt.list(Spy('apps.mgmt.list', {wait: true}));
-apps.mgmt.list({})
+apps.mgmt.list([])
 </pre>
 
-</section>
-
-<section class="test">
-<h3>Dashboard Storage</h3>
-
-navigator.mozApps.mgmt.{load|save}State() provide an html dashboard with a mechanism to store
-state inside the application repository.  This can be useful because it allows the app
-repo to synchronize this state across sessions on different browsers.
-
-<pre class="doctest">
-$ navigator.mozApps.mgmt.saveState(null, Spy('apps.mgmt.saveState', {wait: true}));
-apps.mgmt.saveState(true)
-$ var obj = null;
-> navigator.mozApps.mgmt.loadState(Spy('apps.mgmt.loadState', {wait: true}));
-apps.mgmt.loadState(null)
-$ navigator.mozApps.mgmt.saveState(undefined, Spy('apps.mgmt.saveState', {wait: true}));
-apps.mgmt.saveState(true)
-$ var obj = null;
-> navigator.mozApps.mgmt.loadState(Spy('apps.mgmt.loadState', {wait: true}));
-apps.mgmt.loadState(undefined)
-$ navigator.mozApps.mgmt.saveState({ open: "web", apps: [ "are", "super", "awesome" ] }, function() { });
-$ wait();
-$ navigator.mozApps.mgmt.loadState(Spy('apps.mgmt.loadState', {wait: true}));
-apps.mgmt.loadState({apps: ["are", "super", "awesome"], open: "web"})
-</pre>
 </section>
 
 <section class="test">
@@ -178,22 +147,22 @@ Error: install missing required url argument
 $ navigator.mozApps.setMockResponse(true, Spy('setMockResponse', {wait: true}));
 setMockResponse()
 $ navigator.mozApps.install(
->   {url: SERVERS['basic_app'] + "/manifest.webapp",
->    onsuccess: Spy('apps.install', {wait: true})
->   });
+>   SERVERS['basic_app'] + "/manifest.webapp",
+>   null,
+>   Spy('apps.install', {wait: true}));
 apps.install()
 $ navigator.mozApps.mgmt.list(Spy('apps.mgmt.list', {wait: true, wrapArgs: true}));
-apps.mgmt.list({
-  http://...:...: {
-    install_origin: "http://...:...",
-    install_time: ...,
-    manifest: {
-      installs_allowed_from: ["*"],
-      name: "Super Crazy Basic App"
-    },
-    origin: "http://...:..."
-  }
-})
+apps.mgmt.list([
+      {
+        install_origin: "http://?:?",
+        install_time: ?,
+        manifest: {
+          installs_allowed_from: ["*"],
+          name: "Super Crazy Basic App"
+        },
+        origin: "http://?:?"
+      }
+    ])
 </pre>
 
 <h3>Re-install that application with a different manifest</h3>
@@ -205,13 +174,13 @@ two manifests per origin.
 $ navigator.mozApps.setMockResponse(true, Spy('setMockResponse', {wait: true}));
 setMockResponse()
 $ navigator.mozApps.install(
->   {url: SERVERS['basic_app'] + "/manifest2.webapp",
->    onsuccess: Spy('apps.install', {wait: true})
->   });
+>   SERVERS['basic_app'] + "/manifest2.webapp",
+>   null,
+>   Spy('apps.install', {wait: true}));
 apps.install()
 $ navigator.mozApps.mgmt.list(Spy('apps.mgmt.list', {wait: true, wrapArgs: true}));
-apps.mgmt.list({
-  http://...:...: {
+apps.mgmt.list([
+  {
     install_origin: "http://...:...",
     install_time: ...,
     manifest: {
@@ -220,7 +189,7 @@ apps.mgmt.list({
     },
     origin: "http://...:..."
   }
-})
+])
 </pre>
 
 <h3>We installed it, getInstalledBy should return it.</h3>
@@ -244,7 +213,12 @@ $ navigator.mozApps.amInstalled(Spy('apps.amInstalled', {wait: true}));
 apps.amInstalled(null)
 </pre>
 
-<h3>getInstalled from basic app's domain *should* show the new app</h3>
+<h3>amInstalled from basic app's domain <em>should</em> show the new app</h3>
+
+<p>Note: we're talking with the other app via JSChannel so that we can
+have it call <code>amInstalled</code> instead of the test calling
+<code>amInstalled</code> (which as we showed above won't return
+anything).</p>
 
 <pre class="doctest">
 $ var chan = embedIFrameAndStartChannel(SERVERS['basic_app'] + "/include.html");
@@ -264,10 +238,10 @@ success({
 
 <pre class="doctest">
 $ navigator.mozApps.install(
->   {url: SERVERS['json_syntax_error'] + "/manifest.webapp",
->    onsuccess: Spy('apps.install.success', {wait: false}),
->    onerror: Spy('apps.install.error', {wait: true})
->   });
+>   SERVERS['json_syntax_error'] + "/manifest.webapp",
+>   null,
+>   Spy('apps.install.success', {wait: false}),
+>   Spy('apps.install.error', {wait: true}));
 apps.install.error({code: "manifestParseError", message: "couldn't parse manifest JSON from http://...:.../manifest.webapp"})
 </pre>
 
@@ -278,10 +252,10 @@ apps.install.error({code: "manifestParseError", message: "couldn't parse manifes
 
 <pre class="doctest">
 $ navigator.mozApps.install(
->   {url: SERVERS['missing_required_field'] + "/manifest.webapp",
->    onsuccess: Spy('apps.install.success', {wait: false}),
->    onerror: Spy('apps.install.error', {wait: true})
->   });
+>   SERVERS['missing_required_field'] + "/manifest.webapp",
+>   null,
+>   Spy('apps.install.success', {wait: false}),
+>   Spy('apps.install.error', {wait: true}));
 apps.install.error({code: "invalidManifest", message: "couldn't validate your manifest: missing \"name\" property"})
 </pre>
 
@@ -292,10 +266,10 @@ apps.install.error({code: "invalidManifest", message: "couldn't validate your ma
 
 <pre class="doctest">
 $ navigator.mozApps.install(
->   {url: SERVERS['bad_content_type'] + "/manifest.json",
->    onsuccess: Spy('apps.install.success', {wait: false}),
->    onerror: Spy('apps.install.error', {wait: true})
->   });
+>   SERVERS['bad_content_type'] + "/manifest.json",
+>   null,
+>   Spy('apps.install.success', {wait: false}),
+>   Spy('apps.install.error', {wait: true}));
 apps.install.error({
   code: "invalidManifest",
   message: "application manifests must be of Content-Type \"application/x-web-app-manifest+json\""
@@ -309,10 +283,10 @@ apps.install.error({
 
 <pre class="doctest">
 $ navigator.mozApps.install(
->   {url: SERVERS['no_delegated_install'] + "/manifest.webapp",
->    onsuccess: Spy('apps.install.success', {wait: false}),
->    onerror: Spy('apps.install.error', {wait: true})
->   });
+>   SERVERS['no_delegated_install'] + "/manifest.webapp",
+>   null,
+>   Spy('apps.install.success', {wait: false}),
+>   Spy('apps.install.error', {wait: true}));
 apps.install.error({code: "permissionDenied", message: "origin 'http://...:...' may not install this app"})
 </pre>
 
@@ -321,11 +295,11 @@ apps.install.error({code: "permissionDenied", message: "origin 'http://...:...' 
 <section class="test">
 <h3>Installation of that same app, from its own origin</h3>
 
-NOTE:  This is a rather tricky test:  We'll programatically embed an iframe from
+<p>NOTE:  This is a rather tricky test:  We'll programatically embed an iframe from
 a non-repo origin and load web content from that origin.  The content
 (<tt>no_mgmt_api_off_repo_origin/include.html</tt>) uses jschannel to allow us
 to programmatically drive it running queries against the test app repo from
-off domain.
+off domain.</p>
 
 <pre class="doctest">
 $ var chan = embedIFrameAndStartChannel(SERVERS['no_delegated_install'] + "/include.html");
@@ -375,10 +349,8 @@ apps.getInstalledBy([
 <pre class="doctest">
 $ var spy = Spy('list');
 > navigator.mozApps.mgmt.list(function(apps) {
->   var i = 0;
->   for (var origin in apps) {
->     if (apps.hasOwnProperty(origin)) i++;
->     writeln('Origin: ', origin);
+>   for (var i=0; i&lt;apps.length; i++) {
+>     writeln('Origin: ', apps[i].origin);
 >   }
 >   spy.func(i);
 >  });
@@ -395,13 +367,9 @@ $ // first let's add an iframe with the child to the document */
 > var chan = embedIFrameAndStartChannel(SERVERS['no_mgmt_api_off_repo_origin'] + "/include.html");
 > chan.call(buildJSChanArgs("launch", false));
 error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repository")
-$ chan.call(buildJSChanArgs("loadState", false));
-error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repository")
 $ chan.call(buildJSChanArgs("list", false));
 error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repository")
 $ chan.call(buildJSChanArgs("uninstall", false));
-error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repository")
-$ chan.call(buildJSChanArgs("saveState", false));
 error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repository")
 </pre>
 
@@ -422,15 +390,16 @@ error({code: "noSuchApplication", message: "no application exists with the origi
 <section class="test">
 <h3>Verify no callbacks are required to uninstall()</h3>
 
-All args are optional to uninstall.  To test this we'll uninstall an app (basic_app), wait 100ms, and
-then verify that list returns a single app.
+<p>All args are optional to uninstall.  To test this we'll uninstall
+an app (basic_app), wait 100ms, and then verify that list returns a
+single app.</p>
 
 <pre class="doctest">
 $ navigator.mozApps.mgmt.uninstall(SERVERS['basic_app']);
 > wait(100);
 $ navigator.mozApps.mgmt.list(Spy('list', {wait: true, wrapArgs: true}));
-list({
-  http://...:...: {
+list([
+  {
     install_origin: "http://...:...",
     install_time: ...,
     manifest: {
@@ -438,7 +407,7 @@ list({
     },
     origin: "http://...:..."
   }
-})
+])
 </pre>
 
 </section>
@@ -448,10 +417,10 @@ list({
 
 <pre class="doctest">
 $ navigator.mozApps.install(
->   {url: SERVERS['manifest_with_bom'] + "/manifest.webapp",
->    onsuccess: Spy('apps.install', {wait: true}),
->    onerror: Spy('apps.install.error', {wait: false})
->   });
+>   SERVERS['manifest_with_bom'] + "/manifest.webapp",
+>   null,
+>   Spy('apps.install', {wait: true}),
+>   Spy('apps.install.error', {wait: false}));
 apps.install()
 </section>
 
@@ -462,90 +431,14 @@ apps.install()
 
 <pre class="doctest">
 $ navigator.mozApps.install(
->   {url: SERVERS['app_with_simple_service'] + "/manifest.webapp",
->    onsuccess: Spy('apps.install', {wait: true}),
->    onerror: Spy('apps.install.error', {wait: false})
->   });
+>   SERVERS['app_with_simple_service'] + "/manifest.webapp",
+>   null,
+>   Spy('apps.install', {wait: true}),
+>   Spy('apps.install.error', {wait: false}));
 apps.install()
 </pre>
 </section>
 
-
-<section class="test">
-<h3>Invoke the profile provider service</h3>
-
-<pre class="doctest">
-$ navigator.mozApps.setApplicationChooser(0, Spy('setApplicationChooser', {wait: true}));
-setApplicationChooser()
-$ navigator.mozApps.invokeService(
->   "profile.get", [ "displayName" ],
->    Spy('success', {wait: true}),
->    Spy('error', {wait: false})
-> );
-success({displayName: "Mork Hashimoto"})
-</pre>
-
-</section>
-
-<section class="test">
-<h3>Install an application that contains an image sink service</h3>
-
-<pre class="doctest">
-$ navigator.mozApps.install(
->   {url: SERVERS['app_that_eats_images'] + "/manifest.webapp",
->    onsuccess: Spy('apps.install', {wait: true}),
->    onerror: Spy('apps.install.error', {wait: false})
->   });
-apps.install()
-</pre>
-</section>
-
-<section class="test">
-<h3>push an image to that app</h3>
-
-<pre class="doctest">
-$ navigator.mozApps.invokeService(
->   "image.send",
->   {
->     title: "the ever productive lizzie",
->     contentType: "image/png",
->     data: TEST_IMAGE_DATA
->   },
->   Spy('success', {wait: true}),
->   Spy('error', {wait: false})
-> );
-success(null)
-</pre>
-</section>
-
-<section class="test">
-<h3>use a backchannel to get the pushed image</h3>
-
-<pre class="doctest">
-$ var chan = embedIFrameAndStartChannel(SERVERS['app_that_eats_images'] + "/backchannel.html");
-> chan.call(buildJSChanArgs("getLastImage", true));
-success("iVBORw0KGgoAAAANSUhEUgAAAEsAAABqCAMAAADDYFxLAAAAMFBMVEVnAQSQAQi3AAiUamrQAA7oABX0Ay2rl52ttdi0veK7wuTKs7XTydHGxuPp1df15+fTDEWvAAAGvElEQVRYhaWYi1bjMAxEnTjULVLt///b1dOvOA2wPnsWAuR2NB4pbsOL1ne/3vTvbyuMpPf7/1iTrPdfUcIaYT+RhYjv5/+yEGSlGGP6PxamuNvaIqxZP4MhxMdhS2B4z7osLz4eX45iWJpgK10XqAehvpykNPwTS1ATa4Yp67ZIR42sCbZiLWDs1Rm1b1v6NQtTQ42sPhqrfJ1YVuExszZaXZXSj3d+5Vh9d9ZWFwyse7dsD78WqBA/1niSlWwTWdqEIhgMrBthIuuaFUfWR78GWQuWC3sa6/WBhSdZEyvZZt/rylBRQ4mhsjgW30+Ae10Yj+NkV9C16XckDJn1vIFRTvc0s0KoMP6fhBHqXleOe4SRJQCa0rGy4M2TOzw/CxNZcdxG8UhWLRJH1mvJyvHYwVhHZ1dUaQZLcK2r0kjWEfOZxfUxLFhc4VpXY0VmnbfRWZsEhOJqLKcN46K1z4mldlWWXKeJNcCqLGKBkazIrcaLiHbNRaZBVwdrXf21x7qLhqreh62xUs96nVgsq29GecZurisaa1+yhh2ow6Y1Y5OloXeUGPaJ9a1PjIF17ANt2xsrGeu5Qn3bsOlR3ZzoUResvshTie0hpOPmllVho/MjyxirGidlr0HWwDp61lLXpOx1WWJ/ytEyfbamFJcsLXHcxROsn/kUMDp2OmsSRrzJrgbbVzCZZpU102BCzY5t16ym7PmkKfl8/4YVJl0v1saL522iITKjlix7gMRJly0wVPwJyxtzydI3AxSWc4kja+tYYcky0DVrPJ2ED6yKgoVdv2P1qAtWN3c6lLHejcQMJ/2JVbLRqAl61EfWjHJWKVhRUEmQzqyvUVYIE4xZCcr7KZSGmpvxRywskIhXMvTr8XXLCmGGBUonMqt0pMSIG1aYl2SCNGUyLeWqTQi/ZdHj11RhwlqpvvNZsvYPrBAyZmYkYyZlccKXrL2dDM+LOETjDWQobWkhFr/+cc26kBW0QlJDMwIRirHopjXrgyxl6SZSG0m9dE7iO1bB/wErJ8yszTx7yE2XrKsSlSWbmD1pfG5+LFn7Z1bWJrJKGQYpZ/mY5dcsRLqxWMZyIf81aRTgdBqsNyyuDd003VNN7Yp1fLRe/NK8eqVJkkZ1apWDLj1lXqDce6o0eaW8p1RthLxiXaOExZiMYJWC7mlKHFuHtcPEBSsqiz1vlZq8JB1q79AYsu3CujBeflo9V6NAuSVThcjXDlPWYqJ2a4oEQDZZNoFSfV/FKHkre+09TpFAy6tMSEj+PtRY23W6uEadNn34s+SVoSlxlVNjn1h0ZjIW3ddFQtvcXIMIMjduWfp/8QzUDWiXOXJYis5/GYLLR1BleQZQK3VFyJua2DVk2ENY43H3DLR7ySbqSzWq8LCmVgDVWErkTwIOf3vgqKhvSB1FF9gCwaXVfKBEQrVS1shP/qA2Qqwfm9hHAc7aOF9dILxS31SqEjO5xqXyjJSz595OzrHypGadOF4NMS0KclkiH6MiyuM4x8jyiDaS/EOPLWSaohp9Dxkb5ZtKGNKmvZAif81yroqnxd0txiBanmQnsncSRlDzkswgftWspa5xZoxU6uO52CMpWSchG8UVckCyn/kU0EF1rtLdJC0312RIgBglpsuzhMGZL6RSA4hK+RpD7Rz2yW1KZozlVuIP6pvsgLyeiPJyU6ysoZHqk8gOLKJI7iYay8osVu+vLNaVq+eihQ2ppfIJlro+gg0NLUdLBdqKVA0TpJyZdEh7vMCvkg7HKC9U8xV1jyOb2VwTlk+rWmodGZYI9snCJnqBe8E89C1Q24Js+xwve4r46Bff5G7Zck0ISpCwCYvS24h2OJQL6UoeONo63NqsRVpJznuSECucXgGS+RY8qh4vLbUbONrafLde14Rg7TJUHLOkMehuqPNHB05tQw1IHK+FhtHGJbdGME+k1/x5BjZ/BptoG60ttRlQHLcZIq8QbD6gVVrDpg80wGob/TWa6ZY28F4wI4L1slWHfv7SAWTHCrNNyhdWyXq3J0QfWOZ9dilmm/xebbNGMps4ESJFW1xGL9GkVuvH4qOa5wpY++lGMq2ziW2jH2Q3vWi2WLSz9Of1DJx9WEij0M3J5w+3FP9EZOl1Qa20sth5H9VcZ53TpID/tjZBzG0AWcCK0hpLpGWzCtS2ZozfDDFZiNR0DZh+M7DqMZiD72dg3S/LpspCn/pmOjsMdRYW3040q2QPQB5vUOrQbzbxS0jrSGQ0bjOLadCCD5KvrLXyb+rJSiKCSfbUavUzQA/rGhMgNSFFh5mNQj/DyKNdXP0Hspr3ZD+eFQAAAAAASUVORK5CYII=")
-</pre>
-</section>
-
-<section class="test">
-<h3>See if the services are ready</h4>
-
-<pre class="doctest">
-$ navigator.mozApps.services.ready();
-</pre>
-
-</section>
-
-<section class="test">
-<h3>Try to register a service handler</h4>
-
-<pre class="doctest">
-$ typeof navigator.mozApps.services.registerHandler
-"function"
-</pre>
-
-</section>
 
 {% endblock %}
 
@@ -598,8 +491,6 @@ $ typeof navigator.mozApps.services.registerHandler
       }
     }
   }
-
-TEST_IMAGE_DATA = "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";
 
 // give the testor plenty of time to click
 doctest.defaultTimeout = 5000;

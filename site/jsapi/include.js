@@ -98,7 +98,7 @@ if (!navigator.mozApps.install || navigator.mozApps.html5Implementation) {
      *    + (optional) any params
      */
 
-    ;Channel = (function() {
+    var Channel = (function() {
         // current transaction id, start out at a random *odd* number between 1 and a million
         // There is one current transaction counter id per page, and it's shared between
         // channel instances.  That means of all messages posted from a single javascript
@@ -733,39 +733,28 @@ if (!navigator.mozApps.install || navigator.mozApps.html5Implementation) {
       }
     }
 
-    function callInstall(args) {
-      setupWindow();
-      if (!args) {
-        args = {};
-      } else {
-        if (typeof(args) !== 'object') {
-          throw "parameter to install() must be an object";
-        }
-        for (var k in args) {
-          if (!args.hasOwnProperty(k)) {
-            continue;
-          }
-          if (k !== "install_data" && k !== "url" && k !== "onsuccess" && k !== "onerror") {
-            throw "unsupported argument: " + k;
-          }
-        }
-      }
-      if (!args.url || typeof(args.url) !== 'string') {
+    function callInstall(url, install_data, onsuccess, onerror) {
+      if (url === undefined) {
         throw "install missing required url argument";
       }
-
+      if (typeof url !== 'string') {
+        throw "first (url) parameter to install() must be a string";
+      }
+      setupWindow();
+      if (install_data === undefined) {
+        install_data = null;
+      }
       chan.call({
         method: "install",
         params: {
-          url: args.url,
-          install_data: args.install_data || null // optional
+          url: url,
+          install_data: install_data
         },
         error: function(error, message) {
-          deliverError(error, message, args.onerror);
+          deliverError(error, message, onerror);
         },
         success: function() {
-          if (args.onsuccess) {
-            var onsuccess = args.onsuccess;
+          if (onsuccess) {
             onsuccess();
           }
         }
@@ -960,11 +949,8 @@ if (!navigator.mozApps.install || navigator.mozApps.html5Implementation) {
       getInstalledBy: callGetInstalledBy,
       mgmt: {
         launch: callLaunch,
-        loadState: callLoadState,
-        loginStatus: callLoginStatus,
         list: callList,
-        uninstall: callUninstall,
-        saveState: callSaveState
+        uninstall: callUninstall
       },
       services: {
         ready: callReady,

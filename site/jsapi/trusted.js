@@ -209,7 +209,13 @@ ClientBridge = (function () {
   chan.bind('list', function(t) {
     verifyMgmtPermission(t.origin);
     t.delayReturn(true);
-    Repo.list(t.complete);
+    Repo.list(function (apps) {
+      var appList = [];
+      for (var i in apps) {
+        appList.push(apps[i]);
+      }
+      t.complete(appList);
+    });
   });
 
   chan.bind('uninstall', function(t, origin) {
