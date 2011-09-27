@@ -301,6 +301,28 @@ openwebapps.prototype = {
         }
       }
     });
+    win.appinjector.register({
+      apibase: "navigator.mozApps.mgmt",
+      name: "watchUpdates",
+      script: null,
+      getapi: function(contentWindowRef) {
+        return function(callback) {
+          repo.verifyMgmtPermission(contentWindowRef.location);
+          return repo.watchUpdates(callback);
+        }
+      }
+    });
+    win.appinjector.register({
+      apibase: "navigator.mozApps.mgmt",
+      name: "clearWatch",
+      script: null,
+      getapi: function(contentWindowRef) {
+        return function(id) {
+          repo.verifyMgmtPermission(contentWindowRef.location);
+          repo.clearWatch(id);
+        }
+      }
+    });
   },
 
   registerBuiltInApp: function(domain, app, injector) {
