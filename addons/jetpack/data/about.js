@@ -50,9 +50,13 @@ var appDict;
 function refresh() {
   if (!pending) {
     pending = true;
-    navigator.mozApps.mgmt.list(function(aDict) {
-      pending = false;
+    navigator.mozApps.mgmt.list(function(aList) {
+      let aDict = {};
+      for (let i = 0; i < aList.length; i++) {
+        aDict[aList[i].origin] = aList[i];
+      }
       appDict = aDict;
+      pending = false;
       render();
     });
   }
