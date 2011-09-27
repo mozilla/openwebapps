@@ -86,8 +86,8 @@ Repo = (function() {
   // A TypedStorage singleton global object is expected to be present
   // Must be provided either by the FF extension, Chrome extension, or in
   // the HTML5 case, localStorage.
-  var appStorage = TypedStorage().open("app");
-  var stateStorage = TypedStorage().open("state");
+  var typedStorage = TypedStorage();
+  var appStorage = typedStorage.open("app");
 
   function invalidateCaches() {
     installedServices = undefined;
@@ -540,19 +540,6 @@ Repo = (function() {
     });
   };
 
-  function loadState(id, cb) {
-    stateStorage.get(JSON.stringify(id), cb);
-  };
-
-  function saveState(id, state, cb) {
-    // storing undefined purges state
-    if (state === undefined) {
-      stateStorage.remove(JSON.stringify(id), cb);
-    } else {
-      stateStorage.put(JSON.stringify(id), state, cb);
-    }
-  };
-
   // for now, this is the only function that returns a legitimate App data structure
   // refactoring of other calls is in order to get the right App abstraction, but one thing at a time.
 
@@ -583,8 +570,6 @@ Repo = (function() {
     uninstall: uninstall,
     amInstalled: amInstalled,
     getInstalledBy: getInstalledBy,
-    loadState: loadState,
-    saveState: saveState,
     findServices: findServices,
     renderChooser: renderChooser,
     iterateApps: iterateApps,
