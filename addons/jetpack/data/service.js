@@ -72,16 +72,16 @@ var addServicesService = new Service({
 });
 
 function confirm() {
-  var emit = window.navigator.mozApps.mediation.emit;
+  var port = window.navigator.mozApps.mediation.port;
   var selected = $("#services").tabs('option', 'selected'); // => 0
   var service = gServiceList[selected].call("confirm", {}, function(status) {
     var messageData = {
       app: iframe.contentWindow.location.href,
       result: "ok"
     };
-    emit("result", messageData);
+    port.emit("result", messageData);
   }, function(err) {
-    emit("error", err);
+    port.emit("error", err);
   });
 }
 

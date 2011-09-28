@@ -207,21 +207,29 @@ window.navigator.mozApps.mediation.ready = function(invocationHandler) {
 
 unsafeWindow.navigator.mozApps.mediation.ready = window.navigator.mozApps.mediation.ready;
 
-window.navigator.mozApps.mediation.emit = function(event, args) {
-  // A hack for sizeToContent - as the panel doesn't expose the window
-  // object for its iframe, we need to calculate it here.
-  if (event === "owa.mediation.sizeToContent" && !args) {
-    // hrmph - we used to use document.getElementsByTagName('body')[0], but
-    // sometimes that returns undefined while document.body always works.
-    let body = document.body;
-    if (body) {
-      args = {
-        width: body.scrollWidth,
-        height: body.scrollHeight
-      };
-    }
-  }
-  self.port.emit(event, args)
-}
 
-unsafeWindow.navigator.mozApps.mediation.emit = window.navigator.mozApps.mediation.emit;
+var mPort = {
+    emit: function (event, args) {
+      // A hack for sizeToContent - as the panel doesn't expose the window
+      // object for its iframe, we need to calculate it here.
+      if (event === "owa.mediation.sizeToContent" && !args) {
+        // hrmph - we used to use document.getElementsByTagName('body')[0], but
+        // sometimes that returns undefined while document.body always works.
+        let body = document.body;
+        if (body) {
+          args = {
+            width: body.scrollWidth,
+            height: body.scrollHeight
+          };
+        }
+      }
+      self.port.emit(event, args)
+    },
+    on: function (event, fn) {
+      self.port.on(event, fn);
+    },
+    removeListener: function (event, fn) {
+      self.port.removeListener(event, fn);
+    }
+};
+unsafeWindow.navigator.mozApps.mediation.port = mPort;
