@@ -43,6 +43,10 @@ const {Cu, Ci, Cc} = require("chrome");
 var {FFRepoImplService} = require("api");
 let {URLParse} = require("openwebapps/urlmatch");
 let {OAuthConsumer} = require("oauthorizer/oauthconsumer");
+let tmp = {}
+Cu.import("resource://gre/modules/Services.jsm", tmp);
+let {Services} = tmp;
+const { Worker } = require('api-utils/content');
 
 // a mediator is what provides the UI for a service.  It is normal "untrusted"
 // content (although from the user's POV it is somewhat trusted)
@@ -72,6 +76,8 @@ function MediatorPanel(window, contentWindowRef, activity, successCB, errorCB) {
   this.activity = activity;
   this.successCB = successCB;
   this.errorCB = errorCB;
+  this.frames = [];
+  this.handlers = {};
 
   // Update the content for the new invocation
   this.args = this.updateargs(activity.data);
@@ -83,9 +89,56 @@ function MediatorPanel(window, contentWindowRef, activity, successCB, errorCB) {
   this.isConfigured = false;
   this.invocationid = nextinvocationid++;
 
+  Services.obs.addObserver(this, 'content-document-global-created', false);
+  this.contentScriptFile = [require("self").data.url("servicesapi.js")];
+
   this._createPopupPanel();
 }
 MediatorPanel.prototype = {
+  observe: function(contentWindow, aTopic, aData) {
+    if (aTopic != 'content-document-global-created') return;
+    var id = contentWindow.frameElement.getAttribute('id');
+    for (var i=0; i < this.frames.length; i++) {
+      if (id == this.frames[i].id) {
+        this.inject(contentWindow, this.frames[i]);
+      }
+    }
+  },
+  
+  inject: function(contentWindow, frame) {
+    dump("using content scripts "+JSON.stringify(this.contentScriptFile)+"\n");
+    let worker =  Worker({
+      window: contentWindow,
+      contentScriptFile: this.contentScriptFile
+    });
+    worker.port.emit("owa.service.origin", frame.origin);
+    this.registerAPIs(worker, frame);
+  },
+  
+  registerAPIs: function(worker, frame) {
+    let mediator = this;
+    // setup the owa.service api handlers
+    worker.port.on("owa.service.oauth.call", function(args) {
+      OAuthConsumer.call(args.svc, args.data, function(req) {
+        //dump("oauth call response "+req.status+" "+req.statusText+" "+req.responseText+"\n");
+        let response = JSON.parse(req.responseText);
+        worker.port.emit(args.result, response);
+      });
+    });
+    worker.port.on("owa.service.register.handler", function (activity) {
+      //dump("register.handler "+JSON.stringify(activity)+"\n");
+      //dump("register.handler "+frame.origin+"/"+activity.action+"/"+activity.message+"\n");
+      if (!mediator.handlers[frame.origin])
+        mediator.handlers[frame.origin] = {};
+      if (!mediator.handlers[frame.origin][activity.action])
+        mediator.handlers[frame.origin][activity.action] = {};
+      mediator.handlers[frame.origin][activity.action][activity.message] = worker;
+    });
+    worker.port.on("owa.service.ready", function () {
+      mediator.panel.port.emit("owa.app.ready", frame.origin);
+    });
+  },
+
   /* OWA Mediator Agents may subclass the following: */
   get width() 484,
   get height() 484,
@@ -149,6 +202,31 @@ MediatorPanel.prototype = {
     this.panel.resize(args.width, args.height);
   },
 
+  onOWAFrame: function (args) {
+    this.frames.push(args);
+  },
+
+  onOWAInvoke: function (activity) {
+    let self = this;
+    let worker = this.handlers[activity.origin][activity.action][activity.message];
+    // setup the callback tunneling
+    function postResult(result) {
+      self.panel.port.emit(activity.success, result);
+      self.panel.port.removeListener(activity.error, postException);
+    }
+    function postException(result) {
+      self.panel.port.emit(activity.error, result);
+      self.panel.port.removeListener(activity.success, postResult);
+    }
+    worker.port.once(activity.success, postResult)
+    worker.port.once(activity.error, postException)
+    // TODO! get the credentials working
+    worker.port.emit("owa.service.invoke", {
+      activity: activity,
+      credentials: {}
+    });
+  },
+
   onOWALogin: function(params) {
     if (params.type == 'oauth') {
       try {
@@ -182,6 +260,8 @@ MediatorPanel.prototype = {
     this.panel.port.on("owa.failure", this.onOWAFailure.bind(this));
     this.panel.port.on("owa.close", this.onOWAClose.bind(this));
     this.panel.port.on("owa.mediation.ready", this.onOWAReady.bind(this));
+    this.panel.port.on("owa.mediation.frame", this.onOWAFrame.bind(this));
+    this.panel.port.on("owa.mediation.invoke", this.onOWAInvoke.bind(this));
     this.panel.port.on("owa.mediation.sizeToContent", this.onOWASizeToContent.bind(this));
     this.panel.port.on("owa.mediation.doLogin", this.onOWALogin.bind(this));
   },
@@ -398,145 +478,6 @@ serviceInvocationHandler.prototype = {
       }
     }
     }
-  },
-
-  /**
-   * initApp
-   *
-   * called when an app tells us it's ready to go
-   */
-  initApp: function(contentWindowRef) {
-    let self = this;
-    // check that this is indeed an app
-    FFRepoImplService.getAppByUrl(contentWindowRef.location, function(app) {
-      if (!app) return;
-
-      // at this point, all services should be registered
-
-      // we invoke the login one if it's supported
-      if (app.services && app.services.login) {
-        // FIXME: what do we do with tons of IFRAMEs? Do they all get the login message?
-        self.invokeService(contentWindowRef, 'login', 'doLogin', {'credentials' : null}, function(result) {
-          // if result is status ok, we're good
-          if (result.status == 'ok') {
-            console.log("app is logged in");
-          } else if (result.status == 'notloggedin') {
-            // if result is status dialog, we need to open a popup.
-            if (app.services.login.dialog) {
-              // open up a dialog
-              var windows = require("windows").browserWindows;
-              windows.open({
-                url: app.login_dialog_url,
-                onOpen: function(window) {
-              }});
-            }
-          } else {
-            // XXX - should we consider this a "failure" and not pass the
-            // app_ready event to the mediator?
-            console.warn("ignoring unexpected doLogin result status", result.status);
-          }
-        });
-      }
-      // If this app's window has a parent which lives in one of our
-      // panels, message the panel about the readiness.
-      if (contentWindowRef.parent) {
-        for each (let popupCheck in self._popups) {
-        if (popupCheck.invocationid === contentWindowRef.parent.navigator.mozApps.mediation._invocationid) {
-          popupCheck.panel.port.emit("owa.app.ready", app.origin);
-          break;
-        }
-        }
-      }
-    });
-  },
-
-  // when an app registers a service handler
-  registerServiceHandler: function(contentWindowRef, action, message, func) {
-    // check that this is indeed an app
-    FFRepoImplService.getAppByUrl(contentWindowRef.location, function(app) {
-
-      // do we need to unwrap it?
-      var theWindow = contentWindowRef;
-
-      if (!app) {
-        // We register handlers for things that aren't apps
-        var theWindow = contentWindowRef;
-        if (!theWindow._MOZ_NOAPP_SERVICES)
-          theWindow._MOZ_NOAPP_SERVICES = {};
-        if (!theWindow._MOZ_NOAPP_SERVICES[action])
-          theWindow._MOZ_NOAPP_SERVICES[action] = {};
-        theWindow._MOZ_NOAPP_SERVICES[action][message] = func;
-        return;
-      }
-
-      // make sure the app supports this activity
-      if (!(app.services && app.services[action])) {
-        console.log("app attempted to register handler for activity action " + action + " but not declared in manifest");
-        return;
-      }
-
-      if (!theWindow._MOZ_SERVICES)
-        theWindow._MOZ_SERVICES = {};
-
-      if (!theWindow._MOZ_SERVICES[action])
-        theWindow._MOZ_SERVICES[action] = {};
-
-      theWindow._MOZ_SERVICES[action][message] = func;
-    });
-  },
-
-  // this call means to invoke a specific call within a given app
-  invokeService: function(contentWindow, activity, message, cb, cberr, privileged) {
-    FFRepoImplService.getAppByUrl(contentWindow.location, function(app) {
-      var theWindow = contentWindow;
-
-      if (!app) {
-        if (privileged) {
-        try {
-          theWindow._MOZ_NOAPP_SERVICES[activity.action][message](activity);
-        } catch (e) {
-          console.log("error invoking " + activity.action + "/" + message + " in privileged invocation\n" + e.toString());
-        }
-        }
-        return;
-      }
-
-      // make sure the app supports this activity
-      if (!(app.services && app.services[activity.action])) {
-        console.log("attempted to send message to app for activity " + activity.action + " but app doesn't support it");
-        return;
-      }
-
-      let cbshim = function(result) {
-        cb(JSON.stringify(result));
-      };
-      let cberrshim = function(errob) {
-        // errback({code: "code", message: errmsg})
-        if (cberr) {
-          cberr(JSON.stringify(errob));
-        } else {
-          console.log("invokeService error but no error callback:", JSON.stringify(errob));
-        }
-      }
-      // We can't pass this activity directly as it originated from a
-      // different principal - so knock up a copy to pass to the app.
-      let appActivity = {action: activity.action,
-                         data: activity.data,
-                         message: message,
-                         postResult: cbshim,
-                         postException: cberrshim,
-                         // XXX - what are these?
-                         FAILURE: 0,
-                         CREDENTIAL_FAILURE: 1
-      };
-      try {
-        theWindow._MOZ_SERVICES[activity.action][message](appActivity);
-      } catch (e) {
-        console.log("error invoking " + activity.action + "/" + message + " on app " + app.origin + ": " + e.toString());
-        // invoke the callback with an error object the content can see.
-        cberrshim({code: "runtime_error", message: e.toString()});
-      }
-    });
   },
 
   /**
