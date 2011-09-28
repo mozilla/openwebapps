@@ -451,12 +451,12 @@ OfferPanel.prototype = {
 
           if (cUrl == page) {
             if (aEvent.target.rel == "application-manifest") {
-              self._ui.offerPanel.installIfNeeded(page);
+              self.installIfNeeded(page);
             } else if (aEvent.target.rel == "application-preferred-store") {
               // TODO do nothing if we're installed already
               // let the UI know we've got a store here
               simple.storage.links[page].store = href;
-              self._ui.offerPanel.showPageHasStoreApp(page);
+              self.showPageHasStoreApp(page);
 
               // create a hidden iframe to talk to the store:
               let doc = self._window.document;
@@ -477,7 +477,7 @@ OfferPanel.prototype = {
                 }, function(result) {
                   //dump("APPS | appstore.getOffer service | Got getOffer result for " + page + ": " + JSON.stringify(result) + "\n");
                   simple.storage.links[page].offer = result;
-                  self._ui._showPageHasStoreApp(page, self);
+                  self.showPageHasStoreApp(page, self);
                 }, true /* is privileged */ );
               }, false);
             }

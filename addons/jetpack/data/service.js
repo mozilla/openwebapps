@@ -2,6 +2,13 @@
 /* vim: set ts=2 et sw=2 tw=80: */
 var gServiceList;
 
+function S4() {
+   return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+}
+function guid() {
+   return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
+}
+
 function renderRequestExplanation(activity) {
   $("#requestInfo").empty();
 
@@ -36,10 +43,20 @@ function handleSetup(activity, serviceList) {
   renderRequestExplanation(activity);
 
   addServicesService.url = "http://localhost:8420/" + activity.action + ".html";
+  addServicesService.iframe = document.createElement('iframe');
+  addServicesService.iframe.setAttribute('id', guid());
+  addServicesService.iframe.src = addServicesService.url;
   var services = serviceList.concat(addServicesService);
+
   $("#serviceTabs").tmpl({
     'services': services
   }).appendTo("#servicebox");
+  // insert the service iframes now
+  for (var i = 0; i < services.length; i++) {
+    var svc = services[i];
+    svc.iframe.classList.add("serviceFrame");
+    $('div[id="svc-tab-'+i+'"]').append(svc.iframe);
+  }
   $("#services").tabs();
 }
 
@@ -55,16 +72,16 @@ var addServicesService = new Service({
 });
 
 function confirm() {
-  var emit = window.navigator.mozApps.mediation.emit;
+  var port = window.navigator.mozApps.mediation.port;
   var selected = $("#services").tabs('option', 'selected'); // => 0
   var service = gServiceList[selected].call("confirm", {}, function(status) {
     var messageData = {
       app: iframe.contentWindow.location.href,
       result: "ok"
     };
-    emit("result", messageData);
+    port.emit("result", messageData);
   }, function(err) {
-    emit("error", err);
+    port.emit("error", err);
   });
 }
 

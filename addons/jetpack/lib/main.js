@@ -65,10 +65,12 @@ function openwebapps(win, getUrlCB) {
   tmp = require("./api");
   this._repo = tmp.FFRepoImplService;
 
+/* disable ui for fx-share q3 release
   tmp = require("./injector");
   tmp.InjectorInit(this._window);
   this._inject();
   win.appinjector.inject();
+*/
 
   tmp = require("./services");
   this._services = new tmp.serviceInvocationHandler(this._window);
@@ -137,7 +139,6 @@ openwebapps.prototype = {
     let win = this._window;
     let self = this;
 
-/* disable unwanted APIs for fx-share q3 release
     win.appinjector.register({
       apibase: "navigator.mozApps",
       name: "install",
@@ -184,66 +185,6 @@ openwebapps.prototype = {
       }
     });
 
-end disabling APIs for fx-share */
-
-    // this one kinda sucks - but it is the only way markh can find to
-    // pass a content object (eg, the iframe or the frame's content window).
-    // Attempting to pass it via self.emit() fails...
-    win.appinjector.register({
-      apibase: "navigator.mozApps.mediation",
-      name: "_invokeService",
-      script: null,
-      getapi: function(contentWindowRef) {
-        return function (iframe, activity, message, cb, cberr) {
-          if (activity.data) {
-           activity.data = JSON.parse(JSON.stringify(activity.data)); // flatten and reinflate...
-          }
-          self._services.invokeService(iframe.wrappedJSObject, activity, message, cb, cberr);
-        }
-      }
-    });
-
-    // XXX TEMPORARY HACK to allow our builtin apps to work for the all-hands demo
-    var {OAuthConsumer} = require("oauthorizer/oauthconsumer");
-    win.appinjector.register({
-      apibase: "navigator.mozApps.oauth",
-      name: "call",
-      script: null,
-      getapi: function(contentWindowRef) {
-        return function(svc, message, callback) {
-          OAuthConsumer.call(svc, message, function(req) {
-            //dump("oauth call response "+req.status+" "+req.statusText+" "+req.responseText+"\n");
-            let response = JSON.parse(req.responseText);
-            callback(response);
-          });
-        }
-      }
-    });
-
-    // services APIs
-    win.appinjector.register({
-      apibase: "navigator.mozApps.services",
-      name: "ready",
-      script: null,
-      getapi: function(contentWindowRef) {
-        return function(args) {
-          self._services.initApp(contentWindowRef.wrappedJSObject);
-        }
-      }
-    });
-
-    win.appinjector.register({
-      apibase: "navigator.mozApps.services",
-      name: "registerHandler",
-      script: null,
-      getapi: function(contentWindowRef) {
-        return function(activity, message, func) {
-          self._services.registerServiceHandler(contentWindowRef.wrappedJSObject, activity, message, func);
-        }
-      }
-    });
-
-/* disable unwanted APIs for fx-share q3 release
     // management APIs:
     win.appinjector.register({
       apibase: "navigator.mozApps.mgmt",
@@ -311,7 +252,29 @@ end disabling APIs for fx-share */
         }
       }
     });
-end disabling APIs for fx-share */
+
+    win.appinjector.register({
+      apibase: "navigator.mozApps.mgmt",
+      name: "watchUpdates",
+      script: null,
+      getapi: function(contentWindowRef) {
+        return function(callback) {
+          repo.verifyMgmtPermission(contentWindowRef.location);
+          return repo.watchUpdates(callback);
+        }
+      }
+    });
+    win.appinjector.register({
+      apibase: "navigator.mozApps.mgmt",
+      name: "clearWatch",
+      script: null,
+      getapi: function(contentWindowRef) {
+        return function(id) {
+          repo.verifyMgmtPermission(contentWindowRef.location);
+          repo.clearWatch(id);
+        }
+      }
+    });
   },
 
   registerBuiltInApp: function(domain, app, injector) {
