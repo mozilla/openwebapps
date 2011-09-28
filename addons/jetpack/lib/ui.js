@@ -134,7 +134,7 @@ var dashboard = {
       width: 754,
       position: "topcenter bottomright",
       contentURL: data.url("panel.html"),
-      contentScriptFile: [data.url("base32.js"), data.url("jquery-1.4.2.min.js"), data.url("panel.js")],
+      contentScriptFile: [data.url("base32.js"), data.url("jquery-1.4.4.min.js"), data.url("panel.js")],
 
       onShow: function() {
         self._repo.list(function(apps) {
