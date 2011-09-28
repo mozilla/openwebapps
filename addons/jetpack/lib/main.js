@@ -365,7 +365,7 @@ function setupAboutPageMods() {
   pageMod.PageMod({
     include: ["about:appshome*"],
     contentScriptWhen: 'start',
-    contentScriptFile: [addon.data.url('jquery-1.4.2.min.js'),
+    contentScriptFile: [addon.data.url('jquery-1.4.4.min.js'),
                         addon.data.url('base32.js'),
                         addon.data.url('home.js')],
     onAttach: function onAttach(worker) {
