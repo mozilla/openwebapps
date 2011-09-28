@@ -4,7 +4,6 @@
 <head>
   <link rel="stylesheet" type="text/css" href="service.css" />
   <script src="jquery-1.4.4.min.js" charset="utf-8" type="text/javascript"></script>
-  <script src="jquery-ui-1.8.10.custom.min.js" charset="utf-8" type="text/javascript"></script>
   <script src="jquery.tmpl.min.js" charset="utf-8" type="text/javascript"></script>
   <script src="service.js" charset="utf-8" type="text/javascript"></script>
 
@@ -28,9 +27,9 @@
 
 <script id="serviceTabs" type="text/x-jquery-tmpl">
   <div id="services">
-    <ul id="services-tabs">
+    <ul id="services-tabs" class="tabs">
       {{each( i, svc ) services}}
-      <li class="serviceTab">
+      <li class="serviceTab" data-for="svc-tab-${i}">
         <a href="#svc-tab-${i}">
           <img src="${svc.getIconForSize(48)}" class="serviceIcon"/>
           <div class="serviceTitle">${svc.app.manifest.name}</div>
@@ -38,9 +37,11 @@
       </li>
       {{/each}}
     </ul>
-    {{each( i, svc ) services}}
-    <div id="svc-tab-${i}" class="serviceDiv"></div>
-    {{/each}}
+    <div class="tab_container">
+      {{each( i, svc ) services}}
+      <div id="svc-tab-${i}" class="serviceDiv tab_content"></div>
+      {{/each}}
+    </div>
   </div>
 </script>
 
