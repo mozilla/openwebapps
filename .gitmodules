@@ -8,8 +8,11 @@
 
 [submodule "site/tests/serverjs/djangode"]
 	path = site/tests/serverjs/djangode
-	url = https://github.com/simonw/djangode.git
+	url = https://github.com/ianb/djangode.git
 
 [submodule "site/icongrid"]
 	path = site/icongrid
 	url = git@github.com:mozilla/icongrid.git
+[submodule "site/tests/jstestnetlib"]
+	path = site/tests/jstestnetlib
+	url = git://github.com/kumar303/jstestnetlib.git
