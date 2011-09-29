@@ -228,11 +228,16 @@ MediatorPanel.prototype = {
   },
 
   onOWALogin: function(params) {
+    let wasShowing = this.panel.isShowing;
     if (params.type == 'oauth') {
       try {
         let self = this;
         this.oauthAuthorize(params, function(result) {
           self.panel.port.emit("owa.mediation.onLogin", result);
+          // auth probably caused the panel to close - reopen it.
+          if (wasShowing && !self.panel.isShowing) {
+            self.show();
+          }
         });
       } catch(e) {
         dump("onLogin fail "+e+"\n");
