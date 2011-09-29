@@ -499,7 +499,18 @@ Repo = (function() {
   }
 
   function list(cb) {
-    if (cb && typeof cb == 'function') iterateApps(cb);
+    if (cb && typeof cb == 'function') {
+      // list() returns an array not an object
+      iterateApps(function(apps) {
+        var ret = [];
+        for (var appId in apps) {
+          var app = apps[appId];
+          app.origin = appId;
+          ret.push(app);
+        }
+        cb(ret);
+      });
+    }
   };
 
   function uninstall(origin, cb) {

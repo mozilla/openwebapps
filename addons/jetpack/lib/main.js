@@ -177,63 +177,6 @@ openwebapps.prototype = {
       }
     });
 
-    // this one kinda sucks - but it is the only way markh can find to
-    // pass a content object (eg, the iframe or the frame's content window).
-    // Attempting to pass it via self.emit() fails...
-    win.appinjector.register({
-      apibase: "navigator.mozApps.mediation",
-      name: "_invokeService",
-      script: null,
-      getapi: function(contentWindowRef) {
-        return function (iframe, activity, message, cb, cberr) {
-          if (activity.data) {
-           activity.data = JSON.parse(JSON.stringify(activity.data)); // flatten and reinflate...
-          }
-          self._services.invokeService(iframe.wrappedJSObject, activity, message, cb, cberr);
-        }
-      }
-    });
-
-    // XXX TEMPORARY HACK to allow our builtin apps to work for the all-hands demo
-    var {OAuthConsumer} = require("oauthorizer/oauthconsumer");
-    win.appinjector.register({
-      apibase: "navigator.mozApps.oauth",
-      name: "call",
-      script: null,
-      getapi: function(contentWindowRef) {
-        return function(svc, message, callback) {
-          OAuthConsumer.call(svc, message, function(req) {
-            //dump("oauth call response "+req.status+" "+req.statusText+" "+req.responseText+"\n");
-            let response = JSON.parse(req.responseText);
-            callback(response);
-          });
-        }
-      }
-    });
-
-    // services APIs
-    win.appinjector.register({
-      apibase: "navigator.mozApps.services",
-      name: "ready",
-      script: null,
-      getapi: function(contentWindowRef) {
-        return function(args) {
-          self._services.initApp(contentWindowRef.wrappedJSObject);
-        }
-      }
-    });
-
-    win.appinjector.register({
-      apibase: "navigator.mozApps.services",
-      name: "registerHandler",
-      script: null,
-      getapi: function(contentWindowRef) {
-        return function(activity, message, func) {
-          self._services.registerServiceHandler(contentWindowRef.wrappedJSObject, activity, message, func);
-        }
-      }
-    });
-
     // management APIs:
     win.appinjector.register({
       apibase: "navigator.mozApps.mgmt",
@@ -298,6 +241,28 @@ openwebapps.prototype = {
         return function(key, callback, onerror) {
           repo.verifyMgmtPermission(contentWindowRef.location);
           repo.uninstall(key, callback, onerror);
+        }
+      }
+    });
+    win.appinjector.register({
+      apibase: "navigator.mozApps.mgmt",
+      name: "watchUpdates",
+      script: null,
+      getapi: function(contentWindowRef) {
+        return function(callback) {
+          repo.verifyMgmtPermission(contentWindowRef.location);
+          return repo.watchUpdates(callback);
+        }
+      }
+    });
+    win.appinjector.register({
+      apibase: "navigator.mozApps.mgmt",
+      name: "clearWatch",
+      script: null,
+      getapi: function(contentWindowRef) {
+        return function(id) {
+          repo.verifyMgmtPermission(contentWindowRef.location);
+          repo.clearWatch(id);
         }
       }
     });
@@ -391,7 +356,7 @@ function setupAboutPageMods() {
   pageMod.PageMod({
     include: ["about:appshome*"],
     contentScriptWhen: 'start',
-    contentScriptFile: [addon.data.url('jquery-1.4.2.min.js'),
+    contentScriptFile: [addon.data.url('jquery-1.4.4.min.js'),
                         addon.data.url('base32.js'),
                         addon.data.url('home.js')],
     onAttach: function onAttach(worker) {
