@@ -89,6 +89,10 @@ FFRepoImpl.prototype = {
   },
 
   watchUpdates: function(callback) {
+    if (!callback || typeof callback != "function") {
+      return false;
+    }
+    
     let id = this._counter;
     this._contentListeners[id] = callback;
     this._counter += 1;
@@ -246,7 +250,8 @@ FFRepoImpl.prototype = {
             skipPostInstallDashboard: args.skipPostInstallDashboard ? args.skipPostInstallDashboard : false
           }));
           for (let id in self._contentListeners) {
-            self._contentListeners[id]("add", [app]);
+            let func = self._contentListeners[id];
+            if (func && typeof func == "function") func("add", [app]);
           }
         });
         // create OS-local application
@@ -282,7 +287,8 @@ FFRepoImpl.prototype = {
             null, "openwebapp-uninstalled", null
           );
           for (let id in self._contentListeners) {
-            self._contentListeners[id]("remove", [app]);
+            let func = self._contentListeners[id];
+            if (func && typeof func == "function") func("remove", [app]);
           }
         });
         onsuccess(result);
@@ -304,8 +310,14 @@ FFRepoImpl.prototype = {
 
     // this is where we could have a whitelist of acceptable management
     // domains.
-    if (origin.host == "127.0.0.1:60172" || /* special case for unit testing: to be removed when we get capability tracking for mgmt! */
-    origin.host == "myapps.mozillalabs.com" || origin.host == "stage.myapps.mozillalabs.com" || origin.host == "apps.mozillalabs.com" || origin.host == "localhost:8010" || origin.toString().substr(0, 10) == "about:apps" || origin.toString().substr(0, 9) == "resource:") {
+    let allowedOrigins = {
+      "127.0.0.1:60172":"", "myapps.mozillalabs.com":"",
+      "stage.myapps.mozillalabs.com":"", "apps.mozillalabs.com":"",
+      "localhost:8010":"", "localhost":""
+    };
+    if (origin.host in allowedOrigins ||
+        origin.toString().substr(0, 10) == "about:apps" ||
+        origin.toString().substr(0, 9) == "resource:") {
       return;
     }
 
