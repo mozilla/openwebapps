@@ -19,6 +19,27 @@
     <script type="text/javascript" src="/jsapi/include.js"></script>
     <script type="text/javascript" src="/jsapi/jschannel.js"></script>
     <script type="text/javascript" src="/servers.js"></script>
+    <script type="text/javascript"> 
+function param(name)
+{
+    name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+    var regexS = "[\\?&]"+name+"=([^\\?&#]*)";
+    var regex = new RegExp( regexS );
+    var results = regex.exec( window.location.href );
+    if( results == null )
+        return "";
+    else
+        return results[1];
+}
+
+if (param("runnerType") == "jstestnet") {
+    var headID = document.getElementsByTagName("head")[0];         
+    var newScript = document.createElement('script');
+    newScript.type = 'text/javascript';
+    newScript.src = '/tests/jstestnet/adapter/jstestnet.js';
+    headID.appendChild(newScript);
+}
+</script> 
 
 </head>
 <body class="autodoctest">
@@ -38,6 +59,7 @@
 {% endblock %}
 
 {% block extrajs %}
+
 {% endblock %}
 
 </body>

@@ -4,11 +4,9 @@
   "icons": {
         "128": "/does/not/exist/yet"
   },
-  "experimental": {
-    "services": {
-      "test.basic": {
-        "endpoint": "/apps/basic/basic.html"
-      }
+  "services": {
+    "test.basic": {
+       "path": "/basic.html"
     }
   }
 }

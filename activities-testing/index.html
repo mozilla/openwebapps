@@ -1,0 +1,53 @@
+<head>
+  <!-- utilities -->
+  <script src="underscore-min.js" type="text/javascript"></script>
+  <script src="jquery-1.6.2.min.js" type="text/javascript"></script>
+
+  <!-- framework shim -->
+  <script src="webactivities.js" type="text/javascript"></script>
+
+  <script type="text/javascript">
+    $(document).ready(function() {
+      $('#share').hide();
+      $('#recipient').hide();
+    });
+  </script>
+</head>
+<body>
+  <h2>Web Activities Test Harness</h2>
+  <p>
+    Customize the behavior of the activity by editing <tt>example-activity.js</tt><br />
+    Customize the login page by editing <tt>login.html</tt>.
+  </p>
+  <hr>
+  <div id="setup">
+  <button onclick="navigator.apps.services.setup();">setup</button>
+  <hr>
+  </div>
+  <div id="share">
+  <h3>Share Something</h3>
+  <form onsubmit="navigator.apps.services.testShare(this.message.value); return false;">
+    <div id="shareTypes">
+      <select name="shareType" id="shareType">
+      </select>
+      <span id="recipient">
+        <span id="toLabel"></span>: <input type="text" name="to" size="60" id="recipients_input" />
+      </span>
+    </div>
+    <br />
+    Message:<br />
+    <textarea name="message" rows=3 cols=80 wrap="soft"></textarea><br />
+    <input type="submit" value="share" />
+  </form>
+<br /><br />
+</div>
+<p id="credentials">
+<em>not logged in</em>
+</p>
+
+<h4>Log</h4>
+
+<div id="log">
+</div>
+
+</body>

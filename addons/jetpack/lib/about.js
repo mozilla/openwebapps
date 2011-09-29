@@ -1,3 +1,5 @@
+/* -*- Mode: JavaScript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* vim: set ts=2 et sw=2 tw=80: */
 /* ***** BEGIN LICENSE BLOCK *****
 * Version: MPL 1.1
 *
@@ -22,14 +24,12 @@
 * Contributor(s):
 * */
 
-const {Cc, Ci, Cu} = require("chrome");
+const { Cc, Ci, Cu } = require("chrome");
 
 require("api");
 
-function AboutApps(win)
-{
+function AboutApps(win) {
   this._window = win;
-  
 }
 
 AboutApps.prototype = {
@@ -38,9 +38,8 @@ AboutApps.prototype = {
     if (clazz) e.setAttribute("class", clazz);
     return e;
   },
-  
-  _render: function render()
-  {
+
+  _render: function render() {
     var repo = FFRepoImplService;
     var appDict;
     repo.list(function(aDict) {
@@ -50,10 +49,10 @@ AboutApps.prototype = {
 
     var idx = this._window.location.href.indexOf("?");
     if (idx > 0) {
-      var argstr = this._window.location.href.substring(idx+1);
+      var argstr = this._window.location.href.substring(idx + 1);
       var args = argstr.split("&");
       var params = {}
-      for each (var a in args) {
+      for each(var a in args) {
         var sp = a.split("=", 2)
         params[sp[0]] = sp[1];
       }
@@ -68,10 +67,10 @@ AboutApps.prototype = {
           this._window.contentDocument.title = "Source of application: " + params["appid"];
           var box = this._elem("div", "viewsrc");
           container.appendChild(box);
-          
+
           function renderValue(parent, key, val, aBox) {
             if (parent == "icons") {
-              aBox.setAttribute("style", "margin:4px;width:" + key + "px;height:" + key+ "px;background-image:url(\"" + theApp.origin + val + "\")");
+              aBox.setAttribute("style", "margin:4px;width:" + key + "px;height:" + key + "px;background-image:url(\"" + theApp.origin + val + "\")");
 
             } else if (key == "installTime") {
               aBox.appendChild(this._window.contentDocument.createTextNode("" + new Date(val) + " - " + val));
@@ -79,7 +78,7 @@ AboutApps.prototype = {
               aBox.appendChild(this._window.contentDocument.createTextNode(val));
             }
           }
-          
+
           function renderObj(parentKey, obj, aContainer) {
             for (var key in obj) {
               if (typeof obj[key] == "object") {
@@ -96,7 +95,7 @@ AboutApps.prototype = {
                 var row = this._elem("div", "row");
                 var label = this._elem("div", "label");
                 var value = this._elem("div", "value");
-                
+
                 label.appendChild(this._window.contentDocument.createTextNode(key));
                 renderValue(parentKey, key, obj[key], value);
                 row.appendChild(label);
@@ -106,18 +105,15 @@ AboutApps.prototype = {
             }
           }
           renderObj("", theApp, box);
-          
-        }
-        else if (params["viewraw"]) {
+
+        } else if (params["viewraw"]) {
           var container = this._window.contentDocument.getElementById("viewraw");
           var pre = this._elem("div", "raw");
           container.appendChild(pre);
           pre.appendChild(this._window.contentDocument.createTextNode(JSON.stringify(theApp)));
         }
       }
-    }
-    else
-    {
+    } else {
       function getBiggestIcon(minifest) {
         //see if the minifest has any icons, and if so, return the largest one
         if (minifest.icons) {
@@ -131,8 +127,7 @@ AboutApps.prototype = {
         return null;
       }
 
-      function formatDate(dateStr)
-      {
+      function formatDate(dateStr) {
         if (!dateStr) return "null";
 
         var now = new Date();
@@ -140,40 +135,39 @@ AboutApps.prototype = {
 
         if (then.getTime() > now.getTime()) {
           return "the future";
-        }
-        else if (then.getMonth() != now.getMonth() || then.getDate() != now.getDate())
-        {
-           var dayDelta = (new Date().getTime() - then.getTime() ) / 1000 / 60 / 60 / 24 // hours
-           if (dayDelta < 2) str = "yesterday";
-           else if (dayDelta < 7) str = Math.floor(dayDelta) + " days ago";
-           else if (dayDelta < 14) str = "last week";
-           else if (dayDelta < 30) str = Math.floor(dayDelta) + " days ago";
-           else str = Math.floor(dayDelta /30) + " month" + ((dayDelta/30>2)?"s":"") + " ago";
+        } else if (then.getMonth() != now.getMonth() || then.getDate() != now.getDate()) {
+          var dayDelta = (new Date().getTime() - then.getTime()) / 1000 / 60 / 60 / 24 // hours
+          if (dayDelta < 2) str = "yesterday";
+          else if (dayDelta < 7) str = Math.floor(dayDelta) + " days ago";
+          else if (dayDelta < 14) str = "last week";
+          else if (dayDelta < 30) str = Math.floor(dayDelta) + " days ago";
+          else str = Math.floor(dayDelta / 30) + " month" + ((dayDelta / 30 > 2) ? "s" : "") + " ago";
         } else {
-            var str;
-            var hrs = then.getHours();
-            var mins = then.getMinutes();
+          var str;
+          var hrs = then.getHours();
+          var mins = then.getMinutes();
 
-            var hr = Math.floor(Math.floor(hrs) % 12);
-            if (hr == 0) hr =12;
-            var mins = Math.floor(mins);
-            str = hr + ":" + (mins < 10 ? "0" : "") + Math.floor(mins) + " " + (hrs >= 12 ? "P.M." : "A.M.") + " today";
+          var hr = Math.floor(Math.floor(hrs) % 12);
+          if (hr == 0) hr = 12;
+          var mins = Math.floor(mins);
+          str = hr + ":" + (mins < 10 ? "0" : "") + Math.floor(mins) + " " + (hrs >= 12 ? "P.M." : "A.M.") + " today";
         }
         return str;
       }
 
       var appListContainer = this._window.contentDocument.getElementById("applist");
       appListContainer.innerHTML = "";
-      
+
       var empty = true;
-      for (let appID in appDict)
-      {
+      for (let appID in appDict) {
         empty = false;
+
         function makeLaunchFn(appID) {
           return function() {
             repo.launch(appID);
           }
         }
+
         function makeDeleteFn(appID, container) {
           return function() {
             repo.uninstall(appID, function() {});
@@ -185,11 +179,13 @@ AboutApps.prototype = {
               container.style.paddingBottom = 0;
               container.style.marginBottom = 0;
             }, 0);
-            this._window.setTimeout(function() {appListContainer.removeChild(container)}, 500);
+            this._window.setTimeout(function() {
+              appListContainer.removeChild(container)
+            }, 500);
             return false;
           }
         }
-        
+
         var appRow = this._elem("div", "app");
         var appCfg = this._elem("div", "configure");
         var appIcon = this._elem("div", "icon");
@@ -198,7 +194,7 @@ AboutApps.prototype = {
         var appTextBox = this._elem("div", "textbox");
         var appName = this._elem("div", "name");
         var appReceipt = this._elem("div", "receipt");
-        
+
         appRow.appendChild(appCfg);
         appRow.appendChild(appDetail);
         appDetail.appendChild(appIcon);
@@ -220,18 +216,18 @@ AboutApps.prototype = {
         deleteLink.appendChild(this._window.contentDocument.createTextNode("Delete"));
         appCfg.appendChild(deleteLink);
 
-       
+
         // Detail
         var iconUrl = theApp.origin + getBiggestIcon(theApp.manifest);
         appIcon.setAttribute("style", "background-image:url(\"" + iconUrl + "\")");
         appIcon.onclick = makeLaunchFn(appID);
-        
+
         appName.appendChild(this._window.contentDocument.createTextNode(theApp.manifest.name));
         appReceipt.appendChild(this._window.contentDocument.createTextNode("Installed " + formatDate(theApp.install_time) + ", "));
 
         if (theApp.install_origin == "chrome://openwebapps") {
           appReceipt.appendChild(this._window.contentDocument.createTextNode("directly from the site"));
-        } else{
+        } else {
           var domainLink = this._elem("a");
           domainLink.href = theApp.install_origin;
           domainLink.target = "_blank";

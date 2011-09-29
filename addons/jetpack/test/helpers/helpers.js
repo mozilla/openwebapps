@@ -10,16 +10,20 @@ exports.getOWA = function() {
   return window.apps;
 }
 
+exports.getTestUrl = getTestUrl = function(testRelPath) {
+  let lastSlash = module.id.lastIndexOf("/");
+  return module.id.substr(0, lastSlash+1) + "../" + testRelPath;
+}
+
 function getTestAppOptions(appRelPath) {
   // first find the URL of the app.
-  let lastSlash = module.id.lastIndexOf("/");
-  let manifest = module.id.substr(0, lastSlash+1) + "../" + appRelPath;
-  let origin = manifest.substr(0, manifest.lastIndexOf("/"));
+  let manifest = getTestUrl(appRelPath);
+  let origin = manifest.substr(0, manifest.lastIndexOf("/")+1);
 
   return {
     url: manifest,
     origin: origin,
-    hidePostInstallPrompt: true // don't want the app panel to appear.
+    skipPostInstallDashboard: true // don't want the app panel to appear.
   };
 };
 

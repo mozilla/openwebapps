@@ -1,3 +1,5 @@
+/* -*- Mode: JavaScript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* vim: set ts=2 et sw=2 tw=80: */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -39,7 +41,7 @@
 /* Inject the People content API into window.navigator objects. */
 /* Partly based on code in the Geode extension. */
 
-const {Cc, Ci, Cu} = require("chrome");
+const { Cc, Ci, Cu } = require("chrome");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
 const ALL_GROUP_CONSTANT = "___all___";
@@ -48,7 +50,6 @@ let refreshed;
 let Injector = {
   // Injector will inject code into the browser content.  The provider class
   // looks like:
-  
   //  var someapiprovider = {
   //    apibase: null, // null == 'navigator.mozilla.labs', or define your own namespace
   //    name: 'my_fn_name', // builds to 'navigator.mozilla.labs.my_fn_name'
@@ -67,18 +68,15 @@ let Injector = {
   //  be used from any webpage like:
   //
   //  navigator.mozilla.labs.my_fn_name();
-
   //**************************************************************************//
-  // 
-
+  //
   _scriptToInject: function(provider) {
     // a provider may use it's own script to inject its api
-    if (provider.script)
-      return provider.script;
+    if (provider.script) return provider.script;
 
     // otherwise, use a builtin injector script that we load from this
     // function object:
-    let script =  (function () {
+    let script = (function() {
       // __API_* strings are replaced in injector.js with specifics from
       // the provider class
       let apibase = '__API_BASE__';
@@ -86,8 +84,7 @@ let Injector = {
       let api_ns = apibase.split('.');
       let api = this;
       for (let i in api_ns) {
-        if (!api[api_ns[i]]) 
-          api[api_ns[i]] = {}
+        if (!api[api_ns[i]]) api[api_ns[i]] = {}
         api = api[api_ns[i]]
       }
       api[fname] = this['__API_INJECTED__'];
@@ -96,15 +93,13 @@ let Injector = {
     }).toString();
 
     let apibase = provider.apibase ? provider.apibase : 'navigator.mozilla.labs';
-    script = script.replace(/__API_BASE__/g, apibase)
-                  .replace(/__API_NAME__/g, provider.name)
-                  .replace(/__API_INJECTED__/g, '__mozilla_injected_api_'+(provider.mangledName?provider.mangledName:provider.name)+'__');
+    script = script.replace(/__API_BASE__/g, apibase).replace(/__API_NAME__/g, provider.name).replace(/__API_INJECTED__/g, '__mozilla_injected_api_' + (provider.mangledName ? provider.mangledName : provider.name) + '__');
     //dump(script+"\n");
     // return a wrapped script that executes the function
-    return "("+script+")();";
+    return "(" + script + ")();";
   },
 
-  /*
+/*
    * _inject
    *
    * Injects the content API into the specified DOM window.
@@ -113,13 +108,16 @@ let Injector = {
     // ensure we're dealing with a wrapped native
     var safeWin = new XPCNativeWrapper(win);
     // options here are ignored for 3.6
-    let sandbox = new Cu.Sandbox(safeWin, { sandboxProto: safeWin, wantXrays: true });
-    /*let sandbox = new Cu.Sandbox(
+    let sandbox = new Cu.Sandbox(safeWin, {
+      sandboxProto: safeWin,
+      wantXrays: true
+    });
+/*let sandbox = new Cu.Sandbox(
         Cc["@mozilla.org/systemprincipal;1"].
-           createInstance(Ci.nsIPrincipal), 
+           createInstance(Ci.nsIPrincipal),
     );*/
 
-    sandbox.importFunction(provider.getapi(safeWin), '__mozilla_injected_api_'+(provider.mangledName?provider.mangledName:provider.name)+'__');
+    sandbox.importFunction(provider.getapi(safeWin), '__mozilla_injected_api_' + (provider.mangledName ? provider.mangledName : provider.name) + '__');
     sandbox.window = safeWin;
     sandbox.navigator = safeWin.navigator.wrappedJSObject;
     Cu.evalInSandbox(this._scriptToInject(provider), sandbox, "1.8");
@@ -130,6 +128,7 @@ let Injector = {
 
 
 // hook up a separate listener for each xul window
+
 function InjectorInit(window) {
   if (window.appinjector) return;
   window.appinjector = {
@@ -137,13 +136,12 @@ function InjectorInit(window) {
     actions: [],
     onLoad: function() {
       var obs = Cc["@mozilla.org/observer-service;1"].
-                            getService(Ci.nsIObserverService);
+      getService(Ci.nsIObserverService);
       obs.addObserver(this, 'content-document-global-created', false);
     },
-  
+
     onUnload: function() {
-      var obs = Cc["@mozilla.org/observer-service;1"].
-                            getService(Ci.nsIObserverService);
+      var obs = Cc["@mozilla.org/observer-service;1"].getService(Ci.nsIObserverService);
       obs.removeObserver(this, 'content-document-global-created');
     },
 
@@ -157,12 +155,7 @@ function InjectorInit(window) {
     observe: function(aSubject, aTopic, aData) {
       //if (!aSubject.location.href) return;
       // is this window a child of OUR XUL window?
-      let mainWindow = aSubject.QueryInterface(Ci.nsIInterfaceRequestor)
-                     .getInterface(Ci.nsIWebNavigation)
-                     .QueryInterface(Ci.nsIDocShellTreeItem)
-                     .rootTreeItem
-                     .QueryInterface(Ci.nsIInterfaceRequestor)
-                     .getInterface(Ci.nsIDOMWindow);
+      let mainWindow = aSubject.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIWebNavigation).QueryInterface(Ci.nsIDocShellTreeItem).rootTreeItem.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIDOMWindow);
       // *sob* - this check prevents the API from being injected in content
       // loaded into a jetpack panel...
       // if (mainWindow != window) {

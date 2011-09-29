@@ -1,5 +1,5 @@
 // Inject a new API into navigator to present a merged web & native app list
-navigator.apps = (function() {
+navigator.mozApps = (function() {
     var _state;
     var _nativeApps = {};
 

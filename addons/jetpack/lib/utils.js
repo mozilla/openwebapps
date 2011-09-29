@@ -1,3 +1,5 @@
+/* -*- Mode: JavaScript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* vim: set ts=2 et sw=2 tw=80: */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -33,45 +35,45 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
- 
-const {Cc, Cu, Ci} = require("chrome");
+
+const { Cc, Cu, Ci } = require("chrome");
 const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
 utils = (function() {
-    // expects a top-level XUL window into from which an IFRAME can be created
-    // on_ready fires when the iframe is ready to go, with params:
-    // - iframe object
-    // - messagechannel to post messages to
-    //
-    // by default, this is an invisible iframe
-    function create_iframe(win, url, on_ready, on_error) {
-        let doc = win.document;
-        let frame = doc.createElementNS(XUL_NS, "iframe");
-        frame.setAttribute("type", "content");
-        frame.setAttribute("collapsed", true);
-        frame.setAttribute("src",url);
+  // expects a top-level XUL window into from which an IFRAME can be created
+  // on_ready fires when the iframe is ready to go, with params:
+  // - iframe object
+  // - messagechannel to post messages to
+  //
+  // by default, this is an invisible iframe
 
-        // add a close function
-        frame.close = function() {
-            dump("closing");
-            win.document.documentElement.removeChild(frame);
-        };
 
-        let ready_fired_p = false;
-        frame.addEventListener("DOMContentLoaded", function(event) {
-            if (event.target.location == url)
-                on_ready(frame, null);
-            ready_fired_p = true;
-        }, true);
+  function create_iframe(win, url, on_ready, on_error) {
+    let doc = win.document;
+    let frame = doc.createElementNS(XUL_NS, "iframe");
+    frame.setAttribute("type", "content");
+    frame.setAttribute("collapsed", true);
+    frame.setAttribute("src", url);
 
-        doc.documentElement.appendChild(frame);
-    }
-
-    return {
-        create_iframe: create_iframe,
+    // add a close function
+    frame.close = function() {
+      dump("closing");
+      win.document.documentElement.removeChild(frame);
     };
+
+    let ready_fired_p = false;
+    frame.addEventListener("DOMContentLoaded", function(event) {
+      if (event.target.location == url) on_ready(frame, null);
+      ready_fired_p = true;
+    }, true);
+
+    doc.documentElement.appendChild(frame);
+  }
+
+  return {
+    create_iframe: create_iframe
+  };
 })();;
 
 var EXPORTED_SYMBOLS = ["utils"];
 exports.utils = utils;
-

@@ -63,13 +63,13 @@ $(document).ready(function() {
         $(".upsell").unbind('click').html("I'm installed!  You can check me out on your <a href='https://myapps.mozillalabs.com'>dashboard</a>.");
     }
 
-    navigator.apps.amInstalled(function(data) {
+    navigator.mozApps.amInstalled(function(data) {
         if (data) {
             izInstalled();
         } else {
             var contents = $("<span>Wanna <span>install me</span>?  Then click!</span>");
             $(".upsell").append(contents).click(function() {
-                navigator.apps.install({
+                navigator.mozApps.install({
                     url: "/manifest.webapp",
                     onsuccess: function() {
                         izInstalled();

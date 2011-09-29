@@ -1,11 +1,13 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!--<!DOCTYPE html [
 <!ENTITY locale.dir "en-US">
 <!ENTITY abouthome.pageTitle "Mozilla Firefox">
 <!ENTITY abouthome.searchEngineButton.label "Search">
 <!ENTITY abouthome.aboutMozilla "About Mozilla">
 ]>-->
-<!DOCTYPE html [
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"
+[
   <!ENTITY % htmlDTD
     PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
     "DTD/xhtml1-strict.dtd">
@@ -19,97 +21,89 @@
 ]>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
-  <head>
+<head>
+  <title>&abouthome.pageTitle;</title>
+  <link rel="icon" type="image/png" id="favicon" href="chrome://branding/content/icon16.png" />
+</head>
 
-    <title>&abouthome.pageTitle;</title>
+<body dir="&locale.dir;" onload="onLoad(event)">
+  <div id="brandStartSpacer"></div>
 
-    <base href="resource://openwebapps-at-mozillalabs-dot-com-openwebapps-data/" />
-    <link rel="icon" type="image/png" id="favicon"
-          href="chrome://branding/content/icon16.png"/>
-    <link rel="stylesheet" type="text/css" media="all"
-          href="./home.css"/>
+  <div id="brandStart"><img id="brandStartLogo" src="chrome://branding/content/about-logo.png" alt="" name="brandStartLogo" /></div>
 
-    <script type="text/javascript;version=1.8" src="./jquery-1.4.2.min.js"/>
-    <script type="text/javascript;version=1.8" src="./base32.js"/>
+  <div id="searchContainer">
+    <form name="searchForm" id="searchForm" onsubmit="onSearchSubmit(event)">
+      <div id="searchLogoContainer"><img id="searchEngineLogo" name="searchEngineLogo" /></div>
 
-    <script type="text/javascript;version=1.8"
-            src="./home.js"/>
-  </head>
+      <div id="searchInputContainer">
+        <input type="text" name="q" value="" id="searchText" maxlength="256" />
+      </div>
 
-  <body dir="&locale.dir;" onload="onLoad(event)">
-    <div id="brandStartSpacer" />
+      <div id="searchButtons">
+        <input id="searchSubmit" type="submit" value="&abouthome.searchEngineButton.label;" />
+      </div>
+    </form>
+  </div>
 
-    <div id="brandStart">
-      <img id="brandStartLogo" src="chrome://branding/content/about-logo.png" alt="" />
-    </div>
-
-    <div id="searchContainer">
-      <form name="searchForm" id="searchForm" onsubmit="onSearchSubmit(event)">
-        <div id="searchLogoContainer"><img id="searchEngineLogo" /></div>
-        <div id="searchInputContainer">
-          <input type="text" name="q" value="" id="searchText" maxlength="256" />
-
-        </div>
-        <div id="searchButtons">
-          <input id="searchSubmit" type="submit" value="&abouthome.searchEngineButton.label;" />
-        </div>
-      </form>
-    </div>
-
-    <div id="contentContainer">
-
-      <div id="webcontentContainer">
-        <div id="webcontentPad" class="contentBox">
-          <div id="webappContainer">
-            <div class="containerTopbar">
-              <div class="label">Web Apps</div>
-              <div id="webAppsClosebox" class="closebox"></div>
-              <div id="applist"></div>
+  <div id="contentContainer">
+    <div id="webcontentContainer">
+      <div id="webcontentPad" class="contentBox">
+        <div id="webappContainer">
+          <div class="containerTopbar">
+            <div class="label">
+              Web Apps
             </div>
+
+            <div id="webAppsClosebox" class="closebox"></div>
+
+            <div id="applist"></div>
           </div>
-          <div id="topsitesContainer">
-            <div class="containerTopbar">
-              <div class="label">Top Sites</div>
-              <div id="topSitesClosebox" class="closebox"></div>
+        </div>
+
+        <div id="topsitesContainer">
+          <div class="containerTopbar">
+            <div class="label">
+              Top Sites
             </div>
+
+            <div id="topSitesClosebox" class="closebox"></div>
           </div>
         </div>
       </div>
+    </div>
 
-      <div id="rightBarContainer">
-        <div id="rightBarPad">
-
-          <div id="widgetContainer" class="contentBox">
-            <div id="widget1" class="widget">
-              <div class="containerTopbar">
-                <div class="label">Weather in Mountain View, CA</div>
-                <div id="widget1Closebox" class="closebox"></div>
-                <br clear="all"/>
-<a href="http://www.wunderground.com/cgi-bin/findweather/getForecast?query=zmw:94040.1.99999&amp;bannertypeclick=wu_bluestripes">
-  <img src="http://weathersticker.wunderground.com/weathersticker/cgi-bin/banner/ban/wxBanner?bannertype=wu_bluestripes&amp;airportcode=KNUQ&amp;ForcedCity=Mountain View&amp;ForcedState=CA&amp;zipcode=94040&amp;language=EN" alt="Click for Mountain View, California Forecast" height="90" width="160" />
-</a>
+    <div id="rightBarContainer">
+      <div id="rightBarPad">
+        <div id="widgetContainer" class="contentBox">
+          <div id="widget1" class="widget">
+            <div class="containerTopbar">
+              <div class="label">
+                Weather in Mountain View, CA
               </div>
-            </div>
 
-          </div>
-          <div id="notificationContainer" class="contentBox">
-            <div class="containerTopbar">
-              <div class="label">News</div>
-              <div idclass="closebox"></div>
+              <div id="widget1Closebox" class="closebox"></div><br clear="all" />
+              <a href="http://www.wunderground.com/cgi-bin/findweather/getForecast?query=zmw:94040.1.99999&amp;bannertypeclick=wu_bluestripes"><img src="http://weathersticker.wunderground.com/weathersticker/cgi-bin/banner/ban/wxBanner?bannertype=wu_bluestripes&amp;airportcode=KNUQ&amp;ForcedCity=Mountain%20View&amp;ForcedState=CA&amp;zipcode=94040&amp;language=EN" alt="Click for Mountain View, California Forecast" height="90" width="160" /></a>
             </div>
           </div>
         </div>
+
+        <div id="notificationContainer" class="contentBox">
+          <div class="containerTopbar">
+            <div class="label">
+              News
+            </div>
+
+            <div idclass="closebox"></div>
+          </div>
+        </div>
       </div>
-      
-<!--      <div id="firefoxContainer" class="contentBox">
+    </div><!--      <div id="firefoxContainer" class="contentBox">
         <div class="containerTopbar">
           <div class="label">My Firefox</div>
           <div idclass="closebox"></div>
         </div>
       </div>-->
-    </div>
-
-<!--    <div id="contentContainer">
+  </div><!--    <div id="contentContainer">
       <div id="snippetContainer">
         <div id="defaultSnippets" hidden="true">
           <span>&abouthome.defaultSnippet1.v1;</span>
@@ -122,11 +116,11 @@
       </div>
     </div>
 -->
-    <div id="bottomSection">
-      <div id="aboutMozilla">
-        <a href="http://www.mozilla.com/about/">&abouthome.aboutMozilla;</a>
-      </div>
-    </div>
-  </body>
 
+  <div id="bottomSection">
+    <div id="aboutMozilla">
+      <a href="http://www.mozilla.com/about/">&abouthome.aboutMozilla;</a>
+    </div>
+  </div>
+</body>
 </html>
