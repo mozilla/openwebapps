@@ -12,7 +12,7 @@
 
 [submodule "site/icongrid"]
 	path = site/icongrid
-	url = git@github.com:mozilla/icongrid.git
+	url = http://github.com/mozilla/icongrid.git
 [submodule "site/tests/jstestnetlib"]
 	path = site/tests/jstestnetlib
 	url = git://github.com/kumar303/jstestnetlib.git
