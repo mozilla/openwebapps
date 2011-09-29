@@ -123,19 +123,21 @@ Service.prototype = {
   }
 };
 
-window.navigator.mozApps.mediation.startLogin = function(origin) {
-  self.port.once("owa.mediation.onLogin", function(params) {
-    allServices[origin].call("setAuthorization", params, function() {
-      // dispatch servicechanged
-      allServices[origin]._invokeOn("serviceChanged");
-    });
+self.port.on("owa.mediation.onLogin", function(params) {
+  let {app, credentials} = params;
+  allServices[app].call("setAuthorization", credentials, function() {
+    // dispatch servicechanged
+    allServices[app]._invokeOn("serviceChanged");
   });
+});
+
+window.navigator.mozApps.mediation.startLogin = function(origin) {
   allServices[origin].call("getParameters", {}, function(params) {
     // due to a limitation in our implementation, this getParameters call is
     // actually made on the "main" service rather than on the login specific
     // service - so for now we assume the auth specific data is wrapped in
     // an 'auth' element in the result.
-    self.port.emit("owa.mediation.doLogin", params.auth)
+    self.port.emit("owa.mediation.doLogin", {app: origin, auth: params.auth})
   });
 }
 unsafeWindow.navigator.mozApps.mediation.startLogin = window.navigator.mozApps.mediation.startLogin;

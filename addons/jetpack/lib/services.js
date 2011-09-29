@@ -228,30 +228,32 @@ MediatorPanel.prototype = {
   },
 
   onOWALogin: function(params) {
-    if (params.type == 'oauth') {
+    let {app, auth} = params;
+    if (auth.type == 'oauth') {
       try {
         let self = this;
-        this.oauthAuthorize(params, function(result) {
-          self.panel.port.emit("owa.mediation.onLogin", result);
+        this.oauthAuthorize(auth, function(result) {
+          let params = {app: app, credentials: result};
+          self.panel.port.emit("owa.mediation.onLogin", params);
         });
       } catch(e) {
         dump("onLogin fail "+e+"\n");
       }
     } else
-    if (params.type == 'dialog') {
+    if (auth.type == 'dialog') {
       // I don't see how to set width/height with addon-sdk windows, so
       // we'll just do it the old fashioned way.  We use a full browser
       // window so that we get the urlbar, security status, etc.
-      var url = params.url,
-        w = params.width || 600,
-        h = params.height || 600,
+      var url = auth.url,
+        w = auth.width || 600,
+        h = auth.height || 600,
         win = window.open(url,
             "owaLoginWindow",
             "dialog=no, modal=yes, width="+w+", height="+h+", scrollbars=yes");
       win.focus();
     } else {
       dump("XXX UNSUPPORTED LOGIN TYPE\n");
-      this.panel.port.emit("owa.mediation.onLogin", {});
+      this.panel.port.emit(eventName, {app: app, credentials: {}});
     }
   },
 
