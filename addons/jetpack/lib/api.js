@@ -89,6 +89,10 @@ FFRepoImpl.prototype = {
   },
 
   watchUpdates: function(callback) {
+    if (!callback || typeof callback != "function") {
+      return false;
+    }
+    
     let id = this._counter;
     this._contentListeners[id] = callback;
     this._counter += 1;
@@ -246,7 +250,8 @@ FFRepoImpl.prototype = {
             skipPostInstallDashboard: args.skipPostInstallDashboard ? args.skipPostInstallDashboard : false
           }));
           for (let id in self._contentListeners) {
-            self._contentListeners[id]("add", [app]);
+            let func = self._contentListeners[id];
+            if (func && typeof func == "function") func("add", [app]);
           }
         });
         // create OS-local application
@@ -282,7 +287,8 @@ FFRepoImpl.prototype = {
             null, "openwebapp-uninstalled", null
           );
           for (let id in self._contentListeners) {
-            self._contentListeners[id]("remove", [app]);
+            let func = self._contentListeners[id];
+            if (func && typeof func == "function") func("remove", [app]);
           }
         });
         onsuccess(result);
