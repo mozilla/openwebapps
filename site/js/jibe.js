@@ -28,15 +28,10 @@ function getIconForSize(targetSize, minifest)
 
 $(document).ready(function() {
     /* IconGrid */
+    var addItemToGridCallback;
+    var removeItemFromGridCallback;
+
     var appData = {
-
-        // DAN'S VERSION I commented it out in favor of Anant's, which builds the dictionary, 
-        // since the result of list() is now just an array
-        // getItemList: function(callback) {
-        //   var self = this;
-        //   navigator.mozApps.mgmt.list( function(theApps) { self.callback(theApps)});
-        // },
-
         getItemList: function(cb) {
             navigator.mozApps.mgmt.list(function(apps) {
                 var list = {};
@@ -44,22 +39,12 @@ $(document).ready(function() {
                     var app = apps[i];
                     list[app.origin] = {
                         itemTitle: app.manifest.name,
-                        itemImgURL: origin + getIconForSize(48, app.manifest)
+                        itemImgURL: app.origin + getIconForSize(48, app.manifest)
                     };
                 }
                 cb(list);
             });
         },
-
-        // ANANT'S VERSION.  I commented it out, because I think it can just be the simpler version below
-        // openItem: function(itemID) {
-        //     var url = itemID;
-        //     var app = apps[itemID];
-        //     if ('launch_path' in app.manifest) {
-        //         url += app.manifest.launch_path;
-        //     }
-        //     window.open(url);
-        // },
 
         openItem: function(itemID) {
           navigator.mozApps.mgmt.launch(itemID);
@@ -70,7 +55,7 @@ $(document).ready(function() {
           navigator.mozApps.mgmt.uninstall(itemID);
         },
 
-
+        // TODO: Hook up with watchUpdates
         handleWatcher: function(cmd, itemArray) {
             var i;
             if (cmd == "add") {
@@ -85,12 +70,10 @@ $(document).ready(function() {
         },
 
         // Important callbacks for updates
-        removeItemFromGridCallback: undefined,
         setRemovalCallback: function(callback) {
           removeItemFromGridCallback = callback;
         },
 
-        addItemToGridCallback: undefined,
         setAdditionCallback: function(callback) {
           addItemToGridCallback = callback;
         },
