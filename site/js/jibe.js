@@ -30,7 +30,7 @@ $(document).ready(function() {
     /* IconGrid */
     var appData = {
 
-        //DAN'S VERSION I commented it out in favor of Anant's, which builds the dictionary, 
+        // DAN'S VERSION I commented it out in favor of Anant's, which builds the dictionary, 
         // since the result of list() is now just an array
         // getItemList: function(callback) {
         //   var self = this;
@@ -51,7 +51,7 @@ $(document).ready(function() {
             });
         },
 
-        //ANANT'S VERSION.  I commented it out, because I think it can just be the simpler version below
+        // ANANT'S VERSION.  I commented it out, because I think it can just be the simpler version below
         // openItem: function(itemID) {
         //     var url = itemID;
         //     var app = apps[itemID];
@@ -66,7 +66,7 @@ $(document).ready(function() {
         },
 
         userRemovedItem: function(itemID) {
-        //this better trigger a call to the update watches, so we can fix the UI
+          // this better trigger a call to the update watches, so we can fix the UI
           navigator.mozApps.mgmt.uninstall(itemID);
         },
 
@@ -74,17 +74,17 @@ $(document).ready(function() {
         handleWatcher: function(cmd, itemArray) {
             var i;
             if (cmd == "add") {
-                for (i=0, i<itemArray.length){
+                for (i = 0; i < itemArray.length; i++){
                     addItem(itemArray[i]);
                 }
             } else if (cmd == "remove"){
-                for (i=0, i<itemArray.length){
+                for (i = 0; i < itemArray.length; i++){
                     removeItem(itemArray[i]);
                 }
             }
         },
 
-        //important callbacks for updates
+        // Important callbacks for updates
         removeItemFromGridCallback: undefined,
         setRemovalCallback: function(callback) {
           removeItemFromGridCallback = callback;
@@ -109,10 +109,8 @@ $(document).ready(function() {
         // if all your items have 'itemImgURL' and 'itemTitle' properties, then you don't need to implement these.
         // These get called when an item doesn't have the right properties.
         // Note that you can pass in data URIs for icons
-        //getItemImgURL: function(itemID) {},
-        //getItemTitle: function(itemID) {}
-
-
+        // getItemImgURL: function(itemID) {},
+        // getItemTitle: function(itemID) {}
     };
             
     var grid = $("#apps");
