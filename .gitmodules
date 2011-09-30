@@ -12,4 +12,4 @@
 
 [submodule "site/icongrid"]
 	path = site/icongrid
-	url = git@github.com:mozilla/icongrid.git
+	url = http://github.com/mozilla/icongrid.git

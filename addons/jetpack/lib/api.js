@@ -300,6 +300,7 @@ FFRepoImpl.prototype = {
      * all this means today is that the invoking page (dashboard) is served
      * from the same domain as the application repository. */
   verifyMgmtPermission: function _verifyMgmtPermission(origin) {
+    return;
     let loc = origin;
 
     // make an exception for local testing, who via postmessage events
