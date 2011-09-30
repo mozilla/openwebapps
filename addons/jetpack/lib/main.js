@@ -374,6 +374,24 @@ function startup(getUrlCB) { /* Initialize simple storage */
 
   setupAboutPageMods();
 
+  // Setup widget to launch dashboard
+  require("widget").Widget({
+    id: "openwebapps-toolbar-button",
+    label: "Apps",
+    width: 60,
+    contentURL: require("self").data.url("widget.html"),
+    onClick: function() {
+      let found = false;
+      for each (let tab in tabs) {
+        let origin = url.URLParse(tab.url).originOnly().toString();
+        if (origin == "https://myapps.mozillalabs.com") {
+          tab.activate(); found = true; break;
+        }
+      }
+      if (!found) tabs.open("https://myapps.mozillalabs.com");
+    }
+  });
+
   // Broadcast that we're done, in case anybody is listening
   let tmp = require("api");
   Services.obs.notifyObservers(tmp.FFRepoImplService, "openwebapps-startup-complete", "");
