@@ -1,4 +1,0 @@
-#!/bin/bash
-cp ../faker/faker.xpi .
-zip -9r openwebapps_bundle.xpi openwebapps.xpi faker.xpi install.rdf
-rm faker.xpi
