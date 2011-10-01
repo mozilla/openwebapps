@@ -331,7 +331,7 @@ dirs.forEach(function(dirObj) {
 
 });
 function serverCreated(name) {
-    console.log("  " + name + ": " + formatLink(name));
+  console.log("  " + name + ": " + formatLink(name));
 }
 
 function getSpecs() {
