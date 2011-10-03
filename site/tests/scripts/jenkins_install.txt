@@ -22,4 +22,4 @@ npm install forever -g
 echo 'Forever install completed'
 
 echo '####Virtual Env Install####'
-easy_install virtualenv
+easy_install virtualenv fudge psutil
