@@ -17,19 +17,20 @@ source $VENV/bin/activate
 
 echo "Installing Jstestnetlib Requirements"
 
-pushd ../jstestnetlib && pip install -q -r requirements.txt
+pushd $WORKSPACE/site/tests/jstestnetlib && pip install -q -r requirements.txt
 popd
 
 echo "Starting nodejs "
 
 
-pushd ../ 
+pushd $WORKSPACE/site/tests 
 forever stop 0 
 sleep 4
 forever start run.js
 popd
 echo "Starting JS tests..." `date`
 
+cd $WORKSPACE/site/tests/scripts
 # Some of these env vars are set in the Jenkins build step.
 BROWSERS=firefox
 XARGS="-v --with-xunit --with-jstests --jstests-server $JSTESTS_SERVER --jstests-suite typed --jstests-token $JSTESTS_TOKEN --jstests-browsers $BROWSERS --debug nose.plugins.jstests"
