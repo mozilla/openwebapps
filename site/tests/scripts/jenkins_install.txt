@@ -5,9 +5,11 @@ echo 'Update completed'
 apt-get install git-core curl python-software-properties
 # Install Node.js
 echo 'Install Node.js'
-add-apt-repository ppa:chris-lea/node.js
-apt-get update
-apt-get install nodejs nodejs-dev
+wget http://nodejs.org/dist/node-v0.4.12.tar.gz
+tar -zxvf node-v0.4.12.tar.gz
+cd node-v0.4.12/
+./configure && make && make install 
+
 echo 'Node.js install completed'
 # Install Node Package Manager
 echo 'Install Node Package Manager'
