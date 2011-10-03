@@ -36,11 +36,10 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-const ui = require("./ui");
-const url = require("./urlmatch");
 const tabs = require("tabs");
 const addon = require("self");
 const unload = require("unload");
+const url = require("./urlmatch");
 const simple = require("simple-storage");
 const { Cc, Ci, Cm, Cu, Cr, components } = require("chrome");
 
@@ -79,9 +78,6 @@ function openwebapps(win, getUrlCB) {
     }
     this.pendingRegistrations = null;
   }
-
-  /* initialize demo support code */
-  this._ui = new ui.openwebappsUI(win, getUrlCB, this);
 
   // TODO: Figure out a way to do this without waiting for 500ms.
   // Also, intercept document loads that don't open in a new tab
@@ -136,7 +132,11 @@ openwebapps.prototype = {
       name: "install",
       script: null,
       getapi: function(contentWindowRef) {
-        return function(args) {
+        return function(origin, data, onsuccess, onerror) {
+          let args = {
+            url: origin, install_data: data,
+            onsuccess: onsuccess, onerror: onerror
+          };
           repo.install(contentWindowRef.location, args, win);
         }
       }
@@ -161,14 +161,6 @@ openwebapps.prototype = {
         }
       }
     });
-    win.appinjector.register({
-      apibase: "navigator.mozApps",
-      name: "setRepoOrigin",
-      script: null,
-      getapi: function() {
-        return function(args) {}
-      }
-    });
 
     win.appinjector.register({
       apibase: "navigator.mozApps",
@@ -177,63 +169,6 @@ openwebapps.prototype = {
       getapi: function(contentWindowRef) {
         return function(activity, successCB, errorCB) {
           self._services.invoke(contentWindowRef, activity, successCB, errorCB);
-        }
-      }
-    });
-
-    // this one kinda sucks - but it is the only way markh can find to
-    // pass a content object (eg, the iframe or the frame's content window).
-    // Attempting to pass it via self.emit() fails...
-    win.appinjector.register({
-      apibase: "navigator.mozApps.mediation",
-      name: "_invokeService",
-      script: null,
-      getapi: function(contentWindowRef) {
-        return function (iframe, activity, message, cb, cberr) {
-          if (activity.data) {
-           activity.data = JSON.parse(JSON.stringify(activity.data)); // flatten and reinflate...
-          }
-          self._services.invokeService(iframe.wrappedJSObject, activity, message, cb, cberr);
-        }
-      }
-    });
-
-    // XXX TEMPORARY HACK to allow our builtin apps to work for the all-hands demo
-    var {OAuthConsumer} = require("oauthorizer/oauthconsumer");
-    win.appinjector.register({
-      apibase: "navigator.mozApps.oauth",
-      name: "call",
-      script: null,
-      getapi: function(contentWindowRef) {
-        return function(svc, message, callback) {
-          OAuthConsumer.call(svc, message, function(req) {
-            //dump("oauth call response "+req.status+" "+req.statusText+" "+req.responseText+"\n");
-            let response = JSON.parse(req.responseText);
-            callback(response);
-          });
-        }
-      }
-    });
-
-    // services APIs
-    win.appinjector.register({
-      apibase: "navigator.mozApps.services",
-      name: "ready",
-      script: null,
-      getapi: function(contentWindowRef) {
-        return function(args) {
-          self._services.initApp(contentWindowRef.wrappedJSObject);
-        }
-      }
-    });
-
-    win.appinjector.register({
-      apibase: "navigator.mozApps.services",
-      name: "registerHandler",
-      script: null,
-      getapi: function(contentWindowRef) {
-        return function(activity, message, func) {
-          self._services.registerServiceHandler(contentWindowRef.wrappedJSObject, activity, message, func);
         }
       }
     });
@@ -305,6 +240,28 @@ openwebapps.prototype = {
         }
       }
     });
+    win.appinjector.register({
+      apibase: "navigator.mozApps.mgmt",
+      name: "watchUpdates",
+      script: null,
+      getapi: function(contentWindowRef) {
+        return function(callback) {
+          repo.verifyMgmtPermission(contentWindowRef.location);
+          return repo.watchUpdates(callback);
+        }
+      }
+    });
+    win.appinjector.register({
+      apibase: "navigator.mozApps.mgmt",
+      name: "clearWatch",
+      script: null,
+      getapi: function(contentWindowRef) {
+        return function(id) {
+          repo.verifyMgmtPermission(contentWindowRef.location);
+          repo.clearWatch(id);
+        }
+      }
+    });
   },
 
   registerBuiltInApp: function(domain, app, injector) {
@@ -317,8 +274,6 @@ openwebapps.prototype = {
   }
 
 };
-
-
 
 //----- about:apps implementation
 const AboutAppsUUID = components.ID("{1DD224F3-7720-4E62-BAE9-30C1DCD6F519}");
@@ -346,34 +301,8 @@ let AboutApps = {
   }
 };
 //----- end about:apps (but see ComponentRegistrar call in startup())
-//----- about:appshome implementation
-const AboutAppsHomeUUID = components.ID("{C5A1D035-1A11-4152-8C17-7B6126FBA2CD}");
-const AboutAppsHomeContract = "@mozilla.org/network/protocol/about;1?what=appshome";
-let AboutAppsHomeFactory = {
-  createInstance: function(outer, iid) {
-    if (outer != null) throw Cr.NS_ERROR_NO_AGGREGATION;
-    return AboutAppsHome.QueryInterface(iid);
-  }
-};
-let AboutAppsHome = {
-  QueryInterface: XPCOMUtils.generateQI([Ci.nsIAboutModule]),
 
-  getURIFlags: function(aURI) {
-    return Ci.nsIAboutModule.ALLOW_SCRIPT;
-  },
-
-  newChannel: function(aURI) {
-    let ios = Cc["@mozilla.org/network/io-service;1"].
-    getService(Ci.nsIIOService);
-    let channel = ios.newChannel(
-    addon.data.url("home.xhtml"), null, null);
-    channel.originalURI = aURI;
-    return channel;
-  }
-};
-//----- end about:apps (but see ComponentRegistrar call in startup())
 let unloaders = [];
-
 /**
  * setupAboutPageMods
  *
@@ -391,18 +320,6 @@ function setupAboutPageMods() {
       worker.port.emit('data-url', addon.data.url());
     }
   });
-
-  pageMod.PageMod({
-    include: ["about:appshome*"],
-    contentScriptWhen: 'start',
-    contentScriptFile: [addon.data.url('jquery-1.4.2.min.js'),
-                        addon.data.url('base32.js'),
-                        addon.data.url('home.js')],
-    onAttach: function onAttach(worker) {
-      worker.port.emit('data-url', addon.data.url());
-    }
-  });
-
 }
 
 
@@ -446,18 +363,34 @@ function startup(getUrlCB) { /* Initialize simple storage */
   unloaders.push(function() Services.ww.unregisterNotification(winWatcher));
 
   Cm.QueryInterface(Ci.nsIComponentRegistrar).registerFactory(
-  AboutAppsUUID, "About Apps", AboutAppsContract, AboutAppsFactory);
-  Cm.QueryInterface(Ci.nsIComponentRegistrar).registerFactory(
-  AboutAppsHomeUUID, "About Apps Home", AboutAppsHomeContract, AboutAppsHomeFactory);
+    AboutAppsUUID, "About Apps", AboutAppsContract, AboutAppsFactory
+  );
 
   unloaders.push(function() {
     Cm.QueryInterface(Ci.nsIComponentRegistrar).unregisterFactory(
-    AboutAppsUUID, AboutAppsFactory);
-    Cm.QueryInterface(Ci.nsIComponentRegistrar).unregisterFactory(
-    AboutAppsHomeUUID, AboutAppsHomeFactory);
+      AboutAppsUUID, AboutAppsFactory
+    );
   });
 
   setupAboutPageMods();
+
+  // Setup widget to launch dashboard
+  require("widget").Widget({
+    id: "openwebapps-toolbar-button",
+    label: "Apps",
+    width: 60,
+    contentURL: require("self").data.url("widget.html"),
+    onClick: function() {
+      let found = false;
+      for each (let tab in tabs) {
+        let origin = url.URLParse(tab.url).originOnly().toString();
+        if (origin == "https://myapps.mozillalabs.com") {
+          tab.activate(); found = true; break;
+        }
+      }
+      if (!found) tabs.open("https://myapps.mozillalabs.com");
+    }
+  });
 
   // Broadcast that we're done, in case anybody is listening
   let tmp = require("api");
@@ -468,8 +401,6 @@ function shutdown(why) {
   // variable why is one of 'uninstall', 'disable', 'shutdown', 'upgrade' or
   // 'downgrade'. doesn't matter now, but might later
   unloaders.forEach(function(unload) unload && unload());
-
-  // TODO: Hookup things to unload from ui.js module
 }
 
 // Let's go!

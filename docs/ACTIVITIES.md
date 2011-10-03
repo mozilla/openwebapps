@@ -6,9 +6,9 @@ Web Activities allows for opportunistic connections between web components. For 
 
 We can distinguish three components:
 
-* Client: A calling context, running in the user's browser, which begins the service discovery and invocation activity.  A client could be in web content or could be in browser chrome.
-* Mediator: the user interface that guides the user through service selection for the specific function.  The default mediator is a simple picker, which displays the available providers for an activity.  A more complex mediator could help the user manage their list of providers, by allowing for account selection or status checks; it could also perform "on-the-wire" inspection and modification of the message flow between the consumer and the provider. The Firefox Share/F1 project provides an example of a complex mediator; the [Mozilla Apps UX Gallery](https://apps.mozillalabs.com/gallery/) has some more mockups.
-* Provider: A service that has registered for an activity interface. Registration is accomplished by associating an action and/or content type with a specific URL at the provider's site.  This URL, when loaded by the browser, is expected to register one or more message handlers using the `registerHandler` method defined below. These handlers will be invoked by the browser, receiving data from the mediator, for the individual calls expected in the context of a given activity.
+* Client: A calling context, running in the user's browser, which begins the service discovery and invocation activity. A client could be in web content, or could be in browser chrome.
+* Mediator: The user interface that guides the user through service selection for the specific function. The default mediator is a simple picker, which displays the available providers for an activity. A more complex mediator could help the user manage their list of providers, by allowing for account selection or status checks; it could also perform "on-the-wire" inspection and modification of the message flow between the consumer and the provider. The Firefox Share/F1 project provides an example of a complex mediator; the [Mozilla Apps UX Gallery](https://apps.mozillalabs.com/gallery/) has some more mockups.
+* Provider: A service that has registered for an activity interface. Registration is accomplished by associating an action and/or content type with a specific URL at the provider's site. This URL, when loaded by the browser, is expected to register one or more message handlers using the *registerHandler* method defined below. These handlers will be invoked by the browser, receiving data from the mediator, for the individual calls expected in the context of a given activity.
 
 ## Definition of Activities
 
@@ -72,9 +72,9 @@ by defining one or more service elements in their application manifest:
 
 In this example, SharingApp declares that it supports the well-understood "share" activity, and can accept URLs, text, or images as input.  The handlers that implement the activity are served from the `/services/share.html` path of the application's domain.  Note that in this example the domain of SharingApp is implicitly the domain that serves up the manifest file, and the browser will enforce that domain association automatically.  It is implied, though not required, that the `action` identifier of an activity will resolve to a human and machine-readable description of the activity, and that well-known URLs will emerge for activities that are in common use.
 
-*ed: in the current prototype, the startActivity method is called invokeService and is a member of *navigator.apps.  Nomenclature changes TBD!*
+*ed: in the current prototype, the startActivity method is called invokeService and is a member of *navigator.apps. Nomenclature changes TBD!*
 
-It has been proposed by the Chromium team (see [proposal](http://dev.chromium.org/developers/design-documents/webintentsapi)) that services (or "intents") can also be declared in markup.  This approach is being prototyped and considered, though it contains some lifecycle management and user experience challenges.
+It has been proposed by the Chromium team (see [proposal](http://dev.chromium.org/developers/design-documents/webintentsapi)) that services (or "intents") can also be declared in markup. This approach is being prototyped and considered, though it contains some lifecycle management and user experience challenges.
 
 ## Client Invocation
 
@@ -105,15 +105,15 @@ This call might be made by content, or from browser chrome (in browser chrome th
 
 ## Service Mediator
 
-The service mediator is browser-based logic and interface elements that are loaded after service invocation.  The mediator helps the user pick a service and interact with it.
+The service mediator is browser-based logic and interface elements that are loaded after service invocation. The mediator helps the user pick a service and interact with it.
 
-It is expected that user agents will provide a default mediator that presents a reasonable "picker" interface.  User agents may optionally provide other mediators, or provide APIs to extension developers, which will register to handle certain activity actions.
+It is expected that user agents will provide a default mediator that presents a reasonable "picker" interface. User agents may optionally provide other mediators, or provide APIs to extension developers, which will register to handle certain activity actions.
 
 The exact user experience provided by a mediator can vary depending on the activity action.
 
-The authors believe that this is a natural place to assist users with account selection tasks.  We propose that, when a mediator is invoked, it is given read/write access to the activity object, a read-only mapping of services that can serve that activity, and an optional mapping of credential lists, which describe the accounts that are available to this browser at each of the named activities.  See the *Account Management* section, below, for more on this flow.
+The authors believe that this is a natural place to assist users with account selection tasks. We propose that, when a mediator is invoked, it is given read/write access to the activity object, a read-only mapping of services that can serve that activity, and an optional mapping of credential lists, which describe the accounts that are available to this browser at each of the named activities. See the *Account Management* section, below, for more on this flow.
 
-The mediator is intended to provide a place for message coordination, so that interactions which require the exchange of multiple messages with a provider need not return data and control to the calling client.  The `message` field of the Activity is provided to allow the mediator to tell the provider which stage of an interaction is being requested.
+The mediator is intended to provide a place for message coordination, so that interactions which require the exchange of multiple messages with a provider need not return data and control to the calling client. The `message` field of the Activity is provided to allow the mediator to tell the provider which stage of an interaction is being requested.
 
 The API provided by a user agent to a mediator implementation is not subject to standardization (_ed: yet?_), but in general, it will need to support the following flow of control:
 
@@ -134,20 +134,20 @@ The API provided by a user agent to a mediator implementation is not subject to 
       }
     }
 
-`availableServices` is an map of domains to manifests.  The mediator can resolve the manifest.services[activityAction] element to access optional label and icon properties for the service's implementation.
+`availableServices` is an map of domains to manifests. The mediator can resolve the manifest.services[activityAction] element to access optional label and icon properties for the service's implementation.
 
 `availableCredentials` is an object of keyed arrays, where each key is an origin taken from the availableServices, and the value is an array of credentials for that origin. For example, if "twitter.com" is in the service list, then available credentials may have a "twitter.com" property containing an array of three credential objects.
 
 
 ## Provider
 
-When provider's endpoint URL is loaded, it calls the `registerHandler` method to register one or more functions.  Providers are expected to register handlers for all the messages defined by the activity. This explicit registration step allows the user agent to determine whether the provided URL actually implements the activity and to gracefully remove the provider from the list if not.
+When provider's endpoint URL is loaded, it calls the `registerHandler` method to register one or more functions. Providers are expected to register handlers for all the messages defined by the activity. This explicit registration step allows the user agent to determine whether the provided URL actually implements the activity and to gracefully remove the provider from the list if not.
 
 Providers are free to implement multiple activities in a single URL, or to create different endpoints on different URLs, as they see fit.
 
-When the handler is invoked, the Activity object is passed to it, along with a message and an optional credential object.  The message indicates which step of the activity is being performed, for multi-step activities. The credential object, if it exists, is one that was previously created by this provider and stored in the browser, and which was selected by the user during a mediator-initiated display.
+When the handler is invoked, the Activity object is passed to it, along with a message and an optional credential object. The message indicates which step of the activity is being performed, for multi-step activities. The credential object, if it exists, is one that was previously created by this provider and stored in the browser, and which was selected by the user during a mediator-initiated display.
 
-_ed: Need more specific use cases for the message.  Login is one; account-balance is another; more?  Yes - share needs capabilities, autocomplete, validate, send_
+_ed: Need more specific use cases for the message. Login is one; account-balance is another; more? Yes - share needs capabilities, autocomplete, validate, send_
 
 For example:
 
@@ -176,7 +176,7 @@ For example:
 
 ## Account Management
 
-This Activities system is intended to facilitate communication between web content and services which have been personalized for the user.  To facilitate this personalization, an *account management* system is defined here.
+This Activities system is intended to facilitate communication between web content and services which have been personalized for the user. To facilitate this personalization, an *account management* system is defined here.
 
 This system is implemented by the browser, and allows an activity provider to direct the browser to initiate a provider-defined login process, and to persist a data structure on the provider's behalf.
 
@@ -184,7 +184,7 @@ A provider indicates its ability to participate in account management by impleme
 
 The provider is further expected to add a *credentialRequired* property with a value of *true* to all service declarations that require a credential. *XXX: Support for anonymous-or-account?  That would require being in the mediator's list, but then throwing some sort of "logMeInNow" exception.*
 
-The endpoint of the *login* activity is expected to be the URL of a web page which the browser can display in a popup window.  This window should engage in whatever user identification process the provider requires, and should, at the end of this process, invoke this method:
+The endpoint of the *login* activity is expected to be the URL of a web page which the browser can display in a popup window. This window should engage in whatever user identification process the provider requires, and should, at the end of this process, invoke this method:
 
     navigator.apps.services.storeCredential(
       in object credential,
@@ -195,7 +195,7 @@ When the `storeCredential` method is invoked, the credential is stored and the w
 
  * `credential` is an opaque data blob, a structured clone of which will be persisted by the browser
  * `displayName` is a string which will be displayed to the user during account selection
- * `thumbailURL` is a string which should identify a square image which will be displayed near the displayName during account selection
+ * `thumbnailURL` is a string which should identify a square image which will be displayed near the displayName during account selection
 
 
 The API provided to mediators includes a method to allow the mediator to initiate the credential acquisition process:
@@ -204,6 +204,6 @@ The API provided to mediators includes a method to allow the mediator to initiat
 
 It is expected that this call will hide the existing mediation API and begin the credentialing process; at the end of the login activity (after storeCredential is called), if the client context still exists, the activity mediation flow should be restarted. *XX: yikes, complicated state management there*
 
-The credentials obtained through this process are made available to the mediator, and should be included in mediator-provided service picker interfaces.  When the mediator dispatches the call to a service implementation, the selected credential is included in the handler function call's arguments.
+The credentials obtained through this process are made available to the mediator, and should be included in mediator-provided service picker interfaces. When the mediator dispatches the call to a service implementation, the selected credential is included in the handler function call's arguments.
 
-Service providers are free to use whatever implementation they need to implement multi-account management.  The system is intended to support single cookie-multiple account systems, as well as systems based on bearer tokens like OAuth2.
+Service providers are free to use whatever implementation they need to implement multi-account management. The system is intended to support single cookie-multiple account systems, as well as systems based on bearer tokens like OAuth2.

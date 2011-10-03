@@ -57,7 +57,9 @@ var { URLParse } = require("./urlmatch");
 var { Repo } = require("repo");
 
 function FFRepoImpl() {
+  this._counter = 0;
   this._builtInApps = {};
+  this._contentListeners = {};
 }
 FFRepoImpl.prototype = {
   __proto__: Repo,
@@ -84,6 +86,24 @@ FFRepoImpl.prototype = {
       }
       callback(apps);
     });
+  },
+
+  watchUpdates: function(callback) {
+    if (!callback || typeof callback != "function") {
+      return false;
+    }
+    
+    let id = this._counter;
+    this._contentListeners[id] = callback;
+    this._counter += 1;
+    return id;
+  },
+
+  clearWatch: function(id) {
+    if (id in this._contentListeners)
+      delete this._contentListeners[id];
+    else
+      throw 'Invalid watchUpdates ID';
   },
 
   install: function _install(location, args, window) {
@@ -222,13 +242,18 @@ FFRepoImpl.prototype = {
           (1, args.onerror)(errorResult);
         }
       } else {
-        var origin = URLParse(args.url).normalize().originOnly().toString();
-        self._observer.notifyObservers(
-        null, "openwebapp-installed", JSON.stringify({
-          origin: origin,
-          skipPostInstallDashboard: args.skipPostInstallDashboard ? args.skipPostInstallDashboard : false
-        }));
-
+        let origin = URLParse(args.url).normalize().originOnly().toString();
+        Repo.getAppById(origin, function(app) {
+          self._observer.notifyObservers(
+            null, "openwebapp-installed", JSON.stringify({
+            origin: origin,
+            skipPostInstallDashboard: args.skipPostInstallDashboard ? args.skipPostInstallDashboard : false
+          }));
+          for (let id in self._contentListeners) {
+            let func = self._contentListeners[id];
+            if (func && typeof func == "function") func("add", [app]);
+          }
+        });
         // create OS-local application
 /*
                     dump("APPS | jetpack.install | Getting app by URL now\n");
@@ -257,8 +282,15 @@ FFRepoImpl.prototype = {
           'message': result['error'][1]
         });
       } else if (typeof onsuccess == 'function') {
-        self._observer.notifyObservers(
-        null, "openwebapp-uninstalled", null);
+        Repo.getAppById(key, function(app) {
+          self._observer.notifyObservers(
+            null, "openwebapp-uninstalled", null
+          );
+          for (let id in self._contentListeners) {
+            let func = self._contentListeners[id];
+            if (func && typeof func == "function") func("remove", [app]);
+          }
+        });
         onsuccess(result);
       }
     });
@@ -278,8 +310,14 @@ FFRepoImpl.prototype = {
 
     // this is where we could have a whitelist of acceptable management
     // domains.
-    if (origin.host == "127.0.0.1:60172" || /* special case for unit testing: to be removed when we get capability tracking for mgmt! */
-    origin.host == "myapps.mozillalabs.com" || origin.host == "stage.myapps.mozillalabs.com" || origin.host == "apps.mozillalabs.com" || origin.host == "localhost:8010" || origin.toString().substr(0, 10) == "about:apps" || origin.toString().substr(0, 9) == "resource:") {
+    let allowedOrigins = {
+      "127.0.0.1:60172":"", "myapps.mozillalabs.com":"",
+      "stage.myapps.mozillalabs.com":"", "apps.mozillalabs.com":"",
+      "localhost:8010":"", "localhost":""
+    };
+    if (origin.host in allowedOrigins ||
+        origin.toString().substr(0, 10) == "about:apps" ||
+        origin.toString().substr(0, 9) == "resource:") {
       return;
     }
 

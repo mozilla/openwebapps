@@ -2,7 +2,7 @@
     "name": "openwebapps", 
     "license": "MPL 1.1/GPL 2.0/LGPL 2.1", 
     "author": "Mozilla Labs", 
-    "version": "0.3", 
+    "version": "0.3.1", 
     "fullName": "Open Web Apps for Firefox", 
     "id": "openwebapps@mozillalabs.com", 
     "description": "Adds features to Firefox to manage Web Applications directly in your browser.",
