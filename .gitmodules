@@ -9,3 +9,6 @@
 [submodule "site/icongrid"]
 	path = site/icongrid
 	url = http://github.com/mozilla/icongrid.git
+[submodule "site/tests/serverjs/djangode"]
+	path = site/tests/serverjs/djangode
+	url = https://github.com/ianb/djangode.git
