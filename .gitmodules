@@ -11,4 +11,7 @@
 	url = http://github.com/mozilla/icongrid.git
 [submodule "site/tests/serverjs/djangode"]
 	path = site/tests/serverjs/djangode
-	url = https://github.com/ianb/djangode.git
+	url = http://github.com/ianb/djangode.git
+[submodule "site/tests/jstestnetlib"]
+	path = site/tests/jstestnetlib
+	url = http://github.com/kumar303/jstestnetlib
