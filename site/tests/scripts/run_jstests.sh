@@ -17,7 +17,7 @@ source $VENV/bin/activate
 
 echo "Installing Jstestnetlib Requirements"
 
-pushd $WORKSPACE/site/tests/jstestnetlib && pip install -q -r requirements.txt
+pushd $WORKSPACE/site/tests/jstestnetlib && pip install -r requirements.txt && python setup.py install
 popd
 
 echo "Starting nodejs "
