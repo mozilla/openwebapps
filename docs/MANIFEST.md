@@ -49,18 +49,23 @@ Here's an example:
         "default_locale": "en",
         "experimental": {
           "services": {
-              "widget": {
-                   "endpoint": "/widget.html",
+              "http://webactivities.org/widget": {
+                   "type": "text/*",
+                   "path": "/services/widget.html",
                    "width": 100,
                    "height": 200
               },
-              "image.send": {
-                   "endpoint": "/services/image-send",
+              "http://webactivities.org/edit": {
+                   "type": [ "application/url", "image/*" ],
+                   "path": "/services/edit"
               },
-              "login": {
-                   "dialog": "/services/login",
+              "http://webactivities.org/login": {
+                   "type": "text/*",
+                   "path": "/services/login"
               },
-              "new-url": {
+              "http://webactivities.org/new-url": {
+                  "type": ["application/url"],
+                  "path": "/services/new_url"
               }
           }
         }
