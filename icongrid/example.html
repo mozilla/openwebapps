@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+
+  <title>icongrid.js</title>
+  <!--
+  Steal CSS and other styling for example page from spin.js
+  Please refer to https://github.com/fgnass/spin.js/tree/gh-pages/ for license.
+  -->
+  <link rel="stylesheet" type="text/css" href="assets/main.css"/>
+  <link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Amaranth:400,700">
+
+  <!-- Load CSS & JS for icongrid -->
+  <link rel="stylesheet" type="text/css" media="all" href="icongrid.css"/>
+  <script type="text/javascript" src="base32.js"></script>
+  <script type="text/javascript" src="jquery-1.4.2.min.js"></script>
+  <script type="text/javascript" src="icongrid.js"></script>
+  </head>
+
+  <body>
+    <div id="logo">
+      <h1>icongrid.js</h1>
+    </div>
+    <a id="ribbon" href="http://github.com/mozilla/icongrid"></a>
+
+    <div id="content">
+    <div id="download"><a href="icongrid.js">Download</a></div>
+
+    <h2>Example</h2>
+    <div class="container">
+      <div class="dashboardclipper" id="clipper"></div>
+    </div>
+
+    <h2>Features</h2>
+    <ul>
+      <li>Asynchronous API</li>
+      <li>Multi-page, smooth scrolling</li>
+      <li>Arbritrary sets of icons and names</li>
+      <li>Drag and drop to re-arrange (remembers position on reload!)</li>
+    </ul>
+    <p>View source this page to see how it's done!</p>
+
+    <h2>License</h2>  
+    <p id="contact">
+      <a href="http://www.mozilla.org/MPL/">MPL 1.1/GPL 2.0/LGPL 2.1</a>
+      <br/>
+      Author: <b><a href="mailto:dwalkowski@mozilla.com">Dan Walkowski</a></b>
+    </p>
+
+    </div>
+    <div id="footer">
+      <a class="mozilla" href="http://mozillalabs.com">Mozilla Labs</a>
+      <a class="github" href="http://github.com">Hosted on GitHub</a>
+    </div>
+  </body>
+
+  <script type="text/javascript">
+    var myDash;
+    var myLayout;
+    var html_datasource;
+
+    function onfocus(event) {
+      myDash.refresh();
+    }
+
+    $(document).ready(function() {
+      html_datasource = {
+
+        iconList: {
+          strawberry: {
+            itemTitle: "Strawberry",
+            itemImgURL: "images/strawberry.png"
+          },
+          watermelon: {
+            itemTitle: "Watermelon",
+            itemImgURL: "images/watermelon.png"
+          },
+          apple: {
+            itemTitle: "Apple",
+            itemImgURL: "images/apple.png"
+          },
+          banana: {
+            itemTitle: "Banana",
+            itemImgURL: "images/banana.png"
+          },
+          grape: {
+            itemTitle: "Grape",
+            itemImgURL: "images/grape.png"
+          },
+          orange: {
+            itemTitle: "Orange",
+            itemImgURL: "images/orange.png"
+          },
+          papaya: {
+            itemTitle: "Papaya",
+            itemImgURL: "images/papaya.png"
+          },
+          pineapple: {
+            itemTitle: "Pineapple",
+            itemImgURL: "images/pineapple.png"
+          }
+        },
+
+        // handle requests for the dashboardstate
+        loadIconGridState: function(callback) {
+          callback(localStorage.getItem("fruitGrid"));
+        },
+
+        saveIconGridState: function(state) {
+          localStorage.setItem("fruitGrid", state);
+        },
+
+        getItemList: function(callback) {
+          var list = this.iconList;
+
+          // Add special one
+          list["about:icongrid"] = {};
+          callback(list);
+        },
+
+        openItem: function(itemID) {
+          var title = this.iconList[itemID]['itemTitle'];
+          if (!title) title = "about:icongrid";
+          alert("You clicked on " + title + "!");
+        },
+
+        // if all your items have 'itemImgURL' and 'itemTitle' properties, then you don't need to implement these.
+        // These get called when an item doesn't have the right properties.
+        // Note that you can pass in data URIs for icons
+        getItemImgURL: function(itemID) {
+          if (itemID == "about:icongrid") return "http://www.publicpress.org/images/about48.png"
+        },
+
+        getItemTitle: function(itemID) {
+          if (itemID == "about:icongrid") return "About IconGrid";
+        }
+
+      };
+
+      var hostElement = $("#clipper");
+      myLayout = new GridLayout(hostElement.width(), hostElement.height(), 3, 2);
+      myDash = new IconGrid("mydash", hostElement, html_datasource, myLayout);
+
+      myDash.initialize();
+      myDash.refresh();
+    });
+  </script>
+</html>

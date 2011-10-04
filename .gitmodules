@@ -10,6 +10,6 @@
 	path = site/tests/serverjs/djangode
 	url = https://github.com/simonw/djangode.git
 
-[submodule "site/icongrid"]
-	path = site/icongrid
+[submodule "icongrid"]
+	path = icongrid
 	url = http://github.com/mozilla/icongrid.git
