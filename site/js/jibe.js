@@ -97,7 +97,7 @@ $(document).ready(function() {
     };
             
     var grid = $("#apps");
-    var gridLayout = new GridLayout(grid.width(), grid.height(), 4, 2);
+    var gridLayout = new GridLayout(grid.width(), grid.height(), 5, 3);
     var gridDash = new IconGrid("appDashboard", grid, appData, gridLayout);
     gridDash.initialize();
     gridDash.refresh();
