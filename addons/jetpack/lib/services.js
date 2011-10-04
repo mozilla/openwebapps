@@ -96,7 +96,8 @@ function MediatorPanel(window, contentWindowRef, activity, successCB, errorCB) {
 }
 MediatorPanel.prototype = {
   observe: function(contentWindow, aTopic, aData) {
-    if (aTopic != 'content-document-global-created') return;
+    if (aTopic != 'content-document-global-created' ||
+        !contentWindow.frameElement) return;
     var id = contentWindow.frameElement.getAttribute('id');
     for (var i=0; i < this.frames.length; i++) {
       if (id == this.frames[i].id) {

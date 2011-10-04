@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+
+  <title>icongrid.js</title>
+  <!--
+  Steal CSS and other styling for example page from spin.js
+  Please refer to https://github.com/fgnass/spin.js/tree/gh-pages/ for license.
+  -->
+  <link rel="stylesheet" type="text/css" href="assets/main.css"/>
+  <link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Amaranth:400,700">
+
+  <!-- Load CSS & JS for icongrid -->
+  <link rel="stylesheet" type="text/css" media="all" href="icongrid.css"/>
+  <script type="text/javascript" src="base32.js"></script>
+  <script type="text/javascript" src="jquery-1.4.2.min.js"></script>
+  <script type="text/javascript" src="icongrid.js"></script>
+    <script type="text/javascript" src="include.js"></script>
+
+  </head>
+
+  <body>
+    <div id="logo">
+      <h1>icongrid.js</h1>
+    </div>
+    <a id="ribbon" href="http://github.com/mozilla/icongrid"></a>
+
+    <div id="content">
+    <div id="download"><a href="icongrid.js">Download</a></div>
+
+    <h2>Example</h2>
+    <div class="container">
+      <div class="dashboardclipper" id="clipper" style="width: 400px; height: 300px;"></div>
+    </div>
+
+    <h2>User Features</h2>
+    <ul>
+      <li>Direct-manipulation interface</li>
+      <ul>
+        <li>Drag or flick the page, or click the page indicator to switch pages</li>
+        <li>Click icons to invoke them</li>
+        <li>Press and hold icons to move them, even between pages</li>
+      </ul>
+      <li>The icon positions are saved automatically</li>
+    </ul>
+
+    <h2>Developer Features</h2>
+    <ul>
+      <li>Asynchronous API</li>
+      <li>Works on desktop and touch devices</li>
+      <ul>
+        <li>Firefox, Safari, Chrome</li>
+        <li>Firefox Mobile, Mobile Safari</li>
+        <li>Not currently working perfectly with IE 8</li>
+        </ul>
+      <li>Multi-page, smooth scrolling</li>
+      <li>Any size, any number of rows and columns</li>
+      <li>Multiple grids per webpage</li>
+      <li>Represent arbitrary heterogeneous objects</li>
+      <li>Drag and drop to re-arrange (remembers position on reload!)</li>
+    </ul>
+    <p>View the source of this page to see how it works</p>
+
+    <h2>License</h2>  
+    <p id="contact">
+      <a href="http://www.mozilla.org/MPL/">MPL 1.1/GPL 2.0/LGPL 2.1</a>
+      <br/>
+      Author: <b><a href="mailto:dwalkowski@mozilla.com">Dan Walkowski</a></b>
+    </p>
+
+    </div>
+    <div id="footer">
+      <a class="mozilla" href="http://mozillalabs.com">Mozilla Labs</a>
+      <a class="github" href="http://github.com">Hosted on GitHub</a>
+    </div>
+  </body>
+
+  <script type="text/javascript">
+    var myDash;
+    var myLayout;
+    var html_datasource;
+
+    function onfocus(event) {
+      myDash.refresh();
+    }
+
+    $(document).ready(function() {
+      apps_datasource = {
+
+        //important callbacks for updates
+        removeItemFromGridCallback: undefined,
+        setRemovalCallback: function(callback) {
+          removeItemFromGridCallback = callback;
+        },
+
+        addItemToGridCallback: undefined,
+        setAdditionCallback: function(callback) {
+          addItemToGridCallback = callback;
+        },
+
+        getItemList: function(callback) {
+          var self = this;
+          navigator.mozApps.mgmt.list( function(theApps) { self.callback(theApps)});
+        },
+
+        openItem: function(itemID) {
+          navigator.mozApps.mgmt.launch(itemID);
+        },
+
+        handleWatcher: function(cmd, itemArray) {
+            var i;
+            if (cmd == "add") {
+                for (i=0, i<itemArray.length){
+                    addItem(itemArray[i]);
+                }
+            } else if (cmd == "remove"){
+                for (i=0, i<itemArray.length){
+                    removeItem(itemArray[i]);
+                }
+            }
+        },
+
+        userRemovedItem: function(itemID) {
+        //this better trigger a call to the update watches, so we can fix the UI
+          navigator.mozApps.mgmt.uninstall(itemID);
+        },
+
+        removeItem: function(itemID) {
+          if (removeItemFromGridCallback == undefined) return;
+          removeItemFromGridCallback(itemID);
+        },
+
+        addItem: function(theItem) {
+          if (addItemToGridCallback == undefined) return;
+          addItemToGridCallback(guid, theItem);
+        },
+
+        // if all your items have 'itemImgURL' and 'itemTitle' properties, then you don't need to implement these.
+        // These get called when an item doesn't have the right properties.
+        // Note that you can pass in data URIs for icons
+        getItemImgURL: function(itemID) {},
+
+        getItemTitle: function(itemID) {}
+
+      };
+
+      var hostElement = $("#clipper");
+      myLayout = new GridLayout(hostElement.width(), hostElement.height(), 3, 2);
+      myDash = new IconGrid("mydash", hostElement, apps_datasource, myLayout);
+
+      myDash.initialize();
+      myDash.refresh();
+    });
+  </script>
+</html>
+
+
+
+
+
+
