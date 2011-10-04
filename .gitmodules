@@ -6,8 +6,12 @@
 	path = site/tests/jstestnet
 	url = git://github.com/kumar303/jstestnet.git
 
-[submodule "site/icongrid"]
-	path = site/icongrid
+[submodule "site/tests/serverjs/djangode"]
+	path = site/tests/serverjs/djangode
+	url = https://github.com/simonw/djangode.git
+
+[submodule "icongrid"]
+	path = icongrid
 	url = http://github.com/mozilla/icongrid.git
 [submodule "site/tests/jstestnetlib"]
 	path = site/tests/jstestnetlib
