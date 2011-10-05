@@ -7,7 +7,7 @@ if (!window.navigator.mozApps.services)
 // Insert the services api into unsafeWindow
 if (!unsafeWindow.navigator.mozApps)
   unsafeWindow.navigator.mozApps = window.navigator.mozApps;
-if (!unsafeWindow.navigator.mozApps.mediation) 3
+if (!unsafeWindow.navigator.mozApps.mediation)
   unsafeWindow.navigator.mozApps.services = window.navigator.mozApps.services;
 
 var activities = {};
