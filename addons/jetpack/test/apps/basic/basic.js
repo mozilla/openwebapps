@@ -8,8 +8,13 @@ navigator.mozApps.services.registerHandler('test.basic', "echoArgs",
 
 navigator.mozApps.services.registerHandler('test.basic', "testErrors",
   function(activity, credentials) {
-    dump("Got testErrors\n")
     activity.postException({code: "testable_error", message: "a testable error"});
+  }
+);
+
+navigator.mozApps.services.registerHandler('test.basic', "testErrorsThrown",
+  function(activity, credentials) {
+    throw "a thrown error";
   }
 );
 
