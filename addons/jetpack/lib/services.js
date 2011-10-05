@@ -175,6 +175,9 @@ MediatorPanel.prototype = {
    */
   onOWASuccess: function(msg) {
     this.panel.hide();
+    // the mediator might have seen a failure but offered its own UI to
+    // retry - so hide any old error notifications.
+    this.hideErrorNotification();
     if (this.successCB)
       this.successCB(msg);
   },
@@ -183,9 +186,9 @@ MediatorPanel.prototype = {
     this.panel.hide();
   },
 
-  onOWAFailure: function(msg) {
-    console.error("mediator reported invocation error:", msg)
-    this.showErrorNotification(msg);
+  onOWAFailure: function(errob) {
+    console.error("mediator reported invocation error:", errob.message)
+    this.showErrorNotification(errob);
   },
 
   onOWAReady: function(msg) {
@@ -334,12 +337,12 @@ MediatorPanel.prototype = {
     // Check that we aren't already displaying our notification
     if (!notification) {
       let message;
-      if (data && data.msg)
-        message = data.msg;
+      if (data && data.message)
+        message = data.message;
       else if (this.mediator && this.mediator.notificationErrorText)
         message = this.mediator.notificationErrorText;
       else
-        message = "42";
+        message = "There was an error performing this action";
 
       let self = this;
       buttons = [{
