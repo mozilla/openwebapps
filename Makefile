@@ -16,7 +16,7 @@ oauthorizer := $(TOPSRCDIR)/deps/oauthorizer
 openwebapps := $(TOPSRCDIR)/addons/jetpack
 
 #cfx_args :=  --pkgdir=$(TOPSRCDIR) $(profile) --package-path=$(oauthorizer) --package-path=$(openwebapps) --binary-args="-console -purgecaches"
-cfx_args :=  --pkgdir=$(openwebapps) $(profile) --package-path=$(oauthorizer) --binary-args="-console -purgecaches"
+cfx_args :=  --pkgdir=$(openwebapps) $(profile) --package-path=$(oauthorizer) --binary-args="-console -purgecaches $(BINARYARGS)"
 
 xpi_name := openwebapps.xpi
 
