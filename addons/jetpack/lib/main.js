@@ -168,7 +168,7 @@ openwebapps.prototype = {
       script: null,
       getapi: function(contentWindowRef) {
         return function(activity, successCB, errorCB) {
-          self._services.invoke(contentWindowRef, activity, successCB, errorCB);
+          self._services.invoke(activity, successCB, errorCB);
         }
       }
     });

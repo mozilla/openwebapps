@@ -146,13 +146,15 @@ unsafeWindow.navigator.mozApps.mediation.startLogin = window.navigator.mozApps.m
 // Note the invocation handler will be called once initially, and possibly
 // again as the configuration of apps changes (ie, as apps are added or
 // removed).
-window.navigator.mozApps.mediation.ready = function(invocationHandler) {
+window.navigator.mozApps.mediation.ready = function(configureServices, startActivity) {
   self.port.on("owa.app.ready", function(origin) {
     console.log("owa.app.ready for", origin);
     if (allServices[origin]) {
       allServices[origin]._invokeOn("ready");
     }
   });
+
+  self.port.on("owa.mediation.start", startActivity);
 
   let setupHandler = function(msg) {
     console.log("setup event has", msg.serviceList.length, "services");
@@ -182,7 +184,8 @@ window.navigator.mozApps.mediation.ready = function(invocationHandler) {
       services.push(svcob);
       allServices[svc.app.origin] = svcob;
     }
-    invocationHandler(msg.activity, services);
+    configureServices(msg.activity.action, services);
+    startActivity(msg.activity);
     self.port.once("owa.mediation.reconfigure", function() {
       // nuke all iframes.
       for (let origin in allServices) {
