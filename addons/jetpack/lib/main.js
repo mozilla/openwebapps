@@ -82,6 +82,7 @@ function openwebapps(win, getUrlCB) {
   // TODO: Figure out a way to do this without waiting for 500ms.
   // Also, intercept document loads that don't open in a new tab
   // (this should be done in the content-document-global-created observer?)
+  let self = this;
   win.gBrowser.tabContainer.addEventListener("TabOpen", function(e) {
     self._window.setTimeout(function(e) {
       if (e.target.pinned) return;

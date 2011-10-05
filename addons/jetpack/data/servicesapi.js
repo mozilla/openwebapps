@@ -63,10 +63,14 @@ self.port.on("owa.service.invoke", function(args) {
   activity.postResult = function postResult(result) {
     self.port.emit(activity.success, result);
   }
-  activity.postException = function postException(exc) {
+  var postException = activity.postException = function postException(exc) {
     self.port.emit(activity.error, exc);
   }
-  activities[activity.action+"/"+activity.message].callback(activity, credentials);
+  try {
+    activities[activity.action+"/"+activity.message].callback(activity, credentials);
+  } catch (ex) {
+    postException({code: 'runtime_error', message: ex});
+  }
 });
 
 unsafeWindow.navigator.mozApps.services = window.navigator.mozApps.services;
