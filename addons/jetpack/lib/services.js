@@ -106,7 +106,8 @@ MediatorPanel.prototype = {
     this.invalidated = true;
   },
   
-  get activity() {
+  get tabData() {
+    let tab = tabs.activeTab;
     return tab.activity[this.methodName];
   },
   
@@ -122,7 +123,6 @@ MediatorPanel.prototype = {
   },
   
   inject: function(contentWindow, frame) {
-    dump("using content scripts "+JSON.stringify(this.contentScriptFile)+"\n");
     let worker =  Worker({
       window: contentWindow,
       contentScriptFile: this.contentScriptFile
@@ -192,8 +192,8 @@ MediatorPanel.prototype = {
     // the mediator might have seen a failure but offered its own UI to
     // retry - so hide any old error notifications.
     this.hideErrorNotification();
-    if (this.activity.successCB)
-      this.activity.successCB(msg);
+    if (this.tabData.successCB)
+      this.tabData.successCB(msg);
   },
 
   onOWAClose: function(msg) {
@@ -208,7 +208,7 @@ MediatorPanel.prototype = {
   onOWAReady: function(msg) {
     FFRepoImplService.findServices(this.methodName, function(serviceList) {
       this.panel.port.emit("owa.mediation.setup", {
-              activity: this.activity.activity,
+              activity: this.tabData.activity,
               serviceList: serviceList,
               invocationid: this.invocationid
       });
@@ -221,6 +221,7 @@ MediatorPanel.prototype = {
 
   onOWAFrame: function (args) {
     this.frames.push(args);
+    this.panel.port.emit('owa.mediation.frame.'+args.id);
   },
 
   onOWAInvoke: function (activity) {
@@ -301,16 +302,15 @@ MediatorPanel.prototype = {
     let url = this.mediator && this.mediator.url;
     if (!url) {
       url = require("self").data.url("service2.html");
-    } else {
-      if (this.mediator.contentScriptFile) {
-      contentScriptFile = contentScriptFile.concat(this.mediator.contentScriptFile);
-      }
-      contentScript = this.mediator.contentScript;
     }
+    if (this.mediator.contentScriptFile) {
+      contentScriptFile = contentScriptFile.concat(this.mediator.contentScriptFile);
+    }
+
     let thePanel = require("panel").Panel({
       contentURL: url,
       contentScriptFile: contentScriptFile,
-      contentScript: contentScript,
+      contentScript: this.mediator.contentScript,
       contentScriptWhen: "start",
       width: this.width, height: this.height
     });
@@ -335,7 +335,7 @@ MediatorPanel.prototype = {
       this.isConfigured = true;
     }
     if (this.invalidated) {
-      this.panel.port.emit("owa.mediation.start", this.activity.activity);
+      this.panel.port.emit("owa.mediation.start", this.tabData.activity);
     }
     this.panel.show(this.anchor);
   },

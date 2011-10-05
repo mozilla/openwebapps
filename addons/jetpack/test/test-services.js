@@ -17,19 +17,7 @@ function getContentWindow() {
 
 TestMediator = {
   url: getTestUrl("apps/testable_mediator.html"),
-  contentScript:
-    "window.navigator.mozApps.mediation.ready(function(activity, services) {" +
-    "  let service = services[0];" +
-    // XXX - why is unsafeWindow needed here???
-    "  unsafeWindow.document.getElementById('servicebox').appendChild(service.iframe);" +
-    "  service.on('ready', function() {" +
-    "    service.call('echoArgs', activity.data, function(result) {" +
-    "      self.port.emit('owa.success', result);" +
-    "    }, function(errob) {" +
-    "      self.port.emit('owa.failure', errob);" +
-    "    });" +
-    "  });" +
-    "});"
+  contentScriptFile: getTestUrl('apps/basic/success.js')
 };
 
 exports.test_invoke = function(test) {
@@ -40,7 +28,6 @@ exports.test_invoke = function(test) {
     let services = getOWA()._services;
     services.registerMediator("test.basic", TestMediator);
     let panel = services.get(
-      getContentWindow(),
       {action:"test.basic", data: {hello: "world"}}, // simulate an Activity object
       function(result) { // success cb
         test.assertEqual(result.hello, "world");
@@ -68,7 +55,6 @@ exports.test_invoke_twice = function(test) {
         tab1.on('ready', function(){
           // first tab is open - create and invoke our test app.
           let panel1 = services.get(
-            getContentWindow(),
             {action:"test.basic", data:{hello: "world"}}, // simulate an Activity object
             function(result) { // success cb
               if (seenTab1Callback) {
@@ -85,7 +71,6 @@ exports.test_invoke_twice = function(test) {
                 onOpen: function(tab2) {
                   tab2.on('ready', function(){
                     let panel2 = services.get(
-                      getContentWindow(),
                       {action:"test.basic", data:{hello: "world"}}, // simulate an Activity object
                       function(result) { // success cb
                         test.assertEqual(result.hello, "world");
@@ -136,7 +121,7 @@ function makeErrorTestContentScript(methodName) {
 
 TestMediatorError = {
   url: getTestUrl("apps/testable_mediator.html"),
-  contentScript: makeErrorTestContentScript("testErrors")
+  contentScriptFile: getTestUrl('apps/basic/error.js')
 };
 
 // A helper for the error tests.
@@ -146,7 +131,6 @@ function testError(test, mediator, errchecker) {
     let services = getOWA()._services;
     services.registerMediator("test.basic", mediator);
     let panel = services.get(
-      getContentWindow(),
       {action:"test.basic", data:{}}, // simulate an activity
       function(result) { // success cb
         services._popups.pop();
@@ -172,7 +156,7 @@ exports.test_invoke_error = function(test) {
 
 TestMediatorErrorThrown = {
   url: getTestUrl("apps/testable_mediator.html"),
-  contentScript: makeErrorTestContentScript("testErrorsThrown")
+  contentScriptFile: getTestUrl('apps/basic/errorthrown.js')
 };
 
 exports.test_invoke_error_thrown = function(test) {

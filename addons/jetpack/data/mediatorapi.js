@@ -154,7 +154,7 @@ window.navigator.mozApps.mediation.ready = function(configureServices, startActi
     }
   });
 
-  self.port.on("owa.mediation.start", startActivity);
+  //self.port.on("owa.mediation.start", startActivity);
 
   let setupHandler = function(msg) {
     console.log("setup event has", msg.serviceList.length, "services");
@@ -178,7 +178,11 @@ window.navigator.mozApps.mediation.ready = function(configureServices, startActi
         });
       let iframe = document.createElement("iframe");
       iframe.setAttribute('id', id);
-      iframe.src = svc.url;
+      // wait for the mediator to tell us to load the src, this way
+      // we know the id is registered.
+      self.port.once('owa.mediation.frame.'+id, function() {
+        iframe.src = svc.url;
+      });
 
       let svcob = new Service(svc, msg.activity, iframe);
       services.push(svcob);
