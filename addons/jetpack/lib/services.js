@@ -305,14 +305,19 @@ MediatorPanel.prototype = {
     if (!url) {
       url = require("self").data.url("service2.html");
     }
-    if (this.mediator.contentScriptFile) {
-      contentScriptFile = contentScriptFile.concat(this.mediator.contentScriptFile);
+    if (this.mediator) {
+      if (this.mediator.contentScriptFile) {
+        contentScriptFile = contentScriptFile.concat(this.mediator.contentScriptFile);
+      }
+      if (this.mediator.contentScript) {
+        contentScript = this.mediator.contentScript;
+      }
     }
 
     let thePanel = require("panel").Panel({
       contentURL: url,
       contentScriptFile: contentScriptFile,
-      contentScript: this.mediator.contentScript,
+      contentScript: contentScript,
       contentScriptWhen: "start",
       width: this.width, height: this.height
     });
