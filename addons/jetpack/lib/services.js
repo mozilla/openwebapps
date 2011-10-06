@@ -123,6 +123,7 @@ MediatorPanel.prototype = {
   },
   
   inject: function(contentWindow, frame) {
+    //dump("using content scripts "+JSON.stringify(this.contentScriptFile)+"\n");
     let worker =  Worker({
       window: contentWindow,
       contentScriptFile: this.contentScriptFile
