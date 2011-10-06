@@ -206,8 +206,9 @@ MediatorPanel.prototype = {
     this.panel.resize(args.width, args.height);
   },
 
-  onOWAFrame: function (args) {
-    this.frames.push(args);
+  onOWAFrames: function (args) {
+    this.frames = args;
+    this.panel.port.emit("owa.mediation.create-frames");
   },
 
   onOWAInvoke: function (activity) {
@@ -271,7 +272,7 @@ MediatorPanel.prototype = {
     this.panel.port.on("owa.failure", this.onOWAFailure.bind(this));
     this.panel.port.on("owa.close", this.onOWAClose.bind(this));
     this.panel.port.on("owa.mediation.ready", this.onOWAReady.bind(this));
-    this.panel.port.on("owa.mediation.frame", this.onOWAFrame.bind(this));
+    this.panel.port.on("owa.mediation.frames", this.onOWAFrames.bind(this));
     this.panel.port.on("owa.mediation.invoke", this.onOWAInvoke.bind(this));
     this.panel.port.on("owa.mediation.sizeToContent", this.onOWASizeToContent.bind(this));
     this.panel.port.on("owa.mediation.doLogin", this.onOWALogin.bind(this));

@@ -159,30 +159,41 @@ window.navigator.mozApps.mediation.ready = function(invocationHandler) {
     // We record the invocation ID in the mediator window so we can later
     // link the "app ready" calls back to the specific mediator instance.
     unsafeWindow.navigator.mozApps.mediation._invocationid = msg.invocationid;
-    let services = [];
     let document = unsafeWindow.document;
 
     // TODO: do not create iframes when mediators are converted to templates,
     // mediators should have an api to call to remove services rather than
     // removing the iframes as we do here.
 
+    // To ensure the frames don't get created before the mediator receives
+    // the message with the GUID, we create the frames using ping-pong - we
+    // allocate IDs then emit() them to the mediator, then when the mediator
+    // replies we can go ahead and finish the create process.
+    let frameCreateInfo = [];
     for (var i = 0; i < msg.serviceList.length; i++) {
       var svc = msg.serviceList[i];
       let id = guid();
       // notify our mediator of the guid to watch for
-      self.port.emit('owa.mediation.frame', {
+      frameCreateInfo.push({
         origin: svc.app.origin,
         id: id
-        });
-      let iframe = document.createElement("iframe");
-      iframe.setAttribute('id', id);
-      iframe.src = svc.url;
-
-      let svcob = new Service(svc, msg.activity, iframe);
-      services.push(svcob);
-      allServices[svc.app.origin] = svcob;
+      });
     }
-    invocationHandler(msg.activity, services);
+    self.port.once("owa.mediation.create-frames", function () {
+      let services = [];
+      for (let i = 0; i < frameCreateInfo.length; i++) {
+        var svc = msg.serviceList[i];
+        let id = frameCreateInfo[i].id;
+        let iframe = document.createElement("iframe");
+        iframe.setAttribute('id', id);
+        iframe.src = svc.url;
+        let svcob = new Service(svc, msg.activity, iframe);
+        services.push(svcob);
+        allServices[svc.app.origin] = svcob;
+      }
+      invocationHandler(msg.activity, services);
+    });
+    self.port.emit("owa.mediation.frames", frameCreateInfo);
     self.port.once("owa.mediation.reconfigure", function() {
       // nuke all iframes.
       for (let origin in allServices) {
