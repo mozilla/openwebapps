@@ -167,7 +167,7 @@ window.navigator.mozApps.mediation.ready = function(configureServices, updateAct
     // removing the iframes as we do here.
 
     for (var i = 0; i < msg.serviceList.length; i++) {
-      var svc = msg.serviceList[i];
+      let svc = msg.serviceList[i];
       let id = guid();
       // notify our mediator of the guid to watch for
       self.port.emit('owa.mediation.frame', {
