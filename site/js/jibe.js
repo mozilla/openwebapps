@@ -28,11 +28,15 @@ function getIconForSize(targetSize, minifest)
 
 $(document).ready(function() {
     /* IconGrid */
+    var appCount = 0;
 
     var appData = {
         getItemList: function(cb) {
             navigator.mozApps.mgmt.list(function(apps) {
                 var list = {};
+                appCount = apps.length;
+                if (appCount > 0) $("#help").css({display: 'none'});
+
                 for (var i = 0; i < apps.length; i++) {
                     var app = apps[i];
                     list[app.origin] = {
@@ -75,12 +79,18 @@ $(document).ready(function() {
             if (cmd == "add") {
                 for (i = 0; i < itemArray.length; i++){
                     var app = itemArray[i];
+                    appCount++;
+                    if (appCount > 0) $("#help").css({display: 'none'});
+
                     gridDash.addItemToGrid(
                         app.origin, {itemTitle: app.manifest.name, itemImgURL: app.origin + getIconForSize(48, app.manifest)}
                     );
                 }
             } else if (cmd == "remove") {
                 for (i = 0; i < itemArray.length; i++){
+                    appCount--;
+                    if (appCount == 0) $("#help").css({display: 'block'});
+
                     var app = itemArray[i];
                     gridDash.removeItemFromGrid(app.origin);
                 }

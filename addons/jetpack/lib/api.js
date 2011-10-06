@@ -320,12 +320,14 @@ FFRepoImpl.prototype = {
             'code': result['error'][0],
             'message': result['error'][1]
           });
-        } else if (typeof onsuccess == 'function') {
+        } else {
           self._observer.notifyObservers(
             null, "openwebapp-uninstalled", null
           );
           self._callWatchers("remove", [app]);
-          onsuccess(result);
+          if (typeof onsuccess == 'function') {
+            onsuccess(result);
+          }
         }
       });
     });
