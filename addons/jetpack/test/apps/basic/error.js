@@ -8,7 +8,7 @@ function configureServices(activity, services) {
   let testservice = gServices[0];
   unsafeWindow.document.getElementById('servicebox').appendChild(testservice.iframe);
   testservice.on('ready', function() {
-    testservice.call('testErrors', gActivity.data, function(result) {
+    testservice.call(gActivity.message, gActivity.data, function(result) {
       self.port.emit('owa.success', {code: 'test_failure', msg: 'unexpected success callback'});
     }, function(errob) {
       self.port.emit('owa.success', errob);

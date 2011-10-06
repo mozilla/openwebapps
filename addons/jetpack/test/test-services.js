@@ -102,36 +102,19 @@ exports.test_invoke_twice = function(test) {
 }
 
 // Error tests.
-
-function makeErrorTestContentScript(methodName) {
-  return "" +
-    "window.navigator.mozApps.mediation.ready(function(activity, services) {" +
-    "  let service = services[0];" +
-    // XXX - why is unsafeWindow needed here???
-    "  unsafeWindow.document.getElementById('servicebox').appendChild(service.iframe);" +
-    "  service.on('ready', function() {" +
-    "    service.call('" + methodName + "', activity.data, function(result) {" +
-    "      self.port.emit('owa.success', {code: 'test_failure', msg: 'unexpected success callback'});" +
-    "    }, function(errob) {" +
-    "      self.port.emit('owa.success', errob);" +
-    "    });" +
-    "  });" +
-    "});"
-}
-
 TestMediatorError = {
   url: getTestUrl("apps/testable_mediator.html"),
   contentScriptFile: getTestUrl('apps/basic/error.js')
 };
 
 // A helper for the error tests.
-function testError(test, mediator, errchecker) {
+function testError(test, mediator, activity, errchecker) {
   test.waitUntilDone();
   installTestApp(test, "apps/basic/basic.webapp", function() {
     let services = getOWA()._services;
     services.registerMediator("test.basic", mediator);
     let panel = services.get(
-      {action:"test.basic", data:{}}, // simulate an activity
+      activity,
       function(result) { // success cb
         services._popups.pop();
         errchecker(result);
@@ -147,22 +130,22 @@ function testError(test, mediator, errchecker) {
 }
 
 exports.test_invoke_error = function(test) {
-  testError(test, TestMediatorError, function(errob) {
-    test.assertEqual(errob.code, "testable_error");
-    test.assertEqual(errob.message, "a testable error");
-    test.done();
-  });
+  testError(test, TestMediatorError,
+    {action:"test.basic", message: 'testErrors', data:{}},
+    function(errob) {
+      test.assertEqual(errob.code, "testable_error");
+      test.assertEqual(errob.message, "a testable error");
+      test.done();
+    });
 };
 
-TestMediatorErrorThrown = {
-  url: getTestUrl("apps/testable_mediator.html"),
-  contentScriptFile: getTestUrl('apps/basic/errorthrown.js')
-};
 
 exports.test_invoke_error_thrown = function(test) {
-  testError(test, TestMediatorErrorThrown, function(errob) {
-    test.assertEqual(errob.code, "runtime_error");
-    test.assertEqual(errob.message, "a thrown error");
-    test.done();
-  });
+  testError(test, TestMediatorError,
+    {action:"test.basic", message: 'testErrorsThrown', data:{}},
+    function(errob) {
+      test.assertEqual(errob.code, "runtime_error");
+      test.assertEqual(errob.message, "a thrown error");
+      test.done();
+    });
 };
