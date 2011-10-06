@@ -60,7 +60,6 @@ function TypedStorage(browserStorage) {
     if (key === 'typed-storage#last_modified') {
       return;
     }
-    console.warn('Got an event', key, event);
     if (key.indexOf('#') == -1) {
       return;
     }
@@ -84,7 +83,7 @@ function TypedStorage(browserStorage) {
     if (event.newValue !== null) {
       callWatchUpdateCallbacks({
         "type": "add", 
-        objects: [objStore.get(objKey)],
+        objects: [JSON.parse(event.newValue)],
         objectType: objType,
         objectKey: objKey,
         originalEvent: event

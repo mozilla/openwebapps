@@ -633,6 +633,10 @@ if (!navigator.mozApps.install || navigator.mozApps.html5Implementation) {
     // The jschannel to the applicaiton repositiory
     var chan = null;
 
+    // Any watchUpdates() callbacks
+    var watchUpdateCallbacks = {};
+    var watchUpdateCounter = 1;
+
     /* const */
     var overlayId = "myappsOrgInstallOverlay"; /* const */
     var dialogId = "myappsTrustedIFrame";
@@ -891,51 +895,44 @@ if (!navigator.mozApps.install || navigator.mozApps.html5Implementation) {
       });
     }
 
-    function callLoadState(onsuccess, onerror) {
-      setupWindow();
-      chan.call({
-        method: "loadState",
-        params: null,
-        error: function(error, message) {
-          deliverError(error, message, onerror);
-        },
-        success: function(v) {
-          if (onsuccess !== undefined) onsuccess(v);
-        }
-      });
-    }
-
-    function callSaveState(obj, onsuccess, onerror) {
-      setupWindow();
-      chan.call({
-        method: "saveState",
-        params: {
-          "state": obj
-        },
-        error: function(error, message) {
-          deliverError(error, message, onerror);
-        },
-        success: function(v) {
-          if (onsuccess !== undefined) onsuccess(v);
-        }
-      });
-    }
-
-    function callLoginStatus(onsuccess, onerror) {
-      setupWindow();
-      chan.call({
-        method: "loginStatus",
-        params: {},
-        error: function(error, message) {
-          deliverError(error, message, onerror);
-        },
-        success: function(v) {
-          if (onsuccess !== undefined) onsuccess(v[0], v[1]);
-        }
-      });
-    }
-
     function callReady(args) {
+    }
+    
+    var changeBound = false;
+    
+    function callWatchUpdates(callback) {
+      if (! changeBound) {
+        setupWindow();
+        bindChange();
+        changeBound = true;
+      }
+      var id = watchUpdateCounter++;
+      watchUpdateCallbacks[id] = callback;
+      return id;
+    }
+    
+    function callClearWatch(id) {
+      delete watchUpdateCallbacks[id];
+    }
+
+    function bindChange() {
+      chan.bind('change', function (t, event) {
+        // FIXME: check t.origin is the repository
+        t.complete(true);
+        for (var i in watchUpdateCallbacks) {
+          if (! watchUpdateCallbacks.hasOwnProperty(i)) {
+            continue;
+          }
+          var callback = watchUpdateCallbacks[i];
+          callback(event['type'], event['objects']);
+        }
+      });
+      // Ask the remote channel to start sending changes to us:
+      chan.call({
+        method: "trackChanges",
+        params: {},
+        success: function () {}
+      });
     }
 
     function callRegisterHandler(activity, message, func) {
@@ -950,7 +947,9 @@ if (!navigator.mozApps.install || navigator.mozApps.html5Implementation) {
       mgmt: {
         launch: callLaunch,
         list: callList,
-        uninstall: callUninstall
+        uninstall: callUninstall,
+        watchUpdates: callWatchUpdates,
+        clearWatch: callClearWatch
       },
       services: {
         ready: callReady,

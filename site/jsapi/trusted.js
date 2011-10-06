@@ -233,16 +233,14 @@ ClientBridge = (function () {
     });
   });
 
-  chan.bind('loadState', function(t) {
-    verifyMgmtPermission(t.origin);
-    t.delayReturn(true);
-    Repo.loadState(t.origin, t.complete);
-  });
-
-  chan.bind('saveState', function(t, args) {
-    verifyMgmtPermission(t.origin);
-    t.delayReturn(true);
-    Repo.saveState(t.origin, args.state, t.complete);
+  chan.bind('trackChanges', function (t) {
+    Repo.watchUpdates(function (event) {
+      chan.call({
+        method: 'change', 
+        params: event,
+        success: function () {}
+      });
+    });
   });
 
   /*

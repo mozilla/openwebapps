@@ -562,7 +562,16 @@ Repo = (function() {
 
   function getAppByUrl(url, cb) {
     getAppById(normalizeOrigin(url), cb);
-  };
+  }
+
+  function watchUpdates(callback) {
+    typedStorage.watchUpdates(function (event) {
+      if (event.objectType != 'app') {
+        return;
+      }
+      callback({"type": event.type, objects: event.objects});
+    });
+  }
 
   return {
     list: list,
@@ -576,7 +585,8 @@ Repo = (function() {
     invalidateCaches: invalidateCaches,
     updateServices: updateServices,
     getAppById: getAppById,
-    getAppByUrl: getAppByUrl
+    getAppByUrl: getAppByUrl,
+    watchUpdates: watchUpdates
   };
 })();
 

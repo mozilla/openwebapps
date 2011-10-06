@@ -76,9 +76,11 @@ navigator.mozApps.amInstalled
 navigator.mozApps.getInstalledBy
 navigator.mozApps.install
 navigator.mozApps.invokeService
+navigator.mozApps.mgmt.clearWatch
 navigator.mozApps.mgmt.launch
 navigator.mozApps.mgmt.list
 navigator.mozApps.mgmt.uninstall
+navigator.mozApps.mgmt.watchUpdates
 </pre>
 </section>
 
@@ -106,10 +108,16 @@ $ function uninstallAll() {
 >       });
 >     }
 >   });
+>   return function () {
+>     wait(function () {
+>       if (finished) {
+>         finished = false;
+>         return true;
+>       }
+>     });
+>   };
 > }
-$ uninstallAll();
-$ wait(function() { return finished; });
-$ finished = false;
+$ uninstallAll()();
 $ navigator.mozApps.mgmt.list(Spy('apps.mgmt.list', {wait: true}));
 apps.mgmt.list([])
 </pre>
@@ -303,14 +311,9 @@ off domain.</p>
 
 <pre class="doctest">
 $ var chan = embedIFrameAndStartChannel(SERVERS['no_delegated_install'] + "/include.html");
-$ // now for a horrible hack.  when installing from within an iframe, in and HTML5 environment
-> // prompting will occur inside that iframe.  yuck!  We'll temporarily show that iframe
-> // so the testor can click.
-> showIFrame(SERVERS['no_delegated_install']);
 $ chan.call(buildJSChanArgs("install", true));
 success()
-$ hideIFrame(SERVERS['no_delegated_install']);
-> // now getInstalled should show that we're installed
+$ // now getInstalled should show that we're installed
 > chan.call(buildJSChanArgs("amInstalled", true));
 success({
   install_origin: "http://...:...",
@@ -437,6 +440,75 @@ $ navigator.mozApps.install(
 >   Spy('apps.install.error', {wait: false}));
 apps.install()
 </pre>
+</section>
+
+<section class="test">
+<h3>Use <code>watchUpdates</code></h3>
+
+<p>First we'll just test that adding and removing watchers works</p>
+
+<pre class="doctest">
+$ uninstallAll()();
+$ spy = Spy('watchUpdates');
+$ spy2 = Spy('watchUpdates2');
+$ navigator.mozApps.mgmt.watchUpdates(spy);
+$ spy2id = navigator.mozApps.mgmt.watchUpdates(spy2);
+$ writeln(typeof spy2id);
+number
+$ // We'll implicitly tell this works because watchUpdates2 won't appear below:
+> navigator.mozApps.mgmt.clearWatch(spy2id);
+$ // Also, removing an id that doesn't exist should fail without a problem
+> navigator.mozApps.mgmt.clearWatch(9999);
+</pre>
+
+<p>Next we'll install and remove apps to get the events:</p>
+
+<pre class="doctest">
+$ navigator.mozApps.install(
+>   SERVERS['basic_app'] + "/manifest.webapp",
+>   null,
+>   Spy('apps.install', {wait: true}));
+watchUpdates("add", [
+  {
+    install_origin: "http://127.0.0.1:?",
+    install_time: ?,
+    manifest: {installs_allowed_from: ["*"], name: "Super Crazy Basic App"},
+    origin: "http://127.0.0.1:?"
+  }
+])
+apps.install()
+$ navigator.mozApps.mgmt.uninstall(SERVERS['basic_app'], Spy('apps.uninstall', {wait: true}));
+watchUpdates("remove", [
+  {
+    install_origin: "http://127.0.0.1:?",
+    install_time: ?,
+    manifest: {installs_allowed_from: ["*"], name: "Super Crazy Basic App"},
+    origin: "http://127.0.0.1:?"
+  }
+])
+apps.uninstall(true)
+</pre>
+
+<p>Now we'll install an app in an iframe, and check that we detect the change
+in this page:</p>
+
+<pre class="doctest">
+$ var chan = embedIFrameAndStartChannel(SERVERS['no_delegated_install'] + "/include.html");
+$ chan.call(buildJSChanArgs("install", true));
+> // because the spy has been called many times, we must clear its wait flag:
+> spy.calledWait = false;
+> spy.wait();
+watchUpdates("add", [
+  {
+    install_origin: "http://127.0.0.1:?",
+    install_time: ?,
+    manifest: {name: "An application which does not grant permission for any other origin to install it"},
+    origin: "http://127.0.0.1:?"
+  }
+])
+success()
+</pre>
+
 </section>
 
 
