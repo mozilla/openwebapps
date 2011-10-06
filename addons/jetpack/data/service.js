@@ -108,13 +108,14 @@ $(function() {
   document.getElementById("confirmclicker").onclick = confirm;
 });
 
-window.navigator.mozApps.mediation.ready(
-function configureServices(action, services) {
-  $("#services").remove(); // this will remove old iframes from DOM
-  handleSetup(action, services);
-},
+
 function startActivity(activity) {
   renderRequestExplanation(activity);
+}
+
+function configureServices(activity, services) {
+  $("#services").remove(); // this will remove old iframes from DOM
+  handleSetup(activity.action, services);
   for (var i = 0; i < gServiceList.length; i++) {
     var service = gServiceList[i];
     service.on("ready", function() {
@@ -124,4 +125,7 @@ function startActivity(activity) {
       })
     });
   }
-});
+  startActivity(activity);
+}
+
+window.navigator.mozApps.mediation.ready(configureServices, startActivity);

@@ -1,19 +1,24 @@
 
 let gServices = null;
-window.navigator.mozApps.mediation.ready(
-function configureServices(action, services) {
+let gActivity = null;
+
+function configureServices(activity, services) {
     gServices = services;
+    updateActivity(activity);
   let testservice = gServices[0];
   unsafeWindow.document.getElementById('servicebox').appendChild(testservice.iframe);
-},
-function startActivity(activity) {
-  let testservice = gServices[0];
   testservice.on('ready', function() {
-    testservice.call('testErrorsThrown', activity.data, function(result) {
+    testservice.call('testErrorsThrown', gActivity.data, function(result) {
       self.port.emit('owa.success', {code: 'test_failure', msg: 'unexpected success callback'});
     }, function(errob) {
       self.port.emit('owa.success', errob);
     });
   });
-});
+}
+
+function updateActivity(activity) {
+  gActivity = activity;
+}
+
+window.navigator.mozApps.mediation.ready(configureServices, updateActivity);
 

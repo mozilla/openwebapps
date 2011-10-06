@@ -167,7 +167,7 @@ MediatorPanel.prototype = {
   /**
    * update the arguments that get sent to a mediator, primarily for subclassing
    */
-  updateargs: function() {},
+  updateargs: function(data) { return data },
 
   /**
    * handlers for show/hide of the panel - will be hooked up if a subclass
@@ -207,6 +207,7 @@ MediatorPanel.prototype = {
 
   onOWAReady: function(msg) {
     FFRepoImplService.findServices(this.methodName, function(serviceList) {
+      this.tabData.activity.data = this.updateargs(this.tabData.activity.data);
       this.panel.port.emit("owa.mediation.setup", {
               activity: this.tabData.activity,
               serviceList: serviceList,
@@ -335,7 +336,8 @@ MediatorPanel.prototype = {
       this.isConfigured = true;
     }
     if (this.invalidated) {
-      this.panel.port.emit("owa.mediation.start", this.tabData.activity);
+      this.tabData.activity.data = this.updateargs(this.tabData.activity.data);
+      this.panel.port.emit("owa.mediation.updateActivity", this.tabData.activity);
     }
     this.panel.show(this.anchor);
   },
