@@ -248,7 +248,7 @@ openwebapps.prototype = {
       getapi: function(contentWindowRef) {
         return function(callback) {
           repo.verifyMgmtPermission(contentWindowRef.location);
-          return repo.watchUpdates(callback);
+          return repo.watchUpdates(contentWindowRef, callback);
         }
       }
     });
@@ -259,7 +259,7 @@ openwebapps.prototype = {
       getapi: function(contentWindowRef) {
         return function(id) {
           repo.verifyMgmtPermission(contentWindowRef.location);
-          repo.clearWatch(id);
+          repo.clearWatch(contentWindowRef, id);
         }
       }
     });
