@@ -115,7 +115,7 @@ def build_deps(deps, latest_tags):
     location = os.getcwd()
     # do we want the latest tags ?
     try:
-        deps_dir = os.path.abspath(os.path.join(CURDIR, 'deps'))
+        deps_dir = os.path.abspath(os.environ.get('DEPSDIR', os.path.join(CURDIR, 'deps')))
         if not os.path.exists(deps_dir):
             os.mkdir(deps_dir)
 
