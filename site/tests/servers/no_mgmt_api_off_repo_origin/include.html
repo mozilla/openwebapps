@@ -30,14 +30,6 @@
       );
     });
 
-    chan.bind("loadState", function(trans) {
-      trans.delayReturn(true);
-      navigator.mozApps.mgmt.loadState(
-        function(v) { trans.complete(v); },
-        function(errObj) { trans.error(errObj.code, errObj.message) }
-      );
-    });
-
     chan.bind("list", function(trans) {
       trans.delayReturn(true);
       navigator.mozApps.mgmt.list(
@@ -51,15 +43,6 @@
       navigator.mozApps.mgmt.uninstall(
         // any ol' app id will do, we shouldn't get that far, we don't have mgmt perms
         SERVERS['basic_app'],
-        function(v) { trans.complete(v); },
-        function(errObj) { trans.error(errObj.code, errObj.message) }
-      );
-    });
-
-    chan.bind("saveState", function(trans) {
-      trans.delayReturn(true);
-      navigator.mozApps.mgmt.saveState(
-        { some: "fake state" },
         function(v) { trans.complete(v); },
         function(errObj) { trans.error(errObj.code, errObj.message) }
       );

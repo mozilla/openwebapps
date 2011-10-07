@@ -141,4 +141,52 @@ typed-storage#last_modified
 
 </div>
 
+<h2>watchUpdates</h2>
+
+<div class="test">
+  <pre class="doctest">
+$ while (window.localStorage.length) {
+>   writeln('deleting ', window.localStorage.key(0));
+>   window.localStorage.removeItem(window.localStorage.key(0));
+> }
+...
+$ store = TypedStorage()
+$ repo = store.open('objs');
+$ spy = Spy('watchUpdate')
+$ store.watchUpdates(spy);
+$ repo.put('test', {}); spy.wait();
+watchUpdate({objectKey: "test", objectType: "objs", objects: [{}], type: "add"})
+$ repo.put('test', {something: 1}); spy.wait();
+watchUpdate({objectKey: "test", objectType: "objs", objects: [{}], type: "remove"})
+watchUpdate({objectKey: "test", objectType: "objs", objects: [{something: 1}], type: "add"})
+$ repo.remove('test'); spy.wait();
+watchUpdate({objectKey: "test", objectType: "objs", objects: [{something: 1}], type: "remove"})
+$ repo.remove('nonexistant');
+$ // We'll do one more update, to confirm that the last updated didn't fire anything:
+> repo.put('test', 1); spy.wait();
+watchUpdate({objectKey: "test", objectType: "objs", objects: [1], type: "add"})
+  </pre>
+
+  <p>Now, more complicated, we'll do some changes in an iframe and see the results:</p>
+
+<pre class="doctest">
+$ iframe = document.getElementById('test-iframe');
+$ doc = (iframe.contentWindow && iframe.contentWindow.document) || iframe.contentDocument.document;
+$ doc.write('Typed storage: &lt;script src="/jsapi/eventmixin.js"&gt;&lt;/script&gt; &lt;script src="/jsapi/typed-storage.js"&gt;&lt;/script&gt;');
+$ doc.write('Script 1: &lt;script&gt; repo = TypedStorage().open("objs"); repo.put("remote", 1); &lt;/script&gt;');
+> spy.wait();
+watchUpdate({objectKey: "remote", objectType: "objs", objects: [undefined], originalEvent: [object StorageEvent], type: "add"})
+$ doc.write('Script 2: &lt;script&gt; repo = TypedStorage().open("objs"); repo.put("remote", 2); &lt;/script&gt;');
+> spy.wait();
+watchUpdate({objectKey: "remote", objectType: "objs", objects: [1], originalEvent: [object StorageEvent], type: "remove"})
+watchUpdate({objectKey: "remote", objectType: "objs", objects: [undefined], originalEvent: [object StorageEvent], type: "add"})
+</pre>
+
+<div>This is the test iframe:
+  <iframe id="test-iframe" src="blank.html" style="height: 2em; width: 10em"></iframe>
+</div>
+
+</div>
+
+
 {% endblock %}
