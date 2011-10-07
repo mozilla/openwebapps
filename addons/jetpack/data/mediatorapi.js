@@ -8,7 +8,7 @@ if (!window.navigator.mozApps.mediation) window.navigator.mozApps.mediation = {}
 // Insert the mediator api into unsafeWindow
 if (!unsafeWindow.navigator.mozApps)
   unsafeWindow.navigator.mozApps = window.navigator.mozApps;
-if (!unsafeWindow.navigator.mozApps.mediation) 3
+if (!unsafeWindow.navigator.mozApps.mediation)
   unsafeWindow.navigator.mozApps.mediation = window.navigator.mozApps.mediation;
 
 let allServices = {} // keyed by handler URL.
