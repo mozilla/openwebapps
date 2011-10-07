@@ -34,11 +34,12 @@
         }, 100);
         return;
       }
-      navigator.mozApps.install({
-        url: "/manifest.webapp",
-        onsuccess: function() { trans.complete(); },
-        onerror: function(errObj) { trans.error(errObj.code, errObj.message) }
-      });
+      navigator.mozApps.install(
+        "/manifest.webapp",
+        null,
+        function() { trans.complete(); },
+        function(errObj) { trans.error(errObj.code, errObj.message) }
+      );
     });
 
     chan.bind("amInstalled", function(trans) {

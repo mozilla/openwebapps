@@ -14,13 +14,14 @@ jschannel_default = os.path.join(os.path.dirname(here), 'jschannel.js')
 
 parser = optparse.OptionParser(
     usage="%prog [--jschannel=jschannel.js] [INPUT] [OUTPUT]",
-    description="Inlines jschannel into the given file, writing to output or rewriting the file"
+    description="Inlines jschannel into the given file, writing to output or rewriting the file",
     )
 
 parser.add_option(
     '--jschannel', metavar='JSCHANNEL.JS',
     help="Location of jschannel.js (default: %s)" % jschannel_default,
     default=jschannel_default)
+
 
 def main():
     options, args = parser.parse_args()
@@ -38,6 +39,7 @@ def main():
         fp.close()
     fp = open(options.jschannel, 'rb')
     jschannel = fp.read()
+    jschannel = jschannel.replace(';Channel =', 'var Channel =')
     fp.close()
     new_content = []
     started = False
