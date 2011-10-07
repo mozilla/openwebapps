@@ -148,14 +148,14 @@ unsafeWindow.navigator.mozApps.mediation.startLogin = window.navigator.mozApps.m
 // removed).
 window.navigator.mozApps.mediation.ready = function(configureServices, updateActivity) {
   self.port.on("owa.app.ready", function(origin) {
-    console.log("owa.app.ready for", origin);
+    //console.log("owa.app.ready for", origin);
     if (allServices[origin]) {
       allServices[origin]._invokeOn("ready");
     }
   });
 
   let setupHandler = function(msg) {
-    console.log("setup event has", msg.serviceList.length, "services");
+    //console.log("setup event has", msg.serviceList.length, "services");
     // We record the invocation ID in the mediator window so we can later
     // link the "app ready" calls back to the specific mediator instance.
     unsafeWindow.navigator.mozApps.mediation._invocationid = msg.invocationid;

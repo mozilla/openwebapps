@@ -537,7 +537,7 @@ serviceInvocationHandler.prototype = {
       newPopups.push(popupCheck);
       }
     }
-    console.log("window closed - had", this._popups.length, "popups, now have", newPopups.length);
+    //console.log("window closed - had", this._popups.length, "popups, now have", newPopups.length);
     this._popups = newPopups;
   },
 
