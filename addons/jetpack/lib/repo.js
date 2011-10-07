@@ -308,17 +308,17 @@ Repo = (function() {
       // contact our server to retrieve the URL
       fetchManifestFunc(args.url, function(fetchedManifest, contentType) {
         if (!fetchedManifest) {
-          dump("APPS | repo.install | Unable to fetch application manifest\n");
+          //dump("APPS | repo.install | Unable to fetch application manifest\n");
           cb({
             error: ["networkError", "couldn't retrieve application manifest from network"]
           });
         } else if (!contentType || contentType.indexOf("application/x-web-app-manifest+json") != 0) {
-          dump("APPS | repo.install | Application manifest had incorrect contentType\n");
+          //dump("APPS | repo.install | Application manifest had incorrect contentType\n");
           cb({
             error: ["invalidManifest", "application manifests must be of Content-Type \"application/x-web-app-manifest+json\""]
           });
         } else {
-          dump("APPS | repo.install | Fetched application manifest\n");
+          //dump("APPS | repo.install | Fetched application manifest\n");
           try {
             fetchedManifest = JSON.parse(fetchedManifest);
           } catch (e) {
@@ -331,16 +331,16 @@ Repo = (function() {
           try {
             manifestToInstall = Manifest.validate(fetchedManifest);
 
-            dump("APPS | repo.install | Validated manifest\n");
+            //dump("APPS | repo.install | Validated manifest\n");
 
             if (!mayInstall(installOrigin, appOrigin, manifestToInstall)) {
-              dump("APPS | repo.install | Failed mayInstall check\n");
+              //dump("APPS | repo.install | Failed mayInstall check\n");
               cb({
                 error: ["permissionDenied", "origin '" + installOrigin + "' may not install this app"]
               });
               return;
             }
-            dump("APPS | repo.install | Passed mayInstall check\n");
+            //dump("APPS | repo.install | Passed mayInstall check\n");
 
             // if this origin is whitelisted we can proceed without a confirmation
             if (installOrigin == "http://localhost:8420") {
@@ -433,7 +433,6 @@ Repo = (function() {
               service: service_key
             }
             if (!installedServices.hasOwnProperty(service_key)) {
-              dump("creating list for " + service_key + "\n");
               installedServices[service_key] = [];
             } else {
               // does this svc already exist in the list (supports list *update*)?

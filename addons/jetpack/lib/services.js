@@ -196,7 +196,6 @@ MediatorPanel.prototype = {
       this.panel.port.emit("owa.mediation.setup", {
               activity: this.activity,
               serviceList: serviceList,
-              caller: this.contentWindow.location.href,
               invocationid: this.invocationid
       });
     }.bind(this));
@@ -514,7 +513,7 @@ serviceInvocationHandler.prototype = {
       newPopups.push(popupCheck);
       }
     }
-    console.log("window closed - had", this._popups.length, "popups, now have", newPopups.length);
+    //console.log("window closed - had", this._popups.length, "popups, now have", newPopups.length);
     this._popups = newPopups;
   },
 
