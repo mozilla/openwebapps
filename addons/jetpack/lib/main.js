@@ -38,6 +38,7 @@
 
 const tabs = require("tabs");
 const addon = require("self");
+const pageMod = require("page-mod");
 const unload = require("unload");
 const url = require("./urlmatch");
 const simple = require("simple-storage");
@@ -68,6 +69,9 @@ function openwebapps(win, getUrlCB) {
   tmp.InjectorInit(this._window);
   this._inject();
   win.appinjector.inject();
+  
+  // setup page-modes
+  this.setupManagerAPI();
 
   tmp = require("./services");
   this._services = new tmp.serviceInvocationHandler(this._window);
@@ -128,20 +132,7 @@ openwebapps.prototype = {
     let win = this._window;
     let self = this;
 
-    win.appinjector.register({
-      apibase: "navigator.mozApps",
-      name: "install",
-      script: null,
-      getapi: function(contentWindowRef) {
-        return function(origin, data, onsuccess, onerror) {
-          let args = {
-            url: origin, install_data: data,
-            onsuccess: onsuccess, onerror: onerror
-          };
-          repo.install(contentWindowRef.location, args, win);
-        }
-      }
-    });
+    // XXX TODO these should only be injected into pages of installed apps
     win.appinjector.register({
       apibase: "navigator.mozApps",
       name: "amInstalled",
@@ -162,6 +153,22 @@ openwebapps.prototype = {
         }
       }
     });
+    
+    // global APIs that should be injected into all web content pages
+    win.appinjector.register({
+      apibase: "navigator.mozApps",
+      name: "install",
+      script: null,
+      getapi: function(contentWindowRef) {
+        return function(origin, data, onsuccess, onerror) {
+          let args = {
+            url: origin, install_data: data,
+            onsuccess: onsuccess, onerror: onerror
+          };
+          repo.install(contentWindowRef.location, args, win);
+        }
+      }
+    });
 
     win.appinjector.register({
       apibase: "navigator.mozApps",
@@ -173,106 +180,76 @@ openwebapps.prototype = {
         }
       }
     });
-
-    // management APIs:
-    win.appinjector.register({
-      apibase: "navigator.mozApps.mgmt",
-      name: "launch",
-      script: null,
-      getapi: function(contentWindowRef) {
-        return function(args) {
-          repo.verifyMgmtPermission(contentWindowRef.location);
-          repo.launch(args);
-        }
-      }
-    });
-    win.appinjector.register({
-      apibase: "navigator.mozApps.mgmt",
-      name: "list",
-      script: null,
-      getapi: function(contentWindowRef) {
-        return function(callback) {
-          repo.verifyMgmtPermission(contentWindowRef.location);
-          repo.list(callback);
-        }
-      }
-    });
-    win.appinjector.register({
-      apibase: "navigator.mozApps.mgmt",
-      name: "loginStatus",
-      script: null,
-      getapi: function(contentWindowRef) {
-        return function(args) {
-          repo.verifyMgmtPermission(contentWindowRef.location);
-          return repo.loginStatus(args);
-        }
-      }
-    });
-    win.appinjector.register({
-      apibase: "navigator.mozApps.mgmt",
-      name: "loadState",
-      script: null,
-      getapi: function(contentWindowRef) {
-        return function(callback) {
-          repo.verifyMgmtPermission(contentWindowRef.location);
-          repo.loadState(contentWindowRef.location, callback);
-        }
-      }
-    });
-    win.appinjector.register({
-      apibase: "navigator.mozApps.mgmt",
-      name: "saveState",
-      script: null,
-      getapi: function(contentWindowRef) {
-        return function(state, callback) {
-          repo.verifyMgmtPermission(contentWindowRef.location);
-          repo.saveState(contentWindowRef.location, state, callback);
-        }
-      }
-    });
-    win.appinjector.register({
-      apibase: "navigator.mozApps.mgmt",
-      name: "uninstall",
-      script: null,
-      getapi: function(contentWindowRef) {
-        return function(key, callback, onerror) {
-          repo.verifyMgmtPermission(contentWindowRef.location);
-          repo.uninstall(key, callback, onerror);
-        }
-      }
-    });
-    win.appinjector.register({
-      apibase: "navigator.mozApps.mgmt",
-      name: "watchUpdates",
-      script: null,
-      getapi: function(contentWindowRef) {
-        return function(callback) {
-          repo.verifyMgmtPermission(contentWindowRef.location);
-          return repo.watchUpdates(contentWindowRef, callback);
-        }
-      }
-    });
-    win.appinjector.register({
-      apibase: "navigator.mozApps.mgmt",
-      name: "clearWatch",
-      script: null,
-      getapi: function(contentWindowRef) {
-        return function(id) {
-          repo.verifyMgmtPermission(contentWindowRef.location);
-          repo.clearWatch(contentWindowRef, id);
-        }
-      }
-    });
   },
 
   registerBuiltInApp: function(domain, app, injector) {
+    // XXX is anything using this call?  if dead remove it
     if (!this._repo) {
       if (!this.pendingRegistrations) this.pendingRegistrations = [];
       this.pendingRegistrations.push([domain, app, injector]);
     } else {
       this._repo._registerBuiltInApp(domain, app, injector);
     }
+  },
+  
+  setupManagerAPI: function() {
+    let repo = this._repo;
+
+    // XXX TODO if a manager app is installed,
+    // we need to add it to the allowedOrigins
+    let allowedOrigins = [
+      "https?://myapps.mozillalabs.com",
+      "*.myapps.mozillalabs.com",
+      "https?://apps.mozillalabs.com",
+      "https?://localhost",
+      "about:apps"
+    ];
+  
+    pageMod.PageMod({
+      include: allowedOrigins,
+      contentScriptWhen: 'start',
+      contentScriptFile: require("self").data.url("mgmtapi.js"),
+      onAttach: function onAttach(worker) {
+        worker.port.on("owa.mgmt.launch", function(msg) {
+          repo.launch(msg.data);
+        });
+        worker.port.on("owa.mgmt.list", function(msg) {
+          repo.list(function(apps) {
+            worker.port.emit(msg.success, apps)
+          });
+        });
+        worker.port.on("owa.mgmt.loginStatus", function(msg) {
+          let result = repo.loginStatus(msg.data);
+          worker.port.emit(msg.success, result);
+        });
+        worker.port.on("owa.mgmt.loadState", function(msg) {
+          repo.loadState(msg.location, function(value) {
+            worker.port.emit(msg.success, value)
+          });
+        });
+        worker.port.on("owa.mgmt.saveState", function(msg) {
+          repo.saveState(msg.location, msg.data, function(success) {
+            worker.port.emit(msg.success, success)
+          });
+        });
+        worker.port.on("owa.mgmt.uninstall", function(msg) {
+          repo.uninstall(msg.data, function(success) {
+            if (success)
+              worker.port.emit(msg.success, null);
+            else
+              worker.port.emit(msg.error, null);
+          });
+        });
+        worker.port.on("owa.mgmt.watchUpdates", function(msg) {
+          repo.watchUpdates(worker);
+        });
+        worker.port.on("owa.mgmt.clearWatch", function(msg) {
+          repo.clearWatch(worker);
+        });
+      }
+    });    
   }
+
 
 };
 
