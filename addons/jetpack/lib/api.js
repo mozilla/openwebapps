@@ -264,7 +264,7 @@ FFRepoImpl.prototype = {
 
     let self = this;
     return Repo.install(location, args, displayPrompt, fetcher, function(result) {
-      dump("APPS | jetpack.install | Repo install returned to callback; result is " + result + "\n");
+      //dump("        APPS | jetpack.install | Repo install returned to callback; result is " + result + "\n");
       // install is complete
       if (result !== true) {
         if (args.onerror) {
