@@ -51,6 +51,7 @@ if (!console || !console.log) {
 
 var { Manifest } = require("./manifest");
 var { URLParse } = require("./urlmatch");
+var { NativeShell } = require("./nativeshell");
 
 // We want to use as much from the cross-platform repo implementation
 // as possible, but we do need to override a few methods.
@@ -255,15 +256,15 @@ FFRepoImpl.prototype = {
           }
         });
         // create OS-local application
-        dump("APPS | jetpack.install | Getting app by URL now\n");
+        console.log("APPS | jetpack.install | Getting app by URL now\n");
         Repo.getAppById(origin, function(app) {
-          dump("APPS | jetpack.install | getAppByUrl returned " + app + "\n");
+          console.log("APPS | jetpack.install | getAppByUrl returned " + app + "\n");
           if (app) {
-            dump("APPS | jetpack.install | Calling NativeShell.CreateNativeShell\n");
+            console.log("APPS | jetpack.install | Calling NativeShell.CreateNativeShell\n");
             try {
               NativeShell.CreateNativeShell(app);
             } catch (e) {
-              dump("APPS | NativeShell | Aborted: " + e);
+              console.log("APPS | NativeShell | Aborted: " + e);
             }
           }
         });

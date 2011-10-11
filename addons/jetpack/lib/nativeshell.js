@@ -1,3 +1,43 @@
+/* -*- Mode: JavaScript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* vim: set ts=2 et sw=2 tw=80: */
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is Open Web Apps for Firefox.
+ *
+ * The Initial Developer of the Original Code is The Mozilla Foundation.
+ * Portions created by the Initial Developer are Copyright (C) 2011
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *     Michael Hanson <mhanson@mozilla.com>
+ *     Anant Narayanan <anant@kix.in>
+ *     Tim Abraldes <tabraldes@mozilla.com>
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
+
 const {components, Cc, Cu, Ci} = require("chrome");
 const file = require("file");
 const self = require("self");
@@ -7,8 +47,8 @@ NativeShell = (function() {
   function CreateNativeShell(domain, appManifest)
   {
     // TODO: Select Mac or Windows
-    new MacNativeShell().createAppNativeLauncher(domain, appManifest);
-    //new WinNativeShell().createAppNativeLauncher(domain, appManifest);
+    //new MacNativeShell().createAppNativeLauncher(domain, appManifest);
+    new WinNativeShell().createAppNativeLauncher(domain, appManifest);
   }
 
   return {
@@ -105,21 +145,21 @@ function expandWindowsEnvironmentStrings(toExpand)
 
 function createWindowsShortcut(loc, target, description)
 {
-  console.log("APPS | nativeshell.win | Entered createWindowsShortcut");
-  console.log("APPS | nativeshell.win | loc=" + loc);
-  console.log("APPS | nativeshell.win | target=" + target);
-  console.log("APPS | nativeshell.win | description=" + description);
+  console.log("APPS | nativeshell.win | createWindowsShortcut - Entered createWindowsShortcut");
+  console.log("APPS | nativeshell.win | createWindowsShortcut - loc=" + loc);
+  console.log("APPS | nativeshell.win | createWindowsShortcut - target=" + target);
+  console.log("APPS | nativeshell.win | createWindowsShortcut - description=" + description);
   components.utils.import("resource://gre/modules/ctypes.jsm");
 
   var shellLinkURL = self.data.url("ShellLinkCreator.dll");
-  console.log("ZOMG THE URL IS: " + shellLinkURL);
+  console.log("APPS | nativeshell.win | createWindowsShortcut - URL to ShellLinkCreator: " + shellLinkURL);
 
   var ioService = components.classes["@mozilla.org/network/io-service;1"].getService(components.interfaces.nsIIOService);
   var theURI = ioService.newURI(shellLinkURL, null, null);
   theURI.QueryInterface(components.interfaces.nsIFileURL);
   var hopefullyThePath = theURI.file.path;
 
-  console.log("ZOMG THE PATH IS: " + hopefullyThePath);
+  console.log("APPS | nativeshell.win | createWindowsShortcut - Path to ShellLinkCreator: " + hopefullyThePath);
 
   let shellLinkCreator = ctypes.open(hopefullyThePath);
   try {
@@ -148,9 +188,16 @@ function winRecursiveFileCopy(sourceBase, sourcePath, destPath, substitutions)
                + "\nsourceBase=" + sourceBase
                + "\nsourcePath=" + sourcePath
                + "\ndestPath=" + destPath);
-  var srcFile = (url.toFilename(self.data.url(sourceBase + "/" + sourcePath))).replace("/","\\","g");
+  var srcCompletePath = sourceBase;
+  if(sourcePath) {
+    srcCompletePath += "/" + sourcePath;
+  }
+  var srcURL = self.data.url(srcCompletePath);
 
-  console.log("APPS | nativeshell.win | winRecursiveFileCopy - " + srcFile);
+  console.log("APPS | nativeshell.win | winRecursiveFileCopy - srcURL:" + srcURL);
+  var srcFile = url.toFilename(srcURL);
+  console.log("APPS | nativeshell.win | winRecursiveFileCopy - srcFile:" + srcFile);
+
   if (file.exists(srcFile))
   {
     // How do we tell if this is a directory?  Try to list() it 
@@ -290,9 +337,8 @@ WinNativeShell.prototype = {
   createExecutable : function(app)
   {
     console.log("APPS | nativeshell.Win | Entered createExecutable");
-    let unexpandedBaseDir = "%APPDATA%\\Web Apps";
+    let unexpandedBaseDir = "%LOCALAPPDATA%\\Web Apps";
 
-    console.log("ASDF");
     let baseDir = expandWindowsEnvironmentStrings(unexpandedBaseDir);
     console.log("baseDir="+baseDir);
 
@@ -310,7 +356,7 @@ WinNativeShell.prototype = {
       aNsLocalFile.initWithPath(filePath);
       aNsLocalFile.remove(true);
     }
-    
+
     var launchPath = app.origin;
     if (app.manifest.launch_path) {
       launchPath += app.manifest.launch_path;
@@ -324,21 +370,22 @@ WinNativeShell.prototype = {
       LAUNCHPATH: launchPath,
       APPMENUBAR: makeMenuBar(app.manifest)
     }
+
     file.mkpath(filePath);
-    // TODO: Organize this so it's not in "mac-app-template"
-    winRecursiveFileCopy("mac-app-template", "", filePath, substitutions);
-    //this.synthesizeIcon(app, filePath + "/Contents/Resources/appicon.icns");
+    file.mkpath(filePath + "\\XUL");
+    winRecursiveFileCopy("native-install/windows", "", filePath, substitutions);
+    winRecursiveFileCopy("native-install/XUL", "", filePath + "\\XUL", substitutions);
 
     let shortcutLocation = expandWindowsEnvironmentStrings("%UserProfile%\\desktop\\" + sanitizeWinFileName(app.manifest.name + ".lnk"));
 
-    console.log("CREATING DESKTOP SHORTCUT");
+    console.log("APPS | nativeshell.Win | Creating desktop shortcut");
     try {
       createWindowsShortcut(shortcutLocation,filePath+"\\foxlauncher.exe","It's the bee's knees!");
     } catch (e) {
       console.log("APPS | nativeshell.Win | Error in createWindowsShortcut: " + e);
     }
   },
-  
+
   synthesizeIcon : function(app, destinationFile)
   {
     // TODO: Get icon for use with Windows
