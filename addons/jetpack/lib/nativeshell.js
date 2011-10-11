@@ -46,9 +46,20 @@ const url = require("url");
 NativeShell = (function() {
   function CreateNativeShell(domain, appManifest)
   {
-    // TODO: Select Mac or Windows
-    //new MacNativeShell().createAppNativeLauncher(domain, appManifest);
-    new WinNativeShell().createAppNativeLauncher(domain, appManifest);
+    let os = Components.classes["@mozilla.org/xre/app-info;1"].getService(Components.interfaces.nsIXULRuntime).OS;
+    let nativeShell;
+    if("WINNT" === os) {
+      console.log("APPS | CreateNativeShell | Creating Windows-specific native shell");
+      nativeShell = new WinNativeShell();
+    } else if("Darwin" === os) {
+      console.log("APPS | CreateNativeShell | Creating Mac-specific native shell");
+      nativeShell = new MacNativeShell();
+    }
+    if(nativeShell) {
+      nativeShell.createAppNativeLauncher(domain, appManifest);
+    } else {
+      console.log("APPS | CreateNativeShell | Error creating native shell!");
+    }
   }
 
   return {
@@ -311,9 +322,7 @@ const WEB_APPS_DIRNAME = "Web Apps";
 //
 // Our Windows strategy:
 //    Copy our XUL app and generic launcher to this dir on user's machine:
-//                    "%APPDATA%\Web Apps"
-//    TODO: Add registry entry for Add/Remove programs
-//    TODO: Update exe resources with correct icon
+//                    "%LOCALAPPDATA%\Web Apps"
 
 function WinNativeShell() {
 
