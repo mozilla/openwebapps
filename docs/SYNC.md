@@ -14,9 +14,9 @@ As a quick overview, this specifies several aspects of the protocol:
 
 The document is a JSON document, aka object.
 
-The **key** or ID of the application is its origin (protocol, domain, and port-if-not-default), and must be a normalized origin.  The ID must then be encoded with base64 with the URL modifications (`-` and `_` instead of `+` and `/`, and no `=` padding).
+The **key** or ID of the application is its origin (protocol, domain, and port-if-not-default), and must be a normalized origin.
 
-**NOTE:** we should take `urlmatch.js` and polish it up and include the base64 stuff.
+**NOTE:** we should take `urlmatch.js` and polish it up.
 
 **NOTE:** there is no definition of how to construct an origin for `file:`, `chrome:` or other non-standard protocols; and yet we may use such protocols (we *are* using such origins for F1, to handle internal applications).  On the other hand, such apps should probably never be synchronized as they are not portable between devices.
 
