@@ -139,3 +139,11 @@ Dashboards should thus filter out applications with true `.sync` attributes, *un
 It is recommended that you sort remotely-installed applications by `install_time`, showing the most recent applications so they can be promoted to local apps.
 
 **NOTE:** we have to consider what the application picker for Activities looks like too; there is no "dashboard" for Activity picking, so nothing to helpfully distinguish between local and remote apps, or handle app ordering.
+
+## Implementation Notes
+
+The server implementation is hosted at https://github.com/mozilla/appsync
+
+It will be a Python server, with an implementation style similar to Firefox Sync (the `server-*` repositories located [here](http://hg.mozilla.org/services)).
+
+The client will be developed in the [feature/sync](https://github.com/mozilla/openwebapps/tree/feature/sync) branch, under `/sync/`.  The first implementation to be integrated is likely the HTML implementation (`/site/`).
