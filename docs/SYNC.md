@@ -4,25 +4,29 @@ This is a description of sync in open web apps, ideally thorough enough to doubl
 
 As a quick overview, this specifies several aspects of the protocol:
 
-1. A document that describes the repository state
-2. How to generate this document from a repository
-3. An algorithm for merging this document, when fetched, into an existing repository
-4. The over-the-wire protocol for getting and setting this document
-Synchronized Document
+1. The documents that describe individual applications, along with a "key" by which they can be accessed
+2. The basic sync API, and authentication to the sync service
+3. How to get updates from the sync server, and how to apply these
+4. How to send new updates to the sync server
+5. Dealing with unknown application attributes
 
-## The Document
+## The Application Document
 
-The document is a JSON document, aka object.  The object keyed off the application Origin (protocol + domain + port-if-not-default).  This is essentially the ID of each application.  The key must be a normalized origin; for example, `http://example.com:80` is not valid (the `:80` should be removed) and `http://example.com/` is not valid (there should be no trailing `/`).
+The document is a JSON document, aka object.
+
+The **key** or ID of the application is its origin (protocol, domain, and port-if-not-default), and must be a normalized origin.  The ID must then be encoded with base64 with the URL modifications (`-` and `_` instead of `+` and `/`, and no `=` padding).
+
+**NOTE:** we should take `urlmatch.js` and polish it up and include the base64 stuff.
 
 **NOTE:** there is no definition of how to construct an origin for `file:`, `chrome:` or other non-standard protocols; and yet we may use such protocols (we *are* using such origins for F1, to handle internal applications).  On the other hand, such apps should probably never be synchronized as they are not portable between devices.
 
-**NOTE:** should we allow clients to ignore or remove invalid origins?
+**Note:** should we filter origins on the server?  Might be a useful safety addition.
 
-Each item is itself an object, with these keys:
+The application document has these key:
 
-`deleted`: if present and true, then the application has been deleted. Applications that do not appear in the list of applications are just *unknown*, not *deleted*; only something with a true `deleted` key is really deleted from the repository.
+`deleted`: if present and true, then the application has been deleted. The presence of a document *asserts* that the application has been deleted.  If an application is simply not present then the sync server simply doesn't know about the application; deleting a local application because the sync server doesn't know about a service would be dangerous.
 
-Note that applications may also be "hidden" but recoverable.  A deleted application has had its receipt thrown away and is garbage. It is not necessary that any dashboard present UI for deleting an application, but we assume that there is (and the `navigator.mozApps API provides) some way that an application can actually be eliminated, and so this represents that.  If an app is deleted then only `last_modified` is required.
+Note that applications may also be "hidden" but recoverable.  A deleted application has had its receipt(s) thrown away and is garbage. It is not necessary that any dashboard present UI for deleting an application, but we assume that there is some way an application can actually be eliminated (and the `navigator.mozApps.mgmt` API provides one).  If an app is deleted then only `last_modified` is required.
 
 `last_modified`: a numeric timestamp (seconds from the epoc, UTC). This is required even for the case of a deleted app.
 
@@ -36,21 +40,21 @@ Note that applications may also be "hidden" but recoverable.  A deleted applicat
 
 **NOTE:** the most common use case (maybe the only use case) for `install_data` is for receipts.  Receipts should probably be handled more carefully.
 
-`install_origin`: the origin where app was installed from
+`install_origin`: the origin where app was installed from; it is an error if this differs from the key.
 
-**NOTE:** this may be derivative of `manifest_url`?  Maybe that's okay?
+**NOTE:** this may be derivative of `manifest_url`?  Maybe that's okay?  We could use `manifest_path`?
 
 `install_time`: timestamp (seconds) of the app installation
 
-**NOTE:** we are ignoring `navigator.apps.mgmt.saveState()` which makes sense for most use cases at this time.  But for the HTML case specifically, without being able to save dashboard state you'll get a list of *every* application, unordered.  So it'll be a mess on a kiosk.  It would be nice to at least have a reasonable starting point.
+**NOTE:** we are ignoring `navigator.apps.mgmt.saveState()` (an API which we aren't really supporting anyway) which makes sense for most use cases at this time.  But for the HTML case specifically, without being able to save dashboard state you'll get a list of *every* application, unordered.  So it'll be a mess on a kiosk.  It would be nice to at least have a reasonable starting point.
 
-**NOTE:** it would nice to have some sense of provenance, like who or what device installed the app.  Maybe a basic category, like "mobile" (meaning the application was first installed on a mobile device); CSS defines handheld and screen (and other accessibility-related profiles), but we've discussed tablet as a separate category.  We'd need to make a guess ourselves in the HTML case.
+**NOTE:** it would nice to have some sense of provenance, like who or what device installed the app.  Maybe a basic category, like "mobile" (meaning the application was first installed on a mobile device); CSS defines handheld and screen (and other accessibility-related profiles), but we've discussed tablet as a separate category.  We'd need to make a guess ourselves in the HTML case, using User-Agent and the screen size.
 
 **NOTE:** Services credentials should go here.
 
 **NOTE:** Any way to indicate if the app was used?  It would be nice to be able to figure out when an app is unused across all devices.
 
-**NOTE:** we don’t have any way to add items here if clients lose them during the generation phase.  Maybe we should stuff all these extra bits under one key, and require the client to keep them.  Or, we require the client to keep *everything* they receive in this document, unmolested, unless they explicitly change something?
+**NOTE:** we don’t have any way to add items here if clients lose them during the generation phase.  Maybe we should stuff all these extra bits under one key, and require the client to keep them.  Or, we require the client to keep *everything* they receive in this document, unmolested, unless they explicitly change something?  Or, keep unknown top-level keys aside, and expect that unknown keys may come about?
 
 **NOTE:** How do we handle version changes?  Schema updates?  Clients that feel a manifest is invalid, while another client feels it is valid?
 
@@ -62,83 +66,69 @@ Because edits are relatively infrequent and based on a shared canonical represen
 
 **NOTE:** should we recommend deleting tombstones after some period of time?  A year?  (It would not be that odd for a seldom-used device to be resync'd months later)
 
-## Merging the Document
+## Authenticating with the Sync Server
 
-Go through each application listed in the document.
+The sync service will live at a well known location, perhaps `https://myapps.mozillalabs.com/apps-sync`
 
-For each (non-deleted) application, check if it is installed; if not, install it.  You should *locally* set `app.sync` to true (this is in the [application representation](https://developer.mozilla.org/en/OpenWebApps/The_JavaScript_API#Application_Representation), not the manifest).
+To start the sync process you must have a BrowserID assertion.  It should be an assertion from `myapps.mozillalabs.com` or another in a whitelist of domains.  Send a request to:
 
-If an application is already installed, use `last_modified` to see if the application should be updated.  (**NOTE:** we should specify how to handle conflicts.)
+    POST https://myapps.mozillalabs.com/apps-sync/verify
 
-For each deleted application, check if it is installed and has a `last_modified` newer than the sync document.  If so, ignore the deleted sync application.  Otherwise delete the app if necessary, and remember the tombstone (there at least are some possible cases when the tombstone is needed to resolve some race conditions, though we might be able to avoid those with the protocol.)
+    assertion={assertion}&audience={audience}
 
-You must always retain `last_modified` as you received it (unless you ignore the application in favor of a newer local version).
+The response will be a JSON document, containing the same information as a request to `https://browserid.org/verify` but also with the keys (in case of a successful login) `collection_url`  and `authentication_header`.
 
-## Protocol
+`collection_url` will be the URL where you will access the applications.  `authentication_header` is a value you will include in `Authentication: {authentication_header}` with each request.
 
-The sync server lives at a well known location, we'll say `https://myapps.mozillalabs.com/sync/verify`
+A request may return a 401 status code.  The `WWW-Authenticate` header will not be significant in this case.  Instead you should start the login process over with a request to `https://myapps.mozillalabs.com/apps-sync/verify`
 
-> Or, we could image the well-known location is `https://myapps.mozillalabs.com/storage-verify?service=owa-sync` which is easily generalized to other kinds of storage services?
+## How to get updates
 
-To start the process the repository must authenticate itself.  The repository should call `navigator.id.getVerifiedEmail()`, and send the assertion from that to this URL.
+After authenticating with the server and getting back the URL of the collection, request:
 
-The request will be a POST and should contain:
+    GET {collection}?since={timestamp}
 
-    assertion=<URL-encoded-assertion>&audience=<URL-encoded-audience>
+`since` is optional; on first sync is should be empty or left off. The server will return an object:
 
-Note that the `audience` must be a whitelist.  That whitelist will include `myapps.mozillalabs.com`, which is the location of the canonical HTML repository.  It does *not* contain extension dashboards; access to sync means access to all the basic integrity of your repository, and that is not something we can offer to any dashboard.
+    {
+      until: timestamp,
+      incomplete: bool,
+      applications: {origin: {...}, ...}
+    }
 
-Unfortunately this whitelist means that popup blocker make it hard to actually call `navigator.id.getVerifiedEmail()` from a hidden iframe (the HTML repository implementation).  As a result we will have to provide an iframe-based login button (that is actually hosted on `http://myapps.mozillalabs.com`).  I believe this will only be necessary in the HTML implementation, as other implementations will implement the login in chrome, and/or can avoid any popup block issues.
+The response may not be complete if there are too many applications. If this is the case then `incomplete` will be true (it may be left out if the response is complete).  Another request using `since={until}` will get further applications (this may need to be repeated many times).
 
-The server will verify the assertion, if it fails it will return:
+The client should save the value of `until` and use it for subsequent requests.
 
-    {"status": "failure", "reason": "..."}
+In the case of no new items the response will be only `{until: timestamp}`.
 
-(this matches what browserid.org returns) (**NOTE:** should this be a 400 error too?)
+The client should always start with this GET request and only then send its own updates.  It should ensure that its local timestamp is sensible in comparison to the value of `until`.
 
-If it succeeds it will return:
+Applications returned may be older than the local applications, in that case then the client should ignore the server's application and use its local copy, causing an overwrite.  The same is true for deleted applications; if the local installed copy has a `last_modified` date newer than the deleted server instance then the server instance should be ignored (the user reinstalled an application).
 
-    {"status": "okay", "resource": URL, "auth": http_authorization_header, "email": email}
+**NOTE:** there are some conflicts that may occur, specifically receipts should be merged.
 
-All the subsequent requests will go through the given URL (except when an authorization failure happens), and the header `Authorization: http_authorization_header` will be added.  `http_authorization_header` is opaque to the client, it will just return what it is given.
+When an application is added from the server the client should *locally* set `app.sync` to true (this is in the [application representation](https://developer.mozilla.org/en/OpenWebApps/The_JavaScript_API#Application_Representation), not the manifest).
 
-**NOTE:** we should specify what happens when the server requires re-logging in, or wants to update the `http_authorization_header` value (e.g., to refresh the timeout).
+You must always retain `last_modified` as you received it from the server (unless you ignore the application in favor of a newer local version).
 
-The updates are all time-based, using numeric timestamps (but with sub-second precision).  The repository should keep track of the last time it has sync'd, and start the sync process with:
+## Sending new updates
 
-    GET URL
-    Authorization: ...
-    X-If-Modified-Since: timestamp
+The client should keep track of the last time it sent updates to the server, and send updates when there are newer applications.
 
-(If never sync'd, then do not use the `X-If-Modified-Since header`)
+**NOTE:** there is a case when an update might be lost because of an update from another device; this would be okay except that the client doesn't know it needs to re-send that update.  How do we confirm that?
 
-If nothing has happened since the last sync, the return value will be:
+The updates are sent with:
 
-    204 No Content
-    Content-Length: 0
-    X-Timestamp: "now", on the server
-    X-Last-Modified: timestamp of most recent update
+    POST {collection}
 
-We use 204 instead of 304 Not Modified so that browser caching does not come into play (as that caching is transparent to XMLHttpRequest, but we want it to be explicit).  The status (204 instead of 200) and empty response body indicates that there are no updates. `X-Timestamp` can be used to adjust for timezones.  (NOTE: can intermediaries be useful here, in which case do we want to use normal response codes?)
+    {origin: {...}, ...}
 
-If something has happened, the response is the same but with the response document in the body.
+Each object must have a `last_modified` key.  The response is only:
 
-The client should merge the document if necessary, then it may do a PUT or POST request (they are considered equivalent; POST has better compatibility in some situations, especially the HTML repository implementation):
+    {received: timestamp}
 
-    POST URL
-    Authorization: ...
-
-The body should contain the new document.  (Content-Type is ignored in all these cases.)  **NOTE:** should we at least invent a Content-Type?
-
-If the authorization fails, then the response will be:
-
-    401 Authorization Required
-
-There will be no `WWW-Authenticate` header, instead you should start over with `navigator.id.getVerifiedEmail()`.
-
-If the server cannot respond it will add `X-Backoff: <seconds>`, and the client should not access the server again for that long.  The response code should be 503 in this case.  (Note: should this just use Retry-After, or will XHR swallow that?)
-
-**NOTE:** should we hint from the server how often the sync client should attempt to access the server?  Or we can try to make the client smart, e.g., count how often we get updates, to keep track of whether anyone else ever updates the server (and if not, update only on login/startup, thus accomplishing a backup).  Also we could ask the clients to assign themselves a UUID, and when accessing the verify URL we could take that UUID and count the number of active clients, specifically when there is only one active client.
+**NOTE:** the server could potentially check `last_modified` itself and throw away updates?  It could indicate in the response what the updates were.
 
 ## User Interface Concerns
 
