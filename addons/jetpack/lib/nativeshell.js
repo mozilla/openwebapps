@@ -58,7 +58,7 @@ NativeShell = (function() {
     if(nativeShell) {
       nativeShell.createAppNativeLauncher(domain, appManifest);
     } else {
-      console.log("APPS | CreateNativeShell | Error creating native shell!");
+      console.log("APPS | CreateNativeShell | No OS-specific native shell could be created");
     }
   }
 
@@ -119,6 +119,147 @@ function makeMenuBar(manifest)
   toolbox += '</menubar></toolbox>';
 
   return toolbox;
+}
+
+function writeWindowsRegistryKey(key, values)
+{
+  console.log("APPS | nativeshell.win | writeWindowsRegistryKey - key="
+              + key
+              + "  values="
+              + values
+             );
+
+  components.utils.import("resource://gre/modules/ctypes.jsm");
+
+  let advapi32;
+  try {
+    advapi32 = ctypes.open("Advapi32");
+  } catch(e) {
+    console.log("APPS | nativeshell.win | writeWindowsRegistryKey - "
+                + "Failed to open Advapi32!"
+               );
+    return;
+  }
+
+  try {
+    const HKEY = ctypes.voidptr_t;
+    const LONG = ctypes.int32_t;
+    const DWORD = ctypes.uint32_t;
+    const REGSAM = ctypes.uint32_t;
+    const WCHAR = ctypes.jschar;
+    console.log("APPS | nativeshell.win | Constants defined");
+
+    let regCreateKey =
+      advapi32.declare("RegCreateKeyExW",
+                       ctypes.default_abi,
+                       LONG,
+                       HKEY,
+                       WCHAR.ptr,
+                       DWORD,
+                       ctypes.voidptr_t,
+                       DWORD,
+                       REGSAM,
+                       ctypes.voidptr_t,
+                       HKEY.ptr,
+                       ctypes.voidptr_t);
+    console.log("APPS | nativeshell.win | regCreateKey="
+                + regCreateKey);
+
+    let regSetKeyValue =
+      advapi32.declare("RegSetKeyValueW",
+                       ctypes.default_abi,
+                       LONG,
+                       HKEY,
+                       WCHAR.ptr,
+                       WCHAR.ptr,
+                       DWORD,
+                       ctypes.voidptr_t,
+                       DWORD);
+    console.log("APPS | nativeshell.win | regSetKeyValue="
+                + regSetKeyValue);
+
+    let regCloseKey =
+      advapi32.declare("RegCloseKey",
+                       ctypes.default_abi,
+                       LONG,
+                       HKEY);
+    console.log("APPS | nativeshell.win | regCloseKey="
+                + regCloseKey);
+
+    let HKEY_CURRENT_USER = HKEY(0x80000001);
+    console.log("APPS | nativeshell.win | HKEY_CURRENT_USER="
+                + HKEY_CURRENT_USER);
+
+    let REG_SZ = DWORD(0x1);
+    console.log("APPS | nativeshell.win | REG_SZ="
+                + HKEY_CURRENT_USER);
+
+    let keyCStr = ctypes.jschar.array()(key);
+    console.log("APPS | nativeshell.win | keyCStr=" + keyCStr);
+
+    let hkeyOut = new HKEY();
+    console.log("APPS | nativeshell.win | hkeyOut=" + hkeyOut);
+
+    let ret = regCreateKey(HKEY_CURRENT_USER, // HKEY_CURRENT_USER
+                           keyCStr, // lpSubKey
+                           0, // reserved, must be 0
+                           null, // lpClass, ignored
+                           0, // REG_OPTION_NON_VOLATILE
+                           0x200006, // KEY_WRITE
+                           null, // lpSecurityAttributes, ignored
+                           hkeyOut.address(),
+                           null // lpdwDisposition, ignored
+                          );
+
+    console.log("APPS | nativeshell.win | writeWindowsRegistryKey - "
+                + "hkeyOut=" + hkeyOut);
+
+    if(0 !== ret) {
+      console.log("APPS | nativeshell.win | writeWindowsRegistryKey - "
+          + "Error in RegCreateKeyExW! (" + ret + ")");
+      return;
+    }
+
+    try {
+      for(var val in values) {
+        if(values.hasOwnProperty(val)) {
+          let valueNameCStr = ctypes.jschar.array()(val);
+          console.log("APPS | nativeshell.win | valueNameCStr=" + valueNameCStr);
+
+          let valueCStr = ctypes.jschar.array()(values[val]);
+          console.log("APPS | nativeshell.win | valueCStr=" + valueCStr);
+
+          let valueCStrSize = DWORD(valueCStr.length * ctypes.jschar.size);
+          console.log("APPS | nativeshell.win | valueCStrSize=" + valueCStrSize);
+
+          ret = regSetKeyValue(hkeyOut,
+                               null,
+                               valueNameCStr,
+                               REG_SZ,
+                               valueCStr,
+                               valueCStrSize
+                              );
+
+          if(0 !== ret) {
+            console.log("APPS | nativeshell.win | writeWindowsRegistryKey - "
+                + "Error in RegSetKeyValueW! (" + ret + ")");
+          }
+        }
+      }
+    } finally {
+      ret = regCloseKey(hkeyOut);
+      if(0 !== ret) {
+        console.log("APPS | nativeshell.win | regCloseKey - "
+                    + "Error in RegCloseKey! (" + ret + ")");
+        return;
+      }
+    }
+  } catch(e) {
+    console.log("APPS | nativeshell.win | writeWindowsRegistryKey - "
+                + "Exception: " + e);
+  } finally {
+    advapi32.close();
+  }
 }
 
 function expandWindowsEnvironmentStrings(toExpand)
@@ -384,6 +525,15 @@ WinNativeShell.prototype = {
     file.mkpath(filePath + "\\XUL");
     winRecursiveFileCopy("native-install/windows", "", filePath, substitutions);
     winRecursiveFileCopy("native-install/XUL", "", filePath + "\\XUL", substitutions);
+
+    uninstallKeys = {
+                      "DisplayIcon": filePath + "\\foxlauncher.exe,0",
+                      "DisplayName": app.manifest.name + " (Web App)",
+                      "InstallLocation": filePath,
+                      "UninstallString": filePath + "\\uninstall.exe"
+                    };
+
+    writeWindowsRegistryKey("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\" + app.manifest.name + " Web App", uninstallKeys);
 
     let shortcutLocation = expandWindowsEnvironmentStrings("%UserProfile%\\desktop\\" + sanitizeWinFileName(app.manifest.name + ".lnk"));
 
