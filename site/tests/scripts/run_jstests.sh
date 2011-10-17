@@ -38,6 +38,16 @@ fi
 XARGS="-v --with-xunit --with-jstests --jstests-server $JSTESTS_SERVER --jstests-suite typed --jstests-token $JSTESTS_TOKEN --jstests-browsers $BROWSERS --debug nose.plugins.jstests"
 echo "******** $BROWSERS  ******** running the unit tests"
 python run_jstests.py --jstests-url http://$HOSTNAME:60172/tests/spec/typed-storage.html?runnerType=jstestnet --xunit-file=nosetests.xml $XARGS
+A=$?
 python run_jstests.py --jstests-url http://$HOSTNAME:60172/tests/spec/manifest.html?runnerType=jstestnet --xunit-file=nosetests.xml $XARGS
+B=$?
 python run_jstests.py --jstests-url http://$HOSTNAME:60172/tests/spec/conduits.html?runnerType=jstestnet --xunit-file=nosetests.xml $XARGS
+C=$?
+python run_jstests.py --jstests-url http://$HOSTNAME:60172/tests/spec/repo_api.html?runnerType=jstestnet --xunit-file=nosetests.xml $XARGS
+D=$?
+
 forever stop 0
+echo "$A $B $C $D"
+E=`expr $A + $B + $C + $D`
+echo "Exit Code: $E"
+exit $E
