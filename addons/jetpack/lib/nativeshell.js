@@ -49,10 +49,8 @@ NativeShell = (function() {
     let os = Components.classes["@mozilla.org/xre/app-info;1"].getService(Components.interfaces.nsIXULRuntime).OS;
     let nativeShell;
     if("WINNT" === os) {
-      console.log("APPS | CreateNativeShell | Creating Windows-specific native shell");
       nativeShell = new WinNativeShell();
     } else if("Darwin" === os) {
-      console.log("APPS | CreateNativeShell | Creating Mac-specific native shell");
       nativeShell = new MacNativeShell();
     }
     if(nativeShell) {
@@ -69,9 +67,12 @@ NativeShell = (function() {
 
 function substituteStrings(inputString, substituteStrings)
 {
-  var working = inputString;
-  for (var key in substituteStrings) {
-    working = working.replace("$" + key, substituteStrings[key], "g"); //note that 'g' is non-standard
+  let working = inputString;
+  for (let key in substituteStrings) {
+    if(substituteStrings.hasOwnProperty(key)) {
+      re = new RegExp("\\$" + key, "gi");
+      working = working.replace(re, substituteStrings[key]);
+    }
   }
   return working;
 }
@@ -123,170 +124,205 @@ function makeMenuBar(manifest)
 
 function writeWindowsRegistryKey(key, values)
 {
-  console.log("APPS | nativeshell.win | writeWindowsRegistryKey - key="
-              + key
-              + "  values="
-              + values
-             );
-
-  components.utils.import("resource://gre/modules/ctypes.jsm");
+  try {
+    components.utils.import("resource://gre/modules/ctypes.jsm");
+  } catch(e) {
+    throw("writeWindowsRegistryKey - Failure importing ctypes (" + e + ")");
+  }
 
   let advapi32;
   try {
     advapi32 = ctypes.open("Advapi32");
   } catch(e) {
-    console.log("APPS | nativeshell.win | writeWindowsRegistryKey - "
-                + "Failed to open Advapi32!"
-               );
-    return;
+    throw("writeWindowsRegistryKey - Failure opening Advapi32 (" + e + ")");
   }
 
   try {
-    const HKEY = ctypes.voidptr_t;
-    const LONG = ctypes.int32_t;
-    const DWORD = ctypes.uint32_t;
-    const REGSAM = ctypes.uint32_t;
-    const WCHAR = ctypes.jschar;
-    console.log("APPS | nativeshell.win | Constants defined");
+    try {
+      const HKEY = ctypes.voidptr_t;
+      const LONG = ctypes.int32_t;
+      const DWORD = ctypes.uint32_t;
+      const REGSAM = ctypes.uint32_t;
+      const WCHAR = ctypes.jschar;
+      const HKEY_CURRENT_USER = HKEY(0x80000001);
+      const REG_SZ = DWORD(0x1);
+    } catch(e) {
+      throw("writeWindowsRegistryKey - "
+            + "Failure setting up constants (" + e + ")");
+    }
 
-    let regCreateKey =
-      advapi32.declare("RegCreateKeyExW",
-                       ctypes.default_abi,
-                       LONG,
-                       HKEY,
-                       WCHAR.ptr,
-                       DWORD,
-                       ctypes.voidptr_t,
-                       DWORD,
-                       REGSAM,
-                       ctypes.voidptr_t,
-                       HKEY.ptr,
-                       ctypes.voidptr_t);
-    console.log("APPS | nativeshell.win | regCreateKey="
-                + regCreateKey);
+    let regCreateKey;
+    try {
+      regCreateKey = advapi32.declare("RegCreateKeyExW",
+                                      ctypes.default_abi,
+                                      LONG,
+                                      HKEY,
+                                      WCHAR.ptr,
+                                      DWORD,
+                                      ctypes.voidptr_t,
+                                      DWORD,
+                                      REGSAM,
+                                      ctypes.voidptr_t,
+                                      HKEY.ptr,
+                                      ctypes.voidptr_t);
+    } catch(e) {
+      throw "Failure declaring RegCreateKeyExW (" + e + ")";
+    }
 
-    let regSetKeyValue =
-      advapi32.declare("RegSetKeyValueW",
-                       ctypes.default_abi,
-                       LONG,
-                       HKEY,
-                       WCHAR.ptr,
-                       WCHAR.ptr,
-                       DWORD,
-                       ctypes.voidptr_t,
-                       DWORD);
-    console.log("APPS | nativeshell.win | regSetKeyValue="
-                + regSetKeyValue);
+    let regSetKeyValue;
+    try {
+      regSetKeyValue = advapi32.declare("RegSetKeyValueW",
+                                        ctypes.default_abi,
+                                        LONG,
+                                        HKEY,
+                                        WCHAR.ptr,
+                                        WCHAR.ptr,
+                                        DWORD,
+                                        ctypes.voidptr_t,
+                                        DWORD);
+    } catch(e) {
+      throw "Failure declaring RegSetKeyValueW (" + e + ")";
+    }
 
-    let regCloseKey =
-      advapi32.declare("RegCloseKey",
-                       ctypes.default_abi,
-                       LONG,
-                       HKEY);
-    console.log("APPS | nativeshell.win | regCloseKey="
-                + regCloseKey);
+    let regCloseKey;
+    try {
+      regCloseKey = advapi32.declare("RegCloseKey",
+                                      ctypes.default_abi,
+                                      LONG,
+                                      HKEY);
+    } catch(e) {
+      throw "Failure declaring RegCloseKey (" + e + ")";
+    }
 
-    let HKEY_CURRENT_USER = HKEY(0x80000001);
-    console.log("APPS | nativeshell.win | HKEY_CURRENT_USER="
-                + HKEY_CURRENT_USER);
+    let ret;
+    let hkeyOut;
 
-    let REG_SZ = DWORD(0x1);
-    console.log("APPS | nativeshell.win | REG_SZ="
-                + HKEY_CURRENT_USER);
-
-    let keyCStr = ctypes.jschar.array()(key);
-    console.log("APPS | nativeshell.win | keyCStr=" + keyCStr);
-
-    let hkeyOut = new HKEY();
-    console.log("APPS | nativeshell.win | hkeyOut=" + hkeyOut);
-
-    let ret = regCreateKey(HKEY_CURRENT_USER, // HKEY_CURRENT_USER
-                           keyCStr, // lpSubKey
-                           0, // reserved, must be 0
-                           null, // lpClass, ignored
-                           0, // REG_OPTION_NON_VOLATILE
-                           0x200006, // KEY_WRITE
-                           null, // lpSecurityAttributes, ignored
-                           hkeyOut.address(),
-                           null // lpdwDisposition, ignored
-                          );
-
-    console.log("APPS | nativeshell.win | writeWindowsRegistryKey - "
-                + "hkeyOut=" + hkeyOut);
+    try {
+      let keyCStr = ctypes.jschar.array()(key);
+      hkeyOut = new HKEY();
+      ret = regCreateKey(HKEY_CURRENT_USER, // HKEY_CURRENT_USER
+                         keyCStr, // lpSubKey
+                         0, // reserved, must be 0
+                         null, // lpClass, ignored
+                         0, // REG_OPTION_NON_VOLATILE
+                         0x200006, // KEY_WRITE
+                         null, // lpSecurityAttributes, ignored
+                         hkeyOut.address(),
+                         null); // lpdwDisposition, ignored
+    } catch(e) {
+      throw("writeWindowsRegistryKey - "
+            + "Failure calling RegCreateKeyExW (" + e + ")");
+    }
 
     if(0 !== ret) {
-      console.log("APPS | nativeshell.win | writeWindowsRegistryKey - "
-          + "Error in RegCreateKeyExW! (" + ret + ")");
-      return;
+      throw("writeWindowsRegistryKey - "
+            + "Error in RegCreateKeyExW! (" + ret + ")");
     }
 
     try {
-      for(var val in values) {
+      for(let val in values) {
         if(values.hasOwnProperty(val)) {
-          let valueNameCStr = ctypes.jschar.array()(val);
-          console.log("APPS | nativeshell.win | valueNameCStr=" + valueNameCStr);
+          try {
+            let valueNameCStr = ctypes.jschar.array()(val);
+            let valueCStr = ctypes.jschar.array()(values[val]);
+            let valueCStrSize = DWORD(valueCStr.length * ctypes.jschar.size);
 
-          let valueCStr = ctypes.jschar.array()(values[val]);
-          console.log("APPS | nativeshell.win | valueCStr=" + valueCStr);
-
-          let valueCStrSize = DWORD(valueCStr.length * ctypes.jschar.size);
-          console.log("APPS | nativeshell.win | valueCStrSize=" + valueCStrSize);
-
-          ret = regSetKeyValue(hkeyOut,
-                               null,
-                               valueNameCStr,
-                               REG_SZ,
-                               valueCStr,
-                               valueCStrSize
-                              );
+            ret = regSetKeyValue(hkeyOut,
+                null,
+                valueNameCStr,
+                REG_SZ,
+                valueCStr,
+                valueCStrSize
+                );
+          } catch (e) {
+            throw("writeWindowsRegistryKey - "
+                  + "Failure calling RegSetKeyValue (" + e + ")");
+          }
 
           if(0 !== ret) {
-            console.log("APPS | nativeshell.win | writeWindowsRegistryKey - "
-                + "Error in RegSetKeyValueW! (" + ret + ")");
+            throw("writeWindowsRegistryKey - "
+                  + "Error in RegSetKeyValueW! (" + ret + ")");
           }
         }
       }
     } finally {
-      ret = regCloseKey(hkeyOut);
+      // Try to close the registry key, but don't throw exceptions if issues
+      // come up while trying to do so.
+      try {
+        ret = regCloseKey(hkeyOut);
+      } catch(e) {
+        console.log("APPS | nativeshell.win | writeWindowsRegistryKey - "
+                    + "Failure calling RegCloseKey! (" + e + ")");
+      }
       if(0 !== ret) {
-        console.log("APPS | nativeshell.win | regCloseKey - "
+        console.log("APPS | nativeshell.win | writeWindowsRegistryKey - "
                     + "Error in RegCloseKey! (" + ret + ")");
-        return;
       }
     }
-  } catch(e) {
-    console.log("APPS | nativeshell.win | writeWindowsRegistryKey - "
-                + "Exception: " + e);
   } finally {
-    advapi32.close();
+    try {
+      advapi32.close();
+    } catch (e) {
+      console.log("APPS | nativeshell.win | writeWindowsRegistryKey - "
+                  + "Failure trying to close Advapi32 (" + e + ")");
+    }
   }
 }
 
-function expandWindowsEnvironmentStrings(toExpand)
+function winExpandVars(toExpand)
 {
-  components.utils.import("resource://gre/modules/ctypes.jsm");
-  let kernel32 = ctypes.open("Kernel32");
   try {
-    const DWORD = ctypes.uint32_t;
-    const WCHAR = ctypes.jschar;
-    const MAX_PATH = 260;
+    components.utils.import("resource://gre/modules/ctypes.jsm");
+  } catch(e) {
+    throw("winExpandVars - "
+          + "Failure importing ctypes (" + e + ")");
+  }
 
-    let outStrType = ctypes.ArrayType(WCHAR);
-    let expandEnvironmentStrings =
-      kernel32.declare("ExpandEnvironmentStringsW",
-          ctypes.default_abi,
-          DWORD,
-          WCHAR.ptr,
-          WCHAR.ptr,
-          DWORD);
+  let kernel32;
+  try {
+    kernel32 = ctypes.open("Kernel32");
+  } catch(e) {
+    throw("winExpandVars - "
+          + "Failed to open Kernel32 (" + e + ")");
+  }
 
-    let cstr = ctypes.jschar.array()(toExpand);
-    let out = new outStrType(MAX_PATH);
+  try {
+    try {
+      const DWORD = ctypes.uint32_t;
+      const WCHAR = ctypes.jschar;
+      const MAX_PATH = 260;
+      const outStrType = ctypes.ArrayType(WCHAR);
+    } catch(e) {
+      throw("winExpandVars - "
+            + "Failure setting up constants (" + e + ")");
+    }
 
-    if(0 === expandEnvironmentStrings(cstr,
-          out,
-          MAX_PATH)) {
-      throw("Error in ExpandEnvironmentStringsW");
+    let expandEnvironmentStrings;
+    try {
+      expandEnvironmentStrings = kernel32.declare("ExpandEnvironmentStringsW",
+                                                  ctypes.default_abi,
+                                                  DWORD,
+                                                  WCHAR.ptr,
+                                                  WCHAR.ptr,
+                                                  DWORD);
+    } catch(e) {
+      throw("winExpandVars - "
+            + "Failure declaring ExpandEnvironmentStringsW (" + e + ")");
+    }
+
+    let ret;
+    let out;
+    try {
+      let cstr = ctypes.jschar.array()(toExpand);
+      out = new outStrType(MAX_PATH);
+      ret = expandEnvironmentStrings(cstr, out, MAX_PATH);
+    } catch(e) {
+      throw("winExpandVars - "
+            + "Failure calling ExpandEnvironmentStringsW (" + e + ")");
+    }
+    if(0 === ret) {
+      throw("winExpandVars - "
+            + "Error in ExpandEnvironmentStringsW (" + ret + ")");
     } else {
       return out.readString();
     }
@@ -297,109 +333,149 @@ function expandWindowsEnvironmentStrings(toExpand)
 
 function createWindowsShortcut(loc, target, description)
 {
-  console.log("APPS | nativeshell.win | createWindowsShortcut - Entered createWindowsShortcut");
-  console.log("APPS | nativeshell.win | createWindowsShortcut - loc=" + loc);
-  console.log("APPS | nativeshell.win | createWindowsShortcut - target=" + target);
-  console.log("APPS | nativeshell.win | createWindowsShortcut - description=" + description);
-  components.utils.import("resource://gre/modules/ctypes.jsm");
-
-  var shellLinkURL = self.data.url("ShellLinkCreator.dll");
-  console.log("APPS | nativeshell.win | createWindowsShortcut - URL to ShellLinkCreator: " + shellLinkURL);
-
-  var ioService = components.classes["@mozilla.org/network/io-service;1"].getService(components.interfaces.nsIIOService);
-  var theURI = ioService.newURI(shellLinkURL, null, null);
-  theURI.QueryInterface(components.interfaces.nsIFileURL);
-  var hopefullyThePath = theURI.file.path;
-
-  console.log("APPS | nativeshell.win | createWindowsShortcut - Path to ShellLinkCreator: " + hopefullyThePath);
-
-  let shellLinkCreator = ctypes.open(hopefullyThePath);
   try {
-    const WCHAR = ctypes.jschar;
+    components.utils.import("resource://gre/modules/ctypes.jsm");
+  } catch(e) {
+    throw("createWindowsShortcut - Failure importing ctypes (" + e + ")");
+  }
 
-    let createLink =
-      shellLinkCreator.declare("CreateLink",
-          ctypes.default_abi,
-          ctypes.long,
-          WCHAR.ptr,
-          WCHAR.ptr,
-          WCHAR.ptr);
+  try {
+    let shellLinkURL = self.data.url("ShellLinkCreator.dll");
+    let ioService = components
+                      .classes["@mozilla.org/network/io-service;1"]
+                      .getService(components.interfaces.nsIIOService);
+    let theURI = ioService.newURI(shellLinkURL, null, null);
+    theURI.QueryInterface(components.interfaces.nsIFileURL);
+    let hopefullyThePath = theURI.file.path;
+    var shellLinkCreator = ctypes.open(hopefullyThePath);
+  } catch(e) {
+      throw("createWindowsShortcut - "
+            + "Failure loading ShellLinkCreator.dll (" + e + ")");
+  }
 
-    if(0 > createLink(target, loc, description)) {
-      throw("Error in CreateLink!");
+  try {
+    try {
+      const WCHAR = ctypes.jschar;
+      let createLink = shellLinkCreator.declare("CreateLink",
+                                                ctypes.default_abi,
+                                                ctypes.long,
+                                                WCHAR.ptr,
+                                                WCHAR.ptr,
+                                                WCHAR.ptr);
+
+      var ret = createLink(target, loc, description);
+    } catch(e) {
+      throw("createWindowsShortcut - "
+            + "Failure in CreateLink (" + e + ")");
+    }
+    if(0 > ret) {
+      throw("createWindowsShortcut - "
+            + "Error in CreateLink (" + ret + ")");
     }
   }
   finally {
-    shellLinkCreator.close();
+    try {
+      shellLinkCreator.close();
+    } catch (e) {
+      console.log("APPS | nativeshell.win | createWindowsShortcut - "
+                  + "Failure trying to close shellLinkCreator (" + e + ")");
+    }
   }
 }
 
 function winRecursiveFileCopy(sourceBase, sourcePath, destPath, substitutions)
 {
-  console.log("APPS | nativeshell.win | winRecursiveFileCopy - "
-               + "\nsourceBase=" + sourceBase
-               + "\nsourcePath=" + sourcePath
-               + "\ndestPath=" + destPath);
-  var srcCompletePath = sourceBase;
-  if(sourcePath) {
-    srcCompletePath += "/" + sourcePath;
-  }
-  var srcURL = self.data.url(srcCompletePath);
-
-  console.log("APPS | nativeshell.win | winRecursiveFileCopy - srcURL:" + srcURL);
-  var srcFile = url.toFilename(srcURL);
-  console.log("APPS | nativeshell.win | winRecursiveFileCopy - srcFile:" + srcFile);
-
-  if (file.exists(srcFile))
-  {
-    // How do we tell if this is a directory?  Try to list() it 
-    // and catch exceptions.
-    var isDirectory=false, dirContents;
-    try {
-      dirContents = file.list(srcFile);
-      isDirectory = true;
-      console.log("APPS | nativeshell.win | winRecursiveFileCopy - IS a directory");
-    } catch (cannotListException) {
-      console.log("APPS | nativeshell.win | winRecursiveFileCopy - IS NOT a directory");
+  try {
+    let srcCompletePath = sourceBase;
+    if(sourcePath) {
+      srcCompletePath += "/" + sourcePath;
     }
-    
-    if (isDirectory) 
-    {    
-      var dstFile = destPath + "\\" + sourcePath.replace("/","\\","g");
-      console.log("APPS | nativeshell.win | winRecursiveFileCopy - creating directory " + dstFile);
+    let srcURL = self.data.url(srcCompletePath);
+    var srcFile = url.toFilename(srcURL);
+    var dstFile = winPathify(destPath + "\\" + sourcePath);
+  } catch(e) {
+    throw("winRecursiveFileCopy - "
+          + "Failure while setting up paths (" + e +")");
+  }
+
+  try {
+    var fileExists = file.exists(srcFile);
+    if(fileExists) {
+      // file doesn't expose an isDirectory function yet
+      // so we negate file.isFile
+      var isDir = !file.isFile(srcFile);
+    }
+  } catch(e) {
+    throw("winRecursiveFileCopy - "
+          + "Failure obtaining information about file "
+          + srcFile
+          + " (" + e + ")");
+  }
+
+  if(!fileExists) {
+    throw("winRecursiveFileCopy - "
+          + "Tried to copy file but source file doesn't exist ("
+          + srcFile + ")");
+  }
+
+  if (isDir)
+  {
+    try {
+      var dirContents = file.list(srcFile);
       file.mkpath(dstFile);
-      console.log("APPS | nativeshell.win | winRecursiveFileCopy - directory created");
+    } catch(e) {
+      throw("winRecursiveFileCopy - "
+            + "Failure copying directory from "
+            + srcFile
+            + " to "
+            + dstFile
+            + " (" + e + ")");
+    }
 
-      for (var i=0; i < dirContents.length; i++)
-      {
-        winRecursiveFileCopy(sourceBase, sourcePath + "/" + dirContents[i], destPath, substitutions);
+    for (let i=0; i < dirContents.length; i++)
+    {
+      winRecursiveFileCopy(sourceBase,
+                           sourcePath + "/" + dirContents[i],
+                           destPath,
+                           substitutions);
+    }
+  } else {
+    let binaryMode = /\.exe$|\.dll$/i.test(sourcePath);
+    if(binaryMode)
+    {
+      try {
+      // Some shenanigans here to set the executable bit:
+      let aNsLocalFile = Cc['@mozilla.org/file/local;1']
+                         .createInstance(Ci.nsILocalFile);
+      aNsLocalFile.initWithPath(dstFile);
+      aNsLocalFile.create(aNsLocalFile.NORMAL_FILE_TYPE, 0x1ed); // octal 755
+      } catch(e) {
+        throw("winRecursiveFileCopy - "
+              + "Failed creating binary file "
+              + dstFile
+              + " (" + e + ")");
       }
-    } else {
-      // Assuming textmode for everything - do we need any binaries?
-      var dstFile = destPath + "\\" + (substituteStrings(sourcePath, substitutions)).replace("/","\\", "g");
-      console.log("APPS | nativeshell.win | winRecursiveFileCopy - dstFile=" + dstFile);
+    }
 
-      // BIG HACK
-      var binaryMode = false;
-      if (sourcePath.indexOf("foxlauncher") >= 0)
-      {
-        // Some shenanigans here to set the executable bit:
-        var aNsLocalFile = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
-        aNsLocalFile.initWithPath(dstFile);
-        aNsLocalFile.create(aNsLocalFile.NORMAL_FILE_TYPE, 0x1ed); // octal 755
-        binaryMode = true;
-      }
-      var inputStream = file.open(srcFile, "r" + (binaryMode ? "b" : ""));
-      var fileContents = inputStream.read();
-      var finalContents;
+    try {
+      let inputStream = file.open(srcFile, "r" + (binaryMode? "b":""));
+      let fileContents = inputStream.read();
+      let finalContents;
       if (!binaryMode) {
         finalContents = substituteStrings(fileContents, substitutions);
       } else {
         finalContents = fileContents;
       }
-      var outputStream = file.open(dstFile, "w" + (binaryMode ? "b" : ""));
+      let outputStream = file.open(dstFile, "w" + (binaryMode? "b":""));
       outputStream.write(finalContents);
       outputStream.close();
+    } catch(e) {
+      throw("winRecursiveFileCopy - "
+            + "Failed copying file from "
+            + srcFile
+            + " to "
+            + dstFile
+            + " (" + e + ")");
     }
   }
 }
@@ -456,7 +532,6 @@ function recursiveFileCopy(sourceBase, sourcePath, destPath, substitutions)
   }
 }
 
-
 const WEB_APPS_DIRNAME = "Web Apps";
 
 // Windows implementation
@@ -469,51 +544,59 @@ function WinNativeShell() {
 
 }
 
-// TODO: Pretty sure we can ask the OS to do this for us with
-// js-ctypes and a system call
-function sanitizeWinFileName(path)
+function winPathify(path)
 {
-  return path.replace(":", "-").replace("/", "-");
+  const slashRE = /[\/\\]+/gi;
+  return path.replace(slashRE, "\\");
+}
+
+// TODO: Get list of bad chars from OS
+function winFilenameify(path)
+{
+  const re = /[:\/\\]+/gi;
+  return path.replace(re, "-");
 }
 
 WinNativeShell.prototype = {
 
   createAppNativeLauncher : function(app)
   {
-    console.log("APPS | nativeshell.Win | Creating app native launcher");
     this.createExecutable(app);
   },
 
   createExecutable : function(app)
   {
-    console.log("APPS | nativeshell.Win | Entered createExecutable");
-    let unexpandedBaseDir = "%LOCALAPPDATA%\\Web Apps";
+    let baseDir = "%LOCALAPPDATA%\\" + WEB_APPS_DIRNAME;
 
-    let baseDir = expandWindowsEnvironmentStrings(unexpandedBaseDir);
-    console.log("baseDir="+baseDir);
+    try {
+      baseDir = winPathify(winExpandVars(baseDir));
+      var filePath = baseDir + "\\" + winFilenameify(app.manifest.name);
+      var launchPath = app.origin;
+      if (app.manifest.launch_path) {
+        launchPath += app.manifest.launch_path;
+      }
+    } catch(e) {
+      throw("createExecutable - Failure setting up paths (" + e + ")");
+    }
 
-    if (!file.exists(baseDir))
-    {
+    try {
+      if (file.exists(filePath))
+      {
+        // recursive delete
+        let aNsLocalFile = Cc['@mozilla.org/file/local;1']
+                           .createInstance(Ci.nsILocalFile);
+        aNsLocalFile.initWithPath(filePath);
+        aNsLocalFile.remove(true);
+      }
       file.mkpath(baseDir);
+      file.mkpath(filePath);
+      file.mkpath(filePath + "\\XUL");
+    } catch(e) {
+      throw("createExecutable - "
+            + "Failure setting up target location (" + e + ")");
     }
 
-    var filePath = baseDir + "\\" + sanitizeWinFileName(app.manifest.name);
-    console.log("APPS | nativeshell.Win | filePath=" + filePath);
-    if (file.exists(filePath))
-    {
-      // recursive delete
-      var aNsLocalFile = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
-      aNsLocalFile.initWithPath(filePath);
-      aNsLocalFile.remove(true);
-    }
-
-    var launchPath = app.origin;
-    if (app.manifest.launch_path) {
-      launchPath += app.manifest.launch_path;
-    }
-    console.log("APPS | nativeshell.Win | launchPath=" + launchPath);
-
-    var substitutions = {
+    let substitutions = {
       APPNAME: app.manifest.name,
       APPDOMAIN: app.origin,
       APPDOMAIN_REVERSED: reverseDNS(app.origin),
@@ -521,27 +604,51 @@ WinNativeShell.prototype = {
       APPMENUBAR: makeMenuBar(app.manifest)
     }
 
-    file.mkpath(filePath);
-    file.mkpath(filePath + "\\XUL");
-    winRecursiveFileCopy("native-install/windows", "", filePath, substitutions);
-    winRecursiveFileCopy("native-install/XUL", "", filePath + "\\XUL", substitutions);
-
-    uninstallKeys = {
-                      "DisplayIcon": filePath + "\\foxlauncher.exe,0",
-                      "DisplayName": app.manifest.name + " (Web App)",
-                      "InstallLocation": filePath,
-                      "UninstallString": filePath + "\\uninstall.exe"
-                    };
-
-    writeWindowsRegistryKey("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\" + app.manifest.name + " Web App", uninstallKeys);
-
-    let shortcutLocation = expandWindowsEnvironmentStrings("%UserProfile%\\desktop\\" + sanitizeWinFileName(app.manifest.name + ".lnk"));
-
-    console.log("APPS | nativeshell.Win | Creating desktop shortcut");
     try {
-      createWindowsShortcut(shortcutLocation,filePath+"\\foxlauncher.exe","It's the bee's knees!");
+      winRecursiveFileCopy("native-install/windows",
+                           "",
+                           filePath,
+                           substitutions);
+
+      winRecursiveFileCopy("native-install/XUL",
+                           "",
+                           filePath + "\\XUL",
+                           substitutions);
+    } catch(e) {
+      throw("createExectuable - "
+            + "Failure copying files (" + e + ")");
+    }
+
+    try {
+      let uninstallKeys = {"DisplayIcon": filePath + "\\foxlauncher.exe,0",
+                           "DisplayName": app.manifest.name + " (Web App)",
+                           "InstallLocation": filePath,
+                           "UninstallString": filePath + "\\uninstall.exe"};
+
+      writeWindowsRegistryKey("Software\\Microsoft\\Windows\\CurrentVersion\\"
+                              + "Uninstall\\"
+                              + app.manifest.name
+                              + " Web App",
+                              uninstallKeys);
+    } catch(e) {
+      throw("createExecutable - "
+          + "Failure setting up registry keys for uninstaller");
+    }
+
+    // TODO: Only create a desktop shortcut if user requests it
+    // TODO: Maybe also create a shortcut in the Start menu?
+    try {
+      let shortcutLocation =
+        winPathify(winExpandVars("%UserProfile%\\desktop\\")
+                                 + winFilenameify(app.manifest.name) + ".lnk");
+
+      createWindowsShortcut(shortcutLocation,
+          filePath+"\\foxlauncher.exe",
+          // TODO: Get description from somewhere (manifest?)
+          "It's the bee's knees!");
     } catch (e) {
-      console.log("APPS | nativeshell.Win | Error in createWindowsShortcut: " + e);
+      console.log("APPS | nativeshell.win | createWindowsShortcut - "
+          + "Failure creating shortcut (" + e + ")");
     }
   },
 
