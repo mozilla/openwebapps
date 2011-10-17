@@ -175,11 +175,11 @@ $ doc = (iframe.contentWindow && iframe.contentWindow.document) || iframe.conten
 $ doc.write('Typed storage: &lt;script src="/jsapi/eventmixin.js"&gt;&lt;/script&gt; &lt;script src="/jsapi/typed-storage.js"&gt;&lt;/script&gt;');
 $ doc.write('Script 1: &lt;script&gt; repo = TypedStorage().open("objs"); repo.put("remote", 1); &lt;/script&gt;');
 > spy.wait();
-watchUpdate({objectKey: "remote", objectType: "objs", objects: [undefined], originalEvent: [object StorageEvent], type: "add"})
+watchUpdate({objectKey: "remote", objectType: "objs", objects: [1], originalEvent: [object StorageEvent], type: "add"})
 $ doc.write('Script 2: &lt;script&gt; repo = TypedStorage().open("objs"); repo.put("remote", 2); &lt;/script&gt;');
 > spy.wait();
 watchUpdate({objectKey: "remote", objectType: "objs", objects: [1], originalEvent: [object StorageEvent], type: "remove"})
-watchUpdate({objectKey: "remote", objectType: "objs", objects: [undefined], originalEvent: [object StorageEvent], type: "add"})
+watchUpdate({objectKey: "remote", objectType: "objs", objects: [2], originalEvent: [object StorageEvent], type: "add"})
 </pre>
 
 <div>This is the test iframe:
