@@ -48,6 +48,13 @@ D=$?
 
 forever stop 0
 echo "$A $B $C $D"
-E=`expr $A + $B + $C + $D`
-echo "Exit Code: $E"
-exit $E
+Z=`expr $A + $B + $C + $D`
+echo "Exit Code: $Z"
+
+if [ $Z -gt "0" ]
+then
+  exit 5
+else
+  echo "Success"
+  exit 0
+fi
