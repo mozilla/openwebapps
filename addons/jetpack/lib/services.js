@@ -450,6 +450,7 @@ function serviceInvocationHandler(win)
   let observerService = Cc["@mozilla.org/observer-service;1"].getService(Ci.nsIObserverService);
   observerService.addObserver(this, "openwebapp-installed", false);
   observerService.addObserver(this, "openwebapp-uninstalled", false);
+  observerService.addObserver(this, "net:clear-active-logins", false);
   
   // if we open a new tab, close any mediator panels
   win.gBrowser.tabContainer.addEventListener("TabOpen", function(e) {
@@ -501,7 +502,9 @@ serviceInvocationHandler.prototype = {
    * reset our mediators if an app is installed or uninstalled
    */
   observe: function(subject, topic, data) {
-    if (topic === "openwebapp-installed" || topic === "openwebapp-uninstalled")
+    if (topic === "openwebapp-installed" ||
+        topic === "openwebapp-uninstalled" ||
+        topic === "net:clear-active-logins")
     {
     // All visible panels need to be reconfigured now, while invisible
     // ones can wait until they are re-shown.
