@@ -725,7 +725,17 @@ MacNativeShell.prototype = {
       APPMENUBAR: makeMenuBar(app.manifest)
     }
     file.mkpath(filePath);
-    recursiveFileCopy("mac-app-template", "", filePath, substitutions);
+
+      recursiveFileCopy("native-install/mac",
+                           "",
+                           filePath,
+                           substitutions);
+
+      recursiveFileCopy("native-install/XUL",
+                           "",
+                           filePath + "/XUL",
+                           substitutions);
+
     this.synthesizeIcon(app, filePath + "/Contents/Resources/appicon.icns");
   },
   
