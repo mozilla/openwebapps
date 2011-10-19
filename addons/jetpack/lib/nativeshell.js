@@ -22,6 +22,7 @@ function substituteStrings(inputString, substituteStrings)
   for (var key in substituteStrings) {
     working = working.replace("$" + key, substituteStrings[key], "g"); //note that 'g' is non-standard
   }
+  working = working.replace("newapp_template.ini", "application.ini");
   return working;
 }
 
@@ -207,15 +208,18 @@ function winRecursiveFileCopy(sourceBase, sourcePath, destPath, substitutions)
 
 function recursiveFileCopy(sourceBase, sourcePath, destPath, substitutions)
 {
+  console.log("APPS | recursiveFileCopy | " + sourcePath + " -> " + destPath);
   var srcFile = url.toFilename(self.data.url(sourceBase + "/" + sourcePath));
   if (file.exists(srcFile))
   {
     // How do we tell if this is a directory?  Try to list() it 
     // and catch exceptions.
+
     var isDirectory=false, dirContents;
     try {
       dirContents = file.list(srcFile);
       isDirectory = true;
+      //console.log("APPS | recursiveFileCopy | " + sourcePath + " is a directory");
     } catch (cannotListException) {
     }
     
@@ -223,16 +227,19 @@ function recursiveFileCopy(sourceBase, sourcePath, destPath, substitutions)
     {    
       var dstFile = destPath + "/" + sourcePath;
       file.mkpath(dstFile);
-      
+      //console.log("APPS | recursiveFileCopy | created " + dstFile);
+
+      //console.log("APPS | recursiveFileCopy | iterating directory contents: " + dirContents);
       for (var i=0; i < dirContents.length; i++)
       {
+        //console.log("APPS | recursiveFileCopy | iterating #" + i + ": " + dirContents[i]);
         recursiveFileCopy(sourceBase, sourcePath + "/" + dirContents[i], destPath, substitutions);
       }
     } else {
       // Assuming textmode for everything - do we need any binaries?
       var dstFile = destPath + "/" + substituteStrings(sourcePath, substitutions);
 
-      // BIG HACK
+      // BIG HACK  no kidding! it only copies the file named 'foxlauncher' in binary mode
       var binaryMode = false;
       if (sourcePath.indexOf("foxlauncher") >= 0)
       {
@@ -253,6 +260,7 @@ function recursiveFileCopy(sourceBase, sourcePath, destPath, substitutions)
       var outputStream = file.open(dstFile, "w" + (binaryMode ? "b" : ""));
       outputStream.write(finalContents);
       outputStream.close();
+      //console.log("APPS | recursiveFileCopy | copied into " + dstFile);
     }
   }
 }
