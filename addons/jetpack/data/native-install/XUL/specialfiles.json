@@ -1,0 +1,10 @@
+{
+  "newapp_template.ini":
+  {
+    "rename": "application.ini"
+  },
+  "specialfiles.json":
+  {
+    "ignore": true
+  }
+}

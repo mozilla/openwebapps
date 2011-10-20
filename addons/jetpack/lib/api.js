@@ -41,6 +41,10 @@ Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
 var { TypedStorage } = require("typed_storage");
 
+//don't remove this please!
+var { NativeShell } = require("./nativeshell");
+
+
 if (!console || !console.log) {
   var console = {
     log: function(s) {
