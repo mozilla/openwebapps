@@ -433,8 +433,7 @@ function recursiveFileCopy(srcDir, leaf, dstDir, separator, substitutions, speci
 
   if (isDir)
   {
-    let newSpecialFiles = {};
-    newSpecialFiles.prototype = specialFiles;
+    let newSpecialFiles = Object.create(specialFiles);
     try {
       var dirContents = file.list(srcFile);
       file.mkpath(dest);
@@ -748,11 +747,13 @@ MacNativeShell.prototype = {
       recursiveFileCopy("native-install/mac",
                            "",
                            filePath,
+                           "/",
                            substitutions);
 
       recursiveFileCopy("native-install/XUL",
                            "",
                            filePath + "/XUL",
+                           "/",
                            substitutions);
 
     this.synthesizeIcon(app, filePath + "/Contents/Resources/appicon.icns");
