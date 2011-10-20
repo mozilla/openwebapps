@@ -67,14 +67,18 @@ NativeShell = (function() {
 
 function substituteStrings(inputString, substituteStrings)
 {
-  let working = inputString;
-  for (let key in substituteStrings) {
-    if(substituteStrings.hasOwnProperty(key)) {
-      re = new RegExp("\\$" + key, "gi");
-      working = working.replace(re, substituteStrings[key]);
+  try {
+    let working = inputString;
+    for (let key in substituteStrings) {
+      if(substituteStrings.hasOwnProperty(key)) {
+        re = new RegExp(key, "gi");
+        working = working.replace(re, substituteStrings[key]);
+      }
     }
+    return working;
+  } catch(e) {
+    throw("Failure in substituteStrings (" + e + ")");
   }
-  return working;
 }
 
 function reverseDNS(domain)
@@ -124,6 +128,7 @@ function makeMenuBar(manifest)
 
 function writeWindowsRegistryKey(key, values)
 {
+  // TODO: Overwrite if key already exists
   try {
     components.utils.import("resource://gre/modules/ctypes.jsm");
   } catch(e) {
@@ -228,12 +233,11 @@ function writeWindowsRegistryKey(key, values)
             let valueCStrSize = DWORD(valueCStr.length * ctypes.jschar.size);
 
             ret = regSetKeyValue(hkeyOut,
-                null,
-                valueNameCStr,
-                REG_SZ,
-                valueCStr,
-                valueCStrSize
-                );
+                                 null,
+                                 valueNameCStr,
+                                 REG_SZ,
+                                 valueCStr,
+                                 valueCStrSize);
           } catch (e) {
             throw("writeWindowsRegistryKey - "
                   + "Failure calling RegSetKeyValue (" + e + ")");
@@ -327,7 +331,12 @@ function winExpandVars(toExpand)
       return out.readString();
     }
   } finally {
-    kernel32.close();
+    try {
+      kernel32.close();
+    } catch (e) {
+      console.log("APPS | nativeshell.win | winExpandVars - "
+                  + "Failure trying to close Kernel32 (" + e + ")");
+    }
   }
 }
 
@@ -383,18 +392,22 @@ function createWindowsShortcut(loc, target, description)
   }
 }
 
-function winRecursiveFileCopy(sourceBase, sourcePath, destPath, substitutions)
+function recursiveFileCopy(srcDir, leaf, dstDir, separator, substitutions, specialFiles)
 {
+  if(!specialFiles) {
+    specialFiles = {};
+  }
   try {
-    let srcCompletePath = sourceBase;
-    if(sourcePath) {
-      srcCompletePath += "/" + sourcePath;
+    let srcCompletePath = srcDir;
+    var dest = dstDir;
+    if(leaf) {
+      srcCompletePath += "/" + leaf;
+      dest += separator + leaf;
     }
     let srcURL = self.data.url(srcCompletePath);
     var srcFile = url.toFilename(srcURL);
-    var dstFile = winPathify(destPath + "\\" + sourcePath);
   } catch(e) {
-    throw("winRecursiveFileCopy - "
+    throw("recursiveFileCopy - "
           + "Failure while setting up paths (" + e +")");
   }
 
@@ -406,128 +419,139 @@ function winRecursiveFileCopy(sourceBase, sourcePath, destPath, substitutions)
       var isDir = !file.isFile(srcFile);
     }
   } catch(e) {
-    throw("winRecursiveFileCopy - "
+    throw("recursiveFileCopy - "
           + "Failure obtaining information about file "
           + srcFile
           + " (" + e + ")");
   }
 
   if(!fileExists) {
-    throw("winRecursiveFileCopy - "
+    throw("recursiveFileCopy - "
           + "Tried to copy file but source file doesn't exist ("
           + srcFile + ")");
   }
 
   if (isDir)
   {
+    let newSpecialFiles = {};
+    newSpecialFiles.prototype = specialFiles;
     try {
       var dirContents = file.list(srcFile);
-      file.mkpath(dstFile);
+      file.mkpath(dest);
     } catch(e) {
-      throw("winRecursiveFileCopy - "
-            + "Failure copying directory from "
+      throw("recursiveFileCopy - "
+            + "Failure setting up directory copy from "
             + srcFile
             + " to "
-            + dstFile
+            + dest
+            + " (" + e + ")");
+    }
+
+    let manifestPath = srcFile + separator + "specialfiles.json";
+    try {
+      if(file.exists(manifestPath)) {
+        let manifestStream = file.open(manifestPath);
+        let fileContents = manifestStream.read();
+        manifestStream.close();
+
+        let parsedManifest = JSON.parse(fileContents);
+        for(let specialFile in parsedManifest) {
+          if(parsedManifest.hasOwnProperty(specialFile)) {
+            if(!(specialFile in newSpecialFiles)) {
+              newSpecialFiles[specialFile] = {};
+            }
+            for(let property in parsedManifest[specialFile]) {
+              if(parsedManifest[specialFile].hasOwnProperty(property)) {
+                newSpecialFiles[specialFile][property] =
+                                    parsedManifest[specialFile][property];
+              }
+            }
+          }
+        }
+      }
+    } catch(e) {
+      throw("Failure reading/parsing specialFiles manifest "
+            + manifestPath
             + " (" + e + ")");
     }
 
     for (let i=0; i < dirContents.length; i++)
     {
-      winRecursiveFileCopy(sourceBase,
-                           sourcePath + "/" + dirContents[i],
-                           destPath,
-                           substitutions);
+      // Use "/" instead of separator; this is a URI
+      recursiveFileCopy(srcDir + "/" + leaf,
+                        dirContents[i],
+                        dest,
+                        separator,
+                        substitutions,
+                        newSpecialFiles);
     }
   } else {
-    let binaryMode = /\.exe$|\.dll$/i.test(sourcePath);
-    if(binaryMode)
-    {
-      try {
-      // Some shenanigans here to set the executable bit:
-      let aNsLocalFile = Cc['@mozilla.org/file/local;1']
-                         .createInstance(Ci.nsILocalFile);
-      aNsLocalFile.initWithPath(dstFile);
-      aNsLocalFile.create(aNsLocalFile.NORMAL_FILE_TYPE, 0x1ed); // octal 755
-      } catch(e) {
-        throw("winRecursiveFileCopy - "
-              + "Failed creating binary file "
-              + dstFile
-              + " (" + e + ")");
+    let fileProperties = {"ignore": false,
+                          "rename": leaf,
+                          "isExecutable": false,
+                          "mode": "",
+                          "substituteStrings": true};
+    if(leaf in specialFiles) {
+      for(let property in fileProperties) {
+        if(fileProperties.hasOwnProperty(property)) {
+          if(property in specialFiles[leaf]) {
+            fileProperties[property] = specialFiles[leaf][property];
+          }
+        }
       }
     }
 
-    try {
-      let inputStream = file.open(srcFile, "r" + (binaryMode? "b":""));
-      let fileContents = inputStream.read();
-      let finalContents;
-      if (!binaryMode) {
-        finalContents = substituteStrings(fileContents, substitutions);
-      } else {
-        finalContents = fileContents;
+    if(!(fileProperties["ignore"])) {
+      for(let property in fileProperties) {
+        if(fileProperties.hasOwnProperty(property)
+            && (typeof(fileProperties[property]) === "string")) {
+          fileProperties[property] =
+            substituteStrings(fileProperties[property],
+                substitutions);
+        }
       }
-      let outputStream = file.open(dstFile, "w" + (binaryMode? "b":""));
-      outputStream.write(finalContents);
-      outputStream.close();
-    } catch(e) {
-      throw("winRecursiveFileCopy - "
+
+      dest = dstDir + separator + fileProperties["rename"];
+
+      if(fileProperties["isExecutable"])
+      {
+        try {
+          // Some shenanigans here to set the executable bit:
+          let aNsLocalFile = Cc['@mozilla.org/file/local;1']
+            .createInstance(Ci.nsILocalFile);
+          aNsLocalFile.initWithPath(dest);
+          aNsLocalFile.create(aNsLocalFile.NORMAL_FILE_TYPE, 0x1ed); // octal 755
+        } catch(e) {
+          throw("recursiveFileCopy - "
+              + "Failed creating executable file "
+              + dest
+              + " (" + e + ")");
+        }
+      }
+
+      try {
+        let inputStream = file.open(srcFile, fileProperties["mode"]);
+        let fileContents = inputStream.read();
+        inputStream.close();
+        let finalContents;
+        if(fileProperties["substituteStrings"]) {
+          finalContents = substituteStrings(fileContents, substitutions);
+        } else {
+          finalContents = fileContents;
+        }
+        let outputStream =
+          file.open(dest,
+              "w" + fileProperties["mode"]);
+        outputStream.write(finalContents);
+        outputStream.close();
+      } catch(e) {
+        throw("recursiveFileCopy - "
             + "Failed copying file from "
             + srcFile
             + " to "
-            + dstFile
+            + dest
             + " (" + e + ")");
-    }
-  }
-}
-
-function recursiveFileCopy(sourceBase, sourcePath, destPath, substitutions)
-{
-  var srcFile = url.toFilename(self.data.url(sourceBase + "/" + sourcePath));
-  if (file.exists(srcFile))
-  {
-    // How do we tell if this is a directory?  Try to list() it 
-    // and catch exceptions.
-    var isDirectory=false, dirContents;
-    try {
-      dirContents = file.list(srcFile);
-      isDirectory = true;
-    } catch (cannotListException) {
-    }
-    
-    if (isDirectory) 
-    {    
-      var dstFile = destPath + "/" + sourcePath;
-      file.mkpath(dstFile);
-      
-      for (var i=0; i < dirContents.length; i++)
-      {
-        recursiveFileCopy(sourceBase, sourcePath + "/" + dirContents[i], destPath, substitutions);
       }
-    } else {
-      // Assuming textmode for everything - do we need any binaries?
-      var dstFile = destPath + "/" + substituteStrings(sourcePath, substitutions);
-
-      // BIG HACK
-      var binaryMode = false;
-      if (sourcePath.indexOf("foxlauncher") >= 0)
-      {
-        // Some shenanigans here to set the executable bit:
-        var aNsLocalFile = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
-        aNsLocalFile.initWithPath(dstFile);
-        aNsLocalFile.create(aNsLocalFile.NORMAL_FILE_TYPE, 0x1ed); // octal 755
-        binaryMode = true;
-      }
-      var inputStream = file.open(srcFile, "r" + (binaryMode ? "b" : ""));
-      var fileContents = inputStream.read();
-      var finalContents;
-      if (!binaryMode) {
-        finalContents = substituteStrings(fileContents, substitutions);
-      } else {
-        finalContents = fileContents;
-      }
-      var outputStream = file.open(dstFile, "w" + (binaryMode ? "b" : ""));
-      outputStream.write(finalContents);
-      outputStream.close();
     }
   }
 }
@@ -544,13 +568,14 @@ function WinNativeShell() {
 
 }
 
+// TODO: Ask OS which chars are valid in a path
 function winPathify(path)
 {
   const slashRE = /[\/\\]+/gi;
   return path.replace(slashRE, "\\");
 }
 
-// TODO: Get list of bad chars from OS
+// TODO: Ask OS which chars are valid in a filename
 function winFilenameify(path)
 {
   const re = /[:\/\\]+/gi;
@@ -597,22 +622,24 @@ WinNativeShell.prototype = {
     }
 
     let substitutions = {
-      APPNAME: app.manifest.name,
-      APPDOMAIN: app.origin,
-      APPDOMAIN_REVERSED: reverseDNS(app.origin),
-      LAUNCHPATH: launchPath,
-      APPMENUBAR: makeMenuBar(app.manifest)
+      "\\$APPNAME": app.manifest.name,
+      "\\$APPDOMAIN": app.origin,
+      "\\$APPDOMAIN_REVERSED": reverseDNS(app.origin),
+      "\\$LAUNCHPATH": launchPath,
+      "\\$APPMENUBAR": makeMenuBar(app.manifest)
     }
 
     try {
-      winRecursiveFileCopy("native-install/windows",
+      recursiveFileCopy("native-install/windows",
                            "",
                            filePath,
+                           "\\",
                            substitutions);
 
-      winRecursiveFileCopy("native-install/XUL",
+      recursiveFileCopy("native-install/XUL",
                            "",
                            filePath + "\\XUL",
+                           "\\",
                            substitutions);
     } catch(e) {
       throw("createExectuable - "
@@ -709,15 +736,15 @@ MacNativeShell.prototype = {
       launchPath += app.manifest.launch_path;
     }
 
-    var substitutions = {
-      APPNAME: app.manifest.name,
-      APPDOMAIN: app.origin,
-      APPDOMAIN_REVERSED: reverseDNS(app.origin),
-      LAUNCHPATH: launchPath,
-      APPMENUBAR: makeMenuBar(app.manifest)
+    let substitutions = {
+      "\\$APPNAME": app.manifest.name,
+      "\\$APPDOMAIN": app.origin,
+      "\\$APPDOMAIN_REVERSED": reverseDNS(app.origin),
+      "\\$LAUNCHPATH": launchPath,
+      "\\$APPMENUBAR": makeMenuBar(app.manifest)
     }
     file.mkpath(filePath);
-    recursiveFileCopy("mac-app-template", "", filePath, substitutions);
+    recursiveFileCopy("mac-app-template", "", filePath, "/", substitutions);
     this.synthesizeIcon(app, filePath + "/Contents/Resources/appicon.icns");
   },
   
