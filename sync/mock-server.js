@@ -23,7 +23,7 @@ MockServer.prototype.login = function (data, callback) {
       // A (deliberately) bad login
       setTimeout(function () {
         if (callback) {
-          callback({status: "failed", reason: "audience does not match"});
+          callback({error: "audience does not match"});
         }
       }, 10);
       return;
@@ -39,7 +39,7 @@ MockServer.prototype.login = function (data, callback) {
       issuer: "browserid.org"
     };
     if (callback) {
-      callback(self._loginStatus);
+      callback(null, self._loginStatus);
     }
   }, 10);
 };
@@ -78,7 +78,7 @@ MockServer.prototype.get = function (since, callback) {
   }
   setTimeout(function () {
     if (callback) {
-      callback(result);
+      callback(null, result);
     }
   }, 10);
 };
@@ -94,7 +94,7 @@ MockServer.prototype.put = function (data, callback) {
   this._finishAdd();
   setTimeout(function () {
     if (callback) {
-      callback({received: new Date().getTime()});
+      callback(null, {received: new Date().getTime()});
     }
   }, 10);
 };
