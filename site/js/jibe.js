@@ -28,13 +28,15 @@ function getIconForSize(targetSize, minifest)
 
 $(document).ready(function() {
     /* IconGrid */
-    var addItemToGridCallback;
-    var removeItemFromGridCallback;
+    var appCount = 0;
 
     var appData = {
         getItemList: function(cb) {
             navigator.mozApps.mgmt.list(function(apps) {
                 var list = {};
+                appCount = apps.length;
+                if (appCount > 0) $("#help").css({display: 'none'});
+
                 for (var i = 0; i < apps.length; i++) {
                     var app = apps[i];
                     list[app.origin] = {
@@ -50,44 +52,12 @@ $(document).ready(function() {
           navigator.mozApps.mgmt.launch(itemID);
         },
 
-        userRemovedItem: function(itemID) {
+        //ignore callback, we have the watcher
+        userRemovedItem: function(itemID, callback) {
           // this better trigger a call to the update watches, so we can fix the UI
           navigator.mozApps.mgmt.uninstall(itemID);
         },
 
-        // TODO: Hook up with watchUpdates
-        handleWatcher: function(cmd, itemArray) {
-            var i;
-            if (cmd == "add") {
-                for (i = 0; i < itemArray.length; i++){
-                    addItem(itemArray[i]);
-                }
-            } else if (cmd == "remove"){
-                for (i = 0; i < itemArray.length; i++){
-                    removeItem(itemArray[i]);
-                }
-            }
-        },
-
-        // Important callbacks for updates
-        setRemovalCallback: function(callback) {
-          removeItemFromGridCallback = callback;
-        },
-
-        setAdditionCallback: function(callback) {
-          addItemToGridCallback = callback;
-        },
-
-        removeItem: function(itemID) {
-          if (removeItemFromGridCallback == undefined) return;
-          removeItemFromGridCallback(itemID);
-        },
-
-        addItem: function(theItem) {
-          if (addItemToGridCallback == undefined) return;
-          var guid = theItem.origin;
-          addItemToGridCallback(guid, theItem);
-        },
 
         // if all your items have 'itemImgURL' and 'itemTitle' properties, then you don't need to implement these.
         // These get called when an item doesn't have the right properties.
@@ -97,8 +67,41 @@ $(document).ready(function() {
     };
             
     var grid = $("#apps");
-    var gridLayout = new GridLayout(grid.width(), grid.height(), 4, 2);
+    var gridLayout = new GridLayout(grid.width(), grid.height(), 5, 3);
     var gridDash = new IconGrid("appDashboard", grid, appData, gridLayout);
     gridDash.initialize();
     gridDash.refresh();
+
+    var watcherID;
+    if (navigator.mozApps.mgmt.watchUpdates) {
+        watcherID = navigator.mozApps.mgmt.watchUpdates(function(cmd, itemArray) {
+            var i = 0;
+            if (cmd == "add") {
+                for (i = 0; i < itemArray.length; i++){
+                    var app = itemArray[i];
+                    appCount++;
+                    if (appCount > 0) $("#help").css({display: 'none'});
+
+                    gridDash.addItemToGrid(
+                        app.origin, {itemTitle: app.manifest.name, itemImgURL: app.origin + getIconForSize(48, app.manifest)}
+                    );
+                }
+            } else if (cmd == "remove") {
+                for (i = 0; i < itemArray.length; i++){
+                    appCount--;
+                    if (appCount == 0) $("#help").css({display: 'block'});
+
+                    var app = itemArray[i];
+                    gridDash.removeItemFromGrid(app.origin);
+                }
+            }
+        });
+    }
+
+    $(document).unload(function() {
+        if (watcherID) {
+            navigator.mozApps.mgmt.clearWatch(watcherID);
+        }
+    });
+
 });
