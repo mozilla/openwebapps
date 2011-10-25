@@ -334,7 +334,6 @@ function setupAboutPageMods() {
  * to allow other addons with owa as a dependency to have a reliable
  * way to initialize per-window.
  */
-var gInjector;
 function startup(getUrlCB) { /* Initialize simple storage */
   if (!simple.storage.links) simple.storage.links = {};
   Services.obs.notifyObservers(null, "openwebapps-mediator-init", "");
