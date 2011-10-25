@@ -48,6 +48,17 @@ const xulApp = require("api-utils/xul-app");
 const HAS_NAVIGATOR_INJECTOR =
         xulApp.versionInRange(xulApp.version, "9.0a2", "*");
 
+/**
+ * NavigatorInjector
+ *
+ * this class backfills support for the JavaScript-navigator-property category
+ * used by nsIDOMGlobalPropertyInitializer, which was added for fx9.  Any
+ * module that wants to add properties onto the navigator object should do so
+ * using nsIDOMGlobalPropertyInitializer.  Ideally only one instance of this
+ * class would be run in a single process of firefox (ie. it should be an
+ * xpcom service.). NavigatorInjector will only initialize in firefox 8 or
+ * earlier.
+ */
 function NavigatorInjector() {
   console.log("initalize NavigatorInjector");
   this.onLoad();
