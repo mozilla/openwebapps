@@ -1,16 +1,9 @@
 
-if (!window.navigator.mozApps)
-  window.navigator.mozApps = {}
-
-// Insert the services api into unsafeWindow
-if (!unsafeWindow.navigator.mozApps)
-  unsafeWindow.navigator.mozApps = window.navigator.mozApps;
-
 var activities = {};
 var origin = null;
 var callid = 0;
 
-window.navigator.mozApps.services = {
+unsafeWindow.navigator.mozApps.services = {
   // notify our mediator that we're ready for business.
   ready: function() {
     self.port.emit("owa.service.ready", origin);
@@ -69,4 +62,3 @@ self.port.on("owa.service.invoke", function(args) {
   }
 });
 
-unsafeWindow.navigator.mozApps.services = window.navigator.mozApps.services;

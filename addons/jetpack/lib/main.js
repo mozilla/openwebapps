@@ -64,11 +64,6 @@ function openwebapps(win, getUrlCB) {
   let tmp = {};
   tmp = require("./api");
   this._repo = tmp.FFRepoImplService;
-
-  tmp = require("./injector");
-  tmp.InjectorInit(this._window);
-  this._inject();
-  win.appinjector.inject();
   
   // setup page-modes
   this.setupManagerAPI();
@@ -127,60 +122,6 @@ function openwebapps(win, getUrlCB) {
 }
 
 openwebapps.prototype = {
-  _inject: function() {
-    let repo = this._repo;
-    let win = this._window;
-    let self = this;
-
-    // XXX TODO these should only be injected into pages of installed apps
-    win.appinjector.register({
-      apibase: "navigator.mozApps",
-      name: "amInstalled",
-      script: null,
-      getapi: function(contentWindowRef) {
-        return function(callback) {
-          repo.amInstalled(contentWindowRef.location, callback);
-        }
-      }
-    });
-    win.appinjector.register({
-      apibase: "navigator.mozApps",
-      name: "getInstalledBy",
-      script: null,
-      getapi: function(contentWindowRef) {
-        return function(callback) {
-          repo.getInstalledBy(contentWindowRef.location, callback);
-        }
-      }
-    });
-    
-    // global APIs that should be injected into all web content pages
-    win.appinjector.register({
-      apibase: "navigator.mozApps",
-      name: "install",
-      script: null,
-      getapi: function(contentWindowRef) {
-        return function(origin, data, onsuccess, onerror) {
-          let args = {
-            url: origin, install_data: data,
-            onsuccess: onsuccess, onerror: onerror
-          };
-          repo.install(contentWindowRef.location, args, win);
-        }
-      }
-    });
-
-    win.appinjector.register({
-      apibase: "navigator.mozApps",
-      name: "startActivity",
-      script: null,
-      getapi: function(contentWindowRef) {
-        return function(activity, successCB, errorCB) {
-          self._services.invoke(contentWindowRef, activity, successCB, errorCB);
-        }
-      }
-    });
-  },
 
   registerBuiltInApp: function(domain, app, injector) {
     // XXX is anything using this call?  if dead remove it
@@ -253,6 +194,86 @@ openwebapps.prototype = {
 
 };
 
+//----- navigator.mozApps api implementation
+function NavigatorAPI() {};
+NavigatorAPI.prototype = {
+  QueryInterface: XPCOMUtils.generateQI([Ci.nsIDOMGlobalPropertyInitializer]),
+  init: function API_init(aWindow) {
+    //console.log("API object init for "+aWindow.location);
+    let chromeObject = this._getObject(aWindow);
+  
+    // We need to return an actual content object here, instead of a wrapped
+    // chrome object. This allows things like console.log.bind() to work.
+    let contentObj = Cu.createObjectIn(aWindow);
+    function genPropDesc(fun) {
+      return { enumerable: true, configurable: true, writable: true,
+               value: chromeObject[fun].bind(chromeObject) };
+    }
+    let properties = {};
+    
+    for (var fn in chromeObject.__exposedProps__) {
+      //console.log("adding property "+fn);
+      properties[fn] = genPropDesc(fn);
+    }
+  
+    Object.defineProperties(contentObj, properties);
+    Cu.makeObjectPropsNormal(contentObj);
+  
+    return contentObj;
+  }
+};
+
+MozAppsAPIContract = "@mozilla.org/openwebapps/mozApps;1";
+MozAppsAPIClassID = Components.ID("{19c6a16b-18d1-f749-a2c7-fa23e70daf2b}");
+function MozAppsAPI() {}
+MozAppsAPI.prototype = {
+  __proto__: NavigatorAPI.prototype,
+  classID: MozAppsAPIClassID,
+  _getObject: function(aWindow) {
+    let tmp = {};
+    tmp = require("./api");
+    let repo = tmp.FFRepoImplService;
+    return {
+      // window.console API
+      install: function(origin, data, onsuccess, onerror) {
+        let wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
+        let recentWindow = wm.getMostRecentWindow("navigator:browser");
+        let args = {
+          url: origin, install_data: data,
+          onsuccess: onsuccess, onerror: onerror
+        };
+        repo.install(aWindow.location, args, recentWindow);
+      },
+      amInstalled: function(callback) {
+        repo.amInstalled(aWindow.location, callback);
+      },
+      getInstalledBy: function(callback) {
+        repo.getInstalledBy(aWindow.location, callback);
+      },
+      startActivity: function(activity, successCB, errorCB) {
+        let wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
+        let recentWindow = wm.getMostRecentWindow("navigator:browser");
+        recentWindow.apps._services.invoke(aWindow, activity, successCB, errorCB);
+      },
+      __exposedProps__: {
+        install: "r",
+        amInstalled: "r",
+        getInstalledBy: "r",
+        startActivity: "r"
+      }
+    };
+  }
+}
+let MozAppsAPIFactory = {
+  createInstance: function(outer, iid) {
+    if (outer != null) throw Cr.NS_ERROR_NO_AGGREGATION;
+    return new MozAppsAPI().QueryInterface(iid);
+  }
+};
+
+//----- navigator.mozApps api implementation
+
+
 //----- about:apps implementation
 const AboutAppsUUID = components.ID("{1DD224F3-7720-4E62-BAE9-30C1DCD6F519}");
 const AboutAppsContract = "@mozilla.org/network/protocol/about;1?what=apps";
@@ -313,7 +334,7 @@ function setupAboutPageMods() {
  * to allow other addons with owa as a dependency to have a reliable
  * way to initialize per-window.
  */
-
+var gInjector;
 function startup(getUrlCB) { /* Initialize simple storage */
   if (!simple.storage.links) simple.storage.links = {};
   Services.obs.notifyObservers(null, "openwebapps-mediator-init", "");
@@ -350,6 +371,23 @@ function startup(getUrlCB) { /* Initialize simple storage */
     );
   });
 
+  // register our navigator api's that will be globally attached
+  Cm.QueryInterface(Ci.nsIComponentRegistrar).registerFactory(
+    MozAppsAPIClassID, "MozAppsAPI", MozAppsAPIContract, MozAppsAPIFactory
+  );
+  Cc["@mozilla.org/categorymanager;1"].getService(Ci.nsICategoryManager).
+              addCategoryEntry("JavaScript-navigator-property", "mozApps",
+                      MozAppsAPIContract,
+                      false, true);
+
+  unloaders.push(function() {
+    Cm.QueryInterface(Ci.nsIComponentRegistrar).unregisterFactory(
+      MozAppsAPIClassID, MozAppsAPIFactory
+    );
+    Cc["@mozilla.org/categorymanager;1"].getService(Ci.nsICategoryManager).
+                deleteCategoryEntry("JavaScript-navigator-property", "mozApps", false);
+  });
+
   setupAboutPageMods();
 
   // Setup widget to launch dashboard
@@ -373,6 +411,9 @@ function startup(getUrlCB) { /* Initialize simple storage */
   // Broadcast that we're done, in case anybody is listening
   let tmp = require("api");
   Services.obs.notifyObservers(tmp.FFRepoImplService, "openwebapps-startup-complete", "");
+
+  // initialize the injector if we are <fx9
+  require("./injector").init();
 }
 
 function shutdown(why) {

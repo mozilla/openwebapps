@@ -1,10 +1,5 @@
 
-if (!window.navigator.mozApps)
-  window.navigator.mozApps = {}
 
-// Insert the services api into unsafeWindow
-if (!unsafeWindow.navigator.mozApps)
-  unsafeWindow.navigator.mozApps = window.navigator.mozApps;
 
 var callid = 0;
 
@@ -48,7 +43,7 @@ function _clearWatcher(fn) {
   }
 }
 
-window.navigator.mozApps.mgmt = {
+unsafeWindow.navigator.mozApps.mgmt = {
   launch: function(args) {
     // no return, just emit the message
     _makeCall('owa.mgmt.launch', args);
@@ -85,4 +80,3 @@ window.navigator.mozApps.mgmt = {
   }
 }
 
-unsafeWindow.navigator.mozApps.mgmt = window.navigator.mozApps.mgmt;
