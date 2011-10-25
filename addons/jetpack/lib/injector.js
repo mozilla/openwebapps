@@ -58,6 +58,22 @@ const HAS_NAVIGATOR_INJECTOR =
  * class would be run in a single process of firefox (ie. it should be an
  * xpcom service.). NavigatorInjector will only initialize in firefox 8 or
  * earlier.
+ *
+ * Once you call init() in this module, you do not need to do anything else
+ * so long as you have registered your api like:
+
+  // register the class that implements nsIDOMGlobalPropertyInitializer
+  Cm.QueryInterface(Ci.nsIComponentRegistrar).registerFactory(
+    MozAppsAPIClassID, "MozAppsAPI", MozAppsAPIContract, MozAppsAPIFactory
+  );
+  // register the category and contract for our api
+  Cc["@mozilla.org/categorymanager;1"].getService(Ci.nsICategoryManager).
+              addCategoryEntry("JavaScript-navigator-property", "mozApps",
+                      MozAppsAPIContract,
+                      false, true);
+
+ * see openwebapps/addon/jetpack/lib/main.js for an implementation of the
+ * above classes.
  */
 function NavigatorInjector() {
   console.log("initalize NavigatorInjector");
@@ -113,7 +129,7 @@ NavigatorInjector.prototype = {
     Cu.evalInSandbox(this._scriptToInject(entry, fname), sandbox, "1.8");
   },
 
-  createProperties: function(aWindow) {
+  _createProperties: function(aWindow) {
     //console.log("createProperties for "+aWindow.location);
     try {
       const CATEGORY_TO_ENUMERATE = "JavaScript-navigator-property";
@@ -149,7 +165,7 @@ NavigatorInjector.prototype = {
   },
 
   observe: function(aWindow, aTopic, aData) {
-    this.createProperties(aWindow);
+    this._createProperties(aWindow);
   }
 }
 
