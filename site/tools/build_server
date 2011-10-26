@@ -4,9 +4,9 @@
 ## includes the JSAPI, the HTML implementation, the dashboard, and
 ## /getmanifest (a small Python app)
 
-## This all has been tested with Ubuntu Natty Narwhal.  It doesn't
-## work with some older versions, though probably only because of
-## package name changes.
+## This all has been tested with Ubuntu Natty Narwhal and Lucid (more
+## recently).  It doesn't work with some older versions, though
+## probably only because of package name changes.
 
 # quit if there are any errors:
 set -e
@@ -15,38 +15,74 @@ set -e
 ## Argument and ssh handling:
 ############################################################
 
+OWA_BRANCH=develop
+OWA_REPO=https://github.com/mozilla/openwebapps.git
+SERVER_NAME=myapps.mozillalabs.com
+EXTRA_SERVER_NAMES=""
+SETUP=""
+
 help () {
-    echo "Usage: $(basename $0) [-s] [SERVER_NAME]"
-    echo "Sets up the server, using SERVER_NAME as the domain name."
-    echo "Use 'SSL=on $(basename $0) ...' to setup an SSL server (default HTTP)."
-    echo "If you set \$OWA_REPO then that will be checked out during deployment"
-    echo "If you set \$OWA_BRANCH then that branch will be checked out"
+    echo "Usage: $(basename $0) [OPTIONS]"
+    echo "Sets up the server."
+    echo "Options:"
+    echo "  -b BRANCH"
+    echo "     Sets the branch to check out (default $OWA_BRANCH)"
+    echo "  -r REPO"
+    echo "     Sets the repository to check out of (default $OWA_REPO)"
+    echo "  -s HOSTNAME"
+    echo "     Sets the hostname to setup (default $SERVER_NAME)"
+    echo "  -S EXTRA_HOSTNAME"
+    echo "     Adds another hostname which will respond"
+    echo "  -i"
+    echo "     Setup/initialize server; must be run as root."
+    echo "     This sets up nginx, etc.  Otherwise this will just freshen the files"
 }
 
-if [ "$1" = "-h" ] ; then
-    help
-    exit
-fi
+while getopts hib:r:s:S: o ; do
+    case "$o" in
+	b)
+            OWA_BRANCH="$OPTARG"
+            ;;
+	r)
+	    OWA_REPO="$OPTARG"
+            ;;
+        s)
+            SERVER_NAME="$OPTARG"
+            ;;
+        S)
+            EXTRA_SERVER_NAMES="$OPTARG $EXTRA_SERVER_NAMES"
+            ;;
+        h)
+            help
+            exit
+            ;;
+        i)
+            SETUP="on"
+            ;;
+	[?])
+            help
+            exit 1
+            ;;
+    esac
+done
+shift $(($OPTIND-1))
 
-if [ ! -z "$1" ] ; then
-    SERVER_NAME="$1"
-fi
-
-if [ -z "$SERVER_NAME" ] ; then
-    echo "You must set \$SERVER_NAME or pass it as the first argument"
-    help
-    exit 1
-fi
-
-if [ -z "$OWA_REPO" ] ; then
-    OWA_REPO="https://github.com/mozilla/openwebapps.git"
+if [ -z "$SETUP" ] ; then
+    if [ "$(whoami)" != "manager" ] ; then
+        echo "Unless you use -i (initialize) you must run this as manager"
+        exit 3
+    fi
 fi
 
 echo "Checking out source from:"
 echo "  $OWA_REPO branch $OWA_BRANCH"
 
+PREFIX="/var/www/$SERVER_NAME"
+
 OS_VERSION="$(awk '{print $2}' < /etc/issue)"
 
+## Note: only one OWA version is explicily supported right now, but
+## other versions could be added below:
 case "$OS_VERSION" in
     10.04.1)
         # On later versions it's "nginx-full"
@@ -60,122 +96,129 @@ case "$OS_VERSION" in
         ;;
 esac
 
-############################################################
-## Start the real script:
-############################################################
+## This sets up the server, and must be run as root:
 
-# First we have to setup some standard packages for the system:
+setup_server () {
 
-apt-get update
-apt-get --yes install \
-    git-core \
-    $NGINX_NAME \
-    daemontools-run \
-    $TORNADO_NAME \
-    unzip \
-    openjdk-6-jre-headless \
-    python-lxml
+    apt-get update
+    apt-get --yes install \
+        git-core \
+        $NGINX_NAME \
+        daemontools-run \
+        $TORNADO_NAME \
+        unzip \
+        openjdk-6-jre-headless \
+        python-lxml
 
-if [ -e /etc/nginx/sites-enabled/default ] ; then
-    rm /etc/nginx/sites-enabled/default
-fi
+    if [ -e /etc/nginx/sites-enabled/default ] ; then
+        rm /etc/nginx/sites-enabled/default
+    fi
 
-BASE="
-  root /var/www/htdocs;
+    CONFIG="
+server {
+  root $PREFIX/htdocs;
   index index.html;
-  server_name $SERVER_NAME;
+  server_name $SERVER_NAME $EXTRA_SERVER_NAMES;
   location /getmanifest {
     proxy_pass http://127.0.0.1:8700/getmanifest;
   }
   #error_page 404 /404.html;
+}
 "
 
-if [ ! -z "$SSL" ] ; then
-    CONFIG="
-server {
-  listen 443;
-  ssl on;
-  ssl_certificate cert.pem;
-  ssl_certificate_key cert.key;
-  ssl_session_timeout 5m;
-  ssl_protocols SSLv3 TLSv1;
-  ssl_ciphers ALL:!ADH:!EXPORT56:RC4+RSA:+HIGH:+MEDIUM:+LOW:+SSLv3:+EXP;
-  ssl_prefer_server_ciphers on;
+    echo "$CONFIG" > /etc/nginx/sites-available/${SERVER_NAME}.conf
+    if [ ! -e /etc/nginx/sites-enabled/${SERVER_NAME}.conf ] ; then
+        (
+            cd /etc/nginx/sites-enabled
+            ln -s ../sites-available/${SERVER_NAME}.conf
+        )
+    fi
 
-$BASE
-}"
-else
-    CONFIG="
-server {
-$BASE
-}"
-fi
+    adduser --system manager || echo "manager already exists"
 
-if [ ! -z "$VERBOSE" ] ; then
-    set -x
-fi
+    /etc/init.d/nginx restart
+}
 
-echo "$CONFIG" > /etc/nginx/sites-available/${SERVER_NAME}.conf
-if [ ! -e /etc/nginx/sites-enabled/${SERVER_NAME}.conf ] ; then
-    (cd /etc/nginx/sites-enabled
-     ln -s ../sites-available/${SERVER_NAME}.conf
-    )
-fi
+## Note: this does *not* use $PREFIX, and there's only one instance per VM:
+setup_getmanifest () {
+    if [ "$OWA_BRANCH" != "develop" ] ; then
+        echo "Not recreating /getmanifest service"
+        exit
+    fi
+    install -d -o manager -g www-data /var/www/getmanifest-service
+    if [ -z "$TORNADO_NAME" ] ; then
+        (
+            cd $PREFIX/src/openwebapps/site/server
+            mkdir -p deps
+            cd deps
+            wget https://github.com/downloads/facebook/tornado/tornado-2.1.tar.gz
+            tar zfx tornado-2.1.tar.gz && rm tornado-2.1.tar.gz
+            cd tornado-2.1
+            python setup.py install --install-lib=$PREFIX/src/openwebapps/site/server/deps
+        )
+    fi
 
-adduser --system manager || echo "manager already exists"
+    echo "#!/bin/sh
 
-install -o manager -g www-data -d /var/www /var/www/src /var/www/htdocs /var/www/getmanifest-service
-install -o www-data -g www-data -d /var/www/log
-install -o manager -g www-data -d /var/
-(cd /var/www/src
- if [ ! -d openwebapps ] ; then
-     git clone $OWA_REPO
- else
-     cd openwebapps
-     if [ -z "$OWA_BRANCH" ] ; then
-         git pull
-     else
-         #git pull origin/$OWA_BRANCH $OWA_BRANCH
-         echo hey
-     fi
- fi
-)
-if [ ! -z "$OWA_BRANCH" ] ; then
-    (cd /var/www/src/openwebapps
-     if git branch | grep -q $OWA_BRANCH ; then
-         # The branch is already checked out
-         git checkout $OWA_BRANCH
-     else
-         git checkout -b $OWA_BRANCH origin/$OWA_BRANCH
-     fi
-    )
-fi
-rm -rf /var/www/htdocs/*
-/var/www/src/openwebapps/site/tools/build_static /var/www/htdocs
-chown -R manager:www-data /var/www/htdocs
-
-if [ -z "$TORNADO_NAME" ] ; then
-    (
-        cd /var/www/src/openwebapps/site/server
-        mkdir deps
-        cd deps
-        wget https://github.com/downloads/facebook/tornado/tornado-2.1.tar.gz
-        tar zfx tornado-2.1.tar.gz && rm tornado-2.1.tar.gz
-        cd tornado-2.1
-        python setup.py install --install-lib=/var/www/openwebapps/site/server/deps
-    )
-fi
-
-echo "#!/bin/sh
-
-cd /var/www/src/openwebapps/site/server
-PYTHONPATH=\$PYTHONPATH:/var/www/src/openwebapps/site/server/deps
+cd $PREFIX/src/openwebapps/site/server
+PYTHONPATH=\$PYTHONPATH:$PREFIX/src/openwebapps/site/server/deps
 export PYTHONPATH
-exec su www-data -c 'python server.py /var/www/logs/getmanifest.log >> /var/www/log/getmanifest.log 2>&1'
+exec su www-data -c 'python server.py $PREFIX/log/getmanifest.log >> $PREFIX/log/getmanifest.log 2>&1'
 " > /var/www/getmanifest-service/run
-chmod +x /var/www/getmanifest-service/run
+    chmod +x /var/www/getmanifest-service/run
 
-update-service --add /var/www/getmanifest-service
+    update-service --add /var/www/getmanifest-service
 
-start svscan || echo "svscan already started"
-/etc/init.d/nginx restart
+    start svscan || echo "svscan already started"
+}
+
+setup_site () {
+    install -o manager -g www-data -d $PREFIX $PREFIX/src $PREFIX/htdocs
+    install -o www-data -g www-data -d $PREFIX/log
+    checkout_site
+    chown -R manager:www-data $PREFIX/htdocs
+    chown -R manager:users $PREFIX/src
+}
+
+checkout_site () {
+    (
+        SRC_DIR=$PREFIX/src
+        if [ ! -d $SRC_DIR ] ; then
+            echo "Error: $SRC_DIR does not exist"
+            echo "You probably need to run this with -i first"
+            exit 2
+        fi
+        cd $SRC_DIR
+        if [ ! -d openwebapps ] ; then
+            git clone $OWA_REPO
+        else
+            cd openwebapps
+            git pull
+        fi
+    )
+
+    if [ ! -z "$OWA_BRANCH" ] ; then
+        (
+            cd $PREFIX/src/openwebapps
+            if git branch | grep -q $OWA_BRANCH ; then
+                # The branch is already checked out
+                git checkout $OWA_BRANCH
+            else
+                git checkout -b $OWA_BRANCH origin/$OWA_BRANCH
+            fi
+        )
+    fi
+
+    rm -rf $PREFIX/htdocs/*
+    $PREFIX/src/openwebapps/site/tools/build_static $PREFIX/htdocs
+
+}
+
+
+if [ ! -z "$SETUP" ] ; then
+    setup_server
+    setup_site
+    setup_getmanifest
+else
+    checkout_site
+fi

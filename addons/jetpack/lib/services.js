@@ -107,7 +107,7 @@ MediatorPanel.prototype = {
   },
   
   inject: function(contentWindow, frame) {
-    dump("using content scripts "+JSON.stringify(this.contentScriptFile)+"\n");
+    //dump("using content scripts "+JSON.stringify(this.contentScriptFile)+"\n");
     let worker =  Worker({
       window: contentWindow,
       contentScriptFile: this.contentScriptFile
@@ -175,6 +175,9 @@ MediatorPanel.prototype = {
    */
   onOWASuccess: function(msg) {
     this.panel.hide();
+    // the mediator might have seen a failure but offered its own UI to
+    // retry - so hide any old error notifications.
+    this.hideErrorNotification();
     if (this.successCB)
       this.successCB(msg);
   },
@@ -183,9 +186,9 @@ MediatorPanel.prototype = {
     this.panel.hide();
   },
 
-  onOWAFailure: function(msg) {
-    console.error("mediator reported invocation error:", msg)
-    this.showErrorNotification(msg);
+  onOWAFailure: function(errob) {
+    console.error("mediator reported invocation error:", errob.message)
+    this.showErrorNotification(errob);
   },
 
   onOWAReady: function(msg) {
@@ -193,7 +196,6 @@ MediatorPanel.prototype = {
       this.panel.port.emit("owa.mediation.setup", {
               activity: this.activity,
               serviceList: serviceList,
-              caller: this.contentWindow.location.href,
               invocationid: this.invocationid
       });
     }.bind(this));
@@ -203,8 +205,9 @@ MediatorPanel.prototype = {
     this.panel.resize(args.width, args.height);
   },
 
-  onOWAFrame: function (args) {
-    this.frames.push(args);
+  onOWAFrames: function (args) {
+    this.frames = args;
+    this.panel.port.emit("owa.mediation.create-frames");
   },
 
   onOWAInvoke: function (activity) {
@@ -268,7 +271,7 @@ MediatorPanel.prototype = {
     this.panel.port.on("owa.failure", this.onOWAFailure.bind(this));
     this.panel.port.on("owa.close", this.onOWAClose.bind(this));
     this.panel.port.on("owa.mediation.ready", this.onOWAReady.bind(this));
-    this.panel.port.on("owa.mediation.frame", this.onOWAFrame.bind(this));
+    this.panel.port.on("owa.mediation.frames", this.onOWAFrames.bind(this));
     this.panel.port.on("owa.mediation.invoke", this.onOWAInvoke.bind(this));
     this.panel.port.on("owa.mediation.sizeToContent", this.onOWASizeToContent.bind(this));
     this.panel.port.on("owa.mediation.doLogin", this.onOWALogin.bind(this));
@@ -334,12 +337,12 @@ MediatorPanel.prototype = {
     // Check that we aren't already displaying our notification
     if (!notification) {
       let message;
-      if (data && data.msg)
-        message = data.msg;
+      if (data && data.message)
+        message = data.message;
       else if (this.mediator && this.mediator.notificationErrorText)
         message = this.mediator.notificationErrorText;
       else
-        message = "42";
+        message = "There was an error performing this action";
 
       let self = this;
       buttons = [{
@@ -423,6 +426,7 @@ function serviceInvocationHandler(win)
   let observerService = Cc["@mozilla.org/observer-service;1"].getService(Ci.nsIObserverService);
   observerService.addObserver(this, "openwebapp-installed", false);
   observerService.addObserver(this, "openwebapp-uninstalled", false);
+  observerService.addObserver(this, "net:clear-active-logins", false);
   
   // if we open a new tab, close any mediator panels
   win.gBrowser.tabContainer.addEventListener("TabOpen", function(e) {
@@ -474,7 +478,9 @@ serviceInvocationHandler.prototype = {
    * reset our mediators if an app is installed or uninstalled
    */
   observe: function(subject, topic, data) {
-    if (topic === "openwebapp-installed" || topic === "openwebapp-uninstalled")
+    if (topic === "openwebapp-installed" ||
+        topic === "openwebapp-uninstalled" ||
+        topic === "net:clear-active-logins")
     {
     // All visible panels need to be reconfigured now, while invisible
     // ones can wait until they are re-shown.
@@ -510,7 +516,7 @@ serviceInvocationHandler.prototype = {
       newPopups.push(popupCheck);
       }
     }
-    console.log("window closed - had", this._popups.length, "popups, now have", newPopups.length);
+    //console.log("window closed - had", this._popups.length, "popups, now have", newPopups.length);
     this._popups = newPopups;
   },
 

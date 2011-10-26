@@ -8,7 +8,7 @@ if (!window.navigator.mozApps.mediation) window.navigator.mozApps.mediation = {}
 // Insert the mediator api into unsafeWindow
 if (!unsafeWindow.navigator.mozApps)
   unsafeWindow.navigator.mozApps = window.navigator.mozApps;
-if (!unsafeWindow.navigator.mozApps.mediation) 3
+if (!unsafeWindow.navigator.mozApps.mediation)
   unsafeWindow.navigator.mozApps.mediation = window.navigator.mozApps.mediation;
 
 let allServices = {} // keyed by handler URL.
@@ -148,41 +148,52 @@ unsafeWindow.navigator.mozApps.mediation.startLogin = window.navigator.mozApps.m
 // removed).
 window.navigator.mozApps.mediation.ready = function(invocationHandler) {
   self.port.on("owa.app.ready", function(origin) {
-    console.log("owa.app.ready for", origin);
+    //console.log("owa.app.ready for", origin);
     if (allServices[origin]) {
       allServices[origin]._invokeOn("ready");
     }
   });
 
   let setupHandler = function(msg) {
-    console.log("setup event has", msg.serviceList.length, "services");
+    //console.log("setup event has", msg.serviceList.length, "services");
     // We record the invocation ID in the mediator window so we can later
     // link the "app ready" calls back to the specific mediator instance.
     unsafeWindow.navigator.mozApps.mediation._invocationid = msg.invocationid;
-    let services = [];
     let document = unsafeWindow.document;
 
     // TODO: do not create iframes when mediators are converted to templates,
     // mediators should have an api to call to remove services rather than
     // removing the iframes as we do here.
 
+    // To ensure the frames don't get created before the mediator receives
+    // the message with the GUID, we create the frames using ping-pong - we
+    // allocate IDs then emit() them to the mediator, then when the mediator
+    // replies we can go ahead and finish the create process.
+    let frameCreateInfo = [];
     for (var i = 0; i < msg.serviceList.length; i++) {
       var svc = msg.serviceList[i];
       let id = guid();
       // notify our mediator of the guid to watch for
-      self.port.emit('owa.mediation.frame', {
+      frameCreateInfo.push({
         origin: svc.app.origin,
         id: id
-        });
-      let iframe = document.createElement("iframe");
-      iframe.setAttribute('id', id);
-      iframe.src = svc.url;
-
-      let svcob = new Service(svc, msg.activity, iframe);
-      services.push(svcob);
-      allServices[svc.app.origin] = svcob;
+      });
     }
-    invocationHandler(msg.activity, services);
+    self.port.once("owa.mediation.create-frames", function () {
+      let services = [];
+      for (let i = 0; i < frameCreateInfo.length; i++) {
+        var svc = msg.serviceList[i];
+        let id = frameCreateInfo[i].id;
+        let iframe = document.createElement("iframe");
+        iframe.setAttribute('id', id);
+        iframe.src = svc.url;
+        let svcob = new Service(svc, msg.activity, iframe);
+        services.push(svcob);
+        allServices[svc.app.origin] = svcob;
+      }
+      invocationHandler(msg.activity, services);
+    });
+    self.port.emit("owa.mediation.frames", frameCreateInfo);
     self.port.once("owa.mediation.reconfigure", function() {
       // nuke all iframes.
       for (let origin in allServices) {
