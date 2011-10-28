@@ -44,7 +44,7 @@ const self = require("self");
 const url = require("url");
 
 NativeShell = (function() {
-  function CreateNativeShell(domain, appManifest)
+  function CreateNativeShell(app)
   {
     let os = Components.classes["@mozilla.org/xre/app-info;1"].getService(Components.interfaces.nsIXULRuntime).OS;
     let nativeShell;
@@ -54,7 +54,7 @@ NativeShell = (function() {
       nativeShell = new MacNativeShell();
     }
     if(nativeShell) {
-      nativeShell.createAppNativeLauncher(domain, appManifest);
+      nativeShell.createAppNativeLauncher(app);
     } else {
       console.log("APPS | CreateNativeShell | No OS-specific native shell could be created");
     }
@@ -406,6 +406,7 @@ function recursiveFileCopy(srcDir, leaf, dstDir, separator, substitutions, speci
     }
     let srcURL = self.data.url(srcCompletePath);
     var srcFile = url.toFilename(srcURL);
+    //console.log(srcFile);
   } catch(e) {
     throw("recursiveFileCopy - "
           + "Failure while setting up paths (" + e +")");
@@ -756,9 +757,23 @@ MacNativeShell.prototype = {
                            "/",
                            substitutions);
 
+    this.embedInstallRecord(app, filePath + "/installrecord.json");
     this.synthesizeIcon(app, filePath + "/Contents/Resources/appicon.icns");
   },
   
+  embedInstallRecord : function(app, destinationFile) {
+    //write the contents of the app (install record), json-ified, into the specified file.
+    try {
+      let installRecString = JSON.stringify(app);
+      let textwriter = file.open(destinationFile, "w"); 
+      textwriter.write(installRecString);
+      textwriter.close();
+    } catch (e) {
+      console.log("error writing installrecord : " + e + "\n");
+    }
+
+  },
+
   synthesizeIcon : function(app, destinationFile)
   {
     var icon = getBiggestIcon(app.manifest);
@@ -915,7 +930,7 @@ MacNativeShell.prototype = {
     }
     var ret = setIcon(filePath, iconPath); // Will invoke NSURL resolution, could hang out for a LONG time
   }
-}
+ }
 
 
 

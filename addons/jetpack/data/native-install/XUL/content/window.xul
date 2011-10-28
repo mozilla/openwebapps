@@ -7,7 +7,7 @@
   </commandset>
 
   <menubar>
-      <menu label="Window">
+      <menu label="File">
       <menupopup>
         <menuitem label="New Window" command="new_window"/>
       </menupopup>
