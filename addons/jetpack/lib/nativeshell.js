@@ -105,26 +105,40 @@ function getBiggestIcon(minifest) {
   return null;
 }
 
-function makeMenuBar(manifest)
-{
-  if (!('experimental' in manifest)) return "";
-  if (!('menubar' in manifest.experimental)) return "";
-
-  let toolbox = '<toolbox collapsed="true"><menubar id="main-bar">';
-  for (let key in manifest.experimental.menubar) {
-    toolbox += '<menu label="' + key + '"><menupopup>';
-    for (let option in manifest.experimental.menubar[key]) {
-      toolbox += '<menuitem label="' + option + '" ' +
-        'oncommand="doHandleMenuBar(\'' +
-        manifest.experimental.menubar[key][option] +
-        '\');"/>';
-    }
-    toolbox += '</menupopup></menu>';
+function embedInstallRecord(app, destinationFile) {
+  //write the contents of the app (install record), json-ified, into the specified file.
+  try {
+    let installRecString = JSON.stringify(app);
+    let textwriter = file.open(destinationFile, "w"); 
+    textwriter.write(installRecString);
+    textwriter.close();
+  } catch (e) {
+    console.log("error writing installrecord : " + e + "\n");
   }
-  toolbox += '</menubar></toolbox>';
-
-  return toolbox;
 }
+
+
+
+// function makeMenuBar(manifest)
+// {
+//   if (!('experimental' in manifest)) return "";
+//   if (!('menubar' in manifest.experimental)) return "";
+
+//   let toolbox = '<toolbox collapsed="true"><menubar id="main-bar">';
+//   for (let key in manifest.experimental.menubar) {
+//     toolbox += '<menu label="' + key + '"><menupopup>';
+//     for (let option in manifest.experimental.menubar[key]) {
+//       toolbox += '<menuitem label="' + option + '" ' +
+//         'oncommand="doHandleMenuBar(\'' +
+//         manifest.experimental.menubar[key][option] +
+//         '\');"/>';
+//     }
+//     toolbox += '</menupopup></menu>';
+//   }
+//   toolbox += '</menubar></toolbox>';
+
+//   return toolbox;
+// }
 
 function writeWindowsRegistryKey(key, values)
 {
@@ -626,7 +640,7 @@ WinNativeShell.prototype = {
       "\\$APPDOMAIN": app.origin,
       "\\$APPDOMAIN_REVERSED": reverseDNS(app.origin),
       "\\$LAUNCHPATH": launchPath,
-      "\\$APPMENUBAR": makeMenuBar(app.manifest)
+      // "\\$APPMENUBAR": makeMenuBar(app.manifest)
     }
 
     try {
@@ -645,6 +659,9 @@ WinNativeShell.prototype = {
       throw("createExectuable - "
             + "Failure copying files (" + e + ")");
     }
+
+    //add the install record to the windows bundle
+    embedInstallRecord(app, filePath + "\\installrecord.json");
 
     try {
       let uninstallKeys = {"DisplayIcon": filePath + "\\foxlauncher.exe,0",
@@ -741,7 +758,7 @@ MacNativeShell.prototype = {
       "\\$APPDOMAIN": app.origin,
       "\\$APPDOMAIN_REVERSED": reverseDNS(app.origin),
       "\\$LAUNCHPATH": launchPath,
-      "\\$APPMENUBAR": makeMenuBar(app.manifest)
+      // "\\$APPMENUBAR": makeMenuBar(app.manifest)
     }
     file.mkpath(filePath);
 
@@ -757,7 +774,7 @@ MacNativeShell.prototype = {
                            "/",
                            substitutions);
 
-    this.embedInstallRecord(app, filePath + "/installrecord.json");
+    embedInstallRecord(app, filePath + "/installrecord.json");
     this.synthesizeIcon(app, filePath + "/Contents/Resources/appicon.icns");
   },
   
@@ -874,62 +891,62 @@ MacNativeShell.prototype = {
     //"sips -s format icns /path/to/png --out " + filePath + "/Contents/Resources/appicon.icns";
   },
   
-  createWebLocFile: function(app)
-  {
-    var baseDir = "/Applications/" + WEB_APPS_DIRNAME;
-    if (!file.exists(baseDir))
-    {
-      file.mkpath(baseDir);
-    }
+  // createWebLocFile: function(app)
+  // {
+  //   var baseDir = "/Applications/" + WEB_APPS_DIRNAME;
+  //   if (!file.exists(baseDir))
+  //   {
+  //     file.mkpath(baseDir);
+  //   }
 
-    var filePath = baseDir + "/" + sanitizeMacFileName(app.manifest.name) + ".webloc";
-    if (file.exists(filePath))
-    {
-      file.remove(filePath);
-    }
-    var fileWriter = file.open(filePath, "w");
-    var launchPath = app.origin;
-    if (app.manifest.launch_path) {
-      launchPath += app.manifest.launch_path;
-    }
-    fileWriter.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + 
-        "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n" + 
-        "<plist version=\"1.0\">\n" + 
-        "<dict>\n" + 
-        "    <key>URL</key>\n" + 
-        "    <string>" + launchPath + "</string>\n" + 
-        "</dict>\n" + 
-        "</plist>\n");
-    fileWriter.close();
+  //   var filePath = baseDir + "/" + sanitizeMacFileName(app.manifest.name) + ".webloc";
+  //   if (file.exists(filePath))
+  //   {
+  //     file.remove(filePath);
+  //   }
+  //   var fileWriter = file.open(filePath, "w");
+  //   var launchPath = app.origin;
+  //   if (app.manifest.launch_path) {
+  //     launchPath += app.manifest.launch_path;
+  //   }
+  //   fileWriter.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + 
+  //       "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n" + 
+  //       "<plist version=\"1.0\">\n" + 
+  //       "<dict>\n" + 
+  //       "    <key>URL</key>\n" + 
+  //       "    <string>" + launchPath + "</string>\n" + 
+  //       "</dict>\n" + 
+  //       "</plist>\n");
+  //   fileWriter.close();
 
-    // THEN: set the icon
-    // var lib = ct.ctypes.open(self.data.url("iconsetter.a"));
+  //   // THEN: set the icon
+  //   // var lib = ct.ctypes.open(self.data.url("iconsetter.a"));
 
-    var ct = {};
-    Cu.import("resource://gre/modules/ctypes.jsm", ct);
-    var lib = ct.ctypes.open("/Users/michaelhanson/Projects/openwebapps/addons/jetpack/data/libiconsetter.dylib");
-    var setIcon = lib.declare("setIcon", ct.ctypes.default_abi, ct.ctypes.int, ct.ctypes.ArrayType(ct.ctypes.char), ct.ctypes.ArrayType(ct.ctypes.char));
+  //   var ct = {};
+  //   Cu.import("resource://gre/modules/ctypes.jsm", ct);
+  //   var lib = ct.ctypes.open("/Users/michaelhanson/Projects/openwebapps/addons/jetpack/data/libiconsetter.dylib");
+  //   var setIcon = lib.declare("setIcon", ct.ctypes.default_abi, ct.ctypes.int, ct.ctypes.ArrayType(ct.ctypes.char), ct.ctypes.ArrayType(ct.ctypes.char));
     
-    function getBiggestIcon(minifest) {
-      if (minifest.icons) {
-        var biggest = 0;
-        for (z in minifest.icons) {
-          var size = parseInt(z, 10);
-          if (size > biggest) biggest = size;
-        }
-        if (biggest !== 0) return minifest.icons[biggest];
-      }
-      return null;
-    }
-    var icon = getBiggestIcon(app.manifest);
-    var iconPath;
-    if (icon.indexOf("data:") === 0) {
-      iconPath = icon;
-    } else {
-      iconPath = app.origin + icon;    
-    }
-    var ret = setIcon(filePath, iconPath); // Will invoke NSURL resolution, could hang out for a LONG time
-  }
+  //   function getBiggestIcon(minifest) {
+  //     if (minifest.icons) {
+  //       var biggest = 0;
+  //       for (z in minifest.icons) {
+  //         var size = parseInt(z, 10);
+  //         if (size > biggest) biggest = size;
+  //       }
+  //       if (biggest !== 0) return minifest.icons[biggest];
+  //     }
+  //     return null;
+  //   }
+  //   var icon = getBiggestIcon(app.manifest);
+  //   var iconPath;
+  //   if (icon.indexOf("data:") === 0) {
+  //     iconPath = icon;
+  //   } else {
+  //     iconPath = app.origin + icon;    
+  //   }
+  //   var ret = setIcon(filePath, iconPath); // Will invoke NSURL resolution, could hang out for a LONG time
+  // }
  }
 
 
