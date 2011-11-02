@@ -62,9 +62,11 @@ var { NativeShell } = require("./nativeshell");
 var { Repo } = require("repo");
 
 function FFRepoImpl() {
-  this._counter = 0;
   this._builtInApps = {};
-  this._contentListeners = {};
+  this._watchers = {
+    windowRefs: [],
+    windowListeners: []
+  };
 }
 FFRepoImpl.prototype = {
   __proto__: Repo,
@@ -93,22 +95,61 @@ FFRepoImpl.prototype = {
     });
   },
 
-  watchUpdates: function(callback) {
+  watchUpdates: function(windowRef, callback) {
     if (!callback || typeof callback != "function") {
       return false;
     }
+
+    // JS Objects cannot be keys in dictionaries, so we
+    // use two arrays instead. 'refs' holds the window object references
+    // while 'listeners' holds the callbacks for those windows. The
+    // index of the windowRef corresponds to the index of the array
+    // of callbacks associated with that window.
+    let idx = 0;    
+    let refs = this._watchers.windowRefs;
+    let listeners = this._watchers.windowListeners;
+
+    if (refs.indexOf(windowRef) != -1) {
+      // First time we're seeing this window
+      idx = listeners[refs.indexOf(windowRef)].push(callback) - 1;
+    } else {
+      // Add a callback to an existing window
+      idx = refs.push(windowRef) - 1;
+      listeners[idx] = [];
+      listeners[idx].push(callback);
+    }
     
-    let id = this._counter;
-    this._contentListeners[id] = callback;
-    this._counter += 1;
-    return id;
+    return idx;
   },
 
-  clearWatch: function(id) {
-    if (id in this._contentListeners)
-      delete this._contentListeners[id];
-    else
-      throw 'Invalid watchUpdates ID';
+  clearWatch: function(windowRef, id) {
+    let refs = this._watchers.windowRefs;
+    let listeners = this._watchers.windowListeners;
+
+    // Find the window this belongs to and delete the callback
+    // TODO: Add window listener to clear window reference when
+    // tab is closed (and all associated callback). Currently,
+    // this is memory leak.
+    let idx = refs.indexOf(windowRef);
+    if (idx != -1) {
+      if (listeners[idx].length > id) {
+        delete listeners[idx][id];
+      }
+    }
+  },
+
+  _callWatchers: function(action, object) {
+    let wins = this._watchers.windowListeners;
+    for (let i = 0; i < wins.length; i++) {
+      let cbs = wins[i];
+      for (let j = 0; j < cbs.length; j++) {
+        let func = cbs[j];
+        // Ignore if destination callback doesn't exist
+        try {
+          if (func && typeof func == "function") func(action, object);
+        } catch(e) {}
+      }
+    }
   },
 
   install: function _install(location, args, window) {
@@ -228,7 +269,7 @@ FFRepoImpl.prototype = {
 
     let self = this;
     return Repo.install(location, args, displayPrompt, fetcher, function(result) {
-      dump("APPS | jetpack.install | Repo install returned to callback; result is " + result + "\n");
+      //dump("        APPS | jetpack.install | Repo install returned to callback; result is " + result + "\n");
       // install is complete
       if (result !== true) {
         if (args.onerror) {
@@ -254,10 +295,7 @@ FFRepoImpl.prototype = {
             origin: origin,
             skipPostInstallDashboard: args.skipPostInstallDashboard ? args.skipPostInstallDashboard : false
           }));
-          for (let id in self._contentListeners) {
-            let func = self._contentListeners[id];
-            if (func && typeof func == "function") func("add", [app]);
-          }
+          self._callWatchers("add", [app]);
         });
         // create OS-local application
         console.log("APPS | jetpack.install | Getting app by URL now\n");
@@ -282,24 +320,23 @@ FFRepoImpl.prototype = {
 
   uninstall: function(key, onsuccess, onerror) {
     let self = this;
-    Repo.uninstall(key, function(result) {
-      if (typeof result == 'object' && 'error' in result) {
-        onerror({
-          'code': result['error'][0],
-          'message': result['error'][1]
-        });
-      } else if (typeof onsuccess == 'function') {
-        Repo.getAppById(key, function(app) {
+    Repo.getAppById(key, function(app) {
+      Repo.uninstall(key, function(result) {
+        if (typeof result == 'object' && 'error' in result && onerror) {
+          onerror({
+            'code': result['error'][0],
+            'message': result['error'][1]
+          });
+        } else {
           self._observer.notifyObservers(
             null, "openwebapp-uninstalled", null
           );
-          for (let id in self._contentListeners) {
-            let func = self._contentListeners[id];
-            if (func && typeof func == "function") func("remove", [app]);
+          self._callWatchers("remove", [app]);
+          if (typeof onsuccess == 'function') {
+            onsuccess(result);
           }
-        });
-        onsuccess(result);
-      }
+        }
+      });
     });
   },
 

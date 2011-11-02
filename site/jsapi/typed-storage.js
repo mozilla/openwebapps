@@ -37,53 +37,81 @@
 
 function TypedStorage(browserStorage) {
   var self = {};
+  // We lazily watch for the storage event, this tells us if we've added
+  // it already:
+  var storageEventHandlerSet = false;
+  var objectStores = {};
+  var watchUpdateCallbacks = {};
+  var watchUpdateCounter = 1;
   browserStorage = browserStorage || window.localStorage;
-  self.open = function (objType) {
-    return TypedStorage.ObjectStore(browserStorage, objType, self);
-  };
+  // This adds dispatchEvent/etc methods to this object:
   EventMixin(self);
 
-  var lastModified = null;
-  var pollPeriod = 1000;
-  var timeoutId = null;
-
-  function changePoller() {
-    try {
-      var storeLastModified = browserStorage.getItem('typed-storage#last_modified');
-      if (storeLastModified) {
-        try {
-          storeLastModified = parseInt(storeLastModified);
-        } catch (e) {
-          storeLastModified = null;
-        }
-      } else {
-        storeLastModified = null;
-      }
-      if (storeLastModified && storeLastModified > lastModified) {
-        lastModified = storeLastModified;
-        self.dispatchEvent('multiplechange', {});
-      }
-    } finally {
-      timeoutId = setTimeout(changePoller, pollPeriod);
-    };
-  }
-
-  self.pollForChanges = function (period, types) {
-    if (lastModified === null) {
-      lastModified = (new Date()).getTime();
-    }
-    if (period) {
-      pollPeriod = period;
-    }
-    self.cancelPoll();
-    timeoutId = setTimeout(changePoller, 0);
+  self.open = function (objType) {
+    var objStore = TypedStorage.ObjectStore(browserStorage, objType, self);
+    objectStores[objType] = objStore;
+    return objStore;
   };
 
-  self.cancelPoll = function () {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-      timeoutId = null;
+  var lastModified = null;
+
+  function handleEvent(event) {
+    var key = event.key;
+    if (key === 'typed-storage#last_modified') {
+      return;
     }
+    if (key.indexOf('#') == -1) {
+      return;
+    }
+    key = key.split('#');
+    var objType = key[0];
+    var objKey = key[1];
+    if (! objectStores.hasOwnProperty(objType)) {
+      return;
+    }
+    var objStore = objectStores[objType];
+    var subEvent;
+    if (event.oldValue !== null) {
+      callWatchUpdateCallbacks({
+        "type": "remove", 
+        objects: [JSON.parse(event.oldValue)],
+        objectType: objType,
+        objectKey: objKey,
+        originalEvent: event
+      });
+    }
+    if (event.newValue !== null) {
+      callWatchUpdateCallbacks({
+        "type": "add", 
+        objects: [JSON.parse(event.newValue)],
+        objectType: objType,
+        objectKey: objKey,
+        originalEvent: event
+      });
+    }
+  }
+  
+  function callWatchUpdateCallbacks(event) {
+    for (var i in watchUpdateCallbacks) {
+      if (watchUpdateCallbacks.hasOwnProperty(i)) {
+        var callback = watchUpdateCallbacks[i];
+        callback(event);
+      }
+    }
+  }
+
+  self.watchUpdates = function (callback) {
+    if (! storageEventHandlerSet) {
+      window.addEventListener('storage', handleEvent, false);
+      storageEventHandlerSet = true;
+    }
+    var id = watchUpdateCounter++;
+    watchUpdateCallbacks[id] = callback;
+    return id;
+  };
+
+  self.clearWatch = function (id) {
+    delete watchUpdateCallbacks[id];
   };
 
   self.setLastModified = function () {
@@ -92,15 +120,24 @@ function TypedStorage(browserStorage) {
     browserStorage.setItem('typed-storage#last_modified', lastModified);
   };
 
-  self.addEventListener('addEventListener', function (event) {
-    // Automatically start polling for changes if multichange is
-    // being listened for
-    if (event.eventName == 'multiplechange' && ! timeoutId) {
-      self.pollForChanges();
-      // Technically the poll could be cancelled...
-      self.removeEventListener('addEventListener', arguments.callee);
+  self.change = function (storage, objType, key, oldValue, newValue) {
+    if (oldValue !== undefined) {
+      callWatchUpdateCallbacks({
+        "type": "remove",
+        objects: [oldValue],
+        objectType: objType,
+        objectKey: key
+      });
     }
-  });
+    if (newValue !== undefined) {
+      callWatchUpdateCallbacks({
+        "type": "add",
+        objects: [newValue],
+        objectType: objType,
+        objectKey: key
+      });
+    }
+  };
 
   return self;
 }
@@ -134,33 +171,33 @@ TypedStorage.ObjectStore = function (storage, objType, typedStorage) {
 
   //store and object under a specified key
   self.put = function(key, value, cb) {
-    var canceled = ! self._typedStorage.dispatchEvent('change',
-      {target: key, storageType: self, eventType: 'change', value: value});
-    setObject(self._storage, self.makeKey(key), value);
-    self._typedStorage.setLastModified();
-    cb && cb(true);
+    self.get(key, function (oldValue) {
+      setObject(self._storage, self.makeKey(key), value);
+      self._typedStorage.change(self, self._objType, key, oldValue, value);
+      self._typedStorage.setLastModified();
+      cb && cb(true);
+    });
   };
 
   //remove the object at a specified key
   self.remove = function(key, cb) {
-    var canceled = ! self._typedStorage.dispatchEvent('delete',
-        {target: key, eventType: 'delete', storageType: self});
-    if (! canceled) {
-      delete self._storage.removeItem(self.makeKey(key));
-    }
-    self._typedStorage.setLastModified();
-    cb && cb(true);
+    self.get(key, function (oldValue) {
+      self._storage.removeItem(self.makeKey(key));
+      self._typedStorage.change(self, self._objType, key, oldValue, undefined);
+      self._typedStorage.setLastModified();
+      cb && cb(true);
+    });
   };
 
   //remove all objects with our objType from the storage
   self.clear = function(cb) {
     //possibly slow, but code reuse for the win
     self.keys(function(allKeys) {
-        for (var i=0; i<allKeys.length; i++) {
-          self.remove(allKeys[i]);
-        }
-        self._typedStorage.setLastModified();
-        cb && cb(true);
+      for (var i=0; i<allKeys.length; i++) {
+        self.remove(allKeys[i]);
+      }
+      self._typedStorage.setLastModified();
+      cb && cb(true);
     });
   };
 

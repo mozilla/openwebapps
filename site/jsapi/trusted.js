@@ -209,7 +209,13 @@ ClientBridge = (function () {
   chan.bind('list', function(t) {
     verifyMgmtPermission(t.origin);
     t.delayReturn(true);
-    Repo.list(t.complete);
+    Repo.list(function (apps) {
+      var appList = [];
+      for (var i in apps) {
+        appList.push(apps[i]);
+      }
+      t.complete(appList);
+    });
   });
 
   chan.bind('uninstall', function(t, origin) {
@@ -227,16 +233,14 @@ ClientBridge = (function () {
     });
   });
 
-  chan.bind('loadState', function(t) {
-    verifyMgmtPermission(t.origin);
-    t.delayReturn(true);
-    Repo.loadState(t.origin, t.complete);
-  });
-
-  chan.bind('saveState', function(t, args) {
-    verifyMgmtPermission(t.origin);
-    t.delayReturn(true);
-    Repo.saveState(t.origin, args.state, t.complete);
+  chan.bind('trackChanges', function (t) {
+    Repo.watchUpdates(function (event) {
+      chan.call({
+        method: 'change', 
+        params: event,
+        success: function () {}
+      });
+    });
   });
 
   /*

@@ -1,16 +1,25 @@
-function doHandleMenuBar(toCall)
-{
-    // We need to pageMod in from the faker
-    // TODO pass this into content code somehow
-    alert("Menu bar item " + toCall + " was clicked!");
-    return;
-}
+var observer = {
+    observe: function(contentWindow, aTopic, aData) {
+        if (aTopic == 'xul-window-destroyed') {
+            // If there is nothing left but the main (invisible) window, quit
+            var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"]  
+                       .getService(Components.interfaces.nsIWindowMediator);  
+            var enumerator = wm.getEnumerator("app");
+            if(enumerator.hasMoreElements()) return;
 
-window.addEventListener("click", function(e) {
-    // Make sure clicks remain in our context
-    // TODO check to see if we are in same origin?
-    if (e.target.nodeName == "A") {
-        e.preventDefault();
-        window.location = e.target.href;
+            var appStartup = Components.classes["@mozilla.org/toolkit/app-startup;1"].getService(Components.interfaces.nsIAppStartup);
+            appStartup.quit(appStartup.eAttemptQuit);
+        }
     }
-}, false);
+};
+
+// Register our observer:
+var observerService = Components.classes["@mozilla.org/observer-service;1"].getService(Components.interfaces.nsIObserverService);
+observerService.addObserver(observer, "xul-window-destroyed", false);
+
+// Create the first window
+var appName = "$APPNAME";
+var ww = Components.classes["@mozilla.org/embedcomp/window-watcher;1"]
+                   .getService(Components.interfaces.nsIWindowWatcher);
+var win = ww.openWindow(null, "chrome://webapp/content/window.xul",
+                        appName, "chrome,centerscreen", null);

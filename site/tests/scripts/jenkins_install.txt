@@ -1,0 +1,25 @@
+# Update System
+echo 'System Update'
+apt-get update
+echo 'Update completed'
+apt-get install git-core curl python-software-properties
+# Install Node.js
+echo 'Install Node.js'
+wget http://nodejs.org/dist/node-v0.4.12.tar.gz
+tar -zxvf node-v0.4.12.tar.gz
+cd node-v0.4.12/
+./configure && make && make install 
+
+echo 'Node.js install completed'
+# Install Node Package Manager
+echo 'Install Node Package Manager'
+curl http://npmjs.org/install.sh | sudo sh
+echo 'NPM install completed'
+# Install Forever
+echo 'Install Forever'
+npm config set registry = "http://registry.npmjs.org/"
+npm install forever -g
+echo 'Forever install completed'
+
+echo '####Virtual Env Install####'
+easy_install virtualenv fudge psutil

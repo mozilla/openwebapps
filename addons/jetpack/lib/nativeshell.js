@@ -44,7 +44,7 @@ const self = require("self");
 const url = require("url");
 
 NativeShell = (function() {
-  function CreateNativeShell(domain, appManifest)
+  function CreateNativeShell(app)
   {
     let os = Components.classes["@mozilla.org/xre/app-info;1"]
                        .getService(Components.interfaces.nsIXULRuntime).OS;
@@ -55,7 +55,7 @@ NativeShell = (function() {
       nativeShell = new MacNativeShell();
     }
     if(nativeShell) {
-      nativeShell.createAppNativeLauncher(domain, appManifest);
+      nativeShell.createAppNativeLauncher(app);
     } else {
       console.log("APPS | CreateNativeShell | "
                   + "No OS-specific native shell could be created");
@@ -107,25 +107,135 @@ function getBiggestIcon(minifest) {
   return null;
 }
 
-function makeMenuBar(manifest)
-{
-  if (!('experimental' in manifest)) return "";
-  if (!('menubar' in manifest.experimental)) return "";
-
-  let toolbox = '<toolbox collapsed="true"><menubar id="main-bar">';
-  for (let key in manifest.experimental.menubar) {
-    toolbox += '<menu label="' + key + '"><menupopup>';
-    for (let option in manifest.experimental.menubar[key]) {
-      toolbox += '<menuitem label="' + option + '" ' +
-        'oncommand="doHandleMenuBar(\'' +
-        manifest.experimental.menubar[key][option] +
-        '\');"/>';
-    }
-    toolbox += '</menupopup></menu>';
+function embedInstallRecord(app, destinationFile) {
+  //write the contents of the app (install record), json-ified, into the specified file.
+  try {
+    let installRecString = JSON.stringify(app);
+    let textwriter = file.open(destinationFile, "w");
+    textwriter.write(installRecString);
+    textwriter.close();
+  } catch (e) {
+    console.log("error writing installrecord : " + e + "\n");
   }
-  toolbox += '</menubar></toolbox>';
+}
 
-  return toolbox;
+function winExpandVars(toExpand)
+{
+  try {
+    components.utils.import("resource://gre/modules/ctypes.jsm");
+  } catch(e) {
+    throw("winExpandVars - "
+          + "Failure importing ctypes (" + e + ")");
+  }
+
+  let kernel32;
+  try {
+    kernel32 = ctypes.open("Kernel32");
+  } catch(e) {
+    throw("winExpandVars - "
+          + "Failed to open Kernel32 (" + e + ")");
+  }
+
+  try {
+    try {
+      const DWORD = ctypes.uint32_t;
+      const WCHAR = ctypes.jschar;
+      const MAX_PATH = 260;
+      const outStrType = ctypes.ArrayType(WCHAR);
+    } catch(e) {
+      throw("winExpandVars - "
+            + "Failure setting up constants (" + e + ")");
+    }
+
+    let expandEnvironmentStrings;
+    try {
+      expandEnvironmentStrings = kernel32.declare("ExpandEnvironmentStringsW",
+                                                  ctypes.default_abi,
+                                                  DWORD,
+                                                  WCHAR.ptr,
+                                                  WCHAR.ptr,
+                                                  DWORD);
+    } catch(e) {
+      throw("winExpandVars - "
+            + "Failure declaring ExpandEnvironmentStringsW (" + e + ")");
+    }
+
+    let ret;
+    let out;
+    try {
+      let cstr = ctypes.jschar.array()(toExpand);
+      out = new outStrType(MAX_PATH);
+      ret = expandEnvironmentStrings(cstr, out, MAX_PATH);
+    } catch(e) {
+      throw("winExpandVars - "
+            + "Failure calling ExpandEnvironmentStringsW (" + e + ")");
+    }
+    if(0 === ret) {
+      throw("winExpandVars - "
+            + "Error in ExpandEnvironmentStringsW (" + ret + ")");
+    } else {
+      return out.readString();
+    }
+  } finally {
+    try {
+      kernel32.close();
+    } catch (e) {
+      console.log("APPS | nativeshell.win | winExpandVars - "
+                  + "Failure trying to close Kernel32 (" + e + ")");
+    }
+  }
+}
+
+function createWindowsShortcut(loc, target, description)
+{
+  try {
+    components.utils.import("resource://gre/modules/ctypes.jsm");
+  } catch(e) {
+    throw("createWindowsShortcut - Failure importing ctypes (" + e + ")");
+  }
+
+  try {
+    let shellLinkURL = self.data.url("ShellLinkCreator.dll");
+    let ioService = components
+                      .classes["@mozilla.org/network/io-service;1"]
+                      .getService(components.interfaces.nsIIOService);
+    let theURI = ioService.newURI(shellLinkURL, null, null);
+    theURI.QueryInterface(components.interfaces.nsIFileURL);
+    let hopefullyThePath = theURI.file.path;
+    var shellLinkCreator = ctypes.open(hopefullyThePath);
+  } catch(e) {
+      throw("createWindowsShortcut - "
+            + "Failure loading ShellLinkCreator.dll (" + e + ")");
+  }
+
+  try {
+    try {
+      const WCHAR = ctypes.jschar;
+      let createLink = shellLinkCreator.declare("CreateLink",
+                                                ctypes.default_abi,
+                                                ctypes.long,
+                                                WCHAR.ptr,
+                                                WCHAR.ptr,
+                                                WCHAR.ptr);
+
+      var ret = createLink(target, loc, description);
+    } catch(e) {
+      throw("createWindowsShortcut - "
+            + "Failure in CreateLink (" + e + ")");
+    }
+    if(0 > ret) {
+      throw("createWindowsShortcut - "
+            + "Error in CreateLink (" + ret + ")");
+    }
+  }
+  finally {
+    try {
+      shellLinkCreator.close();
+    } catch (e) {
+      console.log("APPS | nativeshell.win | createWindowsShortcut - "
+                  + "Failure trying to close shellLinkCreator (" + e + ")");
+    }
+  }
 }
 
 function recursiveFileCopy(srcDir,
@@ -149,6 +259,7 @@ function recursiveFileCopy(srcDir,
     }
     let srcURL = self.data.url(srcCompletePath);
     var srcFile = url.toFilename(srcURL);
+    //console.log(srcFile);
   } catch(e) {
     throw("recursiveFileCopy - "
           + "Failure while setting up paths (" + e +")");
@@ -477,73 +588,6 @@ function winExpandVars(toExpand)
   }
 }
 
-function winGetTempFilename()
-{
-  try {
-    components.utils.import("resource://gre/modules/ctypes.jsm");
-  } catch(e) {
-    throw("winExpandVars - "
-          + "Failure importing ctypes (" + e + ")");
-  }
-
-  let kernel32;
-  try {
-    kernel32 = ctypes.open("Kernel32");
-  } catch(e) {
-    throw("winExpandVars - "
-          + "Failed to open Kernel32 (" + e + ")");
-  }
-
-  try {
-    try {
-      const DWORD = ctypes.uint32_t;
-      const WCHAR = ctypes.jschar;
-      const MAX_PATH = 260;
-      const outStrType = ctypes.ArrayType(WCHAR);
-    } catch(e) {
-      throw("winExpandVars - "
-            + "Failure setting up constants (" + e + ")");
-    }
-
-    let expandEnvironmentStrings;
-    try {
-      expandEnvironmentStrings = kernel32.declare("ExpandEnvironmentStringsW",
-                                                  ctypes.default_abi,
-                                                  DWORD,
-                                                  WCHAR.ptr,
-                                                  WCHAR.ptr,
-                                                  DWORD);
-    } catch(e) {
-      throw("winExpandVars - "
-            + "Failure declaring ExpandEnvironmentStringsW (" + e + ")");
-    }
-
-    let ret;
-    let out;
-    try {
-      let cstr = ctypes.jschar.array()(toExpand);
-      out = new outStrType(MAX_PATH);
-      ret = expandEnvironmentStrings(cstr, out, MAX_PATH);
-    } catch(e) {
-      throw("winExpandVars - "
-            + "Failure calling ExpandEnvironmentStringsW (" + e + ")");
-    }
-    if(0 === ret) {
-      throw("winExpandVars - "
-            + "Error in ExpandEnvironmentStringsW (" + ret + ")");
-    } else {
-      return out.readString();
-    }
-  } finally {
-    try {
-      kernel32.close();
-    } catch (e) {
-      console.log("APPS | nativeshell.win | winExpandVars - "
-                  + "Failure trying to close Kernel32 (" + e + ")");
-    }
-  }
-}
-
 WinNativeShell.prototype = {
 
   createAppNativeLauncher : function(app)
@@ -583,7 +627,6 @@ WinNativeShell.prototype = {
       file.mkpath(baseDir);
       file.mkpath(filePath);
       file.mkpath(filePath + "\\XUL");
-
     } catch(e) {
       throw("createExecutable - "
             + "Failure setting up target location (" + e + ")");
@@ -594,7 +637,6 @@ WinNativeShell.prototype = {
       "\\$APPNAME": app.manifest.name,
       "\\$APPDOMAIN": app.origin,
       "\\$LAUNCHPATH": launchPath,
-      "\\$APPMENUBAR": makeMenuBar(app.manifest),
       "\\$INSTALLDIR": baseDir,
       "\\$DESKTOP_SHORTCUT": "y",
       "\\$SM_SHORTCUT": "y"
@@ -653,6 +695,10 @@ WinNativeShell.prototype = {
             undefined,
             fileWriter.writeLine,
             dirWriter.writeLine);
+
+        //add the install record to the windows bundle
+        embedInstallRecord(app, filePath + "\\installrecord.json");
+        fileWriter.writeLine(filePath + "\\installrecord.json");
       } catch(e) {
         throw("createExecutable - "
               + "Failure copying files (" + e + ")");
@@ -689,7 +735,7 @@ WinNativeShell.prototype = {
 // Mac implementation
 //
 // Our Mac strategy for now is to create a .webloc file and
-// to put the app icon on it.  We also create a "Web Apps"
+// to put the app icon on it. We also create a "Web Apps"
 // subfolder in the Applications folder.
 //
 // This does _not_ give us document opening (boo) but it will
@@ -740,7 +786,7 @@ MacNativeShell.prototype = {
       "\\$APPDOMAIN": app.origin,
       "\\$APPDOMAIN_REVERSED": reverseDNS(app.origin),
       "\\$LAUNCHPATH": launchPath,
-      "\\$APPMENUBAR": makeMenuBar(app.manifest)
+      // "\\$APPMENUBAR": makeMenuBar(app.manifest)
     }
     file.mkpath(filePath);
 
@@ -756,9 +802,23 @@ MacNativeShell.prototype = {
                            "/",
                            substitutions);
 
+    embedInstallRecord(app, filePath + "/installrecord.json");
     this.synthesizeIcon(app, filePath + "/Contents/Resources/appicon.icns");
   },
   
+  embedInstallRecord : function(app, destinationFile) {
+    //write the contents of the app (install record), json-ified, into the specified file.
+    try {
+      let installRecString = JSON.stringify(app);
+      let textwriter = file.open(destinationFile, "w");
+      textwriter.write(installRecString);
+      textwriter.close();
+    } catch (e) {
+      console.log("error writing installrecord : " + e + "\n");
+    }
+
+  },
+
   synthesizeIcon : function(app, destinationFile)
   {
     var icon = getBiggestIcon(app.manifest);
@@ -825,7 +885,7 @@ MacNativeShell.prototype = {
       ostream.init(filePath, 0x04 | 0x08 | 0x20, 0600, 0); // readwrite, create, truncate
 
       // Go get it:
-      var iconPath = app.origin + icon;    
+      var iconPath = app.origin + icon;
       var netutil={};
       Cu.import("resource://gre/modules/NetUtil.jsm", netutil);
       dump("APPS | createExecutable | Retrieving icon from " + iconPath + "\n");
@@ -859,63 +919,63 @@ MacNativeShell.prototype = {
     //"sips -s format icns /path/to/png --out " + filePath + "/Contents/Resources/appicon.icns";
   },
   
-  createWebLocFile: function(app)
-  {
-    var baseDir = "/Applications/" + WEB_APPS_DIRNAME;
-    if (!file.exists(baseDir))
-    {
-      file.mkpath(baseDir);
-    }
+  // createWebLocFile: function(app)
+  // {
+  //   var baseDir = "/Applications/" + WEB_APPS_DIRNAME;
+  //   if (!file.exists(baseDir))
+  //   {
+  //     file.mkpath(baseDir);
+  //   }
 
-    var filePath = baseDir + "/" + sanitizeMacFileName(app.manifest.name) + ".webloc";
-    if (file.exists(filePath))
-    {
-      file.remove(filePath);
-    }
-    var fileWriter = file.open(filePath, "w");
-    var launchPath = app.origin;
-    if (app.manifest.launch_path) {
-      launchPath += app.manifest.launch_path;
-    }
-    fileWriter.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + 
-        "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n" + 
-        "<plist version=\"1.0\">\n" + 
-        "<dict>\n" + 
-        "    <key>URL</key>\n" + 
-        "    <string>" + launchPath + "</string>\n" + 
-        "</dict>\n" + 
-        "</plist>\n");
-    fileWriter.close();
+  //   var filePath = baseDir + "/" + sanitizeMacFileName(app.manifest.name) + ".webloc";
+  //   if (file.exists(filePath))
+  //   {
+  //     file.remove(filePath);
+  //   }
+  //   var fileWriter = file.open(filePath, "w");
+  //   var launchPath = app.origin;
+  //   if (app.manifest.launch_path) {
+  //     launchPath += app.manifest.launch_path;
+  //   }
+  //   fileWriter.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + 
+  //       "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n" + 
+  //       "<plist version=\"1.0\">\n" + 
+  //       "<dict>\n" + 
+  //       "    <key>URL</key>\n" + 
+  //       "    <string>" + launchPath + "</string>\n" + 
+  //       "</dict>\n" + 
+  //       "</plist>\n");
+  //   fileWriter.close();
 
-    // THEN: set the icon
-    // var lib = ct.ctypes.open(self.data.url("iconsetter.a"));
+  //   // THEN: set the icon
+  //   // var lib = ct.ctypes.open(self.data.url("iconsetter.a"));
 
-    var ct = {};
-    Cu.import("resource://gre/modules/ctypes.jsm", ct);
-    var lib = ct.ctypes.open("/Users/michaelhanson/Projects/openwebapps/addons/jetpack/data/libiconsetter.dylib");
-    var setIcon = lib.declare("setIcon", ct.ctypes.default_abi, ct.ctypes.int, ct.ctypes.ArrayType(ct.ctypes.char), ct.ctypes.ArrayType(ct.ctypes.char));
+  //   var ct = {};
+  //   Cu.import("resource://gre/modules/ctypes.jsm", ct);
+  //   var lib = ct.ctypes.open("/Users/michaelhanson/Projects/openwebapps/addons/jetpack/data/libiconsetter.dylib");
+  //   var setIcon = lib.declare("setIcon", ct.ctypes.default_abi, ct.ctypes.int, ct.ctypes.ArrayType(ct.ctypes.char), ct.ctypes.ArrayType(ct.ctypes.char));
     
-    function getBiggestIcon(minifest) {
-      if (minifest.icons) {
-        var biggest = 0;
-        for (z in minifest.icons) {
-          var size = parseInt(z, 10);
-          if (size > biggest) biggest = size;
-        }
-        if (biggest !== 0) return minifest.icons[biggest];
-      }
-      return null;
-    }
-    var icon = getBiggestIcon(app.manifest);
-    var iconPath;
-    if (icon.indexOf("data:") === 0) {
-      iconPath = icon;
-    } else {
-      iconPath = app.origin + icon;    
-    }
-    var ret = setIcon(filePath, iconPath); // Will invoke NSURL resolution, could hang out for a LONG time
-  }
-}
+  //   function getBiggestIcon(minifest) {
+  //     if (minifest.icons) {
+  //       var biggest = 0;
+  //       for (z in minifest.icons) {
+  //         var size = parseInt(z, 10);
+  //         if (size > biggest) biggest = size;
+  //       }
+  //       if (biggest !== 0) return minifest.icons[biggest];
+  //     }
+  //     return null;
+  //   }
+  //   var icon = getBiggestIcon(app.manifest);
+  //   var iconPath;
+  //   if (icon.indexOf("data:") === 0) {
+  //     iconPath = icon;
+  //   } else {
+  //     iconPath = app.origin + icon;    
+  //   }
+  //   var ret = setIcon(filePath, iconPath); // Will invoke NSURL resolution, could hang out for a LONG time
+  // }
+ }
 
 
 

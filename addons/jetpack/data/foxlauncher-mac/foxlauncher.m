@@ -24,7 +24,7 @@ int main(int argc, char **argv)
   else 
   {
     NSString *fullpath = [FirefoxRoot stringByAppendingString: @"/Contents/MacOS/firefox-bin"];
-    printf("Execing: %s %s %s %s\n", [fullpath UTF8String], newargv[0], newargv[1], newargv[2]);
+    //printf("Execing: %s %s %s %s\n", [fullpath UTF8String], newargv[0], newargv[1], newargv[2]);
     execv([fullpath UTF8String], (char **)newargv);
   }
 
