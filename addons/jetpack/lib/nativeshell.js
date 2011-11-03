@@ -772,18 +772,6 @@ MacNativeShell.prototype = {
     this.synthesizeIcon(app, filePath + "/Contents/Resources/appicon.icns");
   },
   
-  embedInstallRecord : function(app, destinationFile) {
-    //write the contents of the app (install record), json-ified, into the specified file.
-    try {
-      let installRecString = JSON.stringify(app);
-      let textwriter = file.open(destinationFile, "w");
-      textwriter.write(installRecString);
-      textwriter.close();
-    } catch (e) {
-      console.log("error writing installrecord : " + e + "\n");
-    }
-
-  },
 
   synthesizeIcon : function(app, destinationFile)
   {
