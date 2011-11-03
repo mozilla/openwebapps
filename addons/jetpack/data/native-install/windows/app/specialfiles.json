@@ -1,5 +1,5 @@
 {
-  "foxlauncher.exe":
+  "Foxlauncher.exe":
   {
     "rename": "$APPNAME.exe",
     "mode": "b",

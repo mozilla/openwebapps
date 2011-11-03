@@ -36,52 +36,53 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include "resource.h"
+#include <process.h>
+
+// Windows headers
 #include "windows.h"
+//#include "Shellapi.h"
 
-#include <iostream>
+int WINAPI WinMain(HINSTANCE,
+                   HINSTANCE,
+                   LPSTR,
+                   int) {
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
-  static const DWORD EXPAND_BUF_LEN = MAX_PATH;
+  wchar_t fullAppPath[MAX_PATH];
+  wchar_t xulAppDir[_MAX_DIR];
+  wchar_t xulAppDrive[_MAX_DRIVE];
 
-  WCHAR pathToFirefox[EXPAND_BUF_LEN];
-  DWORD dwExpandRet = ::ExpandEnvironmentStrings(L"%PROGRAMFILES%\\Mozilla Firefox\\firefox.exe",pathToFirefox,EXPAND_BUF_LEN);
-  if(EXPAND_BUF_LEN < dwExpandRet) {
-    // TODO: The buffer was too small
-  } else if(0 == dwExpandRet) {
-    std::wcerr << L"::ExpandEnvironmentStrings() failed: " << ::GetLastError() << std::endl;
-    return 1;
-  }
+  ::GetModuleFileNameW(NULL, fullAppPath, MAX_PATH);
+  // TODO: Check for errors
+  // TODO: Maybe normalize path for splitpath?
+  _wsplitpath_s(fullAppPath,
+                xulAppDrive,
+                _MAX_DRIVE,
+                xulAppDir,
+                _MAX_DIR,
+                NULL,         // Filename (don't need)
+                0,            // NumElements of filename buffer
+                NULL,         // Extension (don't need)
+                0);           // NumElements of extension buffer
+  // TODO: Check for errors
+  
 
-  WCHAR commandLineArgs[EXPAND_BUF_LEN];
-  dwExpandRet = ::ExpandEnvironmentStrings(L"firefox.exe -app \"XUL\\application.ini\"",commandLineArgs,EXPAND_BUF_LEN);
-  if(EXPAND_BUF_LEN < dwExpandRet) {
-    // TODO: The buffer was too small
-  } else if(0 == dwExpandRet) {
-    std::wcerr << L"::ExpandEnvironmentStrings() failed: " << ::GetLastError() << std::endl;
-    return 1;
-  }
 
-  STARTUPINFO si;
-  PROCESS_INFORMATION pi;
+  SHELLEXECUTEINFO sei;
+  sei.cbSize = sizeof(sei);
+  sei.fMask = SEE_MASK_NOCLOSEPROCESS // hProcess receives handle
+              | SEE_MASK_NOASYNC      // ShellExecuteEx does not return until
+                                      // DDE operation has completed
+              //TODO: | SEE_MASK_ICON
+              | SEE_MASK_NO_CONSOLE;  // inherit console (IS THIS NEEDED?)
+  sei.hwnd = NULL; // TODO: Create a window and put its hwnd here
+  sei.lpVerb = L"open";
+  sei.lpFile = L"firefox.exe";
+  sei.lpParameters = L"-app \"XUL\\application.ini\"";
+  sei.lpDirectory = xulAppDir;
+  sei.nShow = SW_SHOWDEFAULT;
+  // TODO: sei.hIcon = 
 
-  ZeroMemory( &si, sizeof(si) );
-  si.cb = sizeof(si);
-  ZeroMemory( &pi, sizeof(pi) );
+  ::ShellExecuteExW(&sei);
 
-  if(0 == ::CreateProcessW(
-        pathToFirefox,
-        commandLineArgs,
-        NULL,
-        NULL,
-        FALSE,
-        0,
-        NULL,
-        NULL,
-        &si,
-        &pi)) {
-    std::wcerr << L"::CreateProcess() failed: " << ::GetLastError() << std::endl;
-    return 1;
-  }	
-
+  return 0;
 }
