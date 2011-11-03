@@ -13,5 +13,5 @@
       </menupopup>
       </menu>
   </menubar>
-  <browser type="content" src="$LAUNCHPATH" flex="1"/>
+  <browser id="content_browser" type="content" src="$LAUNCHPATH" flex="1"/>
 </window>

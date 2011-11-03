@@ -23,6 +23,7 @@
  *     Michael Hanson <mhanson@mozilla.com>
  *     Anant Narayanan <anant@kix.in>
  *     Tim Abraldes <tabraldes@mozilla.com>
+ *     Dan Walkowski <dwalkowski@mozilla.com>
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -42,6 +43,8 @@ const {components, Cc, Cu, Ci} = require("chrome");
 const file = require("file");
 const self = require("self");
 const url = require("url");
+
+
 
 NativeShell = (function() {
   function CreateNativeShell(app)
@@ -105,11 +108,13 @@ function getBiggestIcon(minifest) {
   return null;
 }
 
-function embedInstallRecord(app, destinationFile) {
+//needs to be async!  should be using some form of copyFile
+function embedInstallRecord(app, destinationDir) {
   //write the contents of the app (install record), json-ified, into the specified file.
+  destinationDir.append("installrecord.json");
   try {
     let installRecString = JSON.stringify(app);
-    let textwriter = file.open(destinationFile, "w"); 
+    let textwriter = file.open(destinationDir.path, "w"); 
     textwriter.write(installRecString);
     textwriter.close();
   } catch (e) {
@@ -118,27 +123,56 @@ function embedInstallRecord(app, destinationFile) {
 }
 
 
+//used to copy in the necessary js files to include so we can call the MozApps api to do browserID stuff.
+// turns out that we only really need injector.js for now
+function embedMozAppsAPIFiles(destDir)
+{
+  //find where the jetpack addon is, and where it is keeping the necessary js files we need to copy into the native app
+  var mozappsD = Components.classes["@mozilla.org/file/directory_service;1"].getService(Components.interfaces.nsIProperties).get("ProfD", Components.interfaces.nsIFile);
+  mozappsD.append("extensions");
+  mozappsD.append(self.id);
+  mozappsD.append("resources");
+  mozappsD.append("openwebapps-at-mozillalabs-dot-com-openwebapps-lib");
 
-// function makeMenuBar(manifest)
-// {
-//   if (!('experimental' in manifest)) return "";
-//   if (!('menubar' in manifest.experimental)) return "";
+  var injectorSrc = mozappsD.clone();
+  injectorSrc.append("injector.js");
+  var injectorDest = destDir.clone();
+  injectorDest.append("injector.js");
+  console.log("injectorSrc : " + injectorSrc.path);
 
-//   let toolbox = '<toolbox collapsed="true"><menubar id="main-bar">';
-//   for (let key in manifest.experimental.menubar) {
-//     toolbox += '<menu label="' + key + '"><menupopup>';
-//     for (let option in manifest.experimental.menubar[key]) {
-//       toolbox += '<menuitem label="' + option + '" ' +
-//         'oncommand="doHandleMenuBar(\'' +
-//         manifest.experimental.menubar[key][option] +
-//         '\');"/>';
-//     }
-//     toolbox += '</menupopup></menu>';
-//   }
-//   toolbox += '</menubar></toolbox>';
+  copyFile(injectorSrc, injectorDest);
+}
 
-//   return toolbox;
-// }
+
+//for now, bring the entire file into memory, so we can do substitutions on it if necessary.
+// obviously, this is not suitable for very large files, but it is async.
+// NOTE: both inFile and outFile are nsIFile objects
+// NOTE: this code should probably throw, and get caught up at the top, where we can cancel the creation of the native app
+function copyFile(inFile, outFile, options) {
+  
+  Components.utils.import("resource://gre/modules/NetUtil.jsm");  
+  Components.utils.import("resource://gre/modules/FileUtils.jsm");  
+      
+  NetUtil.asyncFetch(inFile, function(inputStream, status) {  
+      if (!Components.isSuccessCode(status)) {  
+        // Handle error!  
+        console.log("ERROR: " + status + " failed to read file: " + inFile);
+        return;  
+      }  
+      
+    var outputStream = FileUtils.openSafeFileOutputStream(outFile);
+
+    NetUtil.asyncCopy(inputStream, outputStream, function(inputStream, status) {
+      if (!Components.isSuccessCode(status)) {  
+        // Handle error!  
+        console.log("ERROR: " + status + " failed to write file: " + outFile);
+        return;  
+      } 
+    });        
+  });  
+
+}
+
 
 function writeWindowsRegistryKey(key, values)
 {
@@ -639,8 +673,7 @@ WinNativeShell.prototype = {
       "\\$APPNAME": app.manifest.name,
       "\\$APPDOMAIN": app.origin,
       "\\$APPDOMAIN_REVERSED": reverseDNS(app.origin),
-      "\\$LAUNCHPATH": launchPath,
-      // "\\$APPMENUBAR": makeMenuBar(app.manifest)
+      "\\$LAUNCHPATH": launchPath
     }
 
     try {
@@ -660,8 +693,20 @@ WinNativeShell.prototype = {
             + "Failure copying files (" + e + ")");
     }
 
-    //add the install record to the windows bundle
-    embedInstallRecord(app, filePath + "\\installrecord.json");
+    //////////////////////////////////////////////
+    //this code should be cross-platform   
+    var XULDir = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
+    XULDir.initWithPath(filePath);
+    XULDir.append("XUL");
+    var contentDir = XULDir.clone();
+    contentDir.append("content");
+
+    //add the install record to the native app bundle
+    embedInstallRecord(app, XULDir);
+    //add injector.js, which we need to inject some apis into the webapp content page
+    embedMozAppsAPIFiles(contentDir);
+    /////////////////////////////////////////////
+
 
     try {
       let uninstallKeys = {"DisplayIcon": filePath + "\\foxlauncher.exe,0",
@@ -757,8 +802,7 @@ MacNativeShell.prototype = {
       "\\$APPNAME": app.manifest.name,
       "\\$APPDOMAIN": app.origin,
       "\\$APPDOMAIN_REVERSED": reverseDNS(app.origin),
-      "\\$LAUNCHPATH": launchPath,
-      // "\\$APPMENUBAR": makeMenuBar(app.manifest)
+      "\\$LAUNCHPATH": launchPath
     }
     file.mkpath(filePath);
 
@@ -774,22 +818,23 @@ MacNativeShell.prototype = {
                            "/",
                            substitutions);
 
-    embedInstallRecord(app, filePath + "/installrecord.json");
+    //////////////////////////////////////////////
+    //this code should be cross-platform   
+    var XULDir = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
+    XULDir.initWithPath(filePath);
+    XULDir.append("XUL");
+    var contentDir = XULDir.clone();
+    contentDir.append("content");
+
+    //add the install record to the native app bundle
+    embedInstallRecord(app, XULDir);
+    //add injector.js, which we need to inject some apis into the webapp content page
+    embedMozAppsAPIFiles(contentDir);
+    /////////////////////////////////////////////
+
     this.synthesizeIcon(app, filePath + "/Contents/Resources/appicon.icns");
   },
   
-  embedInstallRecord : function(app, destinationFile) {
-    //write the contents of the app (install record), json-ified, into the specified file.
-    try {
-      let installRecString = JSON.stringify(app);
-      let textwriter = file.open(destinationFile, "w"); 
-      textwriter.write(installRecString);
-      textwriter.close();
-    } catch (e) {
-      console.log("error writing installrecord : " + e + "\n");
-    }
-
-  },
 
   synthesizeIcon : function(app, destinationFile)
   {
@@ -798,14 +843,14 @@ MacNativeShell.prototype = {
     // write the image into a temp file and convert it
     var filePath = Cc["@mozilla.org/file/directory_service;1"].getService(Ci.nsIProperties).
                get("TmpD", Ci.nsIFile);
-    dump("APPS | nativeshell.mac | Got temporary path " + filePath + "\n");
+    //dump("APPS | nativeshell.mac | Got temporary path " + filePath + "\n");
 
     if (icon.indexOf("data:") === 0) {
 
       // Guess the file type
       var tIndex = icon.indexOf(";");
       var type = icon.substring(5, tIndex);
-      dump("APPS | nativeshell.mac | type is " + type + "\n");
+      //dump("APPS | nativeshell.mac | type is " + type + "\n");
 
       var tSuffix="";
       if (type.indexOf("/png") > 0) tSuffix = ".png";
@@ -825,7 +870,7 @@ MacNativeShell.prototype = {
       
       // Stream data into it
       filePath.createUnique(Ci.nsIFile.NORMAL_FILE_TYPE, 0600);
-      dump("APPS | nativeshell.mac | Creating temporary icon at " + filePath.path + "\n");
+      //dump("APPS | nativeshell.mac | Creating temporary icon at " + filePath.path + "\n");
 
       var stream = Cc["@mozilla.org/network/safe-file-output-stream;1"].
                    createInstance(Ci.nsIFileOutputStream);
@@ -851,7 +896,7 @@ MacNativeShell.prototype = {
       else if (icon.indexOf(".jpg") > 0) tSuffix = ".jpg";
       filePath.append("tmpicon" + tSuffix);
       filePath.createUnique(Ci.nsIFile.NORMAL_FILE_TYPE, 0600);
-      dump("APPS | nativeshell.mac | Creating temporary icon at " + filePath.path + "\n");
+      //dump("APPS | nativeshell.mac | Creating temporary icon at " + filePath.path + "\n");
       var ostream = Cc["@mozilla.org/network/safe-file-output-stream;1"].
                    createInstance(Ci.nsIFileOutputStream);
       ostream.init(filePath, 0x04 | 0x08 | 0x20, 0600, 0); // readwrite, create, truncate
@@ -860,7 +905,7 @@ MacNativeShell.prototype = {
       var iconPath = app.origin + icon;    
       var netutil={};
       Cu.import("resource://gre/modules/NetUtil.jsm", netutil);
-      dump("APPS | createExecutable | Retrieving icon from " + iconPath + "\n");
+      //dump("APPS | createExecutable | Retrieving icon from " + iconPath + "\n");
       netutil.NetUtil.asyncFetch(iconPath, function(inputStream, resultCode, request) {
         try {
           if (!components.isSuccessCode(resultCode)) {
@@ -888,66 +933,8 @@ MacNativeShell.prototype = {
       });
 
     }
-    //"sips -s format icns /path/to/png --out " + filePath + "/Contents/Resources/appicon.icns";
   },
-  
-  // createWebLocFile: function(app)
-  // {
-  //   var baseDir = "/Applications/" + WEB_APPS_DIRNAME;
-  //   if (!file.exists(baseDir))
-  //   {
-  //     file.mkpath(baseDir);
-  //   }
-
-  //   var filePath = baseDir + "/" + sanitizeMacFileName(app.manifest.name) + ".webloc";
-  //   if (file.exists(filePath))
-  //   {
-  //     file.remove(filePath);
-  //   }
-  //   var fileWriter = file.open(filePath, "w");
-  //   var launchPath = app.origin;
-  //   if (app.manifest.launch_path) {
-  //     launchPath += app.manifest.launch_path;
-  //   }
-  //   fileWriter.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + 
-  //       "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n" + 
-  //       "<plist version=\"1.0\">\n" + 
-  //       "<dict>\n" + 
-  //       "    <key>URL</key>\n" + 
-  //       "    <string>" + launchPath + "</string>\n" + 
-  //       "</dict>\n" + 
-  //       "</plist>\n");
-  //   fileWriter.close();
-
-  //   // THEN: set the icon
-  //   // var lib = ct.ctypes.open(self.data.url("iconsetter.a"));
-
-  //   var ct = {};
-  //   Cu.import("resource://gre/modules/ctypes.jsm", ct);
-  //   var lib = ct.ctypes.open("/Users/michaelhanson/Projects/openwebapps/addons/jetpack/data/libiconsetter.dylib");
-  //   var setIcon = lib.declare("setIcon", ct.ctypes.default_abi, ct.ctypes.int, ct.ctypes.ArrayType(ct.ctypes.char), ct.ctypes.ArrayType(ct.ctypes.char));
-    
-  //   function getBiggestIcon(minifest) {
-  //     if (minifest.icons) {
-  //       var biggest = 0;
-  //       for (z in minifest.icons) {
-  //         var size = parseInt(z, 10);
-  //         if (size > biggest) biggest = size;
-  //       }
-  //       if (biggest !== 0) return minifest.icons[biggest];
-  //     }
-  //     return null;
-  //   }
-  //   var icon = getBiggestIcon(app.manifest);
-  //   var iconPath;
-  //   if (icon.indexOf("data:") === 0) {
-  //     iconPath = icon;
-  //   } else {
-  //     iconPath = app.origin + icon;    
-  //   }
-  //   var ret = setIcon(filePath, iconPath); // Will invoke NSURL resolution, could hang out for a LONG time
-  // }
- }
+}
 
 
 
