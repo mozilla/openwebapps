@@ -207,9 +207,7 @@ function recursiveFileCopy(srcDir,
                            dstDir,
                            separator,
                            substitutions,
-                           specialFiles,
-                           perFileCallback,
-                           perDirectoryCallback)
+                           specialFiles)
 {
   if(!specialFiles) {
     specialFiles = {};
@@ -301,13 +299,7 @@ function recursiveFileCopy(srcDir,
                         dest,
                         separator,
                         substitutions,
-                        newSpecialFiles,
-                        perFileCallback,
-                        perDirectoryCallback);
-    }
-
-    if(perDirectoryCallback) {
-      perDirectoryCallback(dest);
+                        newSpecialFiles);
     }
   } else {
     let fileProperties = {"ignore": false,
@@ -367,10 +359,6 @@ function recursiveFileCopy(srcDir,
         let outputStream = file.open(dest, "w" + fileProperties["mode"]);
         outputStream.write(finalContents);
         outputStream.close();
-
-        if(perFileCallback) {
-          perFileCallback(dest);
-        }
       } catch(e) {
         throw("recursiveFileCopy - "
             + "Failed copying file from "
@@ -613,85 +601,46 @@ WinNativeShell.prototype = {
       "\\$SM_SHORTCUT": "y"
     }
 
-    let fileWriter;
     try {
-      fileWriter = file.open(filePath + "\\uninstall-files.dat", "w");
-      fileWriter.writeLine = function(toWrite) {
-        fileWriter.write(toWrite.slice(filePath.length + 1) + "\n");
-      };
+      recursiveFileCopy("native-install/windows/installer",
+                        "",
+                        baseDir,
+                        "\\",
+                        substitutions,
+                        undefined);
+
+      recursiveFileCopy("native-install/windows/app",
+                        "",
+                        filePath,
+                        "\\",
+                        substitutions,
+                        undefined);
+
+      recursiveFileCopy("native-install/XUL",
+                        "",
+                        filePath + "\\XUL",
+                        "\\",
+                        substitutions,
+                        undefined);
+
+      this.synthesizeIcon(app, iconPath);
+
+      //////////////////////////////////////////////
+      //this code should be cross-platform   
+      var XULDir = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
+      XULDir.initWithPath(filePath);
+      XULDir.append("XUL");
+      var contentDir = XULDir.clone();
+      contentDir.append("content");
+
+      //add the install record to the native app bundle
+      embedInstallRecord(app, XULDir);
+      //add injector.js, which we need to inject some apis into the webapp content page
+      embedMozAppsAPIFiles(contentDir);
+      /////////////////////////////////////////////
     } catch(e) {
       throw("createExecutable - "
-            + "Failure setting up uninstall-files.dat (" + e + ")");
-    }
-
-    try {
-      let dirWriter;
-      try {
-        dirWriter = file.open(filePath + "\\uninstall-dirs.dat", "w");
-        dirWriter.writeLine = function(toWrite) {
-          let modifiedLine = toWrite.slice(filePath.length + 1);
-          if(modifiedLine) {
-            dirWriter.write(modifiedLine + "\n");
-          }
-        };
-      } catch(e) {
-        throw("createExecutable - "
-            + "Failure setting up uninstall-dirs.dat (" + e + ")");
-      }
-
-      try {
-        recursiveFileCopy("native-install/windows/installer",
-            "",
-            baseDir,
-            "\\",
-            substitutions,
-            undefined,
-            undefined,
-            undefined);
-
-        recursiveFileCopy("native-install/windows/app",
-            "",
-            filePath,
-            "\\",
-            substitutions,
-            undefined,
-            fileWriter.writeLine,
-            dirWriter.writeLine);
-
-        recursiveFileCopy("native-install/XUL",
-            "",
-            filePath + "\\XUL",
-            "\\",
-            substitutions,
-            undefined,
-            fileWriter.writeLine,
-            dirWriter.writeLine);
-
-        this.synthesizeIcon(app, iconPath);
-
-        //////////////////////////////////////////////
-        //this code should be cross-platform   
-        var XULDir = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
-        XULDir.initWithPath(filePath);
-        XULDir.append("XUL");
-        var contentDir = XULDir.clone();
-        contentDir.append("content");
-
-        //add the install record to the native app bundle
-        embedInstallRecord(app, XULDir);
-        //add injector.js, which we need to inject some apis into the webapp content page
-        embedMozAppsAPIFiles(contentDir);
-        /////////////////////////////////////////////
-
-        fileWriter.writeLine(filePath + "\\installrecord.json");
-      } catch(e) {
-        throw("createExecutable - "
-              + "Failure copying files (" + e + ")");
-      } finally {
-        dirWriter.close();
-      }
-    } finally {
-      fileWriter.close();
+          + "Failure copying files (" + e + ")");
     }
 
     try {

@@ -188,8 +188,10 @@ Function un.onInit
     SetErrors
     Goto cleanup
   setUpPaths:
-  SetOutPath $INSTDIR\$appName
-  ClearErrors
+  ReadRegStr $INSTDIR \
+             HKCU \
+            "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appName" \
+            "InstallLocation"
   cleanup:
   Pop $0
   IfErrors 0 done
@@ -197,121 +199,16 @@ Function un.onInit
   done:
 FunctionEnd
 
-Function un.RemoveLineEnding
-  Exch $0
-  Push $1
-  loop:
-  StrCpy $1 $0 1 -1
-  StrCmp $1 $\r doTrim
-  StrCmp $1 $\n doTrim
-  Goto done
-  doTrim:
-  StrCpy $0 $0 -1
-  Goto loop
-  done:
-  Pop $1
-  Exch $0
-FunctionEnd
-
-Function un.RemoveFiles
+Function un.RemoveAppDir
   Push $0
-  Push $1
-  Push $2
-  ClearErrors
-  DetailPrint "Looking up uninstall-files.dat"
-  GetFullPathName $2 uninstall-files.dat
-  IfErrors 0 openUninstallFiles
-    DetailPrint "Error looking up uninstall-files.dat"
-    Goto cleanup
-  openUninstallFiles:
-  DetailPrint "Full path to uninstall-files.dat: $2"
-  FileOpen $0 $2 r
-  IfErrors 0 successfullyOpenedUninstallFiles
-    DetailPrint "Unable to open uninstall-files.dat"
-    Goto cleanup
-  successfullyOpenedUninstallFiles:
-  DetailPrint "Uninstall-files.dat opened"
-  processNextFile:
-  FileRead $0 $1
-  IfErrors closeDatFile 0
-  Push $1
-  # Tracking down messed up line endings was a special kind of hell
-  Call un.RemoveLineEnding
-  Pop $1
-  DetailPrint "Processing entry: $1"
-  GetFullPathName $1 $1
-  IfErrors 0 checkFileExists
-    DetailPrint "Error getting full path to file"
-    Goto processNextFile
-  checkFileExists:
-  DetailPrint "Full path: $1"
-  IfFileExists $1 0 fileWasNonExistent
-    Delete $1
-    IfErrors 0 processNextFile
-      DetailPrint "Error deleting $1"
-      Goto processNextFile
-  fileWasNonExistent:
-    DetailPrint "File did not exist"
-    Goto processNextFile
-  closeDatFile:
-  DetailPrint "Closing uninstall-files.dat"
-  FileClose $0
-  Delete $2
-  cleanup:
-  Pop $2
-  Pop $1
+  RMDir /r $INSTDIR
+  RMDir $INSTDIR
   Pop $0
 FunctionEnd
 
-Function un.RemoveDirs
-  push $0
-  push $1
-  push $2
-  ClearErrors
-  DetailPrint "Looking up uninstall-dirs.dat"
-  GetFullPathName $2 uninstall-dirs.dat
-  IfErrors 0 openUninstallDirs
-    DetailPrint "Error looking up uninstall-dirs.dat"
-    Goto cleanup
-  openUninstallDirs:
-  DetailPrint "Full path to uninstall-dirs.dat: $2"
-  FileOpen $0 $2 r
-  IfErrors 0 successfullyOpenedUninstallDirs
-    DetailPrint "Unable to open uninstall-dirs.dat"
-    Goto cleanup
-  successfullyOpenedUninstallDirs:
-  DetailPrint "Uninstall-dirs.dat opened"
-  processNextDir:
-  FileRead $0 $1
-  IfErrors closeDatFile 0
-  Push $1
-  Call un.RemoveLineEnding
-  Pop $1
-  DetailPrint "Processing entry: $1"
-  GetFullPathName $1 $1
-  IfErrors 0 checkDirExists
-    DetailPrint "Error getting full path to dir"
-    Goto processNextDir
-  checkDirExists:
-  DetailPrint "Full path: $1"
-  IfFileExists $1\*.* 0 dirWasNonExistent
-    RMDIR $1
-    IfErrors 0 processNextDir
-      DetailPrint "Error deleting $1"
-      Goto processNextDir
-  dirWasNonExistent:
-    DetailPrint "Directory did not exist"
-    Goto processNextDir
-  closeDatFile:
-  DetailPrint "Closing uninstall-dirs.dat"
-  FileClose $0
-  Delete $2
-  cleanup:
-  # Change the current working dir since that can't be deleted
-  SetOutPath $TEMP
-  Pop $2
-  Pop $1
-  Pop $0
+Function un.RemoveShortcuts
+  Delete $SMPROGRAMS\$appName.lnk
+  Delete $DESKTOP\$appName.lnk
 FunctionEnd
 
 Function un.RemoveRegKeys
@@ -320,8 +217,8 @@ Function un.RemoveRegKeys
 FunctionEnd
 
 Section un.Install
-  Call un.RemoveFiles
-  Call un.RemoveDirs
+  Call un.RemoveAppDir
+  Call un.RemoveShortcuts
   Call un.RemoveRegKeys
   RMDIR $INSTDIR\$appName
 SectionEnd
