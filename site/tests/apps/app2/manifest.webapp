@@ -1,0 +1,11 @@
+{
+  "name":"More Awesomeness",
+  "developer": {
+    "name": "mdabbagh"
+  },
+  "icons": {
+    "128": "/icon128.png"
+  },
+  "installs_allowed_from": [ "*" ],
+  "launch_path": "/great_success.html"
+}

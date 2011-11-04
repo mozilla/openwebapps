@@ -14,6 +14,8 @@ const STATIC_DIR = path.join(path.dirname(__dirname));
 
 template_loader.set_path(STATIC_DIR);
 
+var appjson = [];
+
 // all bound webservers stored in this lil' object
 var boundServers = [ ];
 function getWebRootDir(host, port) {
@@ -185,6 +187,17 @@ for (var i=0; i<examplesCopies; i++) {
   });
 }
 
+// Getting the folders associated with each app
+var appDirs = fs.readdirSync(path.join(__dirname, 'apps'));
+appDirs.sort();
+appDirs.forEach(function (item) {
+    dirs.push({
+      title: "Test Apps:",
+      name: item,
+      path: path.join(__dirname, 'apps', item)
+    });
+  });
+
 console.log("Starting test apps:");
 
 // bind the "primary" testing webserver to a fixed local port, it'll
@@ -214,9 +227,9 @@ function primaryHandler(req, resp) {
    * files, all other files use the standard serveFileIndex
    * since all the background work for mime types is set up.
    */
+  var specs = getSpecs();
+  var tests = []; 
   if(urlpath.match(/\.html$/)) {
-    var specs = getSpecs();
-    var tests = [];
     specs.forEach(function (spec, index) {
       if (spec !== 'run-all.html') {
         tests.push( spec );
@@ -228,9 +241,13 @@ function primaryHandler(req, resp) {
     }, function(err, result) {
       resp.end(result);
     });
+  } else if(urlpath.match(/db\/apps\.json$/)) {
+		  resp.writeHead(200, {"Content-Type": "text/plain"});
+		  resp.write(JSON.stringify(appjson));
+		  resp.end();
   } else {
-    urlpath = path.join(__dirname, '..', urlpath);
-    serveFileIndex(urlpath, resp);
+		  urlpath = path.join(__dirname, '..', urlpath);
+		  serveFileIndex(urlpath, resp);
   }
 }
 
@@ -325,13 +342,40 @@ dirs.forEach(function(dirObj) {
     server: createServer({ port: 0 },
                          function() {
                            serverCreated(dirObj.name);
+                           if(dirObj.path.search('/apps/') != -1) {
+                           	createJSON(dirObj.name, dirObj.path);
+                           }
                          }),
     name: dirObj.name
   });
 
 });
+
 function serverCreated(name) {
   console.log("  " + name + ": " + formatLink(name));
+}
+
+function createJSON(name, path) {
+	var url;
+  fs.readFile(path + "/manifest.webapp", "binary", function(err , data) {
+      if (err) {
+        console.log("error reading manifest " + path);
+      }
+      else {
+        try {
+		      url = formatLink(name);
+          data = JSON.parse(data);
+          var testobj = {
+            origin: url,
+            src_url: url + "/manifest.webapp",
+            manifest: data
+          }
+          appjson.push(testobj);
+        } catch(e) {
+          console.log("exception " + e);
+        }
+      }
+  });
 }
 
 function getSpecs() {
