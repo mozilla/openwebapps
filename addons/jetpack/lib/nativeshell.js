@@ -44,8 +44,6 @@ const file = require("file");
 const self = require("self");
 const url = require("url");
 
-
-
 NativeShell = (function() {
   function CreateNativeShell(app)
   {
@@ -174,8 +172,6 @@ function copyFile(inFile, outFile, options) {
   });  
 
 }
-
-
 
 function recursiveFileCopy(srcDir,
                            leaf,
@@ -549,6 +545,11 @@ WinNativeShell.prototype = {
       throw("createExecutable - Failure setting up paths (" + e + ")");
     }
 
+    let iconPath = filePath
+                   + "\\XUL\\chrome\\icons\\default\\"
+                   + app.manifest.name
+                   + ".ico";
+
     try {
       if (file.exists(filePath))
       {
@@ -566,6 +567,7 @@ WinNativeShell.prototype = {
       file.mkpath(baseDir);
       file.mkpath(filePath);
       file.mkpath(filePath + "\\XUL");
+      file.mkpath(file.dirname(iconPath));
     } catch(e) {
       throw("createExecutable - "
             + "Failure setting up target location (" + e + ")");
@@ -577,6 +579,7 @@ WinNativeShell.prototype = {
       "\\$APPDOMAIN": app.origin,
       "\\$LAUNCHPATH": launchPath,
       "\\$INSTALLDIR": baseDir,
+      "\\$ICONPATH": iconPath,
       "\\$DESKTOP_SHORTCUT": "y",
       "\\$SM_SHORTCUT": "y"
     }
@@ -591,21 +594,6 @@ WinNativeShell.prototype = {
       throw("createExecutable - "
             + "Failure setting up uninstall-files.dat (" + e + ")");
     }
-
-    //////////////////////////////////////////////
-    //this code should be cross-platform   
-    var XULDir = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
-    XULDir.initWithPath(filePath);
-    XULDir.append("XUL");
-    var contentDir = XULDir.clone();
-    contentDir.append("content");
-
-    //add the install record to the native app bundle
-    embedInstallRecord(app, XULDir);
-    //add injector.js, which we need to inject some apis into the webapp content page
-    embedMozAppsAPIFiles(contentDir);
-    /////////////////////////////////////////////
-
 
     try {
       let dirWriter;
@@ -650,8 +638,22 @@ WinNativeShell.prototype = {
             fileWriter.writeLine,
             dirWriter.writeLine);
 
-        //add the install record to the windows bundle
-        embedInstallRecord(app, filePath + "\\installrecord.json");
+        this.synthesizeIcon(app, iconPath);
+
+        //////////////////////////////////////////////
+        //this code should be cross-platform   
+        var XULDir = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
+        XULDir.initWithPath(filePath);
+        XULDir.append("XUL");
+        var contentDir = XULDir.clone();
+        contentDir.append("content");
+
+        //add the install record to the native app bundle
+        embedInstallRecord(app, XULDir);
+        //add injector.js, which we need to inject some apis into the webapp content page
+        embedMozAppsAPIFiles(contentDir);
+        /////////////////////////////////////////////
+
         fileWriter.writeLine(filePath + "\\installrecord.json");
       } catch(e) {
         throw("createExecutable - "
@@ -668,6 +670,7 @@ WinNativeShell.prototype = {
                 "-appName=" + app.manifest.name
                 + " -appURL=" + launchPath
                 + " -appDesc=No description"
+                + " -iconPath=" + iconPath
                 + " -createDesktopShortcut=y"
                 + " -createStartMenuShortcut=y"
                 + " /S",
@@ -680,11 +683,103 @@ WinNativeShell.prototype = {
 
   synthesizeIcon : function(app, destinationFile)
   {
-    // TODO: Get icon for use with Windows
+    let icon;
+    try {
+      icon = getBiggestIcon(app.manifest);
+    } catch(e) {
+      throw("synthesizeIcon - Failure reading icon information (" + e + ")");
+    }
+
+    if (icon.indexOf("data:") === 0) {
+      // TODO: Add support for data URLS
+      throw("synthesizeIcon - Data URLs are not yet supported");
+    }
+
+    icon = app.origin + icon;
+    let netutil={};
+
+    try {
+      Cu.import("resource://gre/modules/NetUtil.jsm", netutil);
+      netutil.NetUtil.asyncFetch(icon, function(inputStream,
+                                                    resultCode,
+                                                    request) {
+        // It's probably not wise to throw inside this callback
+        // since we don't know how the calling code will handle the exception.
+        // Instead we just log errors and return.
+        if (!components.isSuccessCode(resultCode)) {
+          console.log("APPS | nativeshell.win | synthesizeIcon - "
+                      + "Error retrieving icon from path " + icon
+                      + " (result code = " + resultCode + ")");
+          return;
+        }
+
+        let mimeType;
+        try {
+          // TODO: Come up with a smarter way to determine MIME type
+          if (icon.indexOf(".png") > 0) {
+            mimeType = "image/png";
+          } else if ((icon.indexOf(".jpeg") > 0)
+            || (icon.indexOf(".jpg") > 0)) {
+            mimeType = "image/jpeg";
+          }
+        } catch(e) {
+          console.log("APPS | nativeshell.win | synthesizeIcon - "
+                      + "Failure determining MIME type of " + icon
+                      + " (" + e + ")");
+          return;
+        }
+
+        let icoStream;
+        try {
+          imgTools = Cc["@mozilla.org/image/tools;1"]
+                     .createInstance(Ci.imgITools);
+          let imgContainer = { value: null };
+          imgTools.decodeImageData(inputStream, mimeType, imgContainer);
+          icoStream =
+              imgTools.encodeImage(imgContainer.value,
+                                   "image/vnd.microsoft.icon");
+        } catch (e) {
+          console.log("APPS | nativeshell.win | synthesizeIcon - "
+                      + "Failure converting icon " + icon
+                      + " (" + e + ")");
+          return;
+        }
+
+        // TODO: Smarter (async) writing of ico
+        let icoFileWriter;
+        try {
+          icoFileWriter = file.open(destinationFile, "wb");
+        } catch(e) {
+          console.log("APPS | nativeshell.win | synthesizeIcon - "
+                      + "Unable to open file " + destinationFile + " for writing"
+                      + " (" + e + ")");
+          return;
+        }
+
+        try{
+          let icoBinaryStream = Cc["@mozilla.org/binaryinputstream;1"]
+                                .createInstance(Ci.nsIBinaryInputStream);
+          icoBinaryStream.setInputStream(icoStream);
+
+          let contents = icoBinaryStream
+                         .readBytes(icoBinaryStream.available());
+
+          icoFileWriter.write(contents);
+        } catch (e) {
+          console.log("APPS | nativeshell.win | synthesizeIcon - "
+                      + "Failure writing icon file " + destinationFile
+                      + " (" + e + ")");
+          return;
+        } finally {
+          icoFileWriter.close();
+        }
+      });
+    } catch(e) {
+      throw("synthesizeIcon - Failure setting up asynchronous fetch of "
+            + icon);
+    }
   }
-}
-
-
+};
 
 // Mac implementation
 //

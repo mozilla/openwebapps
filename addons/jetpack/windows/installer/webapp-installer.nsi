@@ -43,6 +43,7 @@ RequestExecutionLevel user
 Var appName
 Var appURL
 Var appDesc
+Var iconPath
 Var createDesktopShortcut
 Var createStartMenuShortcut
 
@@ -64,6 +65,7 @@ Function .onInit
   readOptionalInfo:
   ${GetOptions} $0 "-appURL=" $appURL
   ${GetOptions} $0 "-appDesc=" $appDesc
+  ${GetOptions} $0 "-iconPath=" $iconPath
   ${GetOptions} $0 "-createDesktopShortcut=" $createDesktopShortcut
   ${GetOptions} $0 "-createStartMenuShortcut=" $createStartMenuShortcut
   ClearErrors
@@ -91,7 +93,7 @@ Function WriteRegKeys
   WriteRegStr HKCU \
               "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appName" \
               "DisplayIcon" \
-              $OUTDIR\$appName.exe,0
+              $iconPath
   WriteRegStr HKCU \
               "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appName" \
               "HelpLink" \
@@ -142,7 +144,7 @@ Function CreateShortcuts
   CreateShortcut $DESKTOP\$appName.lnk \
                  $OUTDIR\$appName.exe \
                  "" \
-                 $OUTDIR\$appName.exe \
+                 $iconPath \
                  0 \
                  "" \
                  "" \
@@ -154,7 +156,7 @@ Function CreateShortcuts
   CreateShortcut $SMPROGRAMS\$appName.lnk \
                  $OUTDIR\$appName.exe \
                  "" \
-                 $OUTDIR\$appName.exe \
+                 $iconPath \
                  0 \
                  "" \
                  "" \
