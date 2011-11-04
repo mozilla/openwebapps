@@ -44,6 +44,10 @@ const file = require("file");
 const self = require("self");
 const url = require("url");
 
+//used for several things
+Components.utils.import("resource://gre/modules/NetUtil.jsm");  
+Components.utils.import("resource://gre/modules/FileUtils.jsm");  
+
 NativeShell = (function() {
   function CreateNativeShell(app)
   {
@@ -108,15 +112,13 @@ function getBiggestIcon(minifest) {
   return null;
 }
 
-//needs to be async!  should be using some form of copyFile
-function embedInstallRecord(app, destinationDir) {
+
+function embedInstallRecord(app, destination) {
   //write the contents of the app (install record), json-ified, into the specified file.
-  destinationDir.append("installrecord.json");
+  destination.append("installrecord.json");
   try {
     let installRecString = JSON.stringify(app);
-    let textwriter = file.open(destinationDir.path, "w"); 
-    textwriter.write(installRecString);
-    textwriter.close();
+    asyncWriteFile(installRecString, destination);
   } catch (e) {
     console.log("error writing installrecord : " + e + "\n");
   }
@@ -138,34 +140,61 @@ function embedMozAppsAPIFiles(destDir)
   injectorSrc.append("injector.js");
   var injectorDest = destDir.clone();
   injectorDest.append("injector.js");
-  console.log("injectorSrc : " + injectorSrc.path);
+  //console.log("injectorSrc : " + injectorSrc.path);
 
-  copyFile(injectorSrc, injectorDest);
+  asyncCopyFile(injectorSrc, injectorDest);
 }
 
 
-//for now, bring the entire file into memory, so we can do substitutions on it if necessary.
-// obviously, this is not suitable for very large files, but it is async.
+function asyncReadFile(inFile, callback) {
+  //passes the string contents of the file to the callback for you to do with as you like.
+
+  NetUtil.asyncFetch(inFile, function(inputStream, status) {  
+    if (!Components.isSuccessCode(status)) {  
+      // should probably throw instead  
+      console.log("ERROR: " + status + " failed to read file: " + inFile);
+      return;  
+    }  
+    var data = NetUtil.readInputStreamToString(inputStream, inputStream.available());  
+    inputStream.close();
+    callback(data);
+  });
+}
+
+//make it into an inputstream and then send it to copy
+function asyncWriteFile(strData, outFile) {
+  var outStream = FileUtils.openSafeFileOutputStream(outFile);
+  var converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].createInstance(Components.interfaces.nsIScriptableUnicodeConverter);  
+  converter.charset = "UTF-8";  
+  var inStream = converter.convertToInputStream(strData);  
+    
+  // The last argument (the callback) is optional.  
+  NetUtil.asyncCopy(inStream, outStream, function(status) {  
+    if (!Components.isSuccessCode(status)) {  
+      // should probably throw instead  
+      console.log("ERROR: " + status + " failed to write file: " + outFile.path);  
+      return;  
+    }  
+  });
+}
+
 // NOTE: both inFile and outFile are nsIFile objects
 // NOTE: this code should probably throw, and get caught up at the top, where we can cancel the creation of the native app
-function copyFile(inFile, outFile, options) {
-  
-  Components.utils.import("resource://gre/modules/NetUtil.jsm");  
-  Components.utils.import("resource://gre/modules/FileUtils.jsm");  
-      
+function asyncCopyFile(inFile, outFile, options) {
+        
   NetUtil.asyncFetch(inFile, function(inputStream, status) {  
       if (!Components.isSuccessCode(status)) {  
-        // Handle error!  
-        console.log("ERROR: " + status + " failed to read file: " + inFile);
+        // should probably throw instead  
+        console.log("ERROR: " + status + " failed to read file: " + inFile.path);
         return;  
       }  
       
     var outputStream = FileUtils.openSafeFileOutputStream(outFile);
 
-    NetUtil.asyncCopy(inputStream, outputStream, function(inputStream, status) {
+    NetUtil.asyncCopy(inputStream, outputStream, function(status) {
       if (!Components.isSuccessCode(status)) {  
-        // Handle error!  
-        console.log("ERROR: " + status + " failed to write file: " + outFile);
+        // should probably throw instead  
+        console.log("ERROR: " + status + " failed to write file: " + outFile.path);
         return;  
       } 
     });        
@@ -696,11 +725,9 @@ WinNativeShell.prototype = {
     }
 
     icon = app.origin + icon;
-    let netutil={};
 
     try {
-      Cu.import("resource://gre/modules/NetUtil.jsm", netutil);
-      netutil.NetUtil.asyncFetch(icon, function(inputStream,
+      NetUtil.asyncFetch(icon, function(inputStream,
                                                     resultCode,
                                                     request) {
         // It's probably not wise to throw inside this callback
@@ -935,10 +962,8 @@ MacNativeShell.prototype = {
 
       // Go get it:
       var iconPath = app.origin + icon;
-      var netutil={};
-      Cu.import("resource://gre/modules/NetUtil.jsm", netutil);
       //dump("APPS | createExecutable | Retrieving icon from " + iconPath + "\n");
-      netutil.NetUtil.asyncFetch(iconPath, function(inputStream, resultCode, request) {
+      NetUtil.asyncFetch(iconPath, function(inputStream, resultCode, request) {
         try {
           if (!components.isSuccessCode(resultCode)) {
             // Handle error
