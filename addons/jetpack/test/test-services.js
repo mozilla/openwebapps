@@ -18,7 +18,7 @@ function getContentWindow() {
 TestMediator = {
   url: getTestUrl("apps/testable_mediator.html"),
   contentScript:
-    "window.navigator.mozApps.mediation.ready(function(activity, services) {" +
+    "window.navigator.wrappedJSObject.mozApps.mediation.ready(function(activity, services) {" +
     "  let service = services[0];" +
     // XXX - why is unsafeWindow needed here???
     "  unsafeWindow.document.getElementById('servicebox').appendChild(service.iframe);" +
@@ -120,7 +120,7 @@ exports.test_invoke_twice = function(test) {
 
 function makeErrorTestContentScript(methodName) {
   return "" +
-    "window.navigator.mozApps.mediation.ready(function(activity, services) {" +
+    "window.navigator.wrappedJSObject.mozApps.mediation.ready(function(activity, services) {" +
     "  let service = services[0];" +
     // XXX - why is unsafeWindow needed here???
     "  unsafeWindow.document.getElementById('servicebox').appendChild(service.iframe);" +
