@@ -62,6 +62,7 @@ function FFRepoImpl() {
     windowRefs: [],
     windowListeners: []
   };
+  this._updateListeners = [];
 }
 FFRepoImpl.prototype = {
   __proto__: Repo,
@@ -90,60 +91,33 @@ FFRepoImpl.prototype = {
     });
   },
 
-  watchUpdates: function(windowRef, callback) {
-    if (!callback || typeof callback != "function") {
-      return false;
-    }
-
-    // JS Objects cannot be keys in dictionaries, so we
-    // use two arrays instead. 'refs' holds the window object references
-    // while 'listeners' holds the callbacks for those windows. The
-    // index of the windowRef corresponds to the index of the array
-    // of callbacks associated with that window.
-    let idx = 0;    
-    let refs = this._watchers.windowRefs;
-    let listeners = this._watchers.windowListeners;
-
-    if (refs.indexOf(windowRef) != -1) {
-      // First time we're seeing this window
-      idx = listeners[refs.indexOf(windowRef)].push(callback) - 1;
-    } else {
-      // Add a callback to an existing window
-      idx = refs.push(windowRef) - 1;
-      listeners[idx] = [];
-      listeners[idx].push(callback);
-    }
-    
-    return idx;
+  /**
+   * watchUpdates
+   *
+   * start sending updates to a management app.  mgmtapi.js has logic for
+   * supporting more than one watcher callback in a management app
+   */
+  watchUpdates: function(worker) {
+    this._updateListeners.push(worker);
   },
 
-  clearWatch: function(windowRef, id) {
-    let refs = this._watchers.windowRefs;
-    let listeners = this._watchers.windowListeners;
-
-    // Find the window this belongs to and delete the callback
-    // TODO: Add window listener to clear window reference when
-    // tab is closed (and all associated callback). Currently,
-    // this is memory leak.
-    let idx = refs.indexOf(windowRef);
-    if (idx != -1) {
-      if (listeners[idx].length > id) {
-        delete listeners[idx][id];
-      }
-    }
+  /**
+   * clearWatch
+   *
+   * stops sending updates to a management window
+   */
+  clearWatch: function(worker) {
+    let id = this._updateListeners.indexOf(worker);
+    delete this._updateListeners[id];
   },
 
   _callWatchers: function(action, object) {
-    let wins = this._watchers.windowListeners;
-    for (let i = 0; i < wins.length; i++) {
-      let cbs = wins[i];
-      for (let j = 0; j < cbs.length; j++) {
-        let func = cbs[j];
+    for (let i = 0; i < this._updateListeners.length; i++) {
+        let worker = this._updateListeners[i]
         // Ignore if destination callback doesn't exist
         try {
-          if (func && typeof func == "function") func(action, object);
+          if (worker) worker.port.emit("owa.mgmt.update", [action, object]);
         } catch(e) {}
-      }
     }
   },
 

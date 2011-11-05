@@ -11,8 +11,8 @@ exports.getOWA = function() {
 }
 
 exports.getTestUrl = getTestUrl = function(testRelPath) {
-  let lastSlash = module.id.lastIndexOf("/");
-  return module.id.substr(0, lastSlash+1) + "../" + testRelPath;
+  let lastSlash = module.uri.lastIndexOf("/");
+  return module.uri.substr(0, lastSlash+1) + "../" + testRelPath;
 }
 
 function getTestAppOptions(appRelPath) {
