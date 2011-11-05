@@ -43,7 +43,7 @@ function _clearWatcher(fn) {
   }
 }
 
-unsafeWindow.navigator.mozApps.mgmt = {
+unsafeWindow.navigator.wrappedJSObject.mozApps.mgmt = {
   launch: function(args) {
     // no return, just emit the message
     _makeCall('owa.mgmt.launch', args);

@@ -2,8 +2,8 @@
 /* vim: set ts=2 et sw=2 tw=80: */
 
 // Insert the mediator api into unsafeWindow
-if (!unsafeWindow.navigator.mozApps.mediation)
-  unsafeWindow.navigator.mozApps.mediation = {};
+if (!unsafeWindow.navigator.wrappedJSObject.mozApps.mediation)
+  unsafeWindow.navigator.wrappedJSObject.mozApps.mediation = {};
 
 let allServices = {} // keyed by handler URL.
 // This object should look very much like the Service object in repo.js
@@ -125,7 +125,7 @@ self.port.on("owa.mediation.onLogin", function(params) {
   });
 });
 
-unsafeWindow.navigator.mozApps.mediation.startLogin = function(origin) {
+unsafeWindow.navigator.wrappedJSObject.mozApps.mediation.startLogin = function(origin) {
   allServices[origin].call("getParameters", {}, function(params) {
     // due to a limitation in our implementation, this getParameters call is
     // actually made on the "main" service rather than on the login specific
@@ -139,7 +139,7 @@ unsafeWindow.navigator.mozApps.mediation.startLogin = function(origin) {
 // Note the invocation handler will be called once initially, and possibly
 // again as the configuration of apps changes (ie, as apps are added or
 // removed).
-unsafeWindow.navigator.mozApps.mediation.ready = function(invocationHandler) {
+unsafeWindow.navigator.wrappedJSObject.mozApps.mediation.ready = function(invocationHandler) {
   self.port.on("owa.app.ready", function(origin) {
     //console.log("owa.app.ready for", origin);
     if (allServices[origin]) {
@@ -151,7 +151,7 @@ unsafeWindow.navigator.mozApps.mediation.ready = function(invocationHandler) {
     //console.log("setup event has", msg.serviceList.length, "services");
     // We record the invocation ID in the mediator window so we can later
     // link the "app ready" calls back to the specific mediator instance.
-    unsafeWindow.navigator.mozApps.mediation._invocationid = msg.invocationid;
+    unsafeWindow.navigator.wrappedJSObject.mozApps.mediation._invocationid = msg.invocationid;
     let document = unsafeWindow.document;
 
     // TODO: do not create iframes when mediators are converted to templates,
@@ -237,4 +237,4 @@ var mPort = {
       self.port.removeListener(event, fn);
     }
 };
-unsafeWindow.navigator.mozApps.mediation.port = mPort;
+unsafeWindow.navigator.wrappedJSObject.mozApps.mediation.port = mPort;
