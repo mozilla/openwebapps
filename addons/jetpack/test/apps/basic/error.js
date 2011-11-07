@@ -20,5 +20,5 @@ function updateActivity(activity) {
   gActivity = activity;
 }
 
-window.navigator.mozApps.mediation.ready(configureServices, updateActivity);
+unsafeWindow.navigator.wrappedJSObject.mozApps.mediation.ready(configureServices, updateActivity);
 

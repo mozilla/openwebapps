@@ -24,6 +24,11 @@
  * Contributor(s):
  **/
 
+// XXX TODO
+// get access to the injected api's, will remove later when api
+// injection method changes.
+var mozApps = unsafeWindow.navigator.wrappedJSObject.mozApps;
+
 self.port.on('data-url', function(baseurl) {
   // attach our css file
   var fileref=document.createElement("link")
@@ -31,11 +36,6 @@ self.port.on('data-url', function(baseurl) {
   fileref.setAttribute("type", "text/css")
   fileref.setAttribute("href", baseurl+"skin/about.css");
   document.getElementsByTagName("head")[0].appendChild(fileref)
-
-  // XXX TODO
-  // get access to the injected api's, will remove later when api
-  // injection method changes.
-  window.navigator.mozApps = unsafeWindow.navigator.mozApps;
 });
 
 function elem(type, clazz) {
@@ -50,7 +50,7 @@ var appDict;
 function refresh() {
   if (!pending) {
     pending = true;
-    navigator.mozApps.mgmt.list(function(aList) {
+    mozApps.mgmt.list(function(aList) {
       let aDict = {};
       for (let i = 0; i < aList.length; i++) {
         aDict[aList[i].origin] = aList[i];
@@ -184,13 +184,13 @@ function render() {
 
       function makeLaunchFn(appID) {
         return function() {
-          navigator.mozApps.mgmt.launch(appID);
+          mozApps.mgmt.launch(appID);
         }
       }
 
       function makeDeleteFn(appID, container) {
         return function() {
-          navigator.mozApps.mgmt.uninstall(appID, function() {});
+          mozApps.mgmt.uninstall(appID, function() {});
           container.style.minHeight = "0px";
           container.style.height = container.clientHeight + "px";
           window.setTimeout(function() {

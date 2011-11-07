@@ -83,7 +83,11 @@ function MediatorPanel(window, methodName) {
   this.invocationid = nextinvocationid++;
   this.invalidated = true;
 
-  Services.obs.addObserver(this, 'content-document-global-created', false);
+  // we use document-element-inserted here rather than
+  // content-document-global-created so that other listeners using
+  // content-document-global-created will be called before us (e.g. injector.js
+  // needs to run first)
+  Services.obs.addObserver(this, 'document-element-inserted', false);
   this.contentScriptFile = [require("self").data.url("servicesapi.js")];
 
   this._createPopupPanel();
@@ -110,20 +114,22 @@ MediatorPanel.prototype = {
     let tab = tabs.activeTab;
     return tab.activity[this.methodName];
   },
-  
-  observe: function(contentWindow, aTopic, aData) {
-    if (aTopic != 'content-document-global-created' ||
-        !contentWindow.frameElement) return;
-    var id = contentWindow.frameElement.getAttribute('id');
+
+  observe: function(document, aTopic, aData) {
+    if (aTopic != 'document-element-inserted' ||
+        !document.defaultView.frameElement) return;
+    //console.log("mediator got documented created notification");
+    var id = document.defaultView.frameElement.getAttribute('id');
     for (var i=0; i < this.frames.length; i++) {
       if (id == this.frames[i].id) {
-        this.inject(contentWindow, this.frames[i]);
+        let frame = this.frames[i];
+        this.inject(document.defaultView, frame);
       }
     }
   },
   
   inject: function(contentWindow, frame) {
-    //dump("using content scripts "+JSON.stringify(this.contentScriptFile)+"\n");
+    //console.log("using content scripts "+JSON.stringify(this.contentScriptFile)+"\n");
     let worker =  Worker({
       window: contentWindow,
       contentScriptFile: this.contentScriptFile
