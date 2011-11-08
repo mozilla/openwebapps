@@ -1,11 +1,13 @@
 <html>
 <head>
 <title>Sync Service</title>
-<link rel="stylesheet" href="../../site/tests/doctestjs/doctest.css">
-<script src="../../site/tests/doctestjs/doctest.js"></script>
+<link rel="stylesheet" href="../../tests/doctestjs/doctest.css">
+<script src="../../tests/doctestjs/doctest.js"></script>
 <script src="../mock-server.js"></script>
 <script src="../sync-server.js"></script>
 <script src="../sync-service.js"></script>
+<script src="../../jsapi/eventmixin.js"></script>
+<script src="../../jsapi/typed-storage.js"></script>
 
 <script>
 
@@ -98,8 +100,8 @@ server and a repo.  We have a "real" mock server, but the repo
 it).</div>
 
 <pre class="doctest">
-$ localStorage.setItem('lastSyncPut', null);
-$ localStorage.setItem('lastSyncTime', null);
+$ localStorage.setItem('sync#lastSyncPut', null);
+$ localStorage.setItem('sync#lastSyncTime', null);
 $ if (doctest.params.server !== undefined) {
 >   server = new Server(doctest.params.server || '/verify');
 > } else {
@@ -144,7 +146,7 @@ $ repo.addApplication(
 Added application http://example.com
 repo.addApplication()
 $ writeln(service.lastSyncTime())
-null
+0
 $ service.syncNow(Spy('service.syncNow', {wait: true}));
 service.syncNow()
 $ // Now we confirm that the update was received by the server

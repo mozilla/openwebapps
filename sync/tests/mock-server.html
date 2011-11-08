@@ -1,9 +1,10 @@
 <html>
 <head>
 <title>Mock Server</title>
-<link rel="stylesheet" href="../../site/tests/doctestjs/doctest.css">
-<script src="../../site/tests/doctestjs/doctest.js"></script>
+<link rel="stylesheet" href="../../tests/doctestjs/doctest.css">
+<script src="../../tests/doctestjs/doctest.js"></script>
 <script src="../mock-server.js"></script>
+<script src="../sync-server.js"></script>
 </head>
 <body class="autodoctest">
 
@@ -16,9 +17,13 @@ how the server should act.</div>
 <h2>Setup the server</h2>
 
 <pre class="doctest">
-$ server = new MockServer();
+$ if (doctest.params.server) {
+>   server = new Server(doctest.params.server || "http://127.0.0.1:5000/verify");
+> } else {
+>   server = new MockServer();
+> }
 $ writeln(server);
-[MockServer]
+[...]
 $ doctest.defaultSpyOptions.wrapArgs = true;
 </pre>
 
