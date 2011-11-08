@@ -91,7 +91,7 @@ var addServicesService = new Service({
 });
 
 function confirm() {
-  var port = window.navigator.mozApps.mediation.port;
+  var port = window.navigator.mozActivities.mediation.port;
   var selected = $("#services").tabs('option', 'selected'); // => 0
   var service = gServiceList[selected].call("confirm", {}, function(status) {
     var messageData = {
@@ -128,4 +128,4 @@ function configureServices(activity, services) {
   startActivity(activity);
 }
 
-window.navigator.mozApps.mediation.ready(configureServices, startActivity);
+window.navigator.mozActivities.mediation.ready(configureServices, startActivity);
