@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Sync Button</title>
+<style type="text/css" media="screen">
+body {
+  font-family: Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+/* The .with-status class is set on the sync button (syncbutton-expanded/compact) when
+   there is some status from the sync service (typically an error) */
+.with-status a {
+  color: #f00;
+}
+
+</style>
+</head>
+<body>
+
+<div id="syncbutton-login"><a id="login" href="#"><img id="login-image" src="https://browserid.org/i/sign_in_blue.png"></a></div>
+
+<div id="syncbutton-compact" style="display: none"><a id="syncbutton-expander" href="#" title="" style="width: 140px">sync<!-- FIXME: should be image --></a></div>
+
+<div id="syncbutton-expanded" style="display: none">
+  <a id="syncbutton-compacter" href="#" title="" style="width: 140px">sync<!-- FIXME: should be image or header --></a><br>
+  <span id="username">username</span><br>
+  <span id="status">status</span><br>
+  <a href="#" id="logout">logout</a>
+</div>
+
+<script src="syncbutton.js"></script>
+<!-- FIXME: use compressed: -->
+<script src="https://browserid.org/include.orig.js"></script>
+
+</body>
+</html>

@@ -2,6 +2,7 @@ var SyncService = function (args) {
   if (this === window) {
     throw 'You forgot new';
   }
+  var self = this;
   this.pollTime = args.pollTime;
   if (this.pollTime === undefined) {
     this.pollTime = null;
@@ -14,24 +15,24 @@ var SyncService = function (args) {
   this.storage = args.storage || new TypedStorage().open('sync');
   this.storage.get('lastSyncTime', function (value) {
     if (value) {
-      this._lastSyncTime = parseFloat(value);
+      self._lastSyncTime = parseFloat(value);
     } else {
-      this._lastSyncTime = null;
+      self._lastSyncTime = null;
     }
   });
   this.storage.get('lastSyncPut', function (value) {
     if (value) {
-      this._lastSyncPut = parseFloat(value);
+      self._lastSyncPut = parseFloat(value);
     } else {
-      this._lastSyncPut = null;
+      self._lastSyncPut = null;
     }
   });
   this._appTracking = null;
   this.storage.get('appTracking', function (value) {
-    if (value === null) {
+    if (value === null || value === undefined) {
       value = {};
     }
-    this._appTracking = value;
+    self._appTracking = value;
   });
   // This will get set if the server tells us to back off on polling:
   this._backoffTime = null;
@@ -345,11 +346,15 @@ SyncService.prototype._putUpdates = function (callback) {
         }
         return;
       }
-      var tracking = this.storage.get('appTracking', function (tracking) {
-        for (var i=0; i<updates.length; i++) {
-          tracking[updates[i].origin] = updates[i].last_modified;
+      var tracking = self.storage.get('appTracking', function (tracking) {
+        if (! tracking) {
+          log('WARNING: appTracking is not set');
+          tracking = {};
         }
-        this.storage.put('appTracking', tracking);
+        for (var i=0; i<toUpdate.length; i++) {
+          tracking[toUpdate[i].origin] = toUpdate[i].last_modified;
+        }
+        self.storage.put('appTracking', tracking);
       });
       self._setLastSyncPut(result.received);
       callback();
