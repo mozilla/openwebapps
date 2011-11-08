@@ -375,26 +375,7 @@ FFRepoImpl.prototype = {
             // notify the app if it is registered to handle it,
             // else, reload the page with the new URL?
             if (url != brs.currentURI.spec) {
-              if (app.services && app.services['link.transition']) {
-                try {
-                  var services = require("./services");
-                  var serviceInterface = new services.serviceInvocationHandler(browserWin);
-                  let activity = {
-                    action: 'link.transition',
-                    data: {url: url}
-                  };
-                  serviceInterface.invokeService(brs.contentWindow.wrappedJSObject, activity, 'transition',
-                    function(result) {},
-                    function(errob) {
-                      console.log("Failed to invoke link.transition", errob);
-                    }
-                  );
-                } catch (e) {
-                  console.log("Failed to invoke link.transition", e);
-                }
-              } else {
-                brs.loadURI(url, null, null); // Referrer is broken
-              }
+              brs.loadURI(url, null, null); // Referrer is broken
             }
 
             found = true;
@@ -416,52 +397,7 @@ FFRepoImpl.prototype = {
           ss.setTabValue(tab, "appURL", origin);
           bar.setAttribute("collapsed", true);
 
-          //when clicking install after being told 'app available',
-          //sometimes a user will have been not on the landing page,
-          //so we should try to launch them into the page they were on
-          //but now in the app experience
-          if (app.services && app.services['link.transition']) {
-            let launchService = function(e) {
-              try {
-                var services = require("./services");
-                var serviceInterface = new services.serviceInvocationHandler(recentWindow);
-                //TODO: this feels hacky. see line 425 for discussion
-                if (brs.contentWindow.wrappedJSObject._MOZ_SERVICES != undefined) {
-                  //console.log("services were ready");
-                  let activity = {
-                    action: 'link.transition',
-                    data: {url: url}
-                  };
-                  serviceInterface.invokeService(brs.contentWindow.wrappedJSObject, activity, 'transition',
-                    function(result) {},
-                    function(errob) {
-                      console.log("failed to invoke link.transition service", errob);
-                    }
-                  );
-                } else {
-                  //console.log("services weren't ready");
-                  // XXX - but what if it never becomes ready - we probably need
-                  // a retry counter with some limit...
-                  recentWindow.setTimeout(launchService, 500, false);
-                }
-              } catch (e) {
-                console.log("error invoking link.transition service", e);
-              }
-              recentWindow.document.removeEventListener("DOMContentLoaded", launchService, false);
-            };
-
-            // FIXME: for some reason using "load" here instead of "DOMContentLoaded" makes it never fire
-            // same with using let tabwindow = brs.getBrowserForTab(tab).contentWindow.wrappedJSObject;
-            // (and tabwindow.document) instead of recentWindow...
-            // try em out yourself i guess, as we may have missed one combination of options.
-            //this problem is what necessitates the above check on ._MOZ_SERVICES != undefined
-            recentWindow.document.addEventListener("DOMContentLoaded", launchService, false);
-
-            //let tabwindow = brs.getBrowserForTab(tab).contentWindow.wrappedJSObject;
-            //tabwindow.document.addEventListener("DOMContentLoaded", launchLater, false);
-          } else {
-            brs.loadURI(url, null, null); // Referrer is broken
-          }
+          brs.loadURI(url, null, null); // Referrer is broken
         } else {
           // This is a very odd case: no browser windows are open, so open a new one.
           var new_window = aWindow.open(url);

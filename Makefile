@@ -1,5 +1,5 @@
 APPNAME = fx-share-addon
-DEPS = github:addon-sdk,github:oauthorizer
+DEPS = github:addon-sdk
 PYTHON = python
 
 ifeq ($(TOPSRCDIR),)
@@ -16,11 +16,10 @@ ifneq ($(DEPSDIR),)
 endif
 
 addon_sdk := $(deps)/addon-sdk/bin
-oauthorizer := $(deps)/oauthorizer
 openwebapps := $(TOPSRCDIR)/addons/jetpack
 
 #cfx_args :=  --pkgdir=$(TOPSRCDIR) $(profile) --package-path=$(oauthorizer) --package-path=$(openwebapps) --binary-args="-console -purgecaches"
-cfx_args :=  --pkgdir=$(openwebapps) $(profile) --package-path=$(oauthorizer) --binary-args="-console -purgecaches $(BINARYARGS)"
+cfx_args :=  --pkgdir=$(openwebapps) $(profile) --binary-args="-console -purgecaches $(BINARYARGS)"
 
 xpi_name := openwebapps.xpi
 

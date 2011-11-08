@@ -6,6 +6,6 @@
     "fullName": "Open Web Apps for Firefox", 
     "id": "openwebapps@mozillalabs.com", 
     "description": "Adds features to Firefox to manage Web Applications directly in your browser.",
-    "dependencies": ["api-utils", "addon-kit", "oauthorizer"],
+    "dependencies": ["api-utils", "addon-kit"],
     "main": "./main.js"
 }

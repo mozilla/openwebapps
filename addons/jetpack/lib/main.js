@@ -68,9 +68,6 @@ function openwebapps(win, getUrlCB) {
   // setup page-modes
   this.setupManagerAPI();
 
-  tmp = require("./services");
-  this._services = new tmp.serviceInvocationHandler(this._window);
-
   if (this.pendingRegistrations) {
     for each(let reg in this.pendingRegistrations) {
       this._repo._registerBuiltInApp(reg[0], reg[1], reg[2]);
