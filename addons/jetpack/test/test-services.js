@@ -17,19 +17,7 @@ function getContentWindow() {
 
 TestMediator = {
   url: getTestUrl("apps/testable_mediator.html"),
-  contentScript:
-    "window.navigator.wrappedJSObject.mozApps.mediation.ready(function(activity, services) {" +
-    "  let service = services[0];" +
-    // XXX - why is unsafeWindow needed here???
-    "  unsafeWindow.document.getElementById('servicebox').appendChild(service.iframe);" +
-    "  service.on('ready', function() {" +
-    "    service.call('echoArgs', activity.data, function(result) {" +
-    "      self.port.emit('owa.success', result);" +
-    "    }, function(errob) {" +
-    "      self.port.emit('owa.failure', errob);" +
-    "    });" +
-    "  });" +
-    "});"
+  contentScriptFile: getTestUrl('apps/basic/success.js')
 };
 
 exports.test_invoke = function(test) {
@@ -40,7 +28,6 @@ exports.test_invoke = function(test) {
     let services = getOWA()._services;
     services.registerMediator("test.basic", TestMediator);
     let panel = services.get(
-      getContentWindow(),
       {action:"test.basic", data: {hello: "world"}}, // simulate an Activity object
       function(result) { // success cb
         test.assertEqual(result.hello, "world");
@@ -56,7 +43,9 @@ exports.test_invoke = function(test) {
 
 
 // Test that having 2 tabs, each with its own panel, works as expected.
-exports.test_invoke_twice = function(test) {
+// XXX disabled test, this tested a situation that was valid when we had
+// one panel per tab.
+test_invoke_twice = function(test) {
   test.waitUntilDone();
   let services = getOWA()._services;
   let seenTab1Callback = false;
@@ -68,7 +57,6 @@ exports.test_invoke_twice = function(test) {
         tab1.on('ready', function(){
           // first tab is open - create and invoke our test app.
           let panel1 = services.get(
-            getContentWindow(),
             {action:"test.basic", data:{hello: "world"}}, // simulate an Activity object
             function(result) { // success cb
               if (seenTab1Callback) {
@@ -85,7 +73,6 @@ exports.test_invoke_twice = function(test) {
                 onOpen: function(tab2) {
                   tab2.on('ready', function(){
                     let panel2 = services.get(
-                      getContentWindow(),
                       {action:"test.basic", data:{hello: "world"}}, // simulate an Activity object
                       function(result) { // success cb
                         test.assertEqual(result.hello, "world");
@@ -117,37 +104,19 @@ exports.test_invoke_twice = function(test) {
 }
 
 // Error tests.
-
-function makeErrorTestContentScript(methodName) {
-  return "" +
-    "window.navigator.wrappedJSObject.mozApps.mediation.ready(function(activity, services) {" +
-    "  let service = services[0];" +
-    // XXX - why is unsafeWindow needed here???
-    "  unsafeWindow.document.getElementById('servicebox').appendChild(service.iframe);" +
-    "  service.on('ready', function() {" +
-    "    service.call('" + methodName + "', activity.data, function(result) {" +
-    "      self.port.emit('owa.success', {code: 'test_failure', msg: 'unexpected success callback'});" +
-    "    }, function(errob) {" +
-    "      self.port.emit('owa.success', errob);" +
-    "    });" +
-    "  });" +
-    "});"
-}
-
 TestMediatorError = {
   url: getTestUrl("apps/testable_mediator.html"),
-  contentScript: makeErrorTestContentScript("testErrors")
+  contentScriptFile: getTestUrl('apps/basic/error.js')
 };
 
 // A helper for the error tests.
-function testError(test, mediator, errchecker) {
+function testError(test, mediator, activity, errchecker) {
   test.waitUntilDone();
   installTestApp(test, "apps/basic/basic.webapp", function() {
     let services = getOWA()._services;
     services.registerMediator("test.basic", mediator);
     let panel = services.get(
-      getContentWindow(),
-      {action:"test.basic", data:{}}, // simulate an activity
+      activity,
       function(result) { // success cb
         services._popups.pop();
         errchecker(result);
@@ -163,22 +132,22 @@ function testError(test, mediator, errchecker) {
 }
 
 exports.test_invoke_error = function(test) {
-  testError(test, TestMediatorError, function(errob) {
-    test.assertEqual(errob.code, "testable_error");
-    test.assertEqual(errob.message, "a testable error");
-    test.done();
-  });
+  testError(test, TestMediatorError,
+    {action:"test.basic", message: 'testErrors', data:{}},
+    function(errob) {
+      test.assertEqual(errob.code, "testable_error");
+      test.assertEqual(errob.message, "a testable error");
+      test.done();
+    });
 };
 
-TestMediatorErrorThrown = {
-  url: getTestUrl("apps/testable_mediator.html"),
-  contentScript: makeErrorTestContentScript("testErrorsThrown")
-};
 
 exports.test_invoke_error_thrown = function(test) {
-  testError(test, TestMediatorErrorThrown, function(errob) {
-    test.assertEqual(errob.code, "runtime_error");
-    test.assertEqual(errob.message, "a thrown error");
-    test.done();
-  });
+  testError(test, TestMediatorError,
+    {action:"test.basic", message: 'testErrorsThrown', data:{}},
+    function(errob) {
+      test.assertEqual(errob.code, "runtime_error");
+      test.assertEqual(errob.message, "a thrown error");
+      test.done();
+    });
 };
