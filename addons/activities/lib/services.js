@@ -309,7 +309,7 @@ MediatorPanel.prototype = {
     // additional contentScriptFiles.
     let url = this.mediator && this.mediator.url;
     if (!url) {
-      url = require("self").data.url("service2.html");
+      url = require("self").data.url("service.html");
     }
     if (this.mediator) {
       if (this.mediator.contentScriptFile) {
