@@ -40,8 +40,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 const {Cu, Ci, Cc} = require("chrome");
-var {FFRepoImplService} = require("api");
-let {URLParse} = require("openwebapps/urlmatch");
+var {FFRepoImplService} = require("openwebapps/api");
 let {OAuthConsumer} = require("oauthorizer/oauthconsumer");
 let tmp = {}
 Cu.import("resource://gre/modules/Services.jsm", tmp);
