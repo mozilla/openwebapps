@@ -8,6 +8,6 @@
     "icons":{
         "128":"/icon.png"
     },
-    "launch_path": "/index.html",
+    "launch_path": "/examples/demopaid/index.html",
     "installs_allowed_from": ["*"]
 }

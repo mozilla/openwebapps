@@ -183,7 +183,7 @@ moz.appStartup = (function() {
 					}
 					try {
 						var rcpt = parseReceipt(installDataJS.receipt);
-
+						
 						if (options.checkIdentity) {
 							if (!rcpt.user) {
 								if (behavior.onInvalidIdentity) {
@@ -192,10 +192,14 @@ moz.appStartup = (function() {
 								return;
 							}
 							console.log("Launching navigator.id");
+							var IDoptions = {
+								silent: true,
+								requiredEmail : rcpt.user.value
+							};
 							navigator.id.getVerifiedEmail(function(assertion) {
 								if (assertion) {
 									if (options.verifyURL) {
-										var xhr = new XmlHttpRequest();
+										var xhr = new XMLHttpRequest();
 										xhr.open("POST", options.verifyURL),
 									    xhr.onreadystatechange = function(aEvt) {
 									     	if (xhr.readyState == 4) {
@@ -218,7 +222,7 @@ moz.appStartup = (function() {
 									}
 									return;
 								}
-							});
+							}, IDoptions);
 						}
 
 					} catch (e) {

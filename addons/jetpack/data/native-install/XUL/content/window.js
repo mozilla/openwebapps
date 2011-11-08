@@ -1,3 +1,4 @@
+dump("hello world\n");
 function doHandleMenuBar(toCall)
 {
     // We need to pageMod in from the faker
@@ -26,8 +27,6 @@ function newWindow()
     var win = ww.openWindow(null, "chrome://webapp/content/window.xul",
                             null, "chrome,centerscreen", null);
 }
-
-
 
 
 // Register the injector to add new APIs to the content windows:
@@ -69,6 +68,91 @@ try {
       }
     }
   });
+
+  function checkNativeIdentityDaemon(callingLocation, callback, options, success, failure)
+  {
+    dump("CheckNativeIdentityDaemon " + callingLocation + " " + options + "\n");
+    // XXX what do we do if we are not passed a requiredEmail?
+    // could fail immediately, or could ask Firefox for a default somehow
+    if (!options || !options.requiredEmail) failure();
+
+    var port = 7500;
+    var sockTransportService = Components.classes["@mozilla.org/network/socket-transport-service;1"]
+        .getService(Components.interfaces.nsISocketTransportService);
+    
+    var domain = callingLocation.protocol + "//" + callingLocation.host;
+    if (callingLocation.port && callingLocation.port.length > 0) callingLocation += ":" + callingLocation.port;
+    var buf = "IDCHECK " + options.requiredEmail + " " + domain + "\n";
+
+    var eventSink = {
+        onTransportStatus: function(aTransport, aStatus, aProgress, aProgressMax) {
+            alert("Got TransportStatus: " + aStatus + " (" + 0x804b0003 + ")");
+            if (aStatus == aTransport.STATUS_CONNECTED_TO) {
+                output.write(buf, buf.length);
+            } else if (aStatus == aTransport.STATUS_RECEIVING_FROM) {
+                var chunk = scriptableStream.read(8192);
+                if (chunk.length> 1) {
+                    success(chunk);
+                    return;
+                } else {
+                    failure();
+                    return;
+                }
+            } else if (false /* connection refused */) {
+                port++;
+                attemptConnection();
+            }
+        }
+    };
+
+    var threadMgr = Components.classes["@mozilla.org/thread-manager;1"].getService();
+    function attemptConnection() {
+        if (port > 7550) {
+            failure();
+            return;
+        }
+        var transport = sockTransportService.createTransport(null, 0, "127.0.0.1", port, null);
+        transport.setEventSink(eventSink, threadMgr.currentThread);
+        try {
+            var output = transport.openOutputStream(transport.OPEN_BLOCKING, 0, 0);
+            output.write(buf, buf.length);
+            var input = transport.openInputStream(transport.OPEN_BLOCKING, 0, 0);
+            var scriptableStream = Components.classes["@mozilla.org/scriptableinputstream;1"]  
+                                 .createInstance(Components.interfaces.nsIScriptableInputStream);  
+            scriptableStream.init(input);
+            alert("finished setup");
+            
+        } catch (e) {
+            alert(e);
+            port++;
+            attemptConnection();
+        }
+    }
+    attemptConnection();
+  }
+
+  window.appinjector.register({
+    apibase: "navigator.id",
+    name: "getVerifiedEmail",
+    script: null,
+    getapi: function(contentWindowRef) {
+        return function(callback, options) { // XXX what is the options API going to be?
+            checkNativeIdentityDaemon(contentWindowRef.location, callback, options, function(assertion) {
+                // success: return to caller
+                callback(assertion);
+            }, function() {
+                // failure: need to present BrowserID dialog
+                if (!options || !options.silent) {
+                    dump("OpenBrowserIDDialog\n");
+                    openBrowserIDDialog(callback, options);
+                } else {
+                    callback(null);
+                }
+            });
+        }
+    }
+  });
+
   window.appinjector.inject();
 } catch (e) {
     dump(e + "\n");

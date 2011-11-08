@@ -5,11 +5,10 @@
 <script src="../../jslibs/app.js" type="text/javascript"></script>
 <script>
 window.onload = function() {
-document.getElementById("launchme").onclick = function() {
 	moz.appStartup({
 		checkReceipt: true,
 		checkIdentity: true,
-		loginDiv: "login_div"
+		loginDiv: "login_div",
 		verifyURL: "/verifyApp"
 	}, {
 		onNotInstalled: function() {
@@ -32,16 +31,15 @@ document.getElementById("launchme").onclick = function() {
 		onFailure: function() {
 			reportError("failure");
 		},
-		 : function() {
+		onSuccess: function() {
 			reportError("success!");
 		}
-	})
-};
+	});
 }
-document.getElementById("login").onclick = function() {
+/*document.getElementById("login").onclick = function() {
 	
 }
-
+*/
 function reportError(message) {
 	document.getElementById("status").innerHTML = message;
 }
@@ -64,11 +62,16 @@ function doInstall() {
 <div id="installme" style="display:none" onclick="doInstall()">
 	<button>Install</button>
 </div>
-<div id="launchme">
+<div id="launchme" style="display:none">
 	<button>Launch</button>
 </div>
-<div id="login_div">
+<div id="login_div" style="display:none">
 	<button id="login">Log In</button>
 </div>
+
+<div>
+Hello world!
+</div>
+
 </body>
 </html>
