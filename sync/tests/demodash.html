@@ -51,11 +51,6 @@ function install() {
     for (var i=0; i<appsDb.length; i++) {
       apps.push(appsDb[i].src_url);
     }
-    for (var i in SERVERS) {
-      if (['basic_app', 'tasktracker', 'mozillaball'].indexOf(i) != -1) {
-        apps.push(SERVERS[i]);
-      }
-    }
   }
   console.log('Installing', apps[index]);
   function installNext(data) {
@@ -91,7 +86,6 @@ function sdelete() {
 
 
 </script>
-<script src="http://127.0.0.1:60172/servers.js"></script>
 </head>
 
 <body>

@@ -59,7 +59,7 @@ if [ ! -e "$DEST" ] ; then
     mkdir -p "$DEST"
 fi
 
-cp --recursive --dereference ${SITE}/*.html ${SITE}/css ${SITE}/fonts ${SITE}/img ${SITE}/js ${SITE}/jsapi $DEST
+cp --recursive --dereference ${SITE}/*.html ${SITE}/*.js ${SITE}/icongrid ${SITE}/css ${SITE}/fonts ${SITE}/img ${SITE}/js ${SITE}/jsapi $DEST
 
 if [ "$HOST" != "$ORIG_HOST" ] ; then
     echo "Replacing $ORIG_HOST with $HOST"
@@ -84,3 +84,7 @@ echo "Creating minified jsapi/include.js"
 cp ${DEST}/jsapi/include.js ${DEST}/jsapi/include.complete.js
 echo "/* For unminified source see ${HOST}/jsapi/include.complete.js */" > ${DEST}/jsapi/include.js
 java -jar ${COMP_DIR}/yuicompressor-2.4.2.jar ${DEST}/jsapi/include.complete.js >> ${DEST}/jsapi/include.js
+
+echo "Creating minified jsapi/syncbutton.html"
+cp ${DEST}/jsapi/syncbutton.html ${DEST}/jsapi/syncbutton.complete.html
+${SITE}/tools/compress_html.py ${DEST}/jsapi/syncbutton.html -o ${DEST}/jsapi/syncbutton.html --compress --compressor-dir "$COMP_DIR" --comment "The original (unminified) source is at ${HOST}/jsapi/syncbutton.complete.html"

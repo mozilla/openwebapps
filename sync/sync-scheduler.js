@@ -34,7 +34,6 @@ Scheduler.prototype.settings = {
 };
 
 Scheduler.prototype.activate = function () {
-  return;
   this.deactivate();
   this.resetSchedule();
   this.schedule();
