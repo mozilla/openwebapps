@@ -139,7 +139,7 @@ unsafeWindow.navigator.wrappedJSObject.mozApps.mediation.startLogin = function(o
 // Note the invocation handler will be called once initially, and possibly
 // again as the configuration of apps changes (ie, as apps are added or
 // removed).
-unsafeWindow.navigator.wrappedJSObject.mozApps.mediation.ready = function(invocationHandler) {
+unsafeWindow.navigator.wrappedJSObject.mozApps.mediation.ready = function(configureServices, updateActivity) {
   self.port.on("owa.app.ready", function(origin) {
     //console.log("owa.app.ready for", origin);
     if (allServices[origin]) {
@@ -164,7 +164,7 @@ unsafeWindow.navigator.wrappedJSObject.mozApps.mediation.ready = function(invoca
     // replies we can go ahead and finish the create process.
     let frameCreateInfo = [];
     for (var i = 0; i < msg.serviceList.length; i++) {
-      var svc = msg.serviceList[i];
+      let svc = msg.serviceList[i];
       let id = guid();
       // notify our mediator of the guid to watch for
       frameCreateInfo.push({
@@ -184,7 +184,11 @@ unsafeWindow.navigator.wrappedJSObject.mozApps.mediation.ready = function(invoca
         services.push(svcob);
         allServices[svc.app.origin] = svcob;
       }
-      invocationHandler(msg.activity, services);
+      // send the services configuration to the mediator content
+      configureServices(msg.activity, services);
+  
+      // listen for activity changes, but also call directly on initial setup
+      self.port.on("owa.mediation.updateActivity", updateActivity);
     });
     self.port.emit("owa.mediation.frames", frameCreateInfo);
     self.port.once("owa.mediation.reconfigure", function() {
@@ -204,6 +208,7 @@ unsafeWindow.navigator.wrappedJSObject.mozApps.mediation.ready = function(invoca
   let doSetup = function() {
     self.port.once("owa.mediation.setup", setupHandler);
     self.port.emit("owa.mediation.ready");
+    self.port.removeListener("owa.mediation.start", updateActivity);
   };
 
   doSetup();

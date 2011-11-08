@@ -47,6 +47,7 @@ let tmp = {}
 Cu.import("resource://gre/modules/Services.jsm", tmp);
 let {Services} = tmp;
 const { Worker } = require('api-utils/content');
+const tabs = require("tabs");
 
 // a mediator is what provides the UI for a service.  It is normal "untrusted"
 // content (although from the user's POV it is somewhat trusted)
@@ -69,25 +70,18 @@ var nextinvocationid = 0;
  * This class controls the mediator panel UI.  There is one per tab
  * per mediator, created only when needed.
  */
-function MediatorPanel(window, contentWindowRef, activity, successCB, errorCB) {
+function MediatorPanel(window, methodName) {
   this.window = window; // the window the panel is attached to
-  this.contentWindow = contentWindowRef; // ???
-  this.methodName = activity.action;
-  this.activity = activity;
-  this.successCB = successCB;
-  this.errorCB = errorCB;
+  this.methodName = methodName;
   this.frames = [];
   this.handlers = {};
 
-  // Update the content for the new invocation
-  this.args = this.updateargs(activity.data);
   this.mediator = mediators[this.methodName];
 
   this.panel = null;
-  this.configured = false;
-  this.haveAddedListener = false; // is the message handler installed?
   this.isConfigured = false;
   this.invocationid = nextinvocationid++;
+  this.invalidated = true;
 
   // we use document-element-inserted here rather than
   // content-document-global-created so that other listeners using
@@ -97,8 +91,30 @@ function MediatorPanel(window, contentWindowRef, activity, successCB, errorCB) {
   this.contentScriptFile = [require("self").data.url("servicesapi.js")];
 
   this._createPopupPanel();
+
+  window.gBrowser.tabContainer.addEventListener("TabSelect", function() {
+    this.invalidated = true;
+  }.bind(this), false);
 }
 MediatorPanel.prototype = {
+  startActivity: function(activity, successCB, errorCB) {
+    let tabData = {
+      activity: activity,
+      successCB: successCB,
+      errorCB: errorCB
+    }
+    let tab = tabs.activeTab;
+    if (!tab.activity)
+      tab.activity = {};
+    tab.activity[this.methodName] = tabData;
+    this.invalidated = true;
+  },
+  
+  get tabData() {
+    let tab = tabs.activeTab;
+    return tab.activity[this.methodName];
+  },
+
   observe: function(document, aTopic, aData) {
     if (aTopic != 'document-element-inserted' ||
         !document.defaultView.frameElement) return;
@@ -156,11 +172,10 @@ MediatorPanel.prototype = {
   get anchor() { return this.window.document.getElementById('identity-box') },
 
   /**
-   * update the arguments that get sent to a mediator
+   * update the arguments that get sent to a mediator, primarily for subclassing
    */
-  updateargs: function(args) {
-    return args;
-  },
+  updateargs: function(data) { return data },
+
   /**
    * handlers for show/hide of the panel - will be hooked up if a subclass
    * defines them.
@@ -184,8 +199,8 @@ MediatorPanel.prototype = {
     // the mediator might have seen a failure but offered its own UI to
     // retry - so hide any old error notifications.
     this.hideErrorNotification();
-    if (this.successCB)
-      this.successCB(msg);
+    if (this.tabData.successCB)
+      this.tabData.successCB(msg);
   },
 
   onOWAClose: function(msg) {
@@ -199,8 +214,9 @@ MediatorPanel.prototype = {
 
   onOWAReady: function(msg) {
     FFRepoImplService.findServices(this.methodName, function(serviceList) {
+      this.tabData.activity.data = this.updateargs(this.tabData.activity.data);
       this.panel.port.emit("owa.mediation.setup", {
-              activity: this.activity,
+              activity: this.tabData.activity,
               serviceList: serviceList,
               invocationid: this.invocationid
       });
@@ -294,12 +310,16 @@ MediatorPanel.prototype = {
     let url = this.mediator && this.mediator.url;
     if (!url) {
       url = require("self").data.url("service2.html");
-    } else {
-      if (this.mediator.contentScriptFile) {
-      contentScriptFile = contentScriptFile.concat(this.mediator.contentScriptFile);
-      }
-      contentScript = this.mediator.contentScript;
     }
+    if (this.mediator) {
+      if (this.mediator.contentScriptFile) {
+        contentScriptFile = contentScriptFile.concat(this.mediator.contentScriptFile);
+      }
+      if (this.mediator.contentScript) {
+        contentScript = this.mediator.contentScript;
+      }
+    }
+
     let thePanel = require("panel").Panel({
       contentURL: url,
       contentScriptFile: contentScriptFile,
@@ -326,6 +346,10 @@ MediatorPanel.prototype = {
     if (!this.isConfigured) {
       this.panel.port.emit("owa.mediation.reconfigure");
       this.isConfigured = true;
+    }
+    if (this.invalidated) {
+      this.tabData.activity.data = this.updateargs(this.tabData.activity.data);
+      this.panel.port.emit("owa.mediation.updateActivity", this.tabData.activity);
     }
     this.panel.show(this.anchor);
   },
@@ -526,21 +550,21 @@ serviceInvocationHandler.prototype = {
     this._popups = newPopups;
   },
 
-  get: function(contentWindowRef, activity, successCB, errorCB) {
-    for each (let popupCheck in this._popups) {
-      if (contentWindowRef == popupCheck.contentWindow && activity.action == popupCheck.methodName) {
-        return popupCheck;
+  get: function(activity, successCB, errorCB) {
+    let panel;
+    for each (let panel in this._popups) {
+      if (activity.action == panel.methodName) {
+        panel.startActivity(activity, successCB, errorCB);
+        return panel;
       }
     }
     // if we didn't find it, create it
     let agent = agentCreators[activity.action] ? agentCreators[activity.action] : MediatorPanel;
-    let panel = new agent(this._window, contentWindowRef, activity, successCB, errorCB);
+    panel = new agent(this._window, activity.action);
+    panel.startActivity(activity, successCB, errorCB);
     // attach our response listeners
     panel.attachHandlers();
     this._popups.push(panel);
-    // add an unload listener so we can nuke this popup info as the window closes.
-    contentWindowRef.addEventListener("unload",
-               this.removePanelsForWindow.bind(this), true);
     return panel;
   },
 
@@ -549,10 +573,10 @@ serviceInvocationHandler.prototype = {
    *
    * show the panel for a mediator, creating one if necessary.
    */
-  invoke: function(contentWindowRef, activity, successCB, errorCB) {
+  invoke: function(activity, successCB, errorCB) {
     try {
     // Do we already have a panel for this service for this content window?
-    let panel = this.get(contentWindowRef, activity, successCB, errorCB);
+    let panel = this.get(activity, successCB, errorCB);
     panel.hideErrorNotification();
     panel.show();
     } catch (e) {

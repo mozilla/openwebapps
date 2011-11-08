@@ -37,12 +37,11 @@ function renderRequestExplanation(activity) {
   actionTmpl.tmpl(data).appendTo("#requestInfo");
 }
 
-function handleSetup(activity, serviceList) {
+function handleSetup(action, serviceList) {
   gServiceList = serviceList;
 
-  renderRequestExplanation(activity);
 
-  addServicesService.url = "http://localhost:8420/" + activity.action + ".html";
+  addServicesService.url = "http://localhost:8420/" + action + ".html";
   addServicesService.iframe = document.createElement('iframe');
   addServicesService.iframe.setAttribute('id', guid());
   addServicesService.iframe.src = addServicesService.url;
@@ -109,12 +108,16 @@ $(function() {
   document.getElementById("confirmclicker").onclick = confirm;
 });
 
-window.navigator.mozApps.mediation.ready(
 
-function(activity, services) {
+function startActivity(activity) {
+  renderRequestExplanation(activity);
+}
+
+function configureServices(activity, services) {
   $("#services").remove(); // this will remove old iframes from DOM
-  for (var i = 0; i < services.length; i++) {
-    var service = services[i];
+  handleSetup(activity.action, services);
+  for (var i = 0; i < gServiceList.length; i++) {
+    var service = gServiceList[i];
     service.on("ready", function() {
       console.log("service", service.url, "is ready - initializing it");
       service.call("init", activity.data, function() {
@@ -122,5 +125,7 @@ function(activity, services) {
       })
     });
   }
-  handleSetup(activity, services);
-});
+  startActivity(activity);
+}
+
+window.navigator.mozApps.mediation.ready(configureServices, startActivity);
