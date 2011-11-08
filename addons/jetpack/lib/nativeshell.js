@@ -809,7 +809,7 @@ MacNativeShell.prototype = {
     let substitutions = {
       "\\$APPNAME": app.manifest.name,
       "\\$APPDOMAIN": app.origin,
-      "\\$APPDOMAIN_REVERSED": reverseDNS(app.origin),
+      "\\$REVERSED_APPDOMAIN": /*reverseDNS(*/app.origin/*)*/,
       "\\$LAUNCHPATH": launchPath
     }
     file.mkpath(filePath);
@@ -919,7 +919,7 @@ MacNativeShell.prototype = {
             dump("APPS | createExecutable | Unable to get icon - error during request\n");
             return;
           } else {
-            netutil.NetUtil.asyncCopy(inputStream, ostream, function(aResult) {
+            NetUtil.asyncCopy(inputStream, ostream, function(aResult) {
               if (ostream instanceof Ci.nsISafeOutputStream) {
                   ostream.finish();
               } else {
