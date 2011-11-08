@@ -1,0 +1,74 @@
+<html>
+<head>
+<title>Demo Game</title>
+<script src="https://browserid.org/include.js" type="text/javascript"></script>
+<script src="../../jslibs/app.js" type="text/javascript"></script>
+<script>
+window.onload = function() {
+document.getElementById("launchme").onclick = function() {
+	moz.appStartup({
+		checkReceipt: true,
+		checkIdentity: true,
+		loginDiv: "login_div"
+		verifyURL: "/verifyApp"
+	}, {
+		onNotInstalled: function() {
+			reportError("notInstalled");
+			document.getElementById("launchme").style.display="none";
+			document.getElementById("installme").style.display="block";
+		},
+		onNoReceipt: function() {
+			reportError("no receipt");
+		},
+		onMalformedReceipt: function(err) {
+			reportError("malformed receipt: " + err);
+		},
+		onInvalidReceipt: function() {
+			reportError("invalid receipt");
+		},
+		onInvalidIdentity: function() {
+			reportError("invalid identity");
+		},
+		onFailure: function() {
+			reportError("failure");
+		},
+		 : function() {
+			reportError("success!");
+		}
+	})
+};
+}
+document.getElementById("login").onclick = function() {
+	
+}
+
+function reportError(message) {
+	document.getElementById("status").innerHTML = message;
+}
+function doInstall() {
+	navigator.mozApps.install(
+		"http://localhost:8123/examples/demopaid/manifest.webapp", 
+		{"receipt":"eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJwcm9kdWN0IjogImh0dHA6Ly9tYXJibGVydW4uYXQiLCAiaXNzIjogImh0dHBzOi8vYWRkb25zLWRldi5hbGxpem9tLm9yZyIsICJ2ZXJpZnkiOiAiL2VuLVVTL2ZpcmVmb3gvbWFya2V0L3ZlcmlmeS8zNDQ5ODY_cHVyY2hhc2VyPW1oYW5zb24lNDBtb3ppbGxhLmNvbSZwdXJjaGFzZXItaGFzaD0xMmU2MWM2NDhkMTI5ZDZmNTgzODdkYzM2MzhkZDFiZDQzODRmZjFjNzE5ZWUzNjJkZmYxNGZjNWU3MjliNzRkMTE4MDI0NDkzYWQ5MjIyZjhjZTY0MGJmYmQ2ZjZmNTM0ZGZlMjZiOTk5YzMwYzA4OWIyMGM2M2E3ZDZlZmM2MSIsICJkZXRhaWwiOiAiL2VuLVVTL2ZpcmVmb3gvdXNlcnMvcHVyY2hhc2VzLzM0NDk4NiIsICJ1c2VyIjogeyJ0eXBlIjogImVtYWlsIiwgInZhbHVlIjogIm1oYW5zb25AbW96aWxsYS5jb20ifSwgImlhdCI6IDEzMjA0MjY2MzIuMzMyNjMyMSwgInR5cCI6ICJwdXJjaGFzZS1yZWNlaXB0IiwgIm5iZiI6IDEzMjA0MjY2MzIuMzMyNjMyMX0.u_hepXRrdQe7S7pfVyTNtK5-JgswtiPKOY9RMj-H_-8"},
+		function() {
+			alert("Success");
+		}, function(err) {
+			alert("Error: " + err.message);
+		}
+	);
+}
+</script>
+</head>
+<body>
+
+<div id="status"></div>
+<div id="installme" style="display:none" onclick="doInstall()">
+	<button>Install</button>
+</div>
+<div id="launchme">
+	<button>Launch</button>
+</div>
+<div id="login_div">
+	<button id="login">Log In</button>
+</div>
+</body>
+</html>
