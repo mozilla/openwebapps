@@ -43,7 +43,9 @@ exports.test_invoke = function(test) {
 
 
 // Test that having 2 tabs, each with its own panel, works as expected.
-exports.test_invoke_twice = function(test) {
+// XXX disabled test, this tested a situation that was valid when we had
+// one panel per tab.
+test_invoke_twice = function(test) {
   test.waitUntilDone();
   let services = getOWA()._services;
   let seenTab1Callback = false;
