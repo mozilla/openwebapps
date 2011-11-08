@@ -3,7 +3,6 @@ let gServices = null;
 let gActivity = null;
 
 function configureServices(activity, services) {
-    dump("configureServices called!\n");
     gServices = services;
   updateActivity(activity);
   let testservice = gServices[0];
@@ -17,7 +16,6 @@ function configureServices(activity, services) {
   });
 }
 function updateActivity(activity) {
-    dump("updateActivity called!\n");
   gActivity = activity;
 }
 
