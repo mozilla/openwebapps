@@ -1,3 +1,11 @@
+const { Cc, Ci, Cm, Cu, Cr, components } = require("chrome");
+var tmp = {};
+Cu.import("resource://gre/modules/Services.jsm", tmp);
+Cu.import("resource://gre/modules/AddonManager.jsm", tmp);
+Cu.import("resource://gre/modules/XPCOMUtils.jsm", tmp);
+var { XPCOMUtils, AddonManager, Services } = tmp;
+
+const addon = require("self");
 
 
 let unloaders = [];
@@ -43,7 +51,7 @@ MozActivitiesAPI.prototype = {
       startActivity: function(activity, successCB, errorCB) {
         let wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
         let recentWindow = wm.getMostRecentWindow("navigator:browser");
-        recentWindow.apps._services.invoke(aWindow, activity, successCB, errorCB);
+        recentWindow.serviceInvocationHandler.invoke(aWindow, activity, successCB, errorCB);
       },
       __exposedProps__: {
         startActivity: "r"
@@ -60,27 +68,64 @@ let MozActivitiesAPIFactory = {
 
 //----- navigator.mozActivities api implementation
 
+function ActivitiesLoader() {
+  console.log("ActivitiesLoader init");
+  Services.obs.addObserver(this, "openwebapps-mediator-load", true);
+  Services.obs.addObserver(this, "openwebapps-mediator-init", true);
+}
+ActivitiesLoader.prototype = {
+  QueryInterface: XPCOMUtils.generateQI([Ci.nsIObserver, Ci.nsISupportsWeakReference]),
+  observe: function(subject, topic, data) {
+    console.log("ActivitiesLoader observed "+topic);
+    switch (topic) {
+    case "openwebapps-mediator-load":
+      console.log("initialize window.serviceInvocationHandler");
+      let doc = subject.document.documentElement;
+      if (doc.getAttribute("windowtype") == "navigator:browser") {
+        console.log("attache the serviceInvocationHandler");
+        try {
+          let serviceInvocationHandler = require("services").serviceInvocationHandler;
+          subject.serviceInvocationHandler = new serviceInvocationHandler(subject);
+        } catch(e) {
+          console.log("error "+e);
+        }
+      }
+      break;
+    case "openwebapps-mediator-init":
+      console.log("initialize webActivities APIs");
+      // register our navigator api's that will be globally attached
+      Cm.QueryInterface(Ci.nsIComponentRegistrar).registerFactory(
+        MozActivitiesAPIClassID, "MozActivitiesAPI", MozActivitiesAPIContract, MozActivitiesAPIFactory
+      );
+      Cc["@mozilla.org/categorymanager;1"].getService(Ci.nsICategoryManager).
+                  addCategoryEntry("JavaScript-navigator-property", "mozActivities",
+                          MozActivitiesAPIContract,
+                          false, true);
+    
+      unloaders.push(function() {
+        Cm.QueryInterface(Ci.nsIComponentRegistrar).unregisterFactory(
+          MozActivitiesAPIClassID, MozActivitiesAPIFactory
+        );
+        Cc["@mozilla.org/categorymanager;1"].getService(Ci.nsICategoryManager).
+                    deleteCategoryEntry("JavaScript-navigator-property", "mozActivities", false);
+      });
+    }
+  },
+  removeObservers: function() {
+    Services.obs.removeObserver(this, "openwebapps-mediator-load");
+    Services.obs.removeObserver(this, "openwebapps-mediator-init");
+  }
+}
+
+var loader = new ActivitiesLoader();
+unloaders.push(function () {
+  loader.removeObservers();
+  loader = null;
+});
+
 exports.main = function(options, callbacks) {
-
-  // register our navigator api's that will be globally attached
-  Cm.QueryInterface(Ci.nsIComponentRegistrar).registerFactory(
-    MozActivitiesAPIClassID, "MozActivitiesAPI", MozActivitiesAPIContract, MozActivitiesAPIFactory
-  );
-  Cc["@mozilla.org/categorymanager;1"].getService(Ci.nsICategoryManager).
-              addCategoryEntry("JavaScript-navigator-property", "mozActivities",
-                      MozActivitiesAPIContract,
-                      false, true);
-
-  unloaders.push(function() {
-    Cm.QueryInterface(Ci.nsIComponentRegistrar).unregisterFactory(
-      MozActivitiesAPIClassID, MozActivitiesAPIFactory
-    );
-    Cc["@mozilla.org/categorymanager;1"].getService(Ci.nsICategoryManager).
-                deleteCategoryEntry("JavaScript-navigator-property", "mozActivities", false);
-  });
-
-  // initialize the injector if we are <fx9
-  require("openwebapps/injector").init();
+  console.log("web activities addon starting")
+  let owa = require("openwebapps/main");
 }
 
 exports.onUnload = function(reason) {
