@@ -1,8 +1,9 @@
-const FFRepoImpl = require("api").FFRepoImplService;
-const {getOWA, installTestApp, getTestUrl} = require("./helpers/helpers");
+const FFRepoImpl = require("openwebapps/api").FFRepoImplService;
+const {getOWA, installTestApp, getTestUrl} = require("./helpers");
 const {Cc, Ci, Cm, Cu, components} = require("chrome");
 const tabs = require("tabs");
 
+require("activities/main").main();
 
 function getContentWindow() {
   let wm = Cc["@mozilla.org/appshell/window-mediator;1"]
@@ -12,6 +13,14 @@ function getContentWindow() {
   let gBrowser = topWindow.gBrowser;
   let element = gBrowser.getBrowserForTab(gBrowser.selectedTab);
   return element.contentWindow.wrappedJSObject;
+}
+
+function getServiceInvocationHandler() {
+  require("openwebapps/main"); // for the side effect of injecting window.apps.
+  let wm = Cc["@mozilla.org/appshell/window-mediator;1"]
+            .getService(Ci.nsIWindowMediator);
+  let window = wm.getMostRecentWindow("navigator:browser");
+  return window.serviceInvocationHandler;
 }
 
 
@@ -25,7 +34,7 @@ exports.test_invoke = function(test) {
   installTestApp(test, "apps/basic/basic.webapp", function() {
     // we don't yet have a "mediator" concept we can use, so we call some
     // internal methods to set things up bypassing the builtin mediator ui.
-    let services = getOWA()._services;
+    let services = getServiceInvocationHandler();
     services.registerMediator("test.basic", TestMediator);
     let panel = services.get(
       {action:"test.basic", data: {hello: "world"}}, // simulate an Activity object
@@ -47,7 +56,7 @@ exports.test_invoke = function(test) {
 // one panel per tab.
 test_invoke_twice = function(test) {
   test.waitUntilDone();
-  let services = getOWA()._services;
+  let services = getServiceInvocationHandler();
   let seenTab1Callback = false;
   services.registerMediator("test.basic", TestMediator);
   installTestApp(test, "apps/basic/basic.webapp", function() {
@@ -113,7 +122,7 @@ TestMediatorError = {
 function testError(test, mediator, activity, errchecker) {
   test.waitUntilDone();
   installTestApp(test, "apps/basic/basic.webapp", function() {
-    let services = getOWA()._services;
+    let services = getServiceInvocationHandler();
     services.registerMediator("test.basic", mediator);
     let panel = services.get(
       activity,
