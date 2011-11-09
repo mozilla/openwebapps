@@ -116,7 +116,7 @@ MediatorPanel.prototype = {
 
   observe: function(document, aTopic, aData) {
     if (aTopic != 'document-element-inserted' ||
-        !document.defaultView.frameElement) return;
+        !document.defaultView || !document.defaultView.frameElement) return;
     //console.log("mediator got documented created notification");
     var id = document.defaultView.frameElement.getAttribute('id');
     for (var i=0; i < this.frames.length; i++) {
