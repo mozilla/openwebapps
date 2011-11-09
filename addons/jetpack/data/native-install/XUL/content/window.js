@@ -76,17 +76,16 @@ try {
     // could fail immediately, or could ask Firefox for a default somehow
     if (!options || !options.requiredEmail) failure();
 
-    var port = 7500;
+    var port = 7350;
     var sockTransportService = Components.classes["@mozilla.org/network/socket-transport-service;1"]
         .getService(Components.interfaces.nsISocketTransportService);
     
     var domain = callingLocation.protocol + "//" + callingLocation.host;
     if (callingLocation.port && callingLocation.port.length > 0) callingLocation += ":" + callingLocation.port;
-    var buf = "IDCHECK " + options.requiredEmail + " " + domain + "\n";
+    var buf = "IDCHECK " + options.requiredEmail + " " + domain + "\r\n\r\n";
 
     var eventSink = {
         onTransportStatus: function(aTransport, aStatus, aProgress, aProgressMax) {
-            alert("Got TransportStatus: " + aStatus + " (" + 0x804b0003 + ")");
             if (aStatus == aTransport.STATUS_CONNECTED_TO) {
                 output.write(buf, buf.length);
             } else if (aStatus == aTransport.STATUS_RECEIVING_FROM) {

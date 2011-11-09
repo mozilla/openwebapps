@@ -214,8 +214,10 @@ moz.appStartup = (function() {
 									       	 	}
 									      	}
 									    };
-										xhr.send(JSON.serialize({receipt: rcpt, id: assertion}));
-									}	
+										xhr.send(JSON.stringify({receipt: rcpt, id: assertion}));
+									} else {
+										behavior.onSuccess(JSON.stringify({receipt: rcpt, id: assertion}));
+									}
 								} else {
 									if (behavior.onInvalidIdentity) {
 										behavior.onInvalidIdentity("No BrowserID returned");

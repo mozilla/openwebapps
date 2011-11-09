@@ -62,9 +62,13 @@ IdentityServer.prototype = {
 				{	
 					var chunk = inStream.read(1024);
 					buffer = buffer + chunk;
+					console.log("GOT DATA: " + chunk + "\n");
 					if (chunk == null || buffer.indexOf("\r\n\r\n") >= 0) {
+						console.log("Found end of buffer\n");
 						this.handleRequest(buffer, aTransport);
 						break;
+					} else {
+						console.log("Looking for more data\n");
 					}
 				}
 			} catch (e) {
@@ -85,8 +89,20 @@ IdentityServer.prototype = {
 	{
 		var outStream = aTransport.openOutputStream(aTransport.OPEN_BLOCKING, 0, 0); // XXX blocking, blech. 
 
-		var id = request.split("\r")[0];
+		var idLine = request.split("\r")[0];
+		var lineParts = idLine.split(" ");
+		if (lineParts[0] != "IDCHECK" || lineParts.length != 3) {
+			console.log("Incorrect request on ID server port");
+			var err = '{"status":"error"}';
+			outStream.write(err, err.length);
+			outStream.close();
+			return;
+		}
+		var id = lineParts[1];
+		var audience = lineParts[2];
 		// TODO sanitize ID through regex		
+		// TODO: pass audience in somehow
+		console.log("Passing identity " + id + " to browserid\n");
 		try {
 			pageWorkers.Page({
 			  contentURL: "https://browserid.org",
@@ -95,8 +111,9 @@ IdentityServer.prototype = {
 			  	"function(err) {self.postMessage({status:\"error\"});})",
 			  contentScriptWhen: "end",
 			  onMessage: function(message) {
-			  	var out = JSON.stringify(message);
-				outStream.write(out, out.length);
+			  	var out = JSON.stringify(message) + "\r\n\r\n";
+				console.log("BrowserID returned: " + out);
+			  	outStream.write(out, out.length);
 				outStream.close();
 			  }
 			});
