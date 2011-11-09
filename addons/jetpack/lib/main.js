@@ -247,16 +247,10 @@ MozAppsAPI.prototype = {
       getInstalledBy: function(callback) {
         repo.getInstalledBy(aWindow.location, callback);
       },
-      startActivity: function(activity, successCB, errorCB) {
-        let wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
-        let recentWindow = wm.getMostRecentWindow("navigator:browser");
-        recentWindow.apps._services.invoke(aWindow, activity, successCB, errorCB);
-      },
       __exposedProps__: {
         install: "r",
         amInstalled: "r",
-        getInstalledBy: "r",
-        startActivity: "r"
+        getInstalledBy: "r"
       }
     };
   }
