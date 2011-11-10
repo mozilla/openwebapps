@@ -16,16 +16,22 @@ regex_escape () {
 SITE="$(dirname $(dirname $(abspath $BASH_SOURCE)))"
 HOST="https://myapps.mozillalabs.com"
 ORIG_HOST="$HOST"
+APPDIR=""
 
 help () {
-    echo "Usage: $(basename $0) [-H https://...] DEST"
+    echo "Usage: $(basename $0) [-H https://...] [-a APPDIR] DEST"
     echo "Builds the site in $SITE and puts it in DEST"
+    echo "-H sets the hostname (default $HOST)"
+    echo "-a gives the location of a checkout of apps.mozillalabs.com"
 }
 
-while getopts H:h o ; do
+while getopts H:a:h o ; do
     case "$o" in
         H)
             HOST="$OPTARG"
+            ;;
+        a)
+            APPDIR="$OPTARG"
             ;;
         h)
             help
@@ -60,6 +66,10 @@ if [ ! -e "$DEST" ] ; then
 fi
 
 cp --recursive --dereference ${SITE}/*.html ${SITE}/*.js ${SITE}/icongrid ${SITE}/css ${SITE}/fonts ${SITE}/img ${SITE}/js ${SITE}/jsapi $DEST
+
+if [ ! -z "$APPDIR" ] ; then
+    cp --recursive --dereference ${APPDIR}/ ${DEST}/apps
+fi
 
 if [ "$HOST" != "$ORIG_HOST" ] ; then
     echo "Replacing $ORIG_HOST with $HOST"
