@@ -100,15 +100,16 @@ IdentityServer.prototype = {
 		}
 		var id = lineParts[1];
 		var audience = lineParts[2];
+		
 		// TODO sanitize ID through regex		
-		// TODO: pass audience in somehow
 		console.log("Passing identity " + id + " to browserid\n");
 		try {
 			pageWorkers.Page({
 			  contentURL: "https://browserid.org",
-			  contentScript: "unsafeWindow.BrowserID.User.getAssertion(\"" + id + "\", " + 
+			  contentScript: "unsafeWindow.BrowserID.User.setOrigin(\"" + audience + "\");" +
+			  	"unsafeWindow.BrowserID.User.getAssertion(\"" + id + "\", " + 
 			  	"function(res) {self.postMessage({status:\"ok\", assertion:res});}, " + 
-			  	"function(err) {self.postMessage({status:\"error\"});})",
+			  	"function(err) {self.postMessage({status:\"error\"});});",
 			  contentScriptWhen: "end",
 			  onMessage: function(message) {
 			  	var out = JSON.stringify(message) + "\r\n\r\n";
