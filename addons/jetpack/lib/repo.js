@@ -71,11 +71,11 @@ if (typeof require !== "undefined") {
 
 
 function App(app_obj) {
-  this._app_obj = app_obj;
-  this.origin = this._app_obj.origin;
-  this.install_origin = this._app_obj.install_origin;
-  this.install_time = this._app_obj.install_time;
-  this.manifest = this._app_obj.manifest;
+  this.origin = app_obj.origin;
+  this.install_origin = app_obj.install_origin;
+  this.install_time = app_obj.install_time;
+  this.install_data = app_obj.install_data;
+  this.manifest = app_obj.manifest;
 
   if ("services" in this.manifest) {
     this.services = this.manifest.services;

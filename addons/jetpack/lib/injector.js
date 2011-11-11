@@ -41,7 +41,13 @@
 /* Inject the People content API into window.navigator objects. */
 /* Partly based on code in the Geode extension. */
 
-const { Cc, Ci, Cu } = require("chrome");
+if (typeof require !== "undefined") {
+  var { Cc, Ci, Cu } = require("chrome");
+} else {
+  var Cc = Components.classes;
+  var Ci = Components.interfaces;
+  var Cu = Components.utils;
+}
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
 const ALL_GROUP_CONSTANT = "___all___";
@@ -188,4 +194,8 @@ function InjectorInit(window) {
   };
 }
 
-exports.InjectorInit = InjectorInit;
+if (typeof exports !== "undefined") {
+  exports.InjectorInit = InjectorInit;
+} else {
+  var EXPORTED_SYMBOLS= ["InjectorInit"];
+}
