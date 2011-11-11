@@ -1,4 +1,10 @@
 {
+  "mozcrt19.dll":
+  {
+    "mode": "b",
+    "isExecutable": true,
+    "substituteStrings": false
+  },
   "Foxlauncher.exe":
   {
     "rename": "$APPNAME.exe",

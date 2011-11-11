@@ -115,10 +115,11 @@ function getBiggestIcon(minifest) {
 
 function embedInstallRecord(app, destination) {
   //write the contents of the app (install record), json-ified, into the specified file.
-  destination.append("installrecord.json");
+  let theDestination = destination.clone();
+  theDestination.append("installrecord.json");
   try {
     let installRecString = JSON.stringify(app);
-    asyncWriteFile(installRecString, destination);
+    asyncWriteFile(installRecString, theDestination);
   } catch (e) {
     console.log("error writing installrecord : " + e + "\n");
   }
@@ -371,16 +372,8 @@ function recursiveFileCopy(srcDir,
   }
 }
 
-const WEB_APPS_DIRNAME = "Web Apps";
-
 // Windows implementation
-//
-// Our Windows strategy:
-//    Copy our XUL app and generic launcher to this dir on user's machine:
-//                    "%LOCALAPPDATA%\Web Apps"
-
 function WinNativeShell() {
-
 }
 
 // TODO: Ask OS which chars are valid in a path
@@ -453,7 +446,7 @@ function winRunApp(filePath, commandLine, workingDir) {
                          filePathCStr,
                          commandLineCStr,
                          workingDirCStr,
-                         ctypes.int(10) // SW_SHOWDEFAULT
+                         ctypes.int(0) // SW_HIDE
                         );
     } catch(e) {
       throw("winRunApp - "
@@ -473,118 +466,70 @@ function winRunApp(filePath, commandLine, workingDir) {
   }
 }
 
-function winExpandVars(toExpand)
-{
-  try {
-    components.utils.import("resource://gre/modules/ctypes.jsm");
-  } catch(e) {
-    throw("winExpandVars - "
-          + "Failure importing ctypes (" + e + ")");
-  }
-
-  let kernel32;
-  try {
-    kernel32 = ctypes.open("Kernel32");
-  } catch(e) {
-    throw("winExpandVars - "
-          + "Failed to open Kernel32 (" + e + ")");
-  }
-
-  try {
-    try {
-      const DWORD = ctypes.uint32_t;
-      const WCHAR = ctypes.jschar;
-      const MAX_PATH = 260;
-      const outStrType = ctypes.ArrayType(WCHAR);
-    } catch(e) {
-      throw("winExpandVars - "
-            + "Failure setting up constants (" + e + ")");
-    }
-
-    let expandEnvironmentStrings;
-    try {
-      expandEnvironmentStrings = kernel32.declare("ExpandEnvironmentStringsW",
-                                                  ctypes.default_abi,
-                                                  DWORD,
-                                                  WCHAR.ptr,
-                                                  WCHAR.ptr,
-                                                  DWORD);
-    } catch(e) {
-      throw("winExpandVars - "
-            + "Failure declaring ExpandEnvironmentStringsW (" + e + ")");
-    }
-
-    let ret;
-    let out;
-    try {
-      let cstr = ctypes.jschar.array()(toExpand);
-      out = new outStrType(MAX_PATH);
-      ret = expandEnvironmentStrings(cstr, out, MAX_PATH);
-    } catch(e) {
-      throw("winExpandVars - "
-            + "Failure calling ExpandEnvironmentStringsW (" + e + ")");
-    }
-    if(0 === ret) {
-      throw("winExpandVars - "
-            + "Error in ExpandEnvironmentStringsW (" + ret + ")");
-    } else {
-      return out.readString();
-    }
-  } finally {
-    try {
-      kernel32.close();
-    } catch (e) {
-      console.log("APPS | nativeshell.win | winExpandVars - "
-                  + "Failure trying to close Kernel32 (" + e + ")");
-    }
-  }
-}
-
 WinNativeShell.prototype = {
-
   createAppNativeLauncher : function(app)
   {
     this.createExecutable(app);
   },
 
+  setUpPaths : function(app) {
+      let env = Cc["@mozilla.org/process/environment;1"]
+                .getService(Ci.nsIEnvironment);
+
+      let installDirPath = env.get("APPDATA");
+      if(!installDirPath) {
+        throw("Failure looking up %APPDATA%");
+      }
+
+      this.appName = app.manifest.name;
+
+      this.installDir = Cc['@mozilla.org/file/local;1']
+                        .createInstance(Ci.nsILocalFile);
+      this.installDir.initWithPath(installDirPath);
+      this.installDir.append(this.appName);
+
+      this.launchPath = app.origin;
+      if (app.manifest.launch_path) {
+        this.launchPath += app.manifest.launch_path;
+      }
+
+      this.iconFile = this.installDir.clone();
+      this.iconFile.append("chrome");
+      this.iconFile.append("icons");
+      this.iconFile.append("default");
+      this.iconFile.append(this.appName + ".ico");
+
+      this.installerDir = Cc["@mozilla.org/file/directory_service;1"]
+                           .getService(Ci.nsIProperties)
+                           .get("TmpD", Ci.nsIFile);
+      this.installerDir.append(this.appName);
+
+      let webRTPath = self.data.url("native-install/windows/xulrunner");
+      this.webRTDir = Cc['@mozilla.org/file/local;1']
+                      .createInstance(Ci.nsILocalFile);
+      this.webRTDir.initWithPath(url.toFilename(webRTPath));
+
+      this.webRTConfigFile = this.installDir.clone();
+      this.webRTConfigFile.append("webRT.config");
+  },
+
   createExecutable : function(app)
   {
-    let baseDir = "%LOCALAPPDATA%\\" + WEB_APPS_DIRNAME;
-
     try {
-      baseDir = winPathify(winExpandVars(baseDir));
-      var filePath = baseDir + "\\" + winFilenameify(app.manifest.name);
-      var launchPath = app.origin;
-      if (app.manifest.launch_path) {
-        launchPath += app.manifest.launch_path;
-      }
+      this.setUpPaths(app);
     } catch(e) {
       throw("createExecutable - Failure setting up paths (" + e + ")");
     }
 
-    let iconPath = filePath
-                   + "\\XUL\\chrome\\icons\\default\\"
-                   + app.manifest.name
-                   + ".ico";
-
     try {
-      if (file.exists(filePath))
+      if (this.installDir.exists())
       {
-        // recursive delete
-        let aNsLocalFile = Cc['@mozilla.org/file/local;1']
-                           .createInstance(Ci.nsILocalFile);
-        aNsLocalFile.initWithPath(filePath);
-        aNsLocalFile.remove(true);
+        this.installDir.remove(true);
       }
 
-      if(file.exists(baseDir + "\\install.exe")) {
-        file.remove(baseDir + "\\install.exe");
-      }
-
-      file.mkpath(baseDir);
-      file.mkpath(filePath);
-      file.mkpath(filePath + "\\XUL");
-      file.mkpath(file.dirname(iconPath));
+      this.installDir.create(Ci.nsIFile.DIRECTORY_TYPE, 0777);
+      this.iconFile.parent.create(Ci.nsIFile.DIRECTORY_TYPE, 0777);
+      this.installerDir.createUnique(Ci.nsIFile.DIRECTORY_TYPE, 0777);
     } catch(e) {
       throw("createExecutable - "
             + "Failure setting up target location (" + e + ")");
@@ -592,11 +537,11 @@ WinNativeShell.prototype = {
 
     // TODO: Ask user whether to create desktop/start menu shortcuts
     let substitutions = {
-      "\\$APPNAME": app.manifest.name,
+      "\\$APPNAME": this.appName,
       "\\$APPDOMAIN": app.origin,
-      "\\$LAUNCHPATH": launchPath,
-      "\\$INSTALLDIR": baseDir,
-      "\\$ICONPATH": iconPath,
+      "\\$LAUNCHPATH": this.launchPath,
+      "\\$INSTALLDIR": this.installDir.path,
+      "\\$ICONPATH": this.iconFile.path,
       "\\$DESKTOP_SHORTCUT": "y",
       "\\$SM_SHORTCUT": "y"
     }
@@ -604,62 +549,75 @@ WinNativeShell.prototype = {
     try {
       recursiveFileCopy("native-install/windows/installer",
                         "",
-                        baseDir,
+                        this.installerDir.path,
                         "\\",
                         substitutions,
                         undefined);
 
       recursiveFileCopy("native-install/windows/app",
                         "",
-                        filePath,
+                        this.installDir.path,
                         "\\",
                         substitutions,
                         undefined);
 
       recursiveFileCopy("native-install/XUL",
                         "",
-                        filePath + "\\XUL",
+                        this.installDir.path,
                         "\\",
                         substitutions,
                         undefined);
 
-      this.synthesizeIcon(app, iconPath);
+      let webRTConfigFileOStream 
+              = FileUtils.openSafeFileOutputStream(this.webRTConfigFile);
+      let converter = Cc["@mozilla.org/intl/scriptableunicodeconverter"]
+                      .createInstance(Ci.nsIScriptableUnicodeConverter);
+      converter.charset = "UTF-8";
+      let istream = converter.convertToInputStream(this.webRTDir.path + "\\");
+      NetUtil.asyncCopy(istream,
+                        webRTConfigFileOStream,
+                        function(status) {
+        if (!Components.isSuccessCode(status)) {
+          // TODO: We should bail on the whole installation if this fails
+          console.log("createExecutable - "
+                      + "Failed writing WebRT location to config file");
+        }
+      });
 
-      //////////////////////////////////////////////
-      //this code should be cross-platform   
-      var XULDir = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
-      XULDir.initWithPath(filePath);
-      XULDir.append("XUL");
-      var contentDir = XULDir.clone();
-      contentDir.append("content");
+      this.synthesizeIcon(app);
 
       //add the install record to the native app bundle
-      embedInstallRecord(app, XULDir);
-      //add injector.js, which we need to inject some apis into the webapp content page
+      embedInstallRecord(app, this.installDir);
+
+      //add injector.js, which we need to inject some apis
+      //into the webapp content page
+      let contentDir = this.installDir.clone();
+      contentDir.append("content");
       embedMozAppsAPIFiles(contentDir);
-      /////////////////////////////////////////////
     } catch(e) {
       throw("createExecutable - "
           + "Failure copying files (" + e + ")");
     }
 
     try {
-      winRunApp(baseDir + "\\install.exe",
-                "-appName=" + app.manifest.name
-                + " -appURL=" + launchPath
-                + " -appDesc=No description"
-                + " -iconPath=" + iconPath
+      let installerFile = this.installerDir.clone();
+      installerFile.append("install.exe");
+      winRunApp(installerFile.path,
+                "-appName=" + this.appName
+                + " -appURL=" + this.launchPath
+                + " -appDesc=Descriptions are not yet supported"
+                + " -iconPath=" + this.iconFile.path
                 + " -createDesktopShortcut=y"
                 + " -createStartMenuShortcut=y"
                 + " /S",
-                filePath);
+                this.installDir.path);
     } catch (e) {
       throw("createExecutable - "
             + "Failure running installer (" + e + ")");
     }
   },
 
-  synthesizeIcon : function(app, destinationFile)
+  synthesizeIcon : function(app)
   {
     let icon;
     try {
@@ -676,83 +634,95 @@ WinNativeShell.prototype = {
     icon = app.origin + icon;
 
     try {
-      NetUtil.asyncFetch(icon, function(inputStream,
-                                                    resultCode,
-                                                    request) {
-        // It's probably not wise to throw inside this callback
-        // since we don't know how the calling code will handle the exception.
-        // Instead we just log errors and return.
-        if (!components.isSuccessCode(resultCode)) {
-          console.log("APPS | nativeshell.win | synthesizeIcon - "
-                      + "Error retrieving icon from path " + icon
-                      + " (result code = " + resultCode + ")");
-          return;
-        }
-
-        let mimeType;
-        try {
-          // TODO: Come up with a smarter way to determine MIME type
-          if (icon.indexOf(".png") > 0) {
-            mimeType = "image/png";
-          } else if ((icon.indexOf(".jpeg") > 0)
-            || (icon.indexOf(".jpg") > 0)) {
-            mimeType = "image/jpeg";
-          }
-        } catch(e) {
-          console.log("APPS | nativeshell.win | synthesizeIcon - "
-                      + "Failure determining MIME type of " + icon
-                      + " (" + e + ")");
-          return;
-        }
-
-        let icoStream;
-        try {
-          imgTools = Cc["@mozilla.org/image/tools;1"]
-                     .createInstance(Ci.imgITools);
-          let imgContainer = { value: null };
-          imgTools.decodeImageData(inputStream, mimeType, imgContainer);
-          icoStream =
-              imgTools.encodeImage(imgContainer.value,
-                                   "image/vnd.microsoft.icon");
-        } catch (e) {
-          console.log("APPS | nativeshell.win | synthesizeIcon - "
-                      + "Failure converting icon " + icon
-                      + " (" + e + ")");
-          return;
-        }
-
-        // TODO: Smarter (async) writing of ico
-        let icoFileWriter;
-        try {
-          icoFileWriter = file.open(destinationFile, "wb");
-        } catch(e) {
-          console.log("APPS | nativeshell.win | synthesizeIcon - "
-                      + "Unable to open file " + destinationFile + " for writing"
-                      + " (" + e + ")");
-          return;
-        }
-
-        try{
-          let icoBinaryStream = Cc["@mozilla.org/binaryinputstream;1"]
-                                .createInstance(Ci.nsIBinaryInputStream);
-          icoBinaryStream.setInputStream(icoStream);
-
-          let contents = icoBinaryStream
-                         .readBytes(icoBinaryStream.available());
-
-          icoFileWriter.write(contents);
-        } catch (e) {
-          console.log("APPS | nativeshell.win | synthesizeIcon - "
-                      + "Failure writing icon file " + destinationFile
-                      + " (" + e + ")");
-          return;
-        } finally {
-          icoFileWriter.close();
-        }
-      });
+      NetUtil.asyncFetch(icon, this.onIconDownloadComplete.bind(this));
     } catch(e) {
       throw("synthesizeIcon - Failure setting up asynchronous fetch of "
             + icon);
+    }
+  },
+
+  onIconDownloadComplete : function(inputStream,
+                                    resultCode,
+                                    request)
+  {
+    // It's probably not wise to throw inside this callback
+    // since we don't know how the calling code will handle the exception.
+    // Instead we just log errors and return.
+    if (!components.isSuccessCode(resultCode)) {
+      console.log("APPS | nativeshell.win | synthesizeIcon - "
+                  + "Error retrieving icon " + request.name
+                  + " (result code = " + resultCode + ")");
+      return;
+    }
+
+    let mimeType;
+    try {
+      // TODO: Come up with a smarter way to determine MIME type
+      if (request.name.indexOf(".png") > 0) {
+        mimeType = "image/png";
+      } else if ((request.name.indexOf(".jpeg") > 0)
+                || (request.name.indexOf(".jpg") > 0)) {
+        mimeType = "image/jpeg";
+      }
+    } catch(e) {
+      console.log("APPS | nativeshell.win | synthesizeIcon - "
+                  + "Failure determining MIME type of " + request.name
+                  + " (" + e + ")");
+      return;
+    }
+
+    let icoStream;
+    try {
+      let imgTools = Cc["@mozilla.org/image/tools;1"]
+                     .createInstance(Ci.imgITools);
+      let imgContainer = { value: null };
+      imgTools.decodeImageData(inputStream, mimeType, imgContainer);
+      icoStream =
+        imgTools.encodeImage(imgContainer.value,
+                             "image/vnd.microsoft.icon");
+    } catch (e) {
+      console.log("APPS | nativeshell.win | synthesizeIcon - "
+                  + "Failure converting icon " + request.name
+                  + " (" + e + ")");
+      return;
+    }
+
+    try {
+      let outputStream = FileUtils.openSafeFileOutputStream(this.iconFile);
+      NetUtil.asyncCopy(icoStream,
+                        outputStream,
+                        this.onIconConversionComplete.bind(this));
+    } catch (e) {
+      console.log("APPS | nativeshell.win | synthesizeIcon - "
+          + "Failure writing icon file " + this.iconFile.path
+          + " (" + e + ")");
+      return;
+    }
+  },
+
+  onIconConversionComplete : function(status)
+  {
+    if (!Components.isSuccessCode(status)) {
+      console.log("APPS | nativeshell.win | synthesizeIcon - "
+          + "Failure writing icon file " + this.iconFile.path
+          + " (" + status + ")");
+    } else {
+      try {
+        let reditFile = this.webRTDir.clone();
+        reditFile.append("redit.exe");
+
+        let exeFile = this.installDir.clone();
+        exeFile.append(this.appName + ".exe");
+
+        winRunApp(reditFile.path,
+            "\"" + exeFile.path + "\""
+            + " \"" + this.iconFile.path + "\"",
+            this.installDir.path);
+      } catch (e) {
+        console.log("APPS | nativeshell.win | synthesizeIcon - "
+            + "Failure setting icon resource"
+            + " (" + e + ")");
+      }
     }
   }
 };
@@ -809,7 +779,7 @@ MacNativeShell.prototype = {
     let substitutions = {
       "\\$APPNAME": app.manifest.name,
       "\\$APPDOMAIN": app.origin,
-      "\\$APPDOMAIN_REVERSED": reverseDNS(app.origin),
+      "\\$REVERSED_APPDOMAIN": /*reverseDNS(*/app.origin/*)*/,
       "\\$LAUNCHPATH": launchPath
     }
     file.mkpath(filePath);
@@ -919,7 +889,7 @@ MacNativeShell.prototype = {
             dump("APPS | createExecutable | Unable to get icon - error during request\n");
             return;
           } else {
-            netutil.NetUtil.asyncCopy(inputStream, ostream, function(aResult) {
+            NetUtil.asyncCopy(inputStream, ostream, function(aResult) {
               if (ostream instanceof Ci.nsISafeOutputStream) {
                   ostream.finish();
               } else {
