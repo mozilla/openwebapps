@@ -247,7 +247,13 @@ try {
         return function(callback, options) { // XXX what is the options API going to be?
             checkNativeIdentityDaemon(contentWindowRef.location, options, function(assertion) {
                 // success: return to caller
-                callback(assertion);
+                var assert = JSON.parse(assertion);
+                if (assert.status == "ok" && assert.assertion) {
+                    callback(assert.assertion);
+                } else {
+                    // failure
+                    callback(null);
+                }
             }, function() {
                 // failure: need to present BrowserID dialog
                 if (!options || !options.silent) {
