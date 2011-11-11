@@ -119,7 +119,7 @@ function embedInstallRecord(app, destination) {
   theDestination.append("installrecord.json");
   try {
     let installRecString = JSON.stringify(app);
-    asyncWriteFile(installRecString, theDestination);
+    writeFile(installRecString, theDestination.path);
   } catch (e) {
     console.log("error writing installrecord : " + e + "\n");
   }
