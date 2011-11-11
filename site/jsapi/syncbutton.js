@@ -1,4 +1,5 @@
 var gContainerSource = null;
+var gCurrentUsername = null;
 
 window.addEventListener('storage', function (event) {
   if (event.key !== 'syncbutton-comm') {
@@ -11,10 +12,12 @@ window.addEventListener('storage', function (event) {
 function updateStatus(value) {
   if (value.logout) {
     setUsername('');
+    gCurrentUsername = null;
     setStatus('');
     makeLogout();
   }
-  if (value.username) {
+  if (value.username && value.username != gCurrentUsername) {
+    gCurrentUsername = value.username;
     setUsername(value.username);
     makeCompactLayout();
     var username = document.getElementById('username');
@@ -23,7 +26,14 @@ function updateStatus(value) {
   if (value.status) {
     setStatus(value.status);
     var statusMessage = document.getElementById('status');
-    statusMessage.innerHTL = value.status;
+    statusMessage.innerHTML = value.status;
+  }
+  if (value.last_sync_get || value.last_sync_put) {
+    var statusUpdated = document.getElementById('status-updated');
+    var date = new Date(value.last_sync_get || value.last_sync_put);
+    // FIXME: format better:
+    statusUpdated.innerHTML = date.toDateString() + ' ' + date.toTimeString();
+    document.getElementById('sync-now').innerHTML = 'sync now';
   }
 }
 
@@ -49,7 +59,9 @@ window.addEventListener('load', function () {
     updateStatus(prevValue);
   }
   var login = document.getElementById('login');
-  login.addEventListener('click', function () {
+  login.addEventListener('click', function (ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
     // FIXME: maybe switch to the grey icon?
     navigator.id.getVerifiedEmail(function (assertion) {
       if (! assertion) {
@@ -60,21 +72,37 @@ window.addEventListener('load', function () {
     });
   }, false);
   var logout = document.getElementById('logout');
-  logout.addEventListener('click', function () {
+  logout.addEventListener('click', function (ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
     console.log('syncbutton.js logging out');
-    if (localStorage.getItem('syncbutton-assertion') == 'logout') {
-      localStorage.setItem('syncbutton-assertion', '');
+    // We have to swap back and forth to make sure we are going to generate a
+    // storage message:
+    if (localStorage.getItem('syncbutton-assertion') == 'logout1') {
+      localStorage.setItem('syncbutton-assertion', 'logout2');
     } else {
-      localStorage.setItem('syncbutton-assertion', 'logout');
+      localStorage.setItem('syncbutton-assertion', 'logout1');
     }
   }, false);
   var expander = document.getElementById('syncbutton-expander');
-  expander.addEventListener('click', function () {
+  expander.addEventListener('click', function (ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
     makeExpanded();
   }, false);
   var compacter = document.getElementById('syncbutton-compacter');
-  compacter.addEventListener('click', function () {
+  compacter.addEventListener('click', function (ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
     makeCompact();
+  }, false);
+  var syncNow = document.getElementById('sync-now');
+  var syncCounter = 1;
+  syncNow.addEventListener('click', function (ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    localStorage.setItem('syncbutton-syncnow', syncCounter++);
+    syncNow.innerHTML = 'syncing...';
   }, false);
 }, false);
 

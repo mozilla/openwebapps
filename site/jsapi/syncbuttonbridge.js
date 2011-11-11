@@ -14,7 +14,7 @@ window.addEventListener('storage', function (event) {
   if (event.key !== 'syncbutton-assertion') {
     return;
   }
-  if ((! event.newValue) || event.newValue === 'logout') {
+  if (event.newValue == 'logout1' || event.newValue === 'logout2') {
     console.log('Logout out via bridge.js');
     sync.logout(function (error) {
       if (error) {
@@ -113,6 +113,18 @@ var sync = new SyncService({
   repo: Repo,
   server: new Server('/verify')
 });
+
+sync.onstatus = function (status) {
+  if (status.error) {
+    setButtonData({status: "Error syncing: " + JSON.stringify(status.detail)}, true);
+  } else if (status.status) {
+    if (status.status == 'sync_get') {
+      setButtonData({last_sync_get: status.timestamp}, true);
+    } else if (status.status == 'sync_put_complete' || (status.status == 'sync_put' && status.count === 0)) {
+      setButtonData({last_sync_put: status.timestamp}, true);
+    }
+  }
+};
 
 var scheduler = new Scheduler(sync);
 scheduler.onerror = function (error) {

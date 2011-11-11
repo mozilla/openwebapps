@@ -38,12 +38,21 @@ var SyncService = function (args) {
   this._backoffTime = null;
   this.onlogin = null;
   this.onlogout = null;
+  this.onstatus = null;
   // FIXME: we need to catch any Retry-After values, and call this:
   this.onretryafter = null;
 };
 
 SyncService.prototype.toString = function () {
   return '[SyncService pollTime: ' + this.pollTime + ' server: ' + this.server + ']';
+};
+
+SyncService.prototype.sendStatus = function (message) {
+  if (! this.onstatus) {
+    return;
+  }
+  message.timestamp = new Date().getTime();
+  this.onstatus(message);
 };
 
 SyncService.prototype.login = function (assertionData, callback) {
@@ -58,6 +67,7 @@ SyncService.prototype.login = function (assertionData, callback) {
     if (self.onlogin) {
       self.onlogin(result);
     }
+    self.sendStatus({login: true, account: result});
     if (callback) {
       callback(error, result);
     }
@@ -87,6 +97,7 @@ SyncService.prototype.invalidateLogin = function () {
   if (this.onlogout) {
     this.onlogout();
   }
+  this.sendStatus({login: false});
 };
 
 SyncService.prototype.lastSyncTime = function () {
@@ -138,13 +149,16 @@ SyncService.prototype.syncNow = function (callback, forcePut) {
       log('getUpdates error/terminating', {error: error});
       if (console.endGroup) console.endGroup();
       else if (console.groupEnd) console.groupEnd();
+      self.sendStatus({error: 'sync_get', detail: error});
       if (callback) {
         callback(error);
       }
       return;
     }
+    self.sendStatus({status: 'sync_get'});
     if (error && error.collection_deleted) {
       log('Collection is deleted, but ignoring');
+      self.sendStatus({error: 'sync_get_deleted', detail: error});
       // However, since it's been deleted we need to forget when we accessed it
       self._setLastSyncTime(0);
       self._setLastSyncPut(0);
@@ -171,6 +185,7 @@ SyncService.prototype.deleteCollection = function (reason, callback) {
   // FIXME: add client_id to reason (when we have a client_id)
   this.server.deleteCollection(reason, function (error, result) {
     if (error) {
+      self.sendStatus({error: 'delete_collection', detail: error});
       if (callback) {
         callback(error);
       }
@@ -178,6 +193,7 @@ SyncService.prototype.deleteCollection = function (reason, callback) {
     }
     self._setLastSyncTime(0);
     self._setLastSyncPut(0);
+    self.sendStatus({status: 'delete_collection'});
     callback(error, result);
   });
 };
@@ -188,6 +204,7 @@ SyncService.prototype._getUpdates = function (callback) {
     // FIXME: check error
     log('Ran GET', {since: self.lastSyncTime(), results: results, error: error});
     if (error) {
+      self.sendStatus({error: 'server_get', detail: error});
       if (callback) {
         callback(error);
       }
@@ -218,6 +235,7 @@ SyncService.prototype._processUpdates = function (apps, callback) {
   var deletionsToRemove = [];
   var appsToUpdate = [];
   var self = this;
+  this.sendStatus({status: 'process_updates', number: apps ? apps.length : 0});
   if ((! apps) || (! apps.length)) {
     log('No apps to process');
     callback();
@@ -278,7 +296,7 @@ SyncService.prototype._processUpdates = function (apps, callback) {
       }
       for (i=0; i<appsToAdd.length; i++) {
         var app = appsToAdd[i];
-        app.remotelyInstalled = true;
+        app.remotely_installed = true;
         expected++;
         self.repo.addApplication(app.origin, app, expectedCallback);
       }
@@ -330,6 +348,7 @@ SyncService.prototype._putUpdates = function (callback) {
         toUpdate.push(app);
       }
     }
+    self.sendStatus({status: 'sync_put', count: toUpdate.length});
     if (! toUpdate.length) {
       log('No updates to send');
       if (callback) {
@@ -341,11 +360,13 @@ SyncService.prototype._putUpdates = function (callback) {
     self.server.put(toUpdate, function (error, result) {
       log('server put completed', {error: error, result: result});
       if (error) {
+        self.sendStatus({error: 'sync_put', detail: error});
         if (callback) {
           callback(error);
         }
         return;
       }
+      self.sendStatus({status: 'sync_put_complete'});
       var tracking = self.storage.get('appTracking', function (tracking) {
         if (! tracking) {
           log('WARNING: appTracking is not set');
