@@ -127,6 +127,7 @@ function embedInstallRecord(app, destination) {
 
 //used to copy in the necessary js files to include so we can call the MozApps api to do browserID stuff.
 // turns out that we only really need injector.js for now
+//FUTURE: might it be possible to get a nice reference to /lib/injector.js using the same scheme as self.data?
 function embedMozAppsAPIFiles(destDir)
 {
   //find where the jetpack addon is, and where it is keeping the necessary js files we need to copy into the native app
@@ -396,7 +397,6 @@ function recursiveFileCopy(srcDir,
   }
 }
 
-const WEB_APPS_DIRNAME = "Web Apps";
 
 // Windows implementation
 //
@@ -574,7 +574,7 @@ WinNativeShell.prototype = {
 
   createExecutable : function(app)
   {
-    let baseDir = "%LOCALAPPDATA%\\" + WEB_APPS_DIRNAME;
+    let baseDir = "%APPDATA%"; 
 
     try {
       baseDir = winPathify(winExpandVars(baseDir));
@@ -810,7 +810,7 @@ MacNativeShell.prototype = {
 
   createExecutable : function(app)
   {
-    var baseDir = "/Applications/" + WEB_APPS_DIRNAME;
+    var baseDir = "/Applications";
     if (!file.exists(baseDir))
     {
       file.mkpath(baseDir);
