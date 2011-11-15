@@ -208,7 +208,7 @@ unsafeWindow.navigator.wrappedJSObject.mozActivities.mediation.ready = function(
   let doSetup = function() {
     self.port.once("owa.mediation.setup", setupHandler);
     self.port.emit("owa.mediation.ready");
-    self.port.removeListener("owa.mediation.start", updateActivity);
+    self.port.removeListener("owa.mediation.updateActivity", updateActivity);
   };
 
   doSetup();

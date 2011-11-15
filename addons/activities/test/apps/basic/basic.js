@@ -1,4 +1,7 @@
 // A simple web-app implementing the 'test.basic' service.
+navigator.mozActivities.services.registerHandler('test.basic', "init",
+  // support the default mediator by supplying the init handler
+  function(activity) {});
 
 navigator.mozActivities.services.registerHandler('test.basic', "echoArgs",
   function(activity, credentials) {

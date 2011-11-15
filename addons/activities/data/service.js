@@ -125,7 +125,6 @@ function configureServices(activity, services) {
       })
     });
   }
-  startActivity(activity);
 }
 
 window.navigator.mozActivities.mediation.ready(configureServices, startActivity);

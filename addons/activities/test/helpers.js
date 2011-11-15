@@ -1,5 +1,14 @@
 const {Cc, Ci, Cm, Cu, components} = require("chrome");
 
+
+exports.getServiceInvocationHandler = function() {
+  require("openwebapps/main"); // for the side effect of injecting window.apps.
+  let wm = Cc["@mozilla.org/appshell/window-mediator;1"]
+            .getService(Ci.nsIWindowMediator);
+  let window = wm.getMostRecentWindow("navigator:browser");
+  return window.serviceInvocationHandler;
+}
+
 // Return the "openwebapps" object.
 exports.getOWA = function() {
   require("openwebapps/main"); // for the side effect of injecting window.apps.
@@ -10,14 +19,10 @@ exports.getOWA = function() {
   return window.apps;
 }
 
-exports.getTestUrl = getTestUrl = function(testRelPath) {
-  let lastSlash = module.uri.lastIndexOf("/");
-  return module.uri.substr(0, lastSlash+1) + "../" + testRelPath;
-}
-
 function getTestAppOptions(appRelPath) {
   // first find the URL of the app.
-  let manifest = getTestUrl(appRelPath);
+  let lastSlash = module.uri.lastIndexOf("/");
+  let manifest = module.uri.substr(0, lastSlash+1) + appRelPath;
   let origin = manifest.substr(0, manifest.lastIndexOf("/")+1);
 
   return {
@@ -41,7 +46,7 @@ exports.installTestApp = function(test, appPath, callback, errback) {
     }
   };
   options.onsuccess = function() {
-      callback();
+      callback(options);
   };
   repo.install('http://localhost:8420',
                options,
@@ -73,4 +78,25 @@ exports.uninstallTestApp = function(test, appPath, callback, errback) {
 exports.ensureNoTestApp = function(test, appPath, callback) {
   exports.uninstallTestApp(test, appPath,
                            function() {callback()}, function() {callback()});
+}
+
+
+exports.invokeService = function(mediatorPanel, activity, cb, cberr) {
+  let worker = mediatorPanel.handlers[activity.origin][activity.action][activity.message];
+  activity.success = "test_invoke_success";
+  activity.error = "test_invoke_error";
+  function postResult(result) {
+    worker.port.removeListener(activity.error, postException);
+    cb(result);
+  }
+  function postException(result) {
+    worker.port.removeListener(activity.success, postResult);
+    cberr(result);
+  }
+  worker.port.once(activity.success, postResult)
+  worker.port.once(activity.error, postException)
+  worker.port.emit("owa.service.invoke", {
+    activity: activity,
+    credentials: {}
+  });
 }

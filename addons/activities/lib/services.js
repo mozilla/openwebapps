@@ -78,7 +78,6 @@ function MediatorPanel(window, methodName) {
   this.mediator = mediators[this.methodName];
 
   this.panel = null;
-  this.isConfigured = false;
   this.invocationid = nextinvocationid++;
   this.invalidated = true;
 
@@ -123,8 +122,14 @@ MediatorPanel.prototype = {
       if (id == this.frames[i].id) {
         let frame = this.frames[i];
         this.inject(document.defaultView, frame);
+        // hack to get the panel's window, important for tests
+        this._panelWindow = document.defaultView.top;
       }
     }
+  },
+  
+  get panelWindow() {
+    return this._panelWindow;
   },
   
   inject: function(contentWindow, frame) {
@@ -149,7 +154,7 @@ MediatorPanel.prototype = {
     });
     worker.port.on("owa.service.register.handler", function (activity) {
       //dump("register.handler "+JSON.stringify(activity)+"\n");
-      //dump("register.handler "+frame.origin+"/"+activity.action+"/"+activity.message+"\n");
+      //dump("register.handler "+frame.origin+":"+activity.action+":"+activity.message+"\n");
       if (!mediator.handlers[frame.origin])
         mediator.handlers[frame.origin] = {};
       if (!mediator.handlers[frame.origin][activity.action])
@@ -212,6 +217,7 @@ MediatorPanel.prototype = {
   },
 
   onOWAReady: function(msg) {
+    this._panelWindow = null;
     FFRepoImplService.findServices(this.methodName, function(serviceList) {
       this.tabData.activity.data = this.updateargs(this.tabData.activity.data);
       this.panel.port.emit("owa.mediation.setup", {
@@ -342,10 +348,6 @@ MediatorPanel.prototype = {
    * show the mediator popup
    */
   show: function() {
-    if (!this.isConfigured) {
-      this.panel.port.emit("owa.mediation.reconfigure");
-      this.isConfigured = true;
-    }
     if (this.invalidated) {
       this.tabData.activity.data = this.updateargs(this.tabData.activity.data);
       this.panel.port.emit("owa.mediation.updateActivity", this.tabData.activity);
@@ -511,14 +513,10 @@ serviceInvocationHandler.prototype = {
         topic === "openwebapp-uninstalled" ||
         topic === "net:clear-active-logins")
     {
-    // All visible panels need to be reconfigured now, while invisible
-    // ones can wait until they are re-shown.
+    // XXX TODO look at the change in the app and only reconfigure the related
+    // mediators.
     for each (let popupCheck in this._popups) {
-      if (popupCheck.panel.isShowing) {
       popupCheck.panel.port.emit("owa.mediation.reconfigure");
-      } else {
-      popupCheck.isConfigured = false;
-      }
     }
     }
   },
