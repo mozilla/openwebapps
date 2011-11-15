@@ -143,6 +143,7 @@ openwebapps.prototype = {
       "*.myapps.mozillalabs.com",
       "https?://apps.mozillalabs.com",
       "https?://localhost",
+      "http://127.0.0.1:60172/*",
       "about:apps"
     ];
   
