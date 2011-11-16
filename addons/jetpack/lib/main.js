@@ -65,7 +65,7 @@ function openwebapps(win, getUrlCB) {
   tmp = require("./api");
   this._repo = tmp.FFRepoImplService;
   
-  // setup page-modes
+  // setup page-mods
   this.setupManagerAPI();
 
   if (this.pendingRegistrations) {
@@ -399,8 +399,37 @@ function startup(getUrlCB) { /* Initialize simple storage */
     }
   });
 
+  // Setup Sync
+  let tmp = require("./api");
+  let sync = require("./sync");
+  let storage = require("./typed_storage");
+  let syncURL = require("preferences-service").
+    get("apps.sync.url", "http://sync4.web.mtv1.dev.svc.mozilla.com/verify");
+  
+  let service = new sync.Service({
+    repo: tmp.FFRepoImplService,
+    server: new sync.Server(syncURL),
+    storage: new storage.TypedStorage().open("sync")
+  });
+
+  service.onstatus = function(status) {
+    if (status.error) {
+      console.log("Error syncing: " + JSON.stringify(status.detail));
+    } else if (status.status) {
+      if (status.status == 'sync_get') {
+        console.log("last_sync_get: " + status.timestamp);
+      } else if (status.status == 'sync_put_complete' || (status.status == 'sync_put' && status.count === 0)) {
+        console.log("last_sync_put: " + status.timestamp);
+      }
+    }
+  };
+
+  let scheduler = new sync.Scheduler(service);
+  scheduler.onerror = function (error) {
+    console.log("Error syncing: " + JSON.stringify(error));
+  };
+
   // Broadcast that we're done, in case anybody is listening
-  let tmp = require("api");
   Services.obs.notifyObservers(tmp.FFRepoImplService, "openwebapps-startup-complete", "");
 
   // initialize the injector if we are <fx9

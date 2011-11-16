@@ -1,11 +1,4 @@
 
-/* For Jetpack */
-if (typeof exports != "undefined") {
-  exports.SyncServer = Server;
-  exports.SyncService = SyncService;
-  exports.SyncScheduler = Scheduler;
-}
-
 var SyncService = function (args) {
   var self = this;
   this.pollTime = args.pollTime;
@@ -658,3 +651,10 @@ Scheduler.prototype.schedule = function () {
     }
   }, this._nextRun);
 };
+
+/* For Jetpack */
+if (typeof exports !== "undefined") {
+  exports.Server = Server;
+  exports.Service = SyncService;
+  exports.Scheduler = Scheduler;
+}
