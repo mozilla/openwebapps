@@ -455,7 +455,7 @@ Server.prototype.login = function (data, callback) {
 };
 
 Server.prototype._processLogin = function (data, callback) {
-  if (data.status != 'okay') {
+  if (! data.email) {
     callback(data);
     return;
   }
