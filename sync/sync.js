@@ -141,12 +141,12 @@ SyncService.prototype.setAppTracking = function (value) {
 
 SyncService.prototype.syncNow = function (callback, forcePut) {
   var self = this;
-  if (console.group) console.group('Starting syncNow');
+  log('Starting syncNow');
+  logGroup();
   this._getUpdates(function (error) {
     if (error && ((! forcePut) || (! error.collection_deleted))) {
       log('getUpdates error/terminating', {error: error});
-      if (console.endGroup) console.endGroup();
-      else if (console.groupEnd) console.groupEnd();
+      logGroupEnd();
       self.sendStatus({error: 'sync_get', detail: error});
       if (callback) {
         callback(error);
@@ -163,8 +163,7 @@ SyncService.prototype.syncNow = function (callback, forcePut) {
     }
     self._putUpdates(function (error) {
       log('finished syncNow', {error: error});
-      if (console.endGroup) console.endGroup();
-      else if (console.groupdEnd) console.groupEnd();
+      logGroupEnd();
       if (callback) {
         callback(error);
       }
@@ -337,7 +336,9 @@ SyncService.prototype._putUpdates = function (callback) {
         // FIXME: this should signal some error, but to whom?
         continue;
       }
-      if (app.sync) {
+      // FIXME: strictly speaking, we shouldn't really skip these, as this
+      // allows apps to be replicated around...
+      if (app.remotely_installed) {
         continue;
       }
       if ((! self._lastSyncPut)
@@ -402,7 +403,29 @@ function log(msg) {
       args.push(a);
     }
   }
+  if (typeof exports != 'undefined') {
+    // Jetpack doesn't log too nicely, we'll fix it up
+    for (var i=0; i<args.length; i++) {
+      if (typeof args[i] == 'object' && args[i] !== null) {
+        args[i] = JSON.stringify(args[i]);
+      }
+    }
+  }
   console.log.apply(console, args);
+}
+
+function logGroup() {
+  if (console && console.group) {
+    console.group();
+  }
+}
+
+function logGroupEnd() {
+  if (console && console.groupEnd) {
+    console.groupEnd();
+  } else if (console && console.endGroup) {
+    console.endGroup();
+  }
 }
 
 function objectValues(o) {
@@ -514,7 +537,7 @@ Server.prototype.get = function (since, callback) {
       return;
     }
     if (req.status != 200) {
-      callback({error: "Non-200 response code", request: req, text: req.responseText});
+      callback({error: "Non-200 response code", code: req.status, url: url, request: req, text: req.responseText});
       return;
     }
     var data = JSON.parse(req.responseText);
@@ -540,7 +563,7 @@ Server.prototype.put = function (data, callback) {
       return;
     }
     if (req.status != 200) {
-      callback({error: "Non-200 response code", request: req});
+      callback({error: "Non-200 response code", code: req.status, url: this._collectionUrl, request: req});
       return;
     }
     var data = JSON.parse(req.responseText);
@@ -554,13 +577,14 @@ Server.prototype.deleteCollection = function (reason, callback) {
     throw 'You have not logged in yet';
   }
   var data = JSON.stringify(reason);
-  var req = this._createRequest('POST', this._collectionUrl + '?delete');
+  var url = this._collectionUrl + '?delete';
+  var req = this._createRequest('POST', url);
   req.onreadystatechange = function () {
     if (req.readyState != 4) {
       return;
     }
     if (req.status != 200) {
-      callback({error: "Non-200 response code", request: req});
+      callback({error: "Non-200 response code", code: req.status, url: url, request: req});
       return;
     }
     if (req.responseText) {

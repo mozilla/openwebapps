@@ -563,10 +563,8 @@ Repo = (function() {
       }
       var result = [];
       var remaining = keys.length;
-      console.log('all keys', keys);
       for (var i=0; i<keys.length; i++) {
         deletedStorage.get(keys[i], function (deleted) {
-          console.log('got key', i, keys[i], deleted, remaining);
           result.push(deleted);
           remaining--;
           if (! remaining) {

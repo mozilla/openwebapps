@@ -43,7 +43,6 @@ function login(loginData) {
         setButtonData({logout: true}, false);
         return;
       }
-      console.log('login return status:', status.status);
       localStorage.setItem('syncbutton-saved-login', JSON.stringify(loginData));
       setButtonData({logout: false, username: status.email, status: null}, false);
       // FIXME: this needs to be a much fancier loop:
