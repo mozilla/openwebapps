@@ -1,7 +1,4 @@
 var MockServer = function () {
-  if (this === window) {
-    throw 'You forgot new';
-  }
   this._last_modified = null;
   this._applications = [];
   this._loginStatus = null;

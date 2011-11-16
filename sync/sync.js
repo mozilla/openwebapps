@@ -1,7 +1,12 @@
+
+/* For Jetpack */
+if (typeof exports != "undefined") {
+  exports.SyncServer = Server;
+  exports.SyncService = SyncService;
+  exports.SyncScheduler = Scheduler;
+}
+
 var SyncService = function (args) {
-  if (this === window) {
-    throw 'You forgot new';
-  }
   var self = this;
   this.pollTime = args.pollTime;
   if (this.pollTime === undefined) {
@@ -88,7 +93,7 @@ SyncService.prototype.logout = function (callback) {
       return;
     }
     self.invalidateLogin();
-    callback(error, result)
+    callback(error, result);
   });
 };
 
@@ -420,3 +425,236 @@ function objectValues(o) {
   }
   return result;
 }
+
+var Server = function (url) {
+  this._url = url;
+  this._loginStatus = null;
+  this._collectionUrl = null;
+  this._httpAuthorization = null;
+};
+
+Server.prototype.login = function (data, callback) {
+  var self = this;
+  var assertion = data.assertion;
+  if (! assertion) {
+    throw "You must provide an assertion ({assertion: 'value'})";
+  }
+  var audience = data.audience;
+  if (! audience) {
+    throw "You must provide an audience ({audience: 'domain'})";
+  }
+  var req = this._createRequest('POST', self._url);
+  req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+  req.onreadystatechange = function () {
+    if (req.readyState != 4) {
+      return;
+    }
+    if (req.status != 200) {
+      callback({error: "Bad response from " + self._url + ": " + req.status,
+                req: req, text: req.responseText});
+      return;
+    }
+    var data = JSON.parse(req.responseText);
+    self._processLogin(data, callback);
+  };
+  req.send('assertion=' + encodeURIComponent(assertion)
+           + '&audience=' + encodeURIComponent(audience));
+};
+
+Server.prototype._processLogin = function (data, callback) {
+  if (data.status != 'okay') {
+    callback(data);
+    return;
+  }
+  this._loginStatus = data;
+  this._collectionUrl = data.collection_url;
+  this._httpAuthorization = data.http_authorization;
+  callback(null, data);
+};
+
+Server.prototype.loggedIn = function () {
+  return this._loginStatus !== null;
+};
+
+Server.prototype.logout = function (callback) {
+  this._loginStatus = null;
+  this._collectionUrl = null;
+  this._httpAuthorization = null;
+  callback();
+};
+
+Server.prototype.userInfo = function () {
+  if (this._loginStatus === null) {
+    return null;
+  }
+  // Not sure if any other records should be included?
+  return {
+    email: this._loginStatus.email, 
+    "valid-until": this._loginStatus['valid-until']
+  };
+};
+
+Server.prototype._createRequest = function (method, url) {
+  var req = new XMLHttpRequest();
+  req.open(method, url);
+  if (this._httpAuthorization) {
+    req.setRequestHeader('Authorization', this._httpAuthorization);
+  }
+  return req;
+};
+
+Server.prototype.get = function (since, callback) {
+  if (since === null) {
+    since = 0;
+  }
+  if (! this._loginStatus) {
+    throw 'You have not yet logged in';
+  }
+  if (typeof since != 'number') {
+    throw 'In get(since, ...) since must be a number or null';
+  }
+  var url = this._collectionUrl;
+  url += '?since=' + encodeURIComponent(since);
+  var req = this._createRequest('GET', url);
+  req.onreadystatechange = function () {
+    if (req.readyState != 4) {
+      return;
+    }
+    if (req.status != 200) {
+      callback({error: "Non-200 response code", request: req, text: req.responseText});
+      return;
+    }
+    var data = JSON.parse(req.responseText);
+    if (data.collection_deleted) {
+      callback(data, null);
+    } else {
+      callback(null, data);
+    }
+  };
+  req.send();
+};
+
+// FIXME: should probably have since here:
+Server.prototype.put = function (data, callback) {
+  if (! this._loginStatus) {
+    throw 'You have not yet logged in';
+  }
+  data = JSON.stringify(data);
+  var req = this._createRequest('POST', this._collectionUrl);
+  // FIXME: add since?
+  req.onreadystatechange = function () {
+    if (req.readyState != 4) {
+      return;
+    }
+    if (req.status != 200) {
+      callback({error: "Non-200 response code", request: req});
+      return;
+    }
+    var data = JSON.parse(req.responseText);
+    callback(null, data);
+  };
+  req.send(data);
+};
+
+Server.prototype.deleteCollection = function (reason, callback) {
+  if (! this._loginStatus) {
+    throw 'You have not logged in yet';
+  }
+  var data = JSON.stringify(reason);
+  var req = this._createRequest('POST', this._collectionUrl + '?delete');
+  req.onreadystatechange = function () {
+    if (req.readyState != 4) {
+      return;
+    }
+    if (req.status != 200) {
+      callback({error: "Non-200 response code", request: req});
+      return;
+    }
+    if (req.responseText) {
+      var data = JSON.parse(req.responseText);
+    } else {
+      var data = null;
+    }
+    callback(null, data);
+  };
+  req.send(data);
+};
+
+Server.prototype.toString = function () {
+  return '[Server url: ' + this._url + ']';
+};
+
+function Scheduler(service) {
+  var self = this;
+  this.service = service;
+  this.service.onlogin = function () {
+    self.activate();
+  };
+  this.service.onlogout = function () {
+    self.deactivate();
+  };
+  this.service.onretryafter = function (retryAfter) {
+    self.resetSchedule();
+    self._period = retryAfter;
+    self.schedule();
+  };
+  this._timeoutId = null;
+  this._nextRun = null;
+  this._period = this.settings.normalPeriod;
+  this._retryAfter = null;
+  if (this.service.loggedIn()) {
+    this.activate();
+  }
+  this.lastSuccessfulSync = null;
+  this.onerror = null;
+  this.onsuccess = null;
+}
+
+Scheduler.prototype.settings = {
+  maxPeriod: 60*60000, // 1 hour
+  minPeriod: 30000, // 30 seconds
+  normalPeriod: 5000 // 5 minutes
+};
+
+Scheduler.prototype.activate = function () {
+  this.deactivate();
+  this.resetSchedule();
+  this.schedule();
+};
+
+Scheduler.prototype.deactivate = function () {
+  if (this._timeoutId) {
+    clearTimeout(this._timeoutId);
+    this._timeoutId = null;
+  }
+};
+
+Scheduler.prototype.resetSchedule = function () {
+  this._nextRun = this.settings.normalPeriod;
+};
+
+Scheduler.prototype.schedule = function () {
+  var self = this;
+  if (this._timeoutId) {
+    clearTimeout(this._timeoutId);
+  };
+  this._timeoutId = setTimeout(function () {
+    try {
+      self.service.syncNow(function (error, result) {
+        if (error && self.onerror) {
+          self.onerror(error);
+        }
+        self.schedule();
+        this.lastSuccessfulSync = new Date().getTime();
+        if (self.onsuccess) {
+          self.onsuccess();
+        }
+      });        
+    } catch (e) {
+      if (self.onerror) {
+        self.onerror(e);
+      }
+      self.schedule();
+    }
+  }, this._nextRun);
+};
