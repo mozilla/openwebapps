@@ -782,12 +782,40 @@ MacNativeShell.prototype = {
     this.createExecutable(app);
   },
 
+  setUpPaths : function(app) {
+
+      let installDirPath = "/Applications";
+
+      this.appName = app.manifest.name + ".app";
+
+      this.installDir = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
+      this.installDir.initWithPath(installDirPath);
+      this.installDir.append(this.appName);
+
+      let webRTPath = self.data.url("native-install/mac/xulrunner");
+      this.webRTDir = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
+      this.webRTDir.initWithPath(url.toFilename(webRTPath));
+
+      this.webRTConfigFile = this.installDir.clone();
+      this.webRTConfigFile.append("webRT.config");
+      console.log(this.webRTConfigFile.path);
+  },
+
+
   createExecutable : function(app)
   {
+    try {
+      this.setUpPaths(app);
+    } catch(e) {
+      throw("createExecutable - Failure setting up paths (" + e + ")");
+    }
+
+
     var baseDir = "/Applications";
     if (!file.exists(baseDir))
     {
-      file.mkpath(baseDir);
+      //can't do this.  It will exist, don't worry about it
+      //file.mkpath(baseDir);
     }
 
     var filePath = baseDir + "/" + sanitizeMacFileName(app.manifest.name) + ".app";
@@ -813,7 +841,7 @@ MacNativeShell.prototype = {
     }
     file.mkpath(filePath);
 
-      recursiveFileCopy("native-install/mac",
+      recursiveFileCopy("native-install/mac/install",
                            "",
                            filePath,
                            "/",
@@ -824,6 +852,21 @@ MacNativeShell.prototype = {
                            filePath + "/XUL",
                            "/",
                            substitutions);
+
+      //STASH THE PATH TO XULRUNNER
+      let webRTConfigFileOStream = FileUtils.openSafeFileOutputStream(this.webRTConfigFile);
+      let converter = Cc["@mozilla.org/intl/scriptableunicodeconverter"].createInstance(Ci.nsIScriptableUnicodeConverter);
+      converter.charset = "UTF-8";
+      let istream = converter.convertToInputStream(this.webRTDir.path + "/");
+      NetUtil.asyncCopy(istream,
+                        webRTConfigFileOStream,
+                        function(status) {
+        if (!Components.isSuccessCode(status)) {
+          // TODO: We should bail on the whole installation if this fails
+          console.log("createExecutable - "
+                      + "Failed writing WebRT location to config file");
+        }
+      });
 
     //////////////////////////////////////////////
     //this code should be cross-platform   
