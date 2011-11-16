@@ -46,31 +46,30 @@ Var appDesc
 Var iconPath
 Var createDesktopShortcut
 Var createStartMenuShortcut
+Var parameters
 
 Name $appName
 OutFile ..\..\data\native-install\windows\installer\install.exe
 
 Function .onInit
-  Push $0
   ClearErrors
-  ${GetParameters} $0
+  ${GetParameters} $parameters
   readAppName:
-  ${GetOptions} $0 "-appName=" $appName
+  ${GetOptions} $parameters "-appName=" $appName
   IfErrors 0 setOutDir
     SetErrors
     Goto cleanup
   setOutDir:
-  StrCpy $INSTDIR $EXEDIR
-  SetOutPath $INSTDIR\$appName
+  StrCpy $INSTDIR $APPDATA\$appName
+  SetOutPath $INSTDIR
   readOptionalInfo:
-  ${GetOptions} $0 "-appURL=" $appURL
-  ${GetOptions} $0 "-appDesc=" $appDesc
-  ${GetOptions} $0 "-iconPath=" $iconPath
-  ${GetOptions} $0 "-createDesktopShortcut=" $createDesktopShortcut
-  ${GetOptions} $0 "-createStartMenuShortcut=" $createStartMenuShortcut
+  ${GetOptions} $parameters "-appURL=" $appURL
+  ${GetOptions} $parameters "-appDesc=" $appDesc
+  ${GetOptions} $parameters "-iconPath=" $iconPath
+  ${GetOptions} $parameters "-createDesktopShortcut=" $createDesktopShortcut
+  ${GetOptions} $parameters "-createStartMenuShortcut=" $createStartMenuShortcut
   ClearErrors
   cleanup:
-  Pop $0
   IfErrors 0 done
     Abort
   done:
@@ -85,7 +84,7 @@ Function WriteRegKeys
   WriteRegStr HKCU \
               "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appName" \
               "UninstallString" \
-              "$INSTDIR\uninstall.exe -appName=$appName"
+              "$OUTDIR\uninstall.exe -appName=$appName"
   WriteRegStr HKCU \
               "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appName" \
               "InstallLocation" \
@@ -118,27 +117,7 @@ Function WriteRegKeys
 FunctionEnd
 
 Function CreateShortcuts
-  Push $0
-  Push $1
   ClearErrors
-  DetailPrint "Looking up uninstall-files.dat"
-  GetFullPathName $0 uninstall-files.dat
-  IfErrors 0 foundUninstallFiles
-    DetailPrint "Failed looking up uninstall-files.dat"
-    StrCpy $0 ""
-    Goto maybeCreateDesktopShortcut
-  foundUninstallFiles:
-  DetailPrint "Full path to uninstall-files.dat: $0"
-  openUninstallFiles:
-  DetailPrint "Opening uninstall-files.dat"
-  FileOpen $1 $0 a
-  FileSeek $1 0 END
-  IfErrors 0 successfullyOpenedUninstallFiles
-    DetailPrint "Failed to open uninstall-files.dat"
-    StrCpy $0 ""
-    Goto maybeCreateDesktopShortcut
-  successfullyOpenedUninstallFiles:
-  DetailPrint "Uninstall-files.dat opened"
   maybeCreateDesktopShortcut:
   StrCmp $createDesktopShortcut "y" 0 maybeCreateStartMenuShortcut
   CreateShortcut $DESKTOP\$appName.lnk \
@@ -149,8 +128,6 @@ Function CreateShortcuts
                  "" \
                  "" \
                  $appDesc
-  StrCmp $0 "" maybeCreateStartMenuShortcut
-  FileWrite $1 $DESKTOP\$appName.lnk$\n
   maybeCreateStartMenuShortcut:
   StrCmp $createStartMenuShortcut "y" 0 cleanup
   CreateShortcut $SMPROGRAMS\$appName.lnk \
@@ -161,29 +138,20 @@ Function CreateShortcuts
                  "" \
                  "" \
                  $appDesc
-  StrCmp $0 "" cleanup
-  FileWrite $1 $SMPROGRAMS\$appName.lnk$\n
   cleanup:
-  StrCmp $0 "" popRegisters closeFile
-  closeFile:
-  FileClose $1
-  popRegisters:
-  Pop $1
-  Pop $0
 FunctionEnd
 
 Section Install
   Call WriteRegKeys
   Call CreateShortcuts
-  WriteUninstaller $EXEDIR\uninstall.exe
+  WriteUninstaller $INSTDIR\uninstall.exe
 SectionEnd
 
 Function un.onInit
-  Push $0
   ClearErrors
-  ${GetParameters} $0
+  ${GetParameters} $parameters
   readAppName:
-  ${GetOptions} $0 "-appName=" $appName
+  ${GetOptions} $parameters "-appName=" $appName
   IfErrors 0 setUpPaths
     SetErrors
     Goto cleanup
@@ -192,18 +160,22 @@ Function un.onInit
              HKCU \
             "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appName" \
             "InstallLocation"
+  IfErrors 0 cleanup
+    StrCpy $INSTDIR "$APPDATA\$appName"
   cleanup:
-  Pop $0
   IfErrors 0 done
     Abort
   done:
 FunctionEnd
 
 Function un.RemoveAppDir
-  Push $0
   RMDir /r $INSTDIR
   RMDir $INSTDIR
-  Pop $0
+FunctionEnd
+
+Function un.RemoveAppData
+  RMDir /r $APPDATA\Mozilla\$appName
+  RMDir $APPDATA\Mozilla\$appName
 FunctionEnd
 
 Function un.RemoveShortcuts
@@ -218,6 +190,7 @@ FunctionEnd
 
 Section un.Install
   Call un.RemoveAppDir
+  Call un.RemoveAppData
   Call un.RemoveShortcuts
   Call un.RemoveRegKeys
   RMDIR $INSTDIR\$appName
