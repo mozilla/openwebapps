@@ -784,9 +784,9 @@ MacNativeShell.prototype = {
 
   setUpPaths : function(app) {
 
-      let installDirPath = "/Applications";
+      let installDirPath = "~/Applications";
 
-      this.appName = app.manifest.name + ".app";
+      this.appName = sanitizeMacFileName(app.manifest.name) + ".app";
 
       this.installDir = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
       this.installDir.initWithPath(installDirPath);
@@ -810,21 +810,10 @@ MacNativeShell.prototype = {
       throw("createExecutable - Failure setting up paths (" + e + ")");
     }
 
-
-    var baseDir = "/Applications";
-    if (!file.exists(baseDir))
-    {
-      //can't do this.  It will exist, don't worry about it
-      //file.mkpath(baseDir);
-    }
-
-    var filePath = baseDir + "/" + sanitizeMacFileName(app.manifest.name) + ".app";
-    if (file.exists(filePath))
+    if (file.exists(this.installDir.path))
     {
       // recursive delete
-      var aNsLocalFile = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
-      aNsLocalFile.initWithPath(filePath);
-      aNsLocalFile.remove(true);
+      this.installDir.remove(true);
     }
     
     // Now we synthesize a .app by copying the mac-app-template directory from our internal state
@@ -839,17 +828,17 @@ MacNativeShell.prototype = {
       "\\$REVERSED_APPDOMAIN": /*reverseDNS(*/app.origin/*)*/,
       "\\$LAUNCHPATH": launchPath
     }
-    file.mkpath(filePath);
+    file.mkpath(this.installDir.path);
 
       recursiveFileCopy("native-install/mac/install",
                            "",
-                           filePath,
+                           this.installDir.path,
                            "/",
                            substitutions);
 
       recursiveFileCopy("native-install/XUL",
                            "",
-                           filePath + "/XUL",
+                           this.installDir.path + "/XUL",
                            "/",
                            substitutions);
 
@@ -871,7 +860,7 @@ MacNativeShell.prototype = {
     //////////////////////////////////////////////
     //this code should be cross-platform   
     var XULDir = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
-    XULDir.initWithPath(filePath);
+    XULDir.initWithPath(this.installDir.path);
     XULDir.append("XUL");
     var contentDir = XULDir.clone();
     contentDir.append("content");
@@ -882,7 +871,7 @@ MacNativeShell.prototype = {
     embedMozAppsAPIFiles(contentDir);
     /////////////////////////////////////////////
 
-    this.synthesizeIcon(app, filePath + "/Contents/Resources/appicon.icns");
+    this.synthesizeIcon(app, this.installDir.path + "/Contents/Resources/appicon.icns");
   },
   
 
