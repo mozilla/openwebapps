@@ -18,9 +18,14 @@ endif
 addon_sdk := $(deps)/addon-sdk/bin
 oauthorizer := $(deps)/oauthorizer
 openwebapps := $(TOPSRCDIR)/addons/jetpack
+activities := $(TOPSRCDIR)/addons/activities
 
 #cfx_args :=  --pkgdir=$(TOPSRCDIR) $(profile) --package-path=$(oauthorizer) --package-path=$(openwebapps) --binary-args="-console -purgecaches"
-cfx_args :=  --pkgdir=$(openwebapps) $(profile) --package-path=$(oauthorizer) --binary-args="-console -purgecaches $(BINARYARGS)"
+ifeq ($(TARGET),activities)
+  cfx_args :=  --pkgdir=$(activities) $(profile) --package-path=$(oauthorizer) --package-path=$(openwebapps) --binary-args="-console -purgecaches $(BINARYARGS)"
+else
+  cfx_args :=  --pkgdir=$(openwebapps) $(profile) --binary-args="-console -purgecaches $(BINARYARGS)"
+endif
 
 xpi_name := openwebapps.xpi
 
