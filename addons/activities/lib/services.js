@@ -69,9 +69,16 @@ var nextinvocationid = 0;
  * This class controls the mediator panel UI.  There is one per tab
  * per mediator, created only when needed.
  */
-function MediatorPanel(window, methodName) {
+function MediatorPanel(window, activity) {
   this.window = window; // the window the panel is attached to
-  this.methodName = methodName;
+  this.methodName = activity.action;
+  this.defaultData = {
+    activity: {
+      action: activity.action,
+      type: activity.type,
+      data: {}
+    }
+  };
   this.frames = [];
   this.handlers = {};
 
@@ -110,7 +117,7 @@ MediatorPanel.prototype = {
   
   get tabData() {
     let tab = tabs.activeTab;
-    return tab.activity[this.methodName];
+    return tab.activity? tab.activity[this.methodName] : this.defaultData;
   },
 
   observe: function(document, aTopic, aData) {
@@ -120,10 +127,11 @@ MediatorPanel.prototype = {
     var id = document.defaultView.frameElement.getAttribute('id');
     for (var i=0; i < this.frames.length; i++) {
       if (id == this.frames[i].id) {
-        let frame = this.frames[i];
-        this.inject(document.defaultView, frame);
+        let frame = this.frames.splice(i,1);
+        this.inject(document.defaultView, frame[0]);
         // hack to get the panel's window, important for tests
         this._panelWindow = document.defaultView.top;
+        break;
       }
     }
   },
@@ -435,6 +443,16 @@ MediatorPanel.prototype = {
     } catch (e) {
       dump("oauthAuthorize: "+e + "\n");
     }
+  },
+  
+  reconfigure: function() {
+    if (this.panel.isShowing)
+      this.panel.hide();
+
+    this._panelWindow = null;
+    this.frames = [];
+    this.handlers = {};
+    this.panel.port.emit("owa.mediation.reconfigure");
   }
 }
 
@@ -513,11 +531,11 @@ serviceInvocationHandler.prototype = {
         topic === "openwebapp-uninstalled" ||
         topic === "net:clear-active-logins")
     {
-    // XXX TODO look at the change in the app and only reconfigure the related
-    // mediators.
-    for each (let popupCheck in this._popups) {
-      popupCheck.panel.port.emit("owa.mediation.reconfigure");
-    }
+      // XXX TODO look at the change in the app and only reconfigure the related
+      // mediators.
+      for each (let popupCheck in this._popups) {
+        popupCheck.reconfigure();
+      }
     }
   },
 
@@ -557,7 +575,7 @@ serviceInvocationHandler.prototype = {
     }
     // if we didn't find it, create it
     let agent = agentCreators[activity.action] ? agentCreators[activity.action] : MediatorPanel;
-    panel = new agent(this._window, activity.action);
+    panel = new agent(this._window, activity);
     panel.startActivity(activity, successCB, errorCB);
     // attach our response listeners
     panel.attachHandlers();
