@@ -160,6 +160,9 @@ try {
                     assertReq.onreadystatechange = function(aEvt) {
                         if (assertReq.readyState == 4) {
                             assertStatus = true;
+
+                            // FIXME: a 200 status code doesn't mean OK, check
+                            // the responseText
                             if (assertReq.status == 200) {
                                 if (verifyStatus && assertStatus)
                                     cb({"success": {"receipt": receipt, "assertion": assertion}});
