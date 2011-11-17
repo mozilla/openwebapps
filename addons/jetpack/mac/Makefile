@@ -31,7 +31,7 @@ build: foxlauncher.o foxlauncher
 # -o $@
 
 foxlauncher: $(OBJS)
-	gcc $(LDFLAGS) $(LIBS) -L. foxlauncher.o -o ../data/native-install/mac/install/Contents/MacOS/foxlauncher
+	gcc $(LDFLAGS) $(LIBS) -L. foxlauncher.o -o ../data/native-install/mac/Contents/MacOS/foxlauncher
 
 .o.a:
 	ar rcs $@ $(@:.a=.o)

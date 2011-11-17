@@ -781,7 +781,7 @@ MacNativeShell.prototype = {
     }
     file.mkpath(this.installDir.path);
 
-      recursiveFileCopy("native-install/mac/install",
+      recursiveFileCopy("native-install/mac",
                            "",
                            this.installDir.path,
                            "/",
@@ -792,21 +792,6 @@ MacNativeShell.prototype = {
                            this.installDir.path + "/XUL",
                            "/",
                            substitutions);
-
-      //STASH THE PATH TO XULRUNNER
-      let webRTConfigFileOStream = FileUtils.openSafeFileOutputStream(this.webRTConfigFile);
-      let converter = Cc["@mozilla.org/intl/scriptableunicodeconverter"].createInstance(Ci.nsIScriptableUnicodeConverter);
-      converter.charset = "UTF-8";
-      let istream = converter.convertToInputStream(this.webRTDir.path + "/");
-      NetUtil.asyncCopy(istream,
-                        webRTConfigFileOStream,
-                        function(status) {
-        if (!Components.isSuccessCode(status)) {
-          // TODO: We should bail on the whole installation if this fails
-          console.log("createExecutable - "
-                      + "Failed writing WebRT location to config file");
-        }
-      });
 
     //////////////////////////////////////////////
     //this code should be cross-platform   
