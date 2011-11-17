@@ -111,12 +111,14 @@ $ // pollTime: null means we'll manually trigger
 > service = new SyncService({pollTime: null, server: server, repo: repo});
 $ writeln(service);
 [SyncService pollTime: null server: ...]
+$ writeln(user = 'test-' + (new Date().getTime()) + '@example.com');
+test-?@example.com
 $ service.login(
->   {assertion: 'test@example.com', audience: 'localhost'},
+>   {assertion: user, audience: 'localhost'},
 >   Spy('service.login', {wait: true}));
 service.login(null, {
   audience: "localhost",...
-  email: "test@example.com",
+  email: "test-?@example.com",
   issuer: "browserid.org",
   status: "okay",
   "valid-until": ?

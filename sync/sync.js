@@ -60,6 +60,7 @@ SyncService.prototype.toString = function () {
 };
 
 SyncService.prototype.reset = function (callback) {
+  log('reset incoming');
   var steps = 0;
   var allSet = false;
   var self = this;
@@ -67,6 +68,7 @@ SyncService.prototype.reset = function (callback) {
     steps--;
     if (steps === 0 && allSet) {
       self.sendStatus({status: 'reset'});
+      log('reset outgoing, async');
       if (callback) {
         callback();
       }
@@ -80,6 +82,7 @@ SyncService.prototype.reset = function (callback) {
   this._appTracking = {};
   if (steps === 0) {
     self.sendStatus({status: 'reset'});
+    log('reset outgoing, sync');
     if (callback) {
       callback();
     }
@@ -98,18 +101,21 @@ SyncService.prototype.sendStatus = function (message) {
 
 SyncService.prototype.confirmUUID = function (uuid) {
   var self = this;
-  log('confirming UUID', uuid, this._lastSyncUUID);
-  if (! uuid) {
+  if (uuid === undefined) {
+    log('Undefined UUID');
     return true;
   }
-  if (! this._lastSyncUUID) {
+  log('confirming UUID', uuid || 'no remote', this._lastSyncUUID || 'no local');
+  if ((! this._lastSyncUUID) && uuid) {
     this._lastSyncUUID = uuid;
     this.storage.put('lastSyncUUID', uuid);
     return true;
   } else if (this._lastSyncUUID == uuid) {
     return true;
   } else {
+    log('Reseting from UUID');
     this.reset(function () {
+      log('Finished reset from UUID');
       self._lastSyncUUID = uuid;
       self.storage.put('lastSyncUUID', uuid);
     });
@@ -209,7 +215,15 @@ SyncService.prototype.syncNow = function (callback, forcePut) {
   log('Starting syncNow');
   logGroup();
   this._getUpdates(function (error) {
-    if (error && ((! forcePut) || (! error.collection_deleted))) {
+    if (error && error.collection_deleted && (! forcePut)) {
+      log('Terminating sync due to collection deleted');
+      logGroupEnd();
+      if (callback) {
+        callback(error);
+      }
+      return;
+    }
+    if (error && (! error.collection_deleted)) {
       log('getUpdates error/terminating', {error: error});
       logGroupEnd();
       self.sendStatus({error: 'sync_get', detail: error});
@@ -222,9 +236,17 @@ SyncService.prototype.syncNow = function (callback, forcePut) {
     if (error && error.collection_deleted) {
       log('Collection is deleted, but ignoring');
       self.sendStatus({error: 'sync_get_deleted', detail: error});
-      // However, since it's been deleted we need to forget when we accessed it
-      self._setLastSyncTime(0);
-      self._setLastSyncPut(0);
+      // However, since it's been deleted we need to reset, and we
+      // can then continue with the put
+      self.reset(function () {
+        self._putUpdates(function (error) {
+          logGroupEnd();
+          if (callback) {
+            callback(error);
+          }
+        });
+      });
+      return;
     }
     self._putUpdates(function (error) {
       log('finished syncNow', {error: error});
@@ -415,6 +437,7 @@ SyncService.prototype._putUpdates = function (callback) {
       if ((! self._lastSyncPut)
           || (! appTracking[app.origin])
           || (app.last_modified > appTracking[app.origin])) {
+        log('Adding app toUpdate:', {origin: app.origin, lastSyncPut: self._lastSyncPut, last_modified: app.last_modified, tracking: appTracking[app.origin]});
         toUpdate.push(app);
       }
     }
@@ -427,18 +450,20 @@ SyncService.prototype._putUpdates = function (callback) {
       return;
     }
     log('putUpdates', {updates: toUpdate});
+    // FIXME: we *must* include a 'since' key here to protect from
+    // a concurrent update since our last get
     self.server.put(toUpdate, function (error, result) {
       log('server put completed', {error: error, result: result});
-      if (! self.confirmUUID(result.uuid)) {
-        if (callback) {
-          callback({error: "uuid_changed"});
-        }
-        return;
-      }
       if (error) {
         self.sendStatus({error: 'sync_put', detail: error});
         if (callback) {
           callback(error);
+        }
+        return;
+      }
+      if (! self.confirmUUID(result.uuid)) {
+        if (callback) {
+          callback({error: "uuid_changed"});
         }
         return;
       }
@@ -451,9 +476,11 @@ SyncService.prototype._putUpdates = function (callback) {
         for (var i=0; i<toUpdate.length; i++) {
           tracking[toUpdate[i].origin] = toUpdate[i].last_modified;
         }
+        self._appTracking = tracking;
         self.storage.put('appTracking', tracking);
       });
       self._setLastSyncPut(result.received);
+      self._setLastSyncTime(result.received);
       callback();
     });
   }, function (error) {callback(error);});
