@@ -1,0 +1,155 @@
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is Mozilla Communicator client code, released
+ * March 31, 1998.
+ *
+ * The Initial Developer of the Original Code is
+ * Netscape Communications Corporation.
+ * Portions created by the Initial Developer are Copyright (C) 1998-2001
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Joe Hewitt (hewitt@netscape.com)
+ *   Kevin Gerich (webmail@kmgerich.com)
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
+
+@namespace url("http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul");
+
+menupopup,
+panel {
+  -moz-appearance: menupopup;
+  background-color: Menu;
+}
+
+menupopup > menu > menupopup {
+  margin-top: -4px;
+}
+
+.popup-internal-box {
+  padding: 4px 0;
+}
+
+panel[titlebar] {
+  -moz-appearance: none; /* to disable rounded corners */
+}
+
+panel[type="arrow"] {
+  -moz-appearance: none;
+  background: transparent;
+  -moz-transition: opacity 300ms;
+}
+
+panel[type="arrow"][side="top"],
+panel[type="arrow"][side="bottom"] {
+  margin-left: -26px;
+  margin-right: -26px;
+}
+
+panel[type="arrow"][side="left"],
+panel[type="arrow"][side="right"] {
+  margin-top: -26px;
+  margin-bottom: -26px;
+}
+
+.panel-arrowcontent {
+  -moz-appearance: none;
+  color: white;
+  background: -moz-linear-gradient(rgba(85,85,85,1), rgba(75,75,75,.97) 5px, rgba(58,58,58,.97) 17px, rgba(43,43,43,.97) 40px, rgba(40,40,40,.97) 80px, rgba(40,40,40,.97));
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.15) inset,
+              0 1px 0 rgba(255,255,255,.05) inset,
+              0 0 0 1px rgba(0,0,0,.25);
+  padding: 16px;
+  margin: 1px;
+}
+
+.panel-arrow {
+  opacity: 0.97;
+}
+
+.panel-arrow[side="top"] {
+  list-style-image: url("chrome://global/skin/arrow/panelarrow-up.png");
+  margin-left: 6px;
+  margin-right: 6px;
+  margin-bottom: -2px;
+}
+
+.panel-arrow[side="bottom"] {
+  list-style-image: url("chrome://global/skin/arrow/panelarrow-down.png");
+  margin-left: 6px;
+  margin-right: 6px;
+  margin-top: -2px;
+}
+
+.panel-arrow[side="left"] {
+  list-style-image: url("chrome://global/skin/arrow/panelarrow-horiz.png");
+  margin-top: 6px;
+  margin-bottom: 6px;
+  margin-right: -2px;
+}
+
+.panel-arrow[side="right"] {
+  list-style-image: url("chrome://global/skin/arrow/panelarrow-horiz.png");
+  -moz-transform: scaleX(-1);
+  margin-top: 6px;
+  margin-bottom: 6px;
+  margin-left: -2px;
+}
+
+/* ::::: tooltip ::::: */
+
+tooltip {
+  -moz-appearance: tooltip;
+  margin-top: 18px;
+  padding: 2px 3px;
+  max-width: 40em;
+  color: InfoText;
+  font: message-box;
+  cursor: default;
+}
+
+tooltip[titletip="true"] {
+ /* See bug 32157 comment 128
+  * margin: -2px 0px 0px -3px;
+  */
+  max-width: none;
+}
+
+/* rules for popups associated with menulists */
+
+menulist > menupopup,
+.menulist-menupopup {
+  min-width: 0px;
+}
+
+menulist[editable="true"] > menupopup {
+  -moz-appearance: none;
+}
+
+menulist[editable="true"] > menupopup > .popup-internal-box {
+  padding: 0;
+}

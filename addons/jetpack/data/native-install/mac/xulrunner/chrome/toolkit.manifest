@@ -1,0 +1,12 @@
+content satchel toolkit/content/satchel/
+resource gre-resources toolkit/res/
+content mozapps toolkit/content/mozapps/
+content global toolkit/content/global/ contentaccessible=yes
+content global-platform toolkit/content/global-platform/ platform
+skin mozapps classic/1.0 toolkit/skin/classic/mozapps/
+content passwordmgr toolkit/content/passwordmgr/
+override chrome://global/content/nsTransferable.js chrome://global/content/nsDragAndDrop.js
+content global-region toolkit/content/global-region/
+content xbl-marquee toolkit/content/xbl-marquee/
+skin global classic/1.0 toolkit/skin/classic/global/
+content cookie toolkit/content/cookie/

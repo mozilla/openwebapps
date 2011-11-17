@@ -728,21 +728,38 @@ MacNativeShell.prototype = {
     this.createExecutable(app);
   },
 
+  setUpPaths : function(app) {
+
+      let installDirPath = "~/Applications";
+
+      this.appName = sanitizeMacFileName(app.manifest.name) + ".app";
+
+      this.installDir = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
+      this.installDir.initWithPath(installDirPath);
+      this.installDir.append(this.appName);
+
+      let webRTPath = self.data.url("native-install/mac/xulrunner");
+      this.webRTDir = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
+      this.webRTDir.initWithPath(url.toFilename(webRTPath));
+
+      this.webRTConfigFile = this.installDir.clone();
+      this.webRTConfigFile.append("webRT.config");
+      console.log(this.webRTConfigFile.path);
+  },
+
+
   createExecutable : function(app)
   {
-    var baseDir = "/Applications";
-    if (!file.exists(baseDir))
-    {
-      file.mkpath(baseDir);
+    try {
+      this.setUpPaths(app);
+    } catch(e) {
+      throw("createExecutable - Failure setting up paths (" + e + ")");
     }
 
-    var filePath = baseDir + "/" + sanitizeMacFileName(app.manifest.name) + ".app";
-    if (file.exists(filePath))
+    if (file.exists(this.installDir.path))
     {
       // recursive delete
-      var aNsLocalFile = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
-      aNsLocalFile.initWithPath(filePath);
-      aNsLocalFile.remove(true);
+      this.installDir.remove(true);
     }
     
     // Now we synthesize a .app by copying the mac-app-template directory from our internal state
@@ -757,24 +774,39 @@ MacNativeShell.prototype = {
       "\\$REVERSED_APPDOMAIN": /*reverseDNS(*/app.origin/*)*/,
       "\\$LAUNCHPATH": launchPath
     }
-    file.mkpath(filePath);
+    file.mkpath(this.installDir.path);
 
-      recursiveFileCopy("native-install/mac",
+      recursiveFileCopy("native-install/mac/install",
                            "",
-                           filePath,
+                           this.installDir.path,
                            "/",
                            substitutions);
 
       recursiveFileCopy("native-install/XUL",
                            "",
-                           filePath + "/XUL",
+                           this.installDir.path + "/XUL",
                            "/",
                            substitutions);
+
+      //STASH THE PATH TO XULRUNNER
+      let webRTConfigFileOStream = FileUtils.openSafeFileOutputStream(this.webRTConfigFile);
+      let converter = Cc["@mozilla.org/intl/scriptableunicodeconverter"].createInstance(Ci.nsIScriptableUnicodeConverter);
+      converter.charset = "UTF-8";
+      let istream = converter.convertToInputStream(this.webRTDir.path + "/");
+      NetUtil.asyncCopy(istream,
+                        webRTConfigFileOStream,
+                        function(status) {
+        if (!Components.isSuccessCode(status)) {
+          // TODO: We should bail on the whole installation if this fails
+          console.log("createExecutable - "
+                      + "Failed writing WebRT location to config file");
+        }
+      });
 
     //////////////////////////////////////////////
     //this code should be cross-platform   
     var XULDir = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
-    XULDir.initWithPath(filePath);
+    XULDir.initWithPath(this.installDir.path);
     XULDir.append("XUL");
     var contentDir = XULDir.clone();
     contentDir.append("content");
@@ -785,7 +817,7 @@ MacNativeShell.prototype = {
     embedMozAppsAPIFiles(contentDir);
     /////////////////////////////////////////////
 
-    this.synthesizeIcon(app, filePath + "/Contents/Resources/appicon.icns");
+    this.synthesizeIcon(app, this.installDir.path + "/Contents/Resources/appicon.icns");
   },
 
   synthesizeIcon : function(app, destinationFile)
