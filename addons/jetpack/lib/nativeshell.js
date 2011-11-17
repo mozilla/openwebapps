@@ -100,7 +100,7 @@ function reverseDNS(domain)
   return s;
 }
 
-function getBiggestIcon(app, successCallback, failureCallback) {
+function getBiggestIcon(app, callback) {
   let icon = 0;
   if (app.manifest.icons) {
     for (z in app.manifest.icons) {
@@ -129,7 +129,12 @@ function getBiggestIcon(app, successCallback, failureCallback) {
     let binaryStream;
     try {
       let base64Data = icon.substring(base64 + 7);
-      let binaryData = atob(base64Data);
+
+      const AppShellService =
+            Cc["@mozilla.org/appshell/appShellService;1"]
+            .getService(Ci.nsIAppShellService);
+      let binaryData =
+            AppShellService.hiddenDOMWindow.atob(String(base64Data));
       let stringStream = Cc["@mozilla.org/io/string-input-stream;1"]
                          .createInstance(Ci.nsIStringInputStream);
       stringStream.setData(binaryData, binaryData.length);
@@ -143,7 +148,7 @@ function getBiggestIcon(app, successCallback, failureCallback) {
     }
 
     try {
-      successCallback(mimeType, binaryStream);
+      callback(0, mimeType, binaryStream);
     } catch(e) {
       throw("getBiggestIcon - "
             + "Failure in callback "
@@ -167,18 +172,13 @@ function getBiggestIcon(app, successCallback, failureCallback) {
     let iconPath = app.origin + icon;
     NetUtil.asyncFetch(iconPath,
                        function(inputStream, resultCode, request) {
-      try {
-        if (!components.isSuccessCode(resultCode)) {
-          failureCallback("getBiggestIcon - "
-                          + "Attempt to retrieve icon returned result code "
-                          + resultCode);
-        } else {
-          successCallback(mimeType, inputStream);
+        try {
+          callback(resultCode, mimeType, inputStream);
+        } catch (e) {
+          console.log("getBiggestIcon - "
+            + "Failure in callback function"
+            + " (" + e + ")");
         }
-      } catch (e) {
-        console.log("getBiggestIcon - "
-            + "Failure in callback function");
-      }
     });
   }
 }
@@ -646,35 +646,38 @@ WinNativeShell.prototype = {
 
   synthesizeIcon : function(app)
   {
-    let icoStream;
     try {
       getBiggestIcon(app,
-                     this.onIconRetrieved.bind(this),
-                     this.onIconRetrievalFailure.bind(this));
+                     this.onIconRetrieved.bind(this));
     } catch(e) {
       throw("synthesizeIcon - Failure reading icon information (" + e + ")");
     }
   },
 
-  onIconRetrievalFailure : function(msg) {
-    console.log(msg);
-  },
-
-  onIconRetrieved : function(mimeType,
+  onIconRetrieved : function(resultCode,
+                             mimeType,
                              inputStream)
   {
-    let icoStream;
+    if (!components.isSuccessCode(resultCode)) {
+      console.log("APPS | nativeshell.win | synthesizeIcon - "
+                  + "Attempt to retrieve icon returned result code "
+                  + resultCode);
+      return;
+    }
+
     try {
       let imgTools = Cc["@mozilla.org/image/tools;1"]
                      .createInstance(Ci.imgITools);
       let imgContainer = { value: null };
+
       imgTools.decodeImageData(inputStream, mimeType, imgContainer);
+
       icoStream =
-        imgTools.encodeImage(imgContainer.value,
-                             "image/vnd.microsoft.icon");
+          imgTools.encodeImage(imgContainer.value,
+                               "image/vnd.microsoft.icon");
     } catch (e) {
       console.log("APPS | nativeshell.win | synthesizeIcon - "
-                  + "Failure converting icon " + request.name
+                  + "Failure converting icon"
                   + " (" + e + ")");
       return;
     }
@@ -683,21 +686,18 @@ WinNativeShell.prototype = {
       let outputStream = FileUtils.openSafeFileOutputStream(this.iconFile);
       NetUtil.asyncCopy(icoStream,
                         outputStream,
-                        this.onIconConversionComplete.bind(this));
+                        function(result) {
+            if (!Components.isSuccessCode(result)) {
+              console.log("APPS | nativeshell.win | synthesizeIcon - "
+                          + "Failure writing icon file "
+                          + " (" + result + ")");
+            }
+          });
     } catch (e) {
       console.log("APPS | nativeshell.win | synthesizeIcon - "
           + "Failure writing icon file " + this.iconFile.path
           + " (" + e + ")");
       return;
-    }
-  },
-
-  onIconConversionComplete : function(status)
-  {
-    if (!Components.isSuccessCode(status)) {
-      console.log("APPS | nativeshell.win | synthesizeIcon - "
-          + "Failure writing icon file " + this.iconFile.path
-          + " (" + status + ")");
     }
   }
 };
@@ -823,36 +823,47 @@ MacNativeShell.prototype = {
   synthesizeIcon : function(app, destinationFile)
   {
     getBiggestIcon(app,
-                   this.onIconRetrieved.bind(this, destinationFile),
-                   this.onIconRetrievalFailure.bind(this));
+                   this.onIconRetrieved.bind(this, destinationFile));
   },
 
-  onIconRetrievalFailure : function(msg) {
-    console.log(msg);
+  onIconRetrieved : function(destinationFile,
+                             resultCode,
+                             mimeType,
+                             iconStream) {
+  if (!components.isSuccessCode(resultCode)) {
+    console.log("APPS | nativeshell.mac | synthesizeIcon - "
+        + "Attempt to retrieve icon returned result code "
+        + resultCode);
+    return;
+  }
+
+  var filePath = Cc["@mozilla.org/file/directory_service;1"]
+                 .getService(Ci.nsIProperties)
+                 .get("TmpD", Ci.nsIFile);
+  filePath.append("tmpicon" + tSuffix);
+  filePath.createUnique(Ci.nsIFile.NORMAL_FILE_TYPE, 0600);
+
+  var stream = Cc["@mozilla.org/network/safe-file-output-stream;1"]
+               .createInstance(Ci.nsIFileOutputStream);
+  // readwrite, create, truncate
+  stream.init(filePath, 0x04 | 0x08 | 0x20, 0600, 0);
+
+  NetUtil.asyncCopy(icoStream,
+                    outputStream,
+                    this.onTmpIconWritten.bind(this));
   },
 
-  onIconRetrieved : function(destinationFile, mimeType, iconStream) {
-    var filePath = Cc["@mozilla.org/file/directory_service;1"]
-                   .getService(Ci.nsIProperties)
-                   .get("TmpD", Ci.nsIFile);
-    filePath.append("tmpicon" + tSuffix);
-    filePath.createUnique(Ci.nsIFile.NORMAL_FILE_TYPE, 0600);
-
-    var stream = Cc["@mozilla.org/network/safe-file-output-stream;1"]
-                 .createInstance(Ci.nsIFileOutputStream);
-    // readwrite, create, truncate
-    stream.init(filePath, 0x04 | 0x08 | 0x20, 0600, 0);
-
-    stream.write(decoded, decoded.length);
-    if (stream instanceof Ci.nsISafeOutputStream) {
-      stream.finish();
-    } else {
-      stream.close();
+  onTmpIconWritten : function(result) {
+    if (!Components.isSuccessCode(result)) {
+      console.log("APPS | nativeshell.mac | synthesizeIcon - "
+          + "Failure writing temporary icon file "
+          + " (" + result + ")");
+      return;
     }
     var process = Cc["@mozilla.org/process/util;1"]
                   .createInstance(Ci.nsIProcess);
     var sipsFile = Cc["@mozilla.org/file/local;1"]
-                   .createInstance(Ci.nsILocalFile);
+                  .createInstance(Ci.nsILocalFile);
     sipsFile.initWithPath("/usr/bin/sips");
     process.init(sipsFile);
     process.runAsync(["-s",
@@ -861,7 +872,7 @@ MacNativeShell.prototype = {
                       "--out", destinationFile,
                       "-z", "128", "128"],
                       9);
-    }
+  }
 }
 
 
