@@ -51,8 +51,8 @@ Components.utils.import("resource://gre/modules/FileUtils.jsm");
 NativeShell = (function() {
   function CreateNativeShell(app)
   {
-    let os = Components.classes["@mozilla.org/xre/app-info;1"]
-                       .getService(Components.interfaces.nsIXULRuntime).OS;
+    let os = Cc["@mozilla.org/xre/app-info;1"]
+             .getService(Ci.nsIXULRuntime).OS;
     let nativeShell;
     if("WINNT" === os) {
       nativeShell = new WinNativeShell();
@@ -100,16 +100,87 @@ function reverseDNS(domain)
   return s;
 }
 
-function getBiggestIcon(minifest) {
-  if (minifest.icons) {
-    var biggest = 0;
-    for (z in minifest.icons) {
-      var size = parseInt(z, 10);
-      if (size > biggest) biggest = size;
+function getBiggestIcon(app, successCallback, failureCallback) {
+  let icon = 0;
+  if (app.manifest.icons) {
+    for (z in app.manifest.icons) {
+      let size = parseInt(z, 10);
+      if (size > icon) {
+        icon = size;
+      }
     }
-    if (biggest !== 0) return minifest.icons[biggest];
   }
-  return null;
+  if (icon === 0) {
+    return null;
+  } else {
+    icon = app.manifest.icons[icon];
+  }
+
+  if (icon.indexOf("data:") === 0) {
+    let tIndex = icon.indexOf(";");
+    mimeType = icon.substring(5, tIndex);
+
+    let base64 = icon.indexOf("base64,");
+    if (base64 < 0) {
+      throw("getBiggestIcon - "
+            + "Found a data URL but it appears not to be base64 encoded");
+    }
+
+    let binaryStream;
+    try {
+      let base64Data = icon.substring(base64 + 7);
+      let binaryData = atob(base64Data);
+      let stringStream = Cc["@mozilla.org/io/string-input-stream;1"]
+                         .createInstance(Ci.nsIStringInputStream);
+      stringStream.setData(binaryData, binaryData.length);
+      binaryStream = Cc["@mozilla.org/binaryinputstream;1"]
+                     .createInstance(Ci.nsIObjectInputStream);
+      binaryStream.setInputStream(stringStream);
+    } catch(e) {
+      throw("getBiggestIcon - "
+            + "Failure converting base64 data "
+            + "(" + e + ")");
+    }
+
+    try {
+      successCallback(mimeType, binaryStream);
+    } catch(e) {
+      throw("getBiggestIcon - "
+            + "Failure in callback "
+            + "(" + e + ")");
+    }
+  } else {
+    // TODO: Come up with a smarter way to determine MIME type
+    try {
+      if (icon.indexOf(".png") > 0) {
+        mimeType = "image/png";
+      } else if ((icon.indexOf(".jpeg") > 0)
+                || (icon.indexOf(".jpg") > 0)) {
+        mimeType = "image/jpeg";
+      }
+    } catch(e) {
+      throw("getBiggestIcon - "
+            + "Failure determining MIME type of " + icon
+            + " (" + e + ")");
+    }
+
+    let iconPath = app.origin + icon;
+    NetUtil.asyncFetch(iconPath,
+                       function(inputStream, resultCode, request) {
+      try {
+        if (!components.isSuccessCode(resultCode)) {
+          failureCallback("getBiggestIcon - "
+                          + "Attempt to retrieve icon returned result code "
+                          + resultCode);
+        } else {
+          successCallback(mimeType, inputStream);
+        }
+      } catch (e) {
+        console.log("getBiggestIcon - "
+            + "Failure in callback function");
+      }
+    });
+  }
 }
 
 function embedInstallRecord(app, destination) {
@@ -405,96 +476,6 @@ function recursiveFileCopy(srcDir,
 function WinNativeShell() {
 }
 
-// TODO: Ask OS which chars are valid in a path
-function winPathify(path)
-{
-  const slashRE = /[\/\\]+/gi;
-  return path.replace(slashRE, "\\");
-}
-
-// TODO: Ask OS which chars are valid in a filename
-function winFilenameify(path)
-{
-  const re = /[:\/\\]+/gi;
-  return path.replace(re, "-");
-}
-
-function winRunApp(filePath, commandLine, workingDir) {
-  try {
-    components.utils.import("resource://gre/modules/ctypes.jsm");
-  } catch(e) {
-    throw("winRunApp - "
-          + "Failure importing ctypes (" + e + ")");
-  }
-
-  let shell32;
-  try {
-    shell32 = ctypes.open("Shell32");
-  } catch(e) {
-    throw("winRunapp - "
-          + "Failed to open Shell32 (" + e + ")");
-  }
-
-  try {
-    try {
-      const WCHAR = ctypes.jschar;
-      const HINSTANCE = ctypes.voidptr_t;
-      const MAX_PATH = 260;
-    } catch(e) {
-      throw("winRunApp - "
-            + "Failure setting up constants (" + e + ")");
-    }
-
-    let shellExecute;
-    try {
-      shellExecute = shell32.declare("ShellExecuteW",
-                                       ctypes.default_abi,
-                                       HINSTANCE,
-                                       ctypes.voidptr_t, // Not used
-                                       WCHAR.ptr,
-                                       WCHAR.ptr,
-                                       WCHAR.ptr,
-                                       WCHAR.ptr,
-                                       ctypes.int);
-    } catch(e) {
-      throw("winRunApp - "
-            + "Failure declaring ShellExecuteW (" + e + ")");
-    }
-
-    let ret;
-    try {
-      let filePathCStr = ctypes.jschar.array()(filePath);
-      let commandLineCStr =
-              commandLine ? ctypes.jschar.array()(commandLine)
-                          : null;
-      let workingDirCStr = 
-              workingDir ? ctypes.jschar.array()(workingDir)
-                         : null;
-      ret = shellExecute(null,
-                         null,
-                         filePathCStr,
-                         commandLineCStr,
-                         workingDirCStr,
-                         ctypes.int(0) // SW_HIDE
-                        );
-    } catch(e) {
-      throw("winRunApp - "
-            + "Failure calling ShellExecuteW (" + e + ")");
-    }
-    if(32 >= ret) {
-      throw("winRunApp - "
-            + "Error in ShellExecuteW (" + ret + ")");
-    }
-  } finally {
-    try {
-      shell32.close();
-    } catch (e) {
-      console.log("APPS | nativeshell.win | winRunApp - "
-                  + "Failure trying to close Shell32 (" + e + ")");
-    }
-  }
-}
-
 WinNativeShell.prototype = {
   createAppNativeLauncher : function(app)
   {
@@ -502,19 +483,11 @@ WinNativeShell.prototype = {
   },
 
   setUpPaths : function(app) {
-      let env = Cc["@mozilla.org/process/environment;1"]
-                .getService(Ci.nsIEnvironment);
-
-      let installDirPath = env.get("APPDATA");
-      if(!installDirPath) {
-        throw("Failure looking up %APPDATA%");
-      }
-
       this.appName = app.manifest.name;
 
-      this.installDir = Cc['@mozilla.org/file/local;1']
-                        .createInstance(Ci.nsILocalFile);
-      this.installDir.initWithPath(installDirPath);
+      let directoryService = Cc["@mozilla.org/file/directory_service;1"]
+                             .getService(Ci.nsIProperties);
+      this.installDir = directoryService.get("AppData", Ci.nsIFile);
       this.installDir.append(this.appName);
 
       this.launchPath = app.origin;
@@ -528,20 +501,17 @@ WinNativeShell.prototype = {
       this.iconFile.append("default");
       this.iconFile.append(this.appName + ".ico");
 
-      this.installerDir = Cc["@mozilla.org/file/directory_service;1"]
-                           .getService(Ci.nsIProperties)
-                           .get("TmpD", Ci.nsIFile);
+      this.installerDir = directoryService.get("TmpD", Ci.nsIFile);
       this.installerDir.append(this.appName);
+      this.installerDir.createUnique(Ci.nsIFile.DIRECTORY_TYPE, 0777);
 
-      let webRTPath = self.data.url("native-install/windows/xulrunner");
-      this.webRTDir = Cc['@mozilla.org/file/local;1']
-                      .createInstance(Ci.nsILocalFile);
-      this.webRTDir.initWithPath(url.toFilename(webRTPath));
-
-      this.webRTConfigFile = this.installDir.clone();
-      this.webRTConfigFile.append("webRT.config");
+      this.firefoxFile = directoryService.get("CurProcD", Ci.nsIFile);
+      // TODO: What if FF has been renamed?
+      this.firefoxFile.append("firefox.exe");
   },
 
+  // TODO: Ask user whether to create desktop/start menu shortcuts
+  // TODO: Support App descriptions
   createExecutable : function(app)
   {
     try {
@@ -550,29 +520,22 @@ WinNativeShell.prototype = {
       throw("createExecutable - Failure setting up paths (" + e + ")");
     }
 
+    let substitutions;
     try {
-      if (this.installDir.exists())
-      {
-        this.installDir.remove(true);
+      substitutions = {
+        "\\$APPNAME": this.appName,
+        "\\$APPDOMAIN": app.origin,
+        "\\$APPDESC": "App descriptions are not yet supported",
+        "\\$FFPATH": this.firefoxFile.path,
+        "\\$LAUNCHPATH": this.launchPath,
+        "\\$INSTALLDIR": this.installDir.path,
+        "\\$ICONPATH": this.iconFile.path,
+        "\\$DESKTOP_SHORTCUT": "y",
+        "\\$SM_SHORTCUT": "y"
       }
-
-      this.installDir.create(Ci.nsIFile.DIRECTORY_TYPE, 0777);
-      this.iconFile.parent.create(Ci.nsIFile.DIRECTORY_TYPE, 0777);
-      this.installerDir.createUnique(Ci.nsIFile.DIRECTORY_TYPE, 0777);
     } catch(e) {
       throw("createExecutable - "
-            + "Failure setting up target location (" + e + ")");
-    }
-
-    // TODO: Ask user whether to create desktop/start menu shortcuts
-    let substitutions = {
-      "\\$APPNAME": this.appName,
-      "\\$APPDOMAIN": app.origin,
-      "\\$LAUNCHPATH": this.launchPath,
-      "\\$INSTALLDIR": this.installDir.path,
-      "\\$ICONPATH": this.iconFile.path,
-      "\\$DESKTOP_SHORTCUT": "y",
-      "\\$SM_SHORTCUT": "y"
+          + "Failure setting up substitutions");
     }
 
     try {
@@ -582,7 +545,49 @@ WinNativeShell.prototype = {
                         "\\",
                         substitutions,
                         undefined);
+    } catch (e) {
+      throw("createExecutable - "
+            + "Failure copying installer to temporary location "
+            + this.installerDir.path
+            + " (" + e + ")");
+    }
 
+    try {
+      this.removeInstallation();
+      this.installDir.create(Ci.nsIFile.DIRECTORY_TYPE, 0777);
+      this.iconFile.parent.create(Ci.nsIFile.DIRECTORY_TYPE, 0777);
+    } catch(e) {
+      throw("createExecutable - "
+            + "Failure setting up target location (" + e + ")");
+    }
+
+    try {
+      this.synthesizeIcon(app);
+    } catch(e) {
+      // Don't fail the installation on icon failures
+      console.log("createExecutable - "
+          + "Error synthesizing icon: " + e);
+    }
+
+    try {
+      let process = Cc["@mozilla.org/process/util;1"]
+                  .createInstance(Ci.nsIProcess);
+
+      let installerFile = this.installerDir.clone();
+      installerFile.append("install.exe");
+
+      process.init(installerFile);
+      // TODO: Run this asynchronously
+      process.run(true, ["/S"], 1);
+      if(0 !== process.exitValue) {
+        throw("Installer returned " + process.exitValue);
+      }
+    } catch (e) {
+      throw("createExecutable - "
+            + "Failure running installer (" + e + ")");
+    }
+
+    try {
       recursiveFileCopy("native-install/windows/app",
                         "",
                         this.installDir.path,
@@ -597,24 +602,6 @@ WinNativeShell.prototype = {
                         substitutions,
                         undefined);
 
-      let webRTConfigFileOStream
-              = FileUtils.openSafeFileOutputStream(this.webRTConfigFile);
-      let converter = Cc["@mozilla.org/intl/scriptableunicodeconverter"]
-                      .createInstance(Ci.nsIScriptableUnicodeConverter);
-      converter.charset = "UTF-8";
-      let istream = converter.convertToInputStream(this.webRTDir.path + "\\");
-      NetUtil.asyncCopy(istream,
-                        webRTConfigFileOStream,
-                        function(status) {
-        if (!Components.isSuccessCode(status)) {
-          // TODO: We should bail on the whole installation if this fails
-          console.log("createExecutable - "
-                      + "Failed writing WebRT location to config file");
-        }
-      });
-
-      this.synthesizeIcon(app);
-
       //add the install record to the native app bundle
       embedInstallRecord(app, this.installDir);
 
@@ -624,82 +611,58 @@ WinNativeShell.prototype = {
       contentDir.append("content");
       embedMozAppsAPIFiles(contentDir);
     } catch(e) {
+      this.removeInstallation();
       throw("createExecutable - "
           + "Failure copying files (" + e + ")");
     }
+  },
+
+  removeInstallation : function() {
+    try {
+      if(this.installDir.exists()) {
+        let uninstallerFile = this.installDir.clone();
+        uninstallerFile.append("uninstall.exe");
+
+        if (uninstallerFile.exists()) {
+          let process = Cc["@mozilla.org/process/util;1"]
+                        .createInstance(Ci.nsIProcess);
+          process.init(uninstallerFile);
+          // TODO: Run this asynchronously
+          process.run(true, ["/S"], 1);
+        }
+      }
+    } catch(e) {
+
+    }
 
     try {
-      let installerFile = this.installerDir.clone();
-      installerFile.append("install.exe");
-      winRunApp(installerFile.path,
-                "-appName=" + this.appName
-                + " -appURL=" + this.launchPath
-                + " -appDesc=Descriptions are not yet supported"
-                + " -iconPath=" + this.iconFile.path
-                + " -createDesktopShortcut=y"
-                + " -createStartMenuShortcut=y"
-                + " /S",
-                this.installDir.path);
-    } catch (e) {
-      throw("createExecutable - "
-            + "Failure running installer (" + e + ")");
+      if(this.installDir.exists()) {
+        this.installDir.remove(true);
+      }
+    } catch(e) {
+
     }
   },
 
   synthesizeIcon : function(app)
   {
-    let icon;
+    let icoStream;
     try {
-      icon = getBiggestIcon(app.manifest);
+      getBiggestIcon(app,
+                     this.onIconRetrieved.bind(this),
+                     this.onIconRetrievalFailure.bind(this));
     } catch(e) {
       throw("synthesizeIcon - Failure reading icon information (" + e + ")");
     }
-
-    if (icon.indexOf("data:") === 0) {
-      // TODO: Add support for data URLS
-      throw("synthesizeIcon - Data URLs are not yet supported");
-    }
-
-    icon = app.origin + icon;
-
-    try {
-      NetUtil.asyncFetch(icon, this.onIconDownloadComplete.bind(this));
-    } catch(e) {
-      throw("synthesizeIcon - Failure setting up asynchronous fetch of "
-            + icon);
-    }
   },
 
-  onIconDownloadComplete : function(inputStream,
-                                    resultCode,
-                                    request)
+  onIconRetrievalFailure : function(msg) {
+    console.log(msg);
+  },
+
+  onIconRetrieved : function(mimeType,
+                             inputStream)
   {
-    // It's probably not wise to throw inside this callback
-    // since we don't know how the calling code will handle the exception.
-    // Instead we just log errors and return.
-    if (!components.isSuccessCode(resultCode)) {
-      console.log("APPS | nativeshell.win | synthesizeIcon - "
-                  + "Error retrieving icon " + request.name
-                  + " (result code = " + resultCode + ")");
-      return;
-    }
-
-    let mimeType;
-    try {
-      // TODO: Come up with a smarter way to determine MIME type
-      if (request.name.indexOf(".png") > 0) {
-        mimeType = "image/png";
-      } else if ((request.name.indexOf(".jpeg") > 0)
-                || (request.name.indexOf(".jpg") > 0)) {
-        mimeType = "image/jpeg";
-      }
-    } catch(e) {
-      console.log("APPS | nativeshell.win | synthesizeIcon - "
-                  + "Failure determining MIME type of " + request.name
-                  + " (" + e + ")");
-      return;
-    }
-
     let icoStream;
     try {
       let imgTools = Cc["@mozilla.org/image/tools;1"]
@@ -735,23 +698,6 @@ WinNativeShell.prototype = {
       console.log("APPS | nativeshell.win | synthesizeIcon - "
           + "Failure writing icon file " + this.iconFile.path
           + " (" + status + ")");
-    } else {
-      try {
-        let reditFile = this.webRTDir.clone();
-        reditFile.append("redit.exe");
-
-        let exeFile = this.installDir.clone();
-        exeFile.append(this.appName + ".exe");
-
-        winRunApp(reditFile.path,
-            "\"" + exeFile.path + "\""
-            + " \"" + this.iconFile.path + "\"",
-            this.installDir.path);
-      } catch (e) {
-        console.log("APPS | nativeshell.win | synthesizeIcon - "
-            + "Failure setting icon resource"
-            + " (" + e + ")");
-      }
     }
   }
 };
@@ -841,104 +787,49 @@ MacNativeShell.prototype = {
 
     this.synthesizeIcon(app, filePath + "/Contents/Resources/appicon.icns");
   },
-  
 
   synthesizeIcon : function(app, destinationFile)
   {
-    var icon = getBiggestIcon(app.manifest);
-
-    // write the image into a temp file and convert it
-    var filePath = Cc["@mozilla.org/file/directory_service;1"].getService(Ci.nsIProperties).
-               get("TmpD", Ci.nsIFile);
-    //dump("APPS | nativeshell.mac | Got temporary path " + filePath + "\n");
-
-    if (icon.indexOf("data:") === 0) {
-
-      // Guess the file type
-      var tIndex = icon.indexOf(";");
-      var type = icon.substring(5, tIndex);
-      //dump("APPS | nativeshell.mac | type is " + type + "\n");
-
-      var tSuffix="";
-      if (type.indexOf("/png") > 0) tSuffix = ".png";
-      else if (type.indexOf("/jpeg") > 0) tSuffix = ".jpg";
-      else if (type.indexOf("/jpg") > 0) tSuffix = ".jpg";
-      filePath.append("tmpicon" + tSuffix);
-
-      // Decode base64
-      var base64 = icon.indexOf("base64,");
-      if (base64 < 0) {
-        dump("Non-base64 data URLs are not supported!\n");
-        return;
-      }
-      var data = icon.substring(base64 + 7);
-      const AppShellService = Cc["@mozilla.org/appshell/appShellService;1"].getService(Ci.nsIAppShellService);
-      var decoded = AppShellService.hiddenDOMWindow.atob(String(data));
-      
-      // Stream data into it
-      filePath.createUnique(Ci.nsIFile.NORMAL_FILE_TYPE, 0600);
-      //dump("APPS | nativeshell.mac | Creating temporary icon at " + filePath.path + "\n");
-
-      var stream = Cc["@mozilla.org/network/safe-file-output-stream;1"].
-                   createInstance(Ci.nsIFileOutputStream);
-      stream.init(filePath, 0x04 | 0x08 | 0x20, 0600, 0); // readwrite, create, truncate
-                  
-      stream.write(decoded, decoded.length);
-      if (stream instanceof Ci.nsISafeOutputStream) {
-          stream.finish();
-      } else {
-          stream.close();
-      }
-      var process = Cc["@mozilla.org/process/util;1"].createInstance(Ci.nsIProcess);
-      var sipsFile = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsILocalFile);
-      sipsFile.initWithPath("/usr/bin/sips");
-      process.init(sipsFile);
-      process.runAsync(["-s", "format", "icns", filePath.path, "--out", destinationFile, "-z", "128", "128"], 9);
-
-    } else {
-      // Make temp file:
-      var tSuffix="";
-      if (icon.indexOf(".png") > 0) tSuffix = ".png";
-      else if (icon.indexOf(".jpeg") > 0) tSuffix = ".jpg";
-      else if (icon.indexOf(".jpg") > 0) tSuffix = ".jpg";
-      filePath.append("tmpicon" + tSuffix);
-      filePath.createUnique(Ci.nsIFile.NORMAL_FILE_TYPE, 0600);
-      //dump("APPS | nativeshell.mac | Creating temporary icon at " + filePath.path + "\n");
-      var ostream = Cc["@mozilla.org/network/safe-file-output-stream;1"].
-                   createInstance(Ci.nsIFileOutputStream);
-      ostream.init(filePath, 0x04 | 0x08 | 0x20, 0600, 0); // readwrite, create, truncate
-
-      // Go get it:
-      var iconPath = app.origin + icon;
-      //dump("APPS | createExecutable | Retrieving icon from " + iconPath + "\n");
-      NetUtil.asyncFetch(iconPath, function(inputStream, resultCode, request) {
-        try {
-          if (!components.isSuccessCode(resultCode)) {
-            // Handle error
-            dump("APPS | createExecutable | Unable to get icon - error during request\n");
-            return;
-          } else {
-            NetUtil.asyncCopy(inputStream, ostream, function(aResult) {
-              if (ostream instanceof Ci.nsISafeOutputStream) {
-                  ostream.finish();
-              } else {
-                  ostream.close();
-              }
-              var process = Cc["@mozilla.org/process/util;1"].createInstance(Ci.nsIProcess);
-              var sipsFile = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsILocalFile);
-              sipsFile.initWithPath("/usr/bin/sips");
-              process.init(sipsFile);
-              process.runAsync(["-s", "format", "icns", filePath.path, "--out", destinationFile, "-z", "128", "128"], 9);
-            })
-
-          }
-        } catch (e) {
-          dump("ERROR : " + e + "\n");
-        }
-      });
-
-    }
+    getBiggestIcon(app,
+                   this.onIconRetrieved.bind(this, destinationFile),
+                   this.onIconRetrievalFailure.bind(this));
   },
+
+  onIconRetrievalFailure : function(msg) {
+    console.log(msg);
+  },
+
+  onIconRetrieved : function(destinationFile, mimeType, iconStream) {
+    var filePath = Cc["@mozilla.org/file/directory_service;1"]
+                   .getService(Ci.nsIProperties)
+                   .get("TmpD", Ci.nsIFile);
+    filePath.append("tmpicon" + tSuffix);
+    filePath.createUnique(Ci.nsIFile.NORMAL_FILE_TYPE, 0600);
+
+    var stream = Cc["@mozilla.org/network/safe-file-output-stream;1"]
+                 .createInstance(Ci.nsIFileOutputStream);
+    // readwrite, create, truncate
+    stream.init(filePath, 0x04 | 0x08 | 0x20, 0600, 0);
+
+    stream.write(decoded, decoded.length);
+    if (stream instanceof Ci.nsISafeOutputStream) {
+      stream.finish();
+    } else {
+      stream.close();
+    }
+    var process = Cc["@mozilla.org/process/util;1"]
+                  .createInstance(Ci.nsIProcess);
+    var sipsFile = Cc["@mozilla.org/file/local;1"]
+                   .createInstance(Ci.nsILocalFile);
+    sipsFile.initWithPath("/usr/bin/sips");
+    process.init(sipsFile);
+    process.runAsync(["-s",
+                      "format", "icns",
+                      filePath.path,
+                      "--out", destinationFile,
+                      "-z", "128", "128"],
+                      9);
+    }
 }
 
 

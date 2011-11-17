@@ -46,28 +46,32 @@ Var appDesc
 Var iconPath
 Var createDesktopShortcut
 Var createStartMenuShortcut
-Var parameters
+Var FFPath
 
 Name $appName
 OutFile ..\..\data\native-install\windows\installer\install.exe
 
 Function .onInit
   ClearErrors
-  ${GetParameters} $parameters
   readAppName:
-  ${GetOptions} $parameters "-appName=" $appName
+  ReadINIStr $appName $EXEDIR\install.ini required appName
   IfErrors 0 setOutDir
     SetErrors
     Goto cleanup
   setOutDir:
   StrCpy $INSTDIR $APPDATA\$appName
   SetOutPath $INSTDIR
+  readFFPath:
+  ReadINIStr $FFPath $EXEDIR\install.ini required FFPath
+  IfErrors 0 readOptionalInfo
+    SetErrors
+    Goto cleanup
   readOptionalInfo:
-  ${GetOptions} $parameters "-appURL=" $appURL
-  ${GetOptions} $parameters "-appDesc=" $appDesc
-  ${GetOptions} $parameters "-iconPath=" $iconPath
-  ${GetOptions} $parameters "-createDesktopShortcut=" $createDesktopShortcut
-  ${GetOptions} $parameters "-createStartMenuShortcut=" $createStartMenuShortcut
+  ReadINIStr $appURL $EXEDIR\install.ini optional appURL
+  ReadINIStr $appDesc $EXEDIR\install.ini optional appDesc
+  ReadINIStr $iconPath $EXEDIR\install.ini optional iconPath
+  ReadINIStr $createDesktopShortcut $EXEDIR\install.ini optional createDesktopShortcut
+  ReadINIStr $createStartMenuShortcut $EXEDIR\install.ini optional createStartMenuShortcut
   ClearErrors
   cleanup:
   IfErrors 0 done
@@ -84,15 +88,15 @@ Function WriteRegKeys
   WriteRegStr HKCU \
               "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appName" \
               "UninstallString" \
-              "$OUTDIR\uninstall.exe -appName=$appName"
+              "$OUTDIR\uninstall.exe"
   WriteRegStr HKCU \
               "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appName" \
               "InstallLocation" \
-              $OUTDIR
+              "$OUTDIR"
   WriteRegStr HKCU \
               "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appName" \
               "DisplayIcon" \
-              $iconPath
+              "$iconPath"
   WriteRegStr HKCU \
               "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appName" \
               "HelpLink" \
@@ -118,10 +122,18 @@ FunctionEnd
 
 Function CreateShortcuts
   ClearErrors
+  CreateShortcut $OUTDIR\$appName.lnk \
+                 $FFPath \
+                 '-app "$OUTDIR\application.ini"' \
+                 $iconPath \
+                 0 \
+                 "" \
+                 "" \
+                 $appDesc
   maybeCreateDesktopShortcut:
   StrCmp $createDesktopShortcut "y" 0 maybeCreateStartMenuShortcut
   CreateShortcut $DESKTOP\$appName.lnk \
-                 $OUTDIR\$appName.exe \
+                 $OUTDIR\$appName.lnk \
                  "" \
                  $iconPath \
                  0 \
@@ -131,7 +143,7 @@ Function CreateShortcuts
   maybeCreateStartMenuShortcut:
   StrCmp $createStartMenuShortcut "y" 0 cleanup
   CreateShortcut $SMPROGRAMS\$appName.lnk \
-                 $OUTDIR\$appName.exe \
+                 $OUTDIR\$appName.lnk \
                  "" \
                  $iconPath \
                  0 \
@@ -144,14 +156,13 @@ FunctionEnd
 Section Install
   Call WriteRegKeys
   Call CreateShortcuts
-  WriteUninstaller $INSTDIR\uninstall.exe
+  WriteUninstaller $OUTDIR\uninstall.exe
 SectionEnd
 
 Function un.onInit
   ClearErrors
-  ${GetParameters} $parameters
   readAppName:
-  ${GetOptions} $parameters "-appName=" $appName
+  ReadINIStr $appName $INSTDIR\uninstall.ini required appName
   IfErrors 0 setUpPaths
     SetErrors
     Goto cleanup
