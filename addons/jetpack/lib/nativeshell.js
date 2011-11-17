@@ -695,8 +695,8 @@ WinNativeShell.prototype = {
           });
     } catch (e) {
       console.log("APPS | nativeshell.win | synthesizeIcon - "
-          + "Failure writing icon file " + this.iconFile.path
-          + " (" + e + ")");
+                  + "Failure writing icon file "
+                  + " (" + e + ")");
       return;
     }
   }
@@ -745,6 +745,11 @@ MacNativeShell.prototype = {
       this.webRTConfigFile = this.installDir.clone();
       this.webRTConfigFile.append("webRT.config");
       console.log(this.webRTConfigFile.path);
+
+      this.iconFile = this.installDir.clone();
+      this.iconFile.append("Contents");
+      this.iconFile.append("Resources");
+      this.iconFile.append("appicon.icns");
   },
 
 
@@ -817,49 +822,56 @@ MacNativeShell.prototype = {
     embedMozAppsAPIFiles(contentDir);
     /////////////////////////////////////////////
 
-    this.synthesizeIcon(app, this.installDir.path + "/Contents/Resources/appicon.icns");
+    this.synthesizeIcon(app);
   },
 
-  synthesizeIcon : function(app, destinationFile)
+  synthesizeIcon : function(app)
   {
     getBiggestIcon(app,
-                   this.onIconRetrieved.bind(this, destinationFile));
+                   this.onIconRetrieved.bind(this));
   },
 
-  onIconRetrieved : function(destinationFile,
-                             resultCode,
+  onIconRetrieved : function(resultCode,
                              mimeType,
                              iconStream) {
-  if (!components.isSuccessCode(resultCode)) {
-    console.log("APPS | nativeshell.mac | synthesizeIcon - "
-        + "Attempt to retrieve icon returned result code "
-        + resultCode);
-    return;
-  }
+    if (!components.isSuccessCode(resultCode)) {
+      console.log("APPS | nativeshell.mac | synthesizeIcon - "
+          + "Attempt to retrieve icon returned result code "
+          + resultCode);
+      return;
+    }
 
-  var filePath = Cc["@mozilla.org/file/directory_service;1"]
-                 .getService(Ci.nsIProperties)
-                 .get("TmpD", Ci.nsIFile);
-  filePath.append("tmpicon" + tSuffix);
-  filePath.createUnique(Ci.nsIFile.NORMAL_FILE_TYPE, 0600);
+    try {
+      var filePath = Cc["@mozilla.org/file/directory_service;1"]
+                     .getService(Ci.nsIProperties)
+                     .get("TmpD", Ci.nsIFile);
+      filePath.append("tmpicon" + tSuffix);
+      filePath.createUnique(Ci.nsIFile.NORMAL_FILE_TYPE, 0600);
 
-  var stream = Cc["@mozilla.org/network/safe-file-output-stream;1"]
-               .createInstance(Ci.nsIFileOutputStream);
-  // readwrite, create, truncate
-  stream.init(filePath, 0x04 | 0x08 | 0x20, 0600, 0);
+      var stream = Cc["@mozilla.org/network/safe-file-output-stream;1"]
+                   .createInstance(Ci.nsIFileOutputStream);
+      // readwrite, create, truncate
+      stream.init(filePath, 0x04 | 0x08 | 0x20, 0600, 0);
 
-  NetUtil.asyncCopy(icoStream,
-                    outputStream,
-                    this.onTmpIconWritten.bind(this));
+      NetUtil.asyncCopy(icoStream,
+                        outputStream,
+                        this.onTmpIconWritten.bind(this));
+    } catch(e) {
+      console.log("APPS | nativeshell.mac | synthesizeIcon - "
+                  + "Failure creating temp icon"
+                  + " (" + e + ")");
+    }
   },
 
   onTmpIconWritten : function(result) {
     if (!Components.isSuccessCode(result)) {
       console.log("APPS | nativeshell.mac | synthesizeIcon - "
-          + "Failure writing temporary icon file "
-          + " (" + result + ")");
+                  + "Failure writing temporary icon file "
+                  + " (" + result + ")");
       return;
     }
+
+    try {
     var process = Cc["@mozilla.org/process/util;1"]
                   .createInstance(Ci.nsIProcess);
     var sipsFile = Cc["@mozilla.org/file/local;1"]
@@ -869,9 +881,15 @@ MacNativeShell.prototype = {
     process.runAsync(["-s",
                       "format", "icns",
                       filePath.path,
-                      "--out", destinationFile,
+                      "--out", this.iconFile.path,
                       "-z", "128", "128"],
                       9);
+    } catch(e) {
+      console.log("APPS | nativeshell.mac | synthesizeIcon - "
+                  + "Failure writing icon file"
+                  + " (" + e + ")");
+      return;
+    }
   }
 }
 
