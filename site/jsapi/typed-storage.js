@@ -171,6 +171,10 @@ TypedStorage.ObjectStore = function (storage, objType, typedStorage) {
 
   //store and object under a specified key
   self.put = function(key, value, cb) {
+    if (value === undefined) {
+      self.remove(key, cb);
+      return;
+    }
     self.get(key, function (oldValue) {
       setObject(self._storage, self.makeKey(key), value);
       self._typedStorage.change(self, self._objType, key, oldValue, value);
