@@ -1,4 +1,3 @@
-
 /* For Jetpack */
 var win;
 if (typeof exports !== "undefined") {
@@ -36,6 +35,10 @@ var SyncService = function (args) {
       self._lastSyncPut = null;
     }
   });
+  this._lastSyncUUID = null;
+  this.storage.get('lastSyncUUID', function (value) {
+    self._lastSyncUUID = value || null;
+  });
   this._appTracking = null;
   this.storage.get('appTracking', function (value) {
     if (value === null || value === undefined) {
@@ -56,12 +59,62 @@ SyncService.prototype.toString = function () {
   return '[SyncService pollTime: ' + this.pollTime + ' server: ' + this.server + ']';
 };
 
+SyncService.prototype.reset = function (callback) {
+  var steps = 0;
+  var allSet = false;
+  var self = this;
+  function done() {
+    steps--;
+    if (steps === 0 && allSet) {
+      self.sendStatus({status: 'reset'});
+      if (callback) {
+        callback();
+      }
+    }
+  };
+  steps++; this.storage.put('lastSyncTime', null, done);
+  steps++; this.storage.put('lastSyncPut', null, done);
+  steps++; this.storage.put('appTracking', null, done);
+  this._lastSyncTime = null;
+  this._lastSyncPut = null;
+  this._appTracking = {};
+  if (steps === 0) {
+    self.sendStatus({status: 'reset'});
+    if (callback) {
+      callback();
+    }
+  } else {
+    allSet = true;
+  }
+};
+
 SyncService.prototype.sendStatus = function (message) {
   if (! this.onstatus) {
     return;
   }
   message.timestamp = new Date().getTime();
   this.onstatus(message);
+};
+
+SyncService.prototype.confirmUUID = function (uuid) {
+  var self = this;
+  log('confirming UUID', uuid, this._lastSyncUUID);
+  if (! uuid) {
+    return true;
+  }
+  if (! this._lastSyncUUID) {
+    this._lastSyncUUID = uuid;
+    this.storage.put('lastSyncUUID', uuid);
+    return true;
+  } else if (this._lastSyncUUID == uuid) {
+    return true;
+  } else {
+    this.reset(function () {
+      self._lastSyncUUID = uuid;
+      self.storage.put('lastSyncUUID', uuid);
+    });
+    return false;
+  }
 };
 
 SyncService.prototype.login = function (assertionData, callback) {
@@ -73,6 +126,7 @@ SyncService.prototype.login = function (assertionData, callback) {
       }
       return;
     }
+    self.confirmUUID(assertionData.uuid);
     if (self.onlogin) {
       self.onlogin(result);
     }
@@ -215,6 +269,12 @@ SyncService.prototype._getUpdates = function (callback) {
       self.sendStatus({error: 'server_get', detail: error});
       if (callback) {
         callback(error);
+      }
+      return;
+    }
+    if (! self.confirmUUID(results.uuid)) {
+      if (callback) {
+        callback({error: "uuid_changed"});
       }
       return;
     }
@@ -369,6 +429,12 @@ SyncService.prototype._putUpdates = function (callback) {
     log('putUpdates', {updates: toUpdate});
     self.server.put(toUpdate, function (error, result) {
       log('server put completed', {error: error, result: result});
+      if (! self.confirmUUID(result.uuid)) {
+        if (callback) {
+          callback({error: "uuid_changed"});
+        }
+        return;
+      }
       if (error) {
         self.sendStatus({error: 'sync_put', detail: error});
         if (callback) {
@@ -476,12 +542,18 @@ Server.prototype.login = function (data, callback) {
     if (req.readyState != 4) {
       return;
     }
+    // FIXME: maybe should check for status == 0 specifically; that typically
+    // means some CORS error or other connection issue
     if (req.status != 200) {
       callback({error: "Bad response from " + self._url + ": " + req.status,
-                req: req, text: req.responseText});
+                request: req, text: req.responseText});
       return;
     }
     var data = JSON.parse(req.responseText);
+    if (data.status == "failed") {
+      callback({error: data.reason});
+      return;
+    }
     self._processLogin(data, callback);
   };
   req.send('assertion=' + encodeURIComponent(assertion)

@@ -17,14 +17,16 @@ how the server should act.</div>
 <h2>Setup the server</h2>
 
 <pre class="doctest">
-$ if (doctest.params.server) {
->   server = new Server(doctest.params.server || "http://127.0.0.1:5000/verify");
+$ if (doctest.params.server !== undefined) {
+>   server = new Server(doctest.params.server || "/verify");
 > } else {
 >   server = new MockServer();
 > }
 $ writeln(server);
 [...]
 $ doctest.defaultSpyOptions.wrapArgs = true;
+$ writeln(user = "test-"+(new Date().getTime())+"@example.com");
+test-?@example.com
 </pre>
 
 <div>Now we'll just do a bit of mock authentication.  We use a mock
@@ -39,7 +41,7 @@ $ writeln(server.loggedIn());
 false
 $ // This login should fail:
 > server.login(
->   {assertion: 'test@example.com?a=example.com', audience: 'localhost'},
+>   {assertion: user+'?a=example.com', audience: 'localhost'},
 >   Spy('server.login', {wait: true})
 > );
 server.login({
@@ -49,12 +51,14 @@ $ writeln(server.loggedIn());
 false
 $ // This one should succeed
 > server.login(
->   {assertion: 'test@example.com?a=localhost', audience: 'localhost'},
+>   {assertion: user+'?a=localhost', audience: 'localhost'},
 >   Spy('server.login', {wait: true})
 > );
 server.login(null, {
   audience: "localhost",
-  email: "test@example.com",
+  collection_url: "http...",
+  email: "test-?@example.com",
+  http_authorization: "...",
   issuer: "browserid.org",
   status: "okay",
   "valid-until": ?
@@ -62,7 +66,7 @@ server.login(null, {
 $ writeln(server.loggedIn());
 true
 $ writeln(server.userInfo());
-{email: "test@example.com", "valid-until": ?}
+{email: "test-?@example.com", "valid-until": ?}
 </pre>
 
 </div>
@@ -76,7 +80,8 @@ $ // The first argument is 'since'; we've never gotten anything...
 server.get(null, {
   applications: [],
   since: 0,
-  until: ?
+  until: ?,
+  uuid: null
 })
 $ server.get('asdf', Spy('server.get-fail'));
 Error: In get(since, ...) since must be a number or null
@@ -85,7 +90,8 @@ $ // 0 is basically the same as null...
 server.get(null, {
   applications: [],
   since: 0,
-  until: ?
+  until: ?,
+  uuid: null
 })
 $ // OK, let's do it for serious now:
 > spy = Spy('server.get');
@@ -94,7 +100,8 @@ $ server.get(0, spy);
 server.get(null, {
   applications: [],
   since: 0,
-  until: ?
+  until: ?,
+  uuid: null
 })
 $ until = spy.args[1].until;
 $ putSpy = Spy('server.put');
@@ -102,8 +109,9 @@ $ server.put([{
 >   last_modified: until+1,
 >   manifest: {name: "a fun app"},
 >   manifest_url: "http://example.com/manifest.webapp",
+>   origin: "http://example.com",
 >   install_data: null,
->   install_origin: "http://example.com",
+>   install_origin: "http://store.example.com",
 >   install_time: 100
 > }], putSpy);
 > putSpy.wait();
@@ -116,24 +124,27 @@ server.get(null, {
   applications: [
     {
       install_data: null,
-      install_origin: "http://example.com",
+      install_origin: "http://store.example.com",
       install_time: 100,
       last_modified: ?,
       manifest: {
         name: "a fun app"
       },
-      manifest_url: "http://example.com/manifest.webapp"
+      manifest_url: "http://example.com/manifest.webapp",
+      origin: "http://example.com"
     }
   ],
   since: 0,
-  until: ?
+  until: ?,
+  uuid: "..."
 })
 $ // But we won't see it if we have a later since time:
 > server.get(until+2, Spy('server.get', {wait: true}));
 server.get(null, {
   applications: [],
   since: ?,
-  until: ?
+  until: ?,
+  uuid: "..."
 })
 </pre>
 
@@ -151,7 +162,7 @@ requests.  Quick brainstorm:
     <li>.put out of sync with a .get (need ?since on put)</li>
     <li>Trying to access a server when it isn't logged in</li>
     <li>Login that has expired</li>
-    <li>Invalid origins</li>
+    <li>Invalid origins, missing origins</li>
     <li>Totally invalid .puts (e.g., put an object not a list, or put null)</li>
   </ol>
 

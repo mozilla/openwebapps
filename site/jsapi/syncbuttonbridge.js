@@ -7,8 +7,8 @@ window.addEventListener('storage', function (event) {
   }
   if (event.key == 'syncbutton-deletenow') {
     console.warn('manual delete');
-
     sync.deleteCollection({reason: 'manual deletion'}, function (error) {console.log('did delete', error);});
+    sync.reset(function () {console.log('did reset');});
     return;
   }
   if (event.key !== 'syncbutton-assertion') {
