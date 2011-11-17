@@ -1,4 +1,15 @@
 
+/* For Jetpack */
+var win;
+if (typeof exports !== "undefined") {
+  const { Cc, Ci, Cm, Cu, Cr, components } = require("chrome");
+  var wm = Cc["@mozilla.org/appshell/window-mediator;1"]
+    .getService(Ci.nsIWindowMediator);  
+  win = wm.getMostRecentWindow("navigator:browser"); 
+} else {
+  win = window;
+}
+
 var SyncService = function (args) {
   var self = this;
   this.pollTime = args.pollTime;
@@ -511,7 +522,14 @@ Server.prototype.userInfo = function () {
 };
 
 Server.prototype._createRequest = function (method, url) {
-  var req = new XMLHttpRequest();
+  var req;
+  if (typeof exports !== "undefined") {
+    req = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"]
+      .createInstance(Ci.nsIXMLHttpRequest);
+  } else {
+    req = new XMLHttpRequest();
+  }
+
   req.open(method, url);
   if (this._httpAuthorization) {
     req.setRequestHeader('Authorization', this._httpAuthorization);
@@ -641,7 +659,7 @@ Scheduler.prototype.activate = function () {
 
 Scheduler.prototype.deactivate = function () {
   if (this._timeoutId) {
-    clearTimeout(this._timeoutId);
+    win.clearTimeout(this._timeoutId);
     this._timeoutId = null;
   }
 };
@@ -653,9 +671,9 @@ Scheduler.prototype.resetSchedule = function () {
 Scheduler.prototype.schedule = function () {
   var self = this;
   if (this._timeoutId) {
-    clearTimeout(this._timeoutId);
+    win.clearTimeout(this._timeoutId);
   };
-  this._timeoutId = setTimeout(function () {
+  this._timeoutId = win.setTimeout(function () {
     try {
       self.service.syncNow(function (error, result) {
         if (error && self.onerror) {

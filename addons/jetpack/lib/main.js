@@ -44,6 +44,9 @@ const url = require("./urlmatch");
 const simple = require("simple-storage");
 const { Cc, Ci, Cm, Cu, Cr, components } = require("chrome");
 
+const TOOLBAR_ID = "openwebapps-toolbar-button";
+const APP_SYNC_URL = "https://myapps.mozillalabs.com";
+
 var tmp = {};
 Cu.import("resource://gre/modules/Services.jsm", tmp);
 Cu.import("resource://gre/modules/AddonManager.jsm", tmp);
@@ -313,6 +316,46 @@ function setupAboutPageMods() {
   });
 }
 
+/**
+ * setupLogin
+ * Shows a jetpack panel to get a BrowserID assertion from the user to
+ * authenticate to the sync service
+ */
+function setupLogin(service) {
+  let wm = Components.classes["@mozilla.org/appshell/window-mediator;1"].getService(Components.interfaces.nsIWindowMediator);
+  let win = wm.getMostRecentWindow("navigator:browser");
+
+  /* Way to get the widget
+   * openwebapps@mozillalabs.com should be got from self.data
+   */
+  let button = win.document.getElementById("widget:openwebapps@mozillalabs.com-" + TOOLBAR_ID);
+  let panel = require("panel").Panel({
+    width: 300,
+    height: 200,
+    contentURL: APP_SYNC_URL + "/login.html"
+  });
+
+  pageMod.PageMod({
+    include: APP_SYNC_URL + "/login.html",
+    contentScriptWhen: "end",
+    contentScript: "var button = document.getElementById('signin_button');" +
+      "button.onclick = function() {" +
+      "  unsafeWindow.navigator.wrappedJSObject.id.getVerifiedEmail(function(assertion) {" +
+      "    self.postMessage(assertion);" +
+      "  });" +
+      "};",
+    onAttach: function(worker) {
+      worker.on("message", function(data) {
+        service.login({
+          assertion: data,
+          audience: APP_SYNC_URL 
+        });
+      });
+    }
+  });
+
+  panel.show(button);
+}
 
 /**
  * startup
@@ -383,7 +426,7 @@ function startup(getUrlCB) { /* Initialize simple storage */
 
   // Setup widget to launch dashboard
   require("widget").Widget({
-    id: "openwebapps-toolbar-button",
+    id: TOOLBAR_ID,
     label: "Apps",
     width: 60,
     contentURL: require("self").data.url("widget.html"),
@@ -403,8 +446,7 @@ function startup(getUrlCB) { /* Initialize simple storage */
   let tmp = require("./api");
   let sync = require("./sync");
   let storage = require("./typed_storage");
-  let syncURL = require("preferences-service").
-    get("apps.sync.url", "http://sync4.web.mtv1.dev.svc.mozilla.com/verify");
+  let syncURL = require("preferences-service").get("apps.sync.url", APP_SYNC_URL + "/verify");
   
   let service = new sync.Service({
     repo: tmp.FFRepoImplService,
@@ -428,6 +470,9 @@ function startup(getUrlCB) { /* Initialize simple storage */
   scheduler.onerror = function (error) {
     console.log("Error syncing: " + JSON.stringify(error));
   };
+
+  // We don't have an assertion from BrowserID, so let's ask the user to login
+  setupLogin(service);
 
   // Broadcast that we're done, in case anybody is listening
   Services.obs.notifyObservers(tmp.FFRepoImplService, "openwebapps-startup-complete", "");
