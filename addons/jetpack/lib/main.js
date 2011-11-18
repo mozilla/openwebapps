@@ -68,9 +68,6 @@ function openwebapps(win, getUrlCB) {
   // setup page-modes
   this.setupManagerAPI();
 
-  tmp = require("./services");
-  this._services = new tmp.serviceInvocationHandler(this._window);
-
   if (this.pendingRegistrations) {
     for each(let reg in this.pendingRegistrations) {
       this._repo._registerBuiltInApp(reg[0], reg[1], reg[2]);
@@ -251,16 +248,10 @@ MozAppsAPI.prototype = {
       getInstalledBy: function(callback) {
         repo.getInstalledBy(aWindow.location, callback);
       },
-      startActivity: function(activity, successCB, errorCB) {
-        let wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
-        let recentWindow = wm.getMostRecentWindow("navigator:browser");
-        recentWindow.apps._services.invoke(aWindow, activity, successCB, errorCB);
-      },
       __exposedProps__: {
         install: "r",
         amInstalled: "r",
-        getInstalledBy: "r",
-        startActivity: "r"
+        getInstalledBy: "r"
       }
     };
   }

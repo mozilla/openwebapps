@@ -40,8 +40,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 const {Cu, Ci, Cc} = require("chrome");
-var {FFRepoImplService} = require("api");
-let {URLParse} = require("openwebapps/urlmatch");
+var {FFRepoImplService} = require("openwebapps/api");
 let {OAuthConsumer} = require("oauthorizer/oauthconsumer");
 let tmp = {}
 Cu.import("resource://gre/modules/Services.jsm", tmp);
@@ -70,16 +69,22 @@ var nextinvocationid = 0;
  * This class controls the mediator panel UI.  There is one per tab
  * per mediator, created only when needed.
  */
-function MediatorPanel(window, methodName) {
+function MediatorPanel(window, activity) {
   this.window = window; // the window the panel is attached to
-  this.methodName = methodName;
+  this.methodName = activity.action;
+  this.defaultData = {
+    activity: {
+      action: activity.action,
+      type: activity.type,
+      data: {}
+    }
+  };
   this.frames = [];
   this.handlers = {};
 
   this.mediator = mediators[this.methodName];
 
   this.panel = null;
-  this.isConfigured = false;
   this.invocationid = nextinvocationid++;
   this.invalidated = true;
 
@@ -112,20 +117,27 @@ MediatorPanel.prototype = {
   
   get tabData() {
     let tab = tabs.activeTab;
-    return tab.activity[this.methodName];
+    return tab.activity? tab.activity[this.methodName] : this.defaultData;
   },
 
   observe: function(document, aTopic, aData) {
     if (aTopic != 'document-element-inserted' ||
-        !document.defaultView.frameElement) return;
+        !document.defaultView || !document.defaultView.frameElement) return;
     //console.log("mediator got documented created notification");
     var id = document.defaultView.frameElement.getAttribute('id');
     for (var i=0; i < this.frames.length; i++) {
       if (id == this.frames[i].id) {
-        let frame = this.frames[i];
-        this.inject(document.defaultView, frame);
+        let frame = this.frames.splice(i,1);
+        this.inject(document.defaultView, frame[0]);
+        // hack to get the panel's window, important for tests
+        this._panelWindow = document.defaultView.top;
+        break;
       }
     }
+  },
+  
+  get panelWindow() {
+    return this._panelWindow;
   },
   
   inject: function(contentWindow, frame) {
@@ -150,7 +162,7 @@ MediatorPanel.prototype = {
     });
     worker.port.on("owa.service.register.handler", function (activity) {
       //dump("register.handler "+JSON.stringify(activity)+"\n");
-      //dump("register.handler "+frame.origin+"/"+activity.action+"/"+activity.message+"\n");
+      //dump("register.handler "+frame.origin+":"+activity.action+":"+activity.message+"\n");
       if (!mediator.handlers[frame.origin])
         mediator.handlers[frame.origin] = {};
       if (!mediator.handlers[frame.origin][activity.action])
@@ -213,6 +225,7 @@ MediatorPanel.prototype = {
   },
 
   onOWAReady: function(msg) {
+    this._panelWindow = null;
     FFRepoImplService.findServices(this.methodName, function(serviceList) {
       this.tabData.activity.data = this.updateargs(this.tabData.activity.data);
       this.panel.port.emit("owa.mediation.setup", {
@@ -309,7 +322,7 @@ MediatorPanel.prototype = {
     // additional contentScriptFiles.
     let url = this.mediator && this.mediator.url;
     if (!url) {
-      url = require("self").data.url("service2.html");
+      url = require("self").data.url("service.html");
     }
     if (this.mediator) {
       if (this.mediator.contentScriptFile) {
@@ -343,10 +356,6 @@ MediatorPanel.prototype = {
    * show the mediator popup
    */
   show: function() {
-    if (!this.isConfigured) {
-      this.panel.port.emit("owa.mediation.reconfigure");
-      this.isConfigured = true;
-    }
     if (this.invalidated) {
       this.tabData.activity.data = this.updateargs(this.tabData.activity.data);
       this.panel.port.emit("owa.mediation.updateActivity", this.tabData.activity);
@@ -434,6 +443,16 @@ MediatorPanel.prototype = {
     } catch (e) {
       dump("oauthAuthorize: "+e + "\n");
     }
+  },
+  
+  reconfigure: function() {
+    if (this.panel.isShowing)
+      this.panel.hide();
+
+    this._panelWindow = null;
+    this.frames = [];
+    this.handlers = {};
+    this.panel.port.emit("owa.mediation.reconfigure");
   }
 }
 
@@ -512,15 +531,11 @@ serviceInvocationHandler.prototype = {
         topic === "openwebapp-uninstalled" ||
         topic === "net:clear-active-logins")
     {
-    // All visible panels need to be reconfigured now, while invisible
-    // ones can wait until they are re-shown.
-    for each (let popupCheck in this._popups) {
-      if (popupCheck.panel.isShowing) {
-      popupCheck.panel.port.emit("owa.mediation.reconfigure");
-      } else {
-      popupCheck.isConfigured = false;
+      // XXX TODO look at the change in the app and only reconfigure the related
+      // mediators.
+      for each (let popupCheck in this._popups) {
+        popupCheck.reconfigure();
       }
-    }
     }
   },
 
@@ -560,7 +575,7 @@ serviceInvocationHandler.prototype = {
     }
     // if we didn't find it, create it
     let agent = agentCreators[activity.action] ? agentCreators[activity.action] : MediatorPanel;
-    panel = new agent(this._window, activity.action);
+    panel = new agent(this._window, activity);
     panel.startActivity(activity, successCB, errorCB);
     // attach our response listeners
     panel.attachHandlers();

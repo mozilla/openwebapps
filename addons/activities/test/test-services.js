@@ -1,43 +1,39 @@
-const FFRepoImpl = require("api").FFRepoImplService;
-const {getOWA, installTestApp, getTestUrl} = require("./helpers/helpers");
+const FFRepoImpl = require("openwebapps/api").FFRepoImplService;
+const {getServiceInvocationHandler, installTestApp, invokeService} = require("./helpers");
 const {Cc, Ci, Cm, Cu, components} = require("chrome");
 const tabs = require("tabs");
 
-
-function getContentWindow() {
-  let wm = Cc["@mozilla.org/appshell/window-mediator;1"]
-                .getService(Ci.nsIWindowMediator);
-
-  let topWindow = wm.getMostRecentWindow("navigator:browser");
-  let gBrowser = topWindow.gBrowser;
-  let element = gBrowser.getBrowserForTab(gBrowser.selectedTab);
-  return element.contentWindow.wrappedJSObject;
-}
-
-
-TestMediator = {
-  url: getTestUrl("apps/testable_mediator.html"),
-  contentScriptFile: getTestUrl('apps/basic/success.js')
-};
+// ensure activities is activated
+require("activities/main").main();
 
 exports.test_invoke = function(test) {
   test.waitUntilDone();
-  installTestApp(test, "apps/basic/basic.webapp", function() {
+  installTestApp(test, "apps/basic/basic.webapp", function(options) {
     // we don't yet have a "mediator" concept we can use, so we call some
     // internal methods to set things up bypassing the builtin mediator ui.
-    let services = getOWA()._services;
-    services.registerMediator("test.basic", TestMediator);
-    let panel = services.get(
-      {action:"test.basic", data: {hello: "world"}}, // simulate an Activity object
-      function(result) { // success cb
-        test.assertEqual(result.hello, "world");
-        test.done();
-      },
-      function() { // error callback
-        test.fail("error callback invoked");
-      }
-    );
-    panel.show();
+    let activity = {action:"test.basic",
+                    origin: options.origin,
+                    message: "echoArgs",
+                    data: {hello: "world"}};
+    let services = getServiceInvocationHandler();
+    let mediator = services.get(activity);
+    mediator.panel.port.once("owa.mediation.ready", function() {
+      test.waitUntil(function() {return mediator.panelWindow}
+      ).then(function() {
+        invokeService(mediator, activity,
+          function(result) { // success cb
+            mediator.panel.hide();
+            test.assertEqual(result.hello, "world");
+            test.done();
+          },
+          function() { // error callback
+            mediator.panel.hide();
+            test.fail("error callback invoked");
+          }
+        );
+      });
+    });
+    mediator.show();
   });
 };
 
@@ -47,9 +43,8 @@ exports.test_invoke = function(test) {
 // one panel per tab.
 test_invoke_twice = function(test) {
   test.waitUntilDone();
-  let services = getOWA()._services;
+  let services = getServiceInvocationHandler();
   let seenTab1Callback = false;
-  services.registerMediator("test.basic", TestMediator);
   installTestApp(test, "apps/basic/basic.webapp", function() {
     tabs.open({
       url: "about:blank",
@@ -103,36 +98,39 @@ test_invoke_twice = function(test) {
   });
 }
 
-// Error tests.
-TestMediatorError = {
-  url: getTestUrl("apps/testable_mediator.html"),
-  contentScriptFile: getTestUrl('apps/basic/error.js')
-};
 
 // A helper for the error tests.
-function testError(test, mediator, activity, errchecker) {
+function testError(test, activity, errchecker) {
   test.waitUntilDone();
-  installTestApp(test, "apps/basic/basic.webapp", function() {
-    let services = getOWA()._services;
-    services.registerMediator("test.basic", mediator);
-    let panel = services.get(
-      activity,
-      function(result) { // success cb
-        services._popups.pop();
-        errchecker(result);
-      },
-      function(errob) { // error callback
-        test.fail("error callback invoked");
-        services._popups.pop();
-        test.done();
-      }
-    );
-    panel.show();
+  installTestApp(test, "apps/basic/basic.webapp", function(options) {
+    // we don't yet have a "mediator" concept we can use, so we call some
+    // internal methods to set things up bypassing the builtin mediator ui.
+    activity.origin = options.origin;
+    let services = getServiceInvocationHandler();
+    let mediator = services.get(activity);
+    mediator.panel.port.once("owa.mediation.ready", function() {
+      test.waitUntil(function() {return mediator.panelWindow}
+      ).then(function() {
+        invokeService(mediator, activity,
+          function(result) { // success cb
+            mediator.panel.hide();
+            services._popups.pop();
+            errchecker(result);
+          },
+          function(errob) { // error callback
+            mediator.panel.hide();
+            services._popups.pop();
+            errchecker(errob);
+          }
+        );
+      });
+    });
+    mediator.show();
   });
 }
 
 exports.test_invoke_error = function(test) {
-  testError(test, TestMediatorError,
+  testError(test,
     {action:"test.basic", message: 'testErrors', data:{}},
     function(errob) {
       test.assertEqual(errob.code, "testable_error");
@@ -143,7 +141,7 @@ exports.test_invoke_error = function(test) {
 
 
 exports.test_invoke_error_thrown = function(test) {
-  testError(test, TestMediatorError,
+  testError(test,
     {action:"test.basic", message: 'testErrorsThrown', data:{}},
     function(errob) {
       test.assertEqual(errob.code, "runtime_error");

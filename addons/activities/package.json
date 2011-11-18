@@ -1,0 +1,11 @@
+{
+    "name": "activities", 
+    "license": "MPL 1.1/GPL 2.0/LGPL 2.1", 
+    "author": "Mozilla Labs", 
+    "version": "0.3.1", 
+    "fullName": "Web Activities for Firefox", 
+    "id": "webactivities@mozillalabs.com", 
+    "description": "Adds Web Activities to Firefox.",
+    "dependencies": ["api-utils", "addon-kit", "openwebapps", "oauthorizer"],
+    "main": "./main.js"
+}

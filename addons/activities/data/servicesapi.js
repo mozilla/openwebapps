@@ -3,7 +3,7 @@ var activities = {};
 var origin = null;
 var callid = 0;
 
-unsafeWindow.navigator.wrappedJSObject.mozApps.services = {
+unsafeWindow.navigator.wrappedJSObject.mozActivities.services = {
   // notify our mediator that we're ready for business.
   ready: function() {
     self.port.emit("owa.service.ready", origin);
