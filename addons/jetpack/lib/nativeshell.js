@@ -656,7 +656,7 @@ WinNativeShell.prototype = {
 
   onIconRetrieved : function(resultCode,
                              mimeType,
-                             inputStream)
+                             imageStream)
   {
     if (!components.isSuccessCode(resultCode)) {
       console.log("APPS | nativeshell.win | synthesizeIcon - "
@@ -665,14 +665,15 @@ WinNativeShell.prototype = {
       return;
     }
 
+    let iconStream;
     try {
       let imgTools = Cc["@mozilla.org/image/tools;1"]
                      .createInstance(Ci.imgITools);
       let imgContainer = { value: null };
 
-      imgTools.decodeImageData(inputStream, mimeType, imgContainer);
+      imgTools.decodeImageData(imageStream, mimeType, imgContainer);
 
-      icoStream =
+      iconStream =
           imgTools.encodeImage(imgContainer.value,
                                "image/vnd.microsoft.icon");
     } catch (e) {
@@ -684,7 +685,7 @@ WinNativeShell.prototype = {
 
     try {
       let outputStream = FileUtils.openSafeFileOutputStream(this.iconFile);
-      NetUtil.asyncCopy(icoStream,
+      NetUtil.asyncCopy(iconStream,
                         outputStream,
                         function(result) {
             if (!Components.isSuccessCode(result)) {
