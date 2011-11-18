@@ -111,6 +111,7 @@ Repo = (function() {
   // the HTML5 case, localStorage.
   var appStorage = TypedStorage().open("app");
   var stateStorage = TypedStorage().open("state");
+  var deletedStorage = TypedStorage().open("deleted");
 
   function invalidateCaches() {
     installedServices = undefined;
@@ -132,7 +133,7 @@ Repo = (function() {
         return function(install) {
           try {
             install.manifest = Manifest.validate(install.manifest);
-            toReturn[aKey] = new App(install);
+            toReturn[aKey] = install;
           } catch (e) {
             toRemove.push(aKey)
           } finally {
@@ -234,6 +235,12 @@ Repo = (function() {
     return parsed.originOnly().toString()
   }
 
+  // "private" call used only by sync.js to add a previously installed
+  // application (from another device) to this repo
+  function addApplication(origin, apprec, cb) {
+    apprec.last_modified = new Date().getTime();
+    appStorage.put(origin, apprec, cb);
+  }
 
   // trigger application installation.
   //     origin -- the URL of the site requesting installation
@@ -262,6 +269,7 @@ Repo = (function() {
           manifest: manifestToInstall,
           origin: appOrigin,
           install_time: new Date().getTime(),
+          last_modified: new Date().getTime(),
           install_origin: installOrigin
         };
 
@@ -522,9 +530,34 @@ Repo = (function() {
         });
       } else {
         appStorage.remove(origin, function() {
+          deletedStorage.put(origin, {last_modified: new Date().getTime()}, function() {
+            if (cb && typeof(cb) == "function") cb(true);
+          });
           if (cb && typeof(cb) == "function") cb(true);
         });
-        self.invalidateCaches()
+        self.invalidateCaches();
+      }
+    });
+  };
+
+  function listUninstalled(cb) {
+    let self = this;
+    deletedStorage.keys(function (keys) {
+      if (!keys.length) {
+        cb([]);
+        return;
+      }
+      var result = [];
+      var remaining = keys.length;
+      
+      for (var i=0; i<keys.length; i++) {
+        deletedStorage.get(keys[i], function(deleted) {
+          result.push(deleted);
+          remaining--;
+          if (!remaining) {
+            cb(result);
+          }
+        });
       }
     });
   };
@@ -580,7 +613,9 @@ Repo = (function() {
     invalidateCaches: invalidateCaches,
     updateServices: updateServices,
     getAppById: getAppById,
-    getAppByUrl: getAppByUrl
+    getAppByUrl: getAppByUrl,
+    addApplication: addApplication,
+    listUninstalled: listUninstalled
   };
 })();
 

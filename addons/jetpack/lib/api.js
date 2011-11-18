@@ -121,6 +121,25 @@ FFRepoImpl.prototype = {
     }
   },
 
+  // An application added to the local repo *without*
+  // user prompt. Used by sync, could be used by tests
+  // Do not expose to navigator.mozApps!
+  addApplication: function(origin, apprec, cb) {
+    let self = this;
+
+    Repo.addApplication(origin, apprec, function(success) {
+      if (success) {
+        self._observer.notifyObservers(
+          null, "openwebapp-installed", JSON.stringify({
+            origin: origin,
+            skipPostInstallDashboard: true
+          })
+        );
+        self._callWatchers("add", [apprec]);  
+      }
+    })
+  },
+
   install: function _install(location, args, window) {
     // added a quick hack to forgo the prompt if a special argument is
     // sent in, to make it easy to install app straight from the lower-right prompt.

@@ -349,6 +349,9 @@ function setupLogin(service) {
         service.login({
           assertion: data,
           audience: APP_SYNC_URL 
+        }, function(err, info) {
+          console.log("Got back from login " + JSON.stringify(err) + info);
+          service.syncNow();
         });
       });
     }

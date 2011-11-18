@@ -556,6 +556,7 @@ var Server = function (url) {
 Server.prototype.login = function (data, callback) {
   var self = this;
   var assertion = data.assertion;
+  
   if (! assertion) {
     throw "You must provide an assertion ({assertion: 'value'})";
   }
