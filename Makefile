@@ -39,6 +39,7 @@ endif
 all: xpi
 
 xpi:    pull
+	${MAKE} -C addons/jetpack/mac/
 	$(addon_sdk)/cfx xpi $(cfx_args)
 
 pull:
@@ -48,6 +49,7 @@ test:
 	$(addon_sdk)/cfx test $(cfx_args) $(test_args)
 
 run:
+	${MAKE} -C addons/jetpack/mac/
 	$(addon_sdk)/cfx run $(cfx_args)	
 
 .PHONY: xpi clean pull test run

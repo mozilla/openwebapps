@@ -812,14 +812,11 @@ MacNativeShell.prototype = {
 
   synthesizeIcon : function(app)
   {
-    getBiggestIcon(app,
-                   this.onIconRetrieved.bind(this));
+    getBiggestIcon(app, this.onIconRetrieved.bind(this));
   },
 
-  onIconRetrieved : function(resultCode,
-                             mimeType,
-                             iconStream) {
-    if (!components.isSuccessCode(resultCode)) {
+  onIconRetrieved : function(resultCode, mimeType, iconStream) {
+      if (!components.isSuccessCode(resultCode)) {
       console.log("APPS | nativeshell.mac | synthesizeIcon - "
           + "Attempt to retrieve icon returned result code "
           + resultCode);
@@ -830,17 +827,40 @@ MacNativeShell.prototype = {
       var filePath = Cc["@mozilla.org/file/directory_service;1"]
                      .getService(Ci.nsIProperties)
                      .get("TmpD", Ci.nsIFile);
+
+
+      var tSuffix; 
+      if(mimeType === "image/jpeg") { 
+        tSuffix = ".jpeg"; 
+      } else if(mimeType === "image/png") { 
+        tSuffix = ".png"; 
+      } else {
+         // log error 
+      }
+      
       filePath.append("tmpicon" + tSuffix);
       filePath.createUnique(Ci.nsIFile.NORMAL_FILE_TYPE, 0600);
 
-      var stream = Cc["@mozilla.org/network/safe-file-output-stream;1"]
-                   .createInstance(Ci.nsIFileOutputStream);
-      // readwrite, create, truncate
-      stream.init(filePath, 0x04 | 0x08 | 0x20, 0600, 0);
+      var outputStream = Cc["@mozilla.org/network/safe-file-output-stream;1"].createInstance(Ci.nsIFileOutputStream);
 
-      NetUtil.asyncCopy(icoStream,
+      // readwrite, create, truncate
+      outputStream.init(filePath, 0x04 | 0x08 | 0x20, 0600, 0);
+
+      var self = this;
+      console.log("filePath.path: " + filePath.path);
+      NetUtil.asyncCopy(iconStream,
                         outputStream,
-                        this.onTmpIconWritten.bind(this));
+                        function(result) {
+                          if (!Components.isSuccessCode(result)) {
+                            console.log("APPS | nativeshell.mac | synthesizeIcon - "
+                            + "Failure writing temporary icon file "
+                            + " (" + result + ")");
+                            return;
+                          }
+
+                          self.onTmpIconWritten(filePath);
+                        });
+                        //this.onTmpIconWritten.bind(this, filePath));
     } catch(e) {
       console.log("APPS | nativeshell.mac | synthesizeIcon - "
                   + "Failure creating temp icon"
@@ -848,13 +868,8 @@ MacNativeShell.prototype = {
     }
   },
 
-  onTmpIconWritten : function(result) {
-    if (!Components.isSuccessCode(result)) {
-      console.log("APPS | nativeshell.mac | synthesizeIcon - "
-                  + "Failure writing temporary icon file "
-                  + " (" + result + ")");
-      return;
-    }
+  onTmpIconWritten : function(filePath) {
+    console.log("onTmpIconWritten: " + filePath.path);
 
     try {
     var process = Cc["@mozilla.org/process/util;1"]
@@ -862,6 +877,7 @@ MacNativeShell.prototype = {
     var sipsFile = Cc["@mozilla.org/file/local;1"]
                   .createInstance(Ci.nsILocalFile);
     sipsFile.initWithPath("/usr/bin/sips");
+
     process.init(sipsFile);
     process.runAsync(["-s",
                       "format", "icns",
