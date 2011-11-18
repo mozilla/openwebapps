@@ -55,8 +55,6 @@ A:visited {
   position: absolute;
   top: 5px;
   right: 5px;
-  border: 1px solid #BBBBBB;
-  border-radius: 5px;
 }
 
 /*overriding icongrid.css*/
