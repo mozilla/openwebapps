@@ -25,7 +25,7 @@ function newWindow()
     var ww = Components.classes["@mozilla.org/embedcomp/window-watcher;1"]
                        .getService(Components.interfaces.nsIWindowWatcher);
     var win = ww.openWindow(null, "chrome://webapp/content/window.xul",
-                            null, "chrome,centerscreen", null);
+                            null, "chrome,centerscreen,resizable", null);
 }
 
 

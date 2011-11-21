@@ -28,4 +28,4 @@ var appName = "$APPNAME";
 var ww = Components.classes["@mozilla.org/embedcomp/window-watcher;1"]
                    .getService(Components.interfaces.nsIWindowWatcher);
 var win = ww.openWindow(null, "chrome://webapp/content/window.xul",
-                        appName, "chrome,centerscreen", null);
+                        appName, "chrome,centerscreen,resizable", null);
