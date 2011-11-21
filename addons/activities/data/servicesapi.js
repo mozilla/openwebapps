@@ -58,7 +58,7 @@ self.port.on("owa.service.invoke", function(args) {
   try {
     activities[activity.action+"/"+activity.message].callback(activity, credentials);
   } catch (ex) {
-    postException({code: 'runtime_error', message: ex});
+    postException({code: 'runtime_error', message: ex.toString()});
   }
 });
 
