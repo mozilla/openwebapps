@@ -56,7 +56,7 @@ $(document).ready(function() {
         userRemovedItem: function(itemID, callback) {
           // this better trigger a call to the update watches, so we can fix the UI
           navigator.mozApps.mgmt.uninstall(itemID);
-        },
+        }
 
 
         // if all your items have 'itemImgURL' and 'itemTitle' properties, then you don't need to implement these.
@@ -103,5 +103,13 @@ $(document).ready(function() {
             navigator.mozApps.mgmt.clearWatch(watcherID);
         }
     });
+
+    if (navigator.mozApps.mgmt.syncButton) {
+        var syncButton = navigator.mozApps.mgmt.syncButton();
+        syncButton.appendTo('login');
+        $(document).click(function () {
+          syncButton.makeCompact();
+        });
+    }
 
 });

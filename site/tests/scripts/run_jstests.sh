@@ -20,13 +20,15 @@ echo "Installing Jstestnetlib Requirements"
 pushd $WORKSPACE/site/tests/jstestnetlib && pip install -r requirements.txt && python setup.py install
 popd
 
+pip install -U selenium
+
 echo "Starting nodejs "
 
 
 pushd $WORKSPACE/site/tests 
 forever stop 0 
 sleep 4
-forever start run.js
+forever start run.js -ip $NODE_SERVER
 popd
 echo "Starting JS tests..." `date`
 
@@ -36,25 +38,5 @@ if [ -z "$BROWSERS" ]; then
   BROWSERS="firefox"
 fi
 XARGS="-v --with-xunit --with-jstests --jstests-server $JSTESTS_SERVER --jstests-suite typed --jstests-token $JSTESTS_TOKEN --jstests-browsers $BROWSERS --debug nose.plugins.jstests"
-echo "******** $BROWSERS  ******** running the unit tests"
-python run_jstests.py --jstests-url http://$HOSTNAME:60172/tests/spec/typed-storage.html?runnerType=jstestnet --xunit-file=nosetests.xml $XARGS
-A=$?
-python run_jstests.py --jstests-url http://$HOSTNAME:60172/tests/spec/manifest.html?runnerType=jstestnet --xunit-file=nosetests.xml $XARGS
-B=$?
-python run_jstests.py --jstests-url http://$HOSTNAME:60172/tests/spec/conduits.html?runnerType=jstestnet --xunit-file=nosetests.xml $XARGS
-C=$?
-python run_jstests.py --jstests-url http://$HOSTNAME:60172/tests/spec/repo_api.html?runnerType=jstestnet --xunit-file=nosetests.xml $XARGS
-D=$?
-
-forever stop 0
-echo "$A $B $C $D"
-Z=`expr $A + $B + $C + $D`
-echo "Exit Code: $Z"
-
-if [ $Z -gt "0" ]
-then
-  exit 5
-else
-  echo "Success"
-  exit 0
-fi
+echo "******** $BROWSERS  ******** launching browsers & running the unit tests"
+python runner.py 

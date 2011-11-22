@@ -91,6 +91,7 @@ After authenticating with the server and getting back the URL of the collection,
 `since` is optional; on first sync is should be empty or left off. The server will return an object:
 
     {
+      since: timestamp,
       until: timestamp,
       incomplete: bool,
       applications: {origin: {...}, ...}
@@ -120,7 +121,7 @@ The client should keep track of the last time it sent updates to the server, and
 
 The updates are sent with:
 
-    POST {collection}
+    POST {collection}?since={timestamp}
 
     {origin: {...}, ...}
 
@@ -128,7 +129,11 @@ Each object must have a `last_modified` key.  The response is only:
 
     {received: timestamp}
 
-**NOTE:** the server could potentially check `last_modified` itself and throw away updates?  It could indicate in the response what the updates were.
+`since` should be the time of the last GET (that the client did), and the server checks it against the time of the last POST to the collection.  If a client is issuing a POST but hasn't seen updates from another client, then this will fail like:
+
+    {status: "failure", reason: "conflict"}
+
+**NOTE:** this is like a precondition (If-Unmodified-Since or If-Match), and there is a response 412 Precondition Failed.  We could use those?  We are using float timestamps instead of HTTP dates; we could use X-If-Unmodified-Since or use ETag.  I don't believe, but am not sure, that we need to understand the timestamps as a newer/older kind of thing.  At least for this case (`last_modified` is different).
 
 ## User Interface Concerns
 

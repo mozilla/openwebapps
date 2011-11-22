@@ -1,15 +1,9 @@
 /* -*- Mode: JavaScript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 /* vim: set ts=2 et sw=2 tw=80: */
 
-// The mediation API.  This script is injected by jetpack into all mediators.
-if (!window.navigator.mozApps) window.navigator.mozApps = {}
-if (!window.navigator.mozApps.mediation) window.navigator.mozApps.mediation = {}
-
 // Insert the mediator api into unsafeWindow
-if (!unsafeWindow.navigator.mozApps)
-  unsafeWindow.navigator.mozApps = window.navigator.mozApps;
-if (!unsafeWindow.navigator.mozApps.mediation)
-  unsafeWindow.navigator.mozApps.mediation = window.navigator.mozApps.mediation;
+if (!unsafeWindow.navigator.wrappedJSObject.mozActivities.mediation)
+  unsafeWindow.navigator.wrappedJSObject.mozActivities.mediation = {};
 
 let allServices = {} // keyed by handler URL.
 // This object should look very much like the Service object in repo.js
@@ -131,7 +125,7 @@ self.port.on("owa.mediation.onLogin", function(params) {
   });
 });
 
-window.navigator.mozApps.mediation.startLogin = function(origin) {
+unsafeWindow.navigator.wrappedJSObject.mozActivities.mediation.startLogin = function(origin) {
   allServices[origin].call("getParameters", {}, function(params) {
     // due to a limitation in our implementation, this getParameters call is
     // actually made on the "main" service rather than on the login specific
@@ -140,13 +134,12 @@ window.navigator.mozApps.mediation.startLogin = function(origin) {
     self.port.emit("owa.mediation.doLogin", {app: origin, auth: params.auth})
   });
 }
-unsafeWindow.navigator.mozApps.mediation.startLogin = window.navigator.mozApps.mediation.startLogin;
 
 // The API called by the mediator when it is ready to go.
 // Note the invocation handler will be called once initially, and possibly
 // again as the configuration of apps changes (ie, as apps are added or
 // removed).
-window.navigator.mozApps.mediation.ready = function(invocationHandler) {
+unsafeWindow.navigator.wrappedJSObject.mozActivities.mediation.ready = function(configureServices, updateActivity) {
   self.port.on("owa.app.ready", function(origin) {
     //console.log("owa.app.ready for", origin);
     if (allServices[origin]) {
@@ -158,7 +151,7 @@ window.navigator.mozApps.mediation.ready = function(invocationHandler) {
     //console.log("setup event has", msg.serviceList.length, "services");
     // We record the invocation ID in the mediator window so we can later
     // link the "app ready" calls back to the specific mediator instance.
-    unsafeWindow.navigator.mozApps.mediation._invocationid = msg.invocationid;
+    unsafeWindow.navigator.wrappedJSObject.mozActivities.mediation._invocationid = msg.invocationid;
     let document = unsafeWindow.document;
 
     // TODO: do not create iframes when mediators are converted to templates,
@@ -171,7 +164,7 @@ window.navigator.mozApps.mediation.ready = function(invocationHandler) {
     // replies we can go ahead and finish the create process.
     let frameCreateInfo = [];
     for (var i = 0; i < msg.serviceList.length; i++) {
-      var svc = msg.serviceList[i];
+      let svc = msg.serviceList[i];
       let id = guid();
       // notify our mediator of the guid to watch for
       frameCreateInfo.push({
@@ -191,7 +184,11 @@ window.navigator.mozApps.mediation.ready = function(invocationHandler) {
         services.push(svcob);
         allServices[svc.app.origin] = svcob;
       }
-      invocationHandler(msg.activity, services);
+      // send the services configuration to the mediator content
+      configureServices(msg.activity, services);
+  
+      // listen for activity changes, but also call directly on initial setup
+      self.port.on("owa.mediation.updateActivity", updateActivity);
     });
     self.port.emit("owa.mediation.frames", frameCreateInfo);
     self.port.once("owa.mediation.reconfigure", function() {
@@ -211,6 +208,7 @@ window.navigator.mozApps.mediation.ready = function(invocationHandler) {
   let doSetup = function() {
     self.port.once("owa.mediation.setup", setupHandler);
     self.port.emit("owa.mediation.ready");
+    self.port.removeListener("owa.mediation.updateActivity", updateActivity);
   };
 
   doSetup();
@@ -218,7 +216,6 @@ window.navigator.mozApps.mediation.ready = function(invocationHandler) {
   // event per app.
 };
 
-unsafeWindow.navigator.mozApps.mediation.ready = window.navigator.mozApps.mediation.ready;
 
 
 var mPort = {
@@ -245,4 +242,4 @@ var mPort = {
       self.port.removeListener(event, fn);
     }
 };
-unsafeWindow.navigator.mozApps.mediation.port = mPort;
+unsafeWindow.navigator.wrappedJSObject.mozActivities.mediation.port = mPort;

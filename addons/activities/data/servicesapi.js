@@ -1,20 +1,9 @@
 
-if (!window.navigator.mozApps)
-  window.navigator.mozApps = {}
-if (!window.navigator.mozApps.services)
-  window.navigator.mozApps.services = {}
-
-// Insert the services api into unsafeWindow
-if (!unsafeWindow.navigator.mozApps)
-  unsafeWindow.navigator.mozApps = window.navigator.mozApps;
-if (!unsafeWindow.navigator.mozApps.mediation) 3
-  unsafeWindow.navigator.mozApps.services = window.navigator.mozApps.services;
-
 var activities = {};
 var origin = null;
 var callid = 0;
 
-window.navigator.mozApps.services = {
+unsafeWindow.navigator.wrappedJSObject.mozActivities.services = {
   // notify our mediator that we're ready for business.
   ready: function() {
     self.port.emit("owa.service.ready", origin);
@@ -69,8 +58,7 @@ self.port.on("owa.service.invoke", function(args) {
   try {
     activities[activity.action+"/"+activity.message].callback(activity, credentials);
   } catch (ex) {
-    postException({code: 'runtime_error', message: ex});
+    postException({code: 'runtime_error', message: ex.toString()});
   }
 });
 
-unsafeWindow.navigator.mozApps.services = window.navigator.mozApps.services;

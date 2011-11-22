@@ -43,44 +43,50 @@
 
 if (typeof require !== "undefined") {
   var { Cc, Ci, Cu } = require("chrome");
+  const xulApp = require("api-utils/xul-app");
+  const HAS_NAVIGATOR_INJECTOR = xulApp.versionInRange(xulApp.version, "9.0a2", "*");
 } else {
   var Cc = Components.classes;
   var Ci = Components.interfaces;
   var Cu = Components.utils;
 }
+
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
-const ALL_GROUP_CONSTANT = "___all___";
-let refreshed;
+/**
+ * NavigatorInjector
+ *
+ * this class backfills support for the JavaScript-navigator-property category
+ * used by nsIDOMGlobalPropertyInitializer, which was added for fx9.  Any
+ * module that wants to add properties onto the navigator object should do so
+ * using nsIDOMGlobalPropertyInitializer.  Ideally only one instance of this
+ * class would be run in a single process of firefox (ie. it should be an
+ * xpcom service.). NavigatorInjector will only initialize in firefox 8 or
+ * earlier.
+ *
+ * Once you call init() in this module, you do not need to do anything else
+ * so long as you have registered your api like:
 
-let Injector = {
-  // Injector will inject code into the browser content.  The provider class
-  // looks like:
-  //  var someapiprovider = {
-  //    apibase: null, // null == 'navigator.mozilla.labs', or define your own namespace
-  //    name: 'my_fn_name', // builds to 'navigator.mozilla.labs.my_fn_name'
-  //    script: null, // null == use injected default script or provide your own
-  //    getapi: function() {
-  //      let someobject = somechromeobject;
-  //      return function() {
-  //        someobject();
-  //      }
-  //    }
-  //  }
-  //  InjectorInit(window); // set injector on window
-  //  injector.register(someapiprovider);
-  //
-  //  With the above object, there would be a new api in content that can
-  //  be used from any webpage like:
-  //
-  //  navigator.mozilla.labs.my_fn_name();
-  //**************************************************************************//
-  //
-  _scriptToInject: function(provider) {
-    // a provider may use it's own script to inject its api
-    if (provider.script) return provider.script;
+  // register the class that implements nsIDOMGlobalPropertyInitializer
+  Cm.QueryInterface(Ci.nsIComponentRegistrar).registerFactory(
+    MozAppsAPIClassID, "MozAppsAPI", MozAppsAPIContract, MozAppsAPIFactory
+  );
+  // register the category and contract for our api
+  Cc["@mozilla.org/categorymanager;1"].getService(Ci.nsICategoryManager).
+              addCategoryEntry("JavaScript-navigator-property", "mozApps",
+                      MozAppsAPIContract,
+                      false, true);
 
-    // otherwise, use a builtin injector script that we load from this
+ * see openwebapps/addon/jetpack/lib/main.js for an implementation of the
+ * above classes.
+ */
+function NavigatorInjector() {
+  console.log("initalize NavigatorInjector");
+  this.onLoad();
+}
+NavigatorInjector.prototype = {
+  _scriptToInject: function(entry, fname) {
+    // use a builtin injector script that we load from this
     // function object:
     let script = (function() {
       // __API_* strings are replaced in injector.js with specifics from
@@ -95,12 +101,15 @@ let Injector = {
       }
       api[fname] = this['__API_INJECTED__'];
       delete this['__API_INJECTED__'];
-      //dump("injected: "+eval(apibase+'.'+fname)+"\n");
+      //console.log("injected: "+apibase+'.'+fname+" "+eval(apibase+'.'+fname)+"\n");
     }).toString();
 
-    let apibase = provider.apibase ? provider.apibase : 'navigator.mozilla.labs';
-    script = script.replace(/__API_BASE__/g, apibase).replace(/__API_NAME__/g, provider.name).replace(/__API_INJECTED__/g, '__mozilla_injected_api_' + (provider.mangledName ? provider.mangledName : provider.name) + '__');
-    //dump(script+"\n");
+    let apibase = 'navigator.'+entry;
+    let mangledName = entry+"_"+fname;
+    script = script.replace(/__API_BASE__/g, apibase).
+                    replace(/__API_NAME__/g, fname).
+                    replace(/__API_INJECTED__/g, '__navigator_injected_api_' + mangledName + '__');
+    //console.log(script+"\n");
     // return a wrapped script that executes the function
     return "(" + script + ")();";
   },
@@ -110,92 +119,65 @@ let Injector = {
    *
    * Injects the content API into the specified DOM window.
    */
-  _inject: function(win, provider) {
+  _inject: function(aWindow, entry, fname, fn) {
     // ensure we're dealing with a wrapped native
-    var safeWin = new XPCNativeWrapper(win);
-    // options here are ignored for 3.6
+    let mangledName = entry+"_"+fname;
+    var safeWin = new XPCNativeWrapper(aWindow);
     let sandbox = new Cu.Sandbox(safeWin, {
-      sandboxProto: safeWin,
+      sandboxProto: aWindow,
       wantXrays: true
     });
-/*let sandbox = new Cu.Sandbox(
-        Cc["@mozilla.org/systemprincipal;1"].
-           createInstance(Ci.nsIPrincipal),
-    );*/
 
-    sandbox.importFunction(provider.getapi(safeWin), '__mozilla_injected_api_' + (provider.mangledName ? provider.mangledName : provider.name) + '__');
+    sandbox.importFunction(fn, '__navigator_injected_api_' + mangledName + '__');
     sandbox.window = safeWin;
     sandbox.navigator = safeWin.navigator.wrappedJSObject;
-    Cu.evalInSandbox(this._scriptToInject(provider), sandbox, "1.8");
-  }
+    Cu.evalInSandbox(this._scriptToInject(entry, fname), sandbox, "1.8");
+  },
 
-};
+  _createProperties: function(aWindow) {
+    //console.log("createProperties for "+aWindow.location);
+    try {
+      const CATEGORY_TO_ENUMERATE = "JavaScript-navigator-property";
+      var cm = Cc["@mozilla.org/categorymanager;1"].getService(Ci.nsICategoryManager);
+      var enumerator = cm.enumerateCategory(CATEGORY_TO_ENUMERATE);
+      var entries = [];
+      while (enumerator.hasMoreElements()) {
+          var item = enumerator.getNext();
+          var entry = item.QueryInterface(Ci.nsISupportsCString)
+          var value = cm.getCategoryEntry(CATEGORY_TO_ENUMERATE, entry.toString());
+          entries.push([entry, value]);
+          var p = Cc[value].createInstance(Ci.nsIDOMGlobalPropertyInitializer);
+          var obj = p.init(aWindow);
 
-
-
-// hook up a separate listener for each xul window
-
-function InjectorInit(window) {
-  if (window.appinjector) return;
-  window.appinjector = {
-    providers: [],
-    actions: [],
-    onLoad: function() {
-      var obs = Cc["@mozilla.org/observer-service;1"].
-      getService(Ci.nsIObserverService);
-      obs.addObserver(this, 'content-document-global-created', false);
-    },
-
-    onUnload: function() {
-      var obs = Cc["@mozilla.org/observer-service;1"].getService(Ci.nsIObserverService);
-      obs.removeObserver(this, 'content-document-global-created');
-    },
-
-    register: function(provider) {
-      this.providers.push(provider);
-    },
-    registerAction: function(action) {
-      this.actions.push(action);
-    },
-
-    observe: function(aSubject, aTopic, aData) {
-      //if (!aSubject.location.href) return;
-      // is this window a child of OUR XUL window?
-      let mainWindow = aSubject.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIWebNavigation).QueryInterface(Ci.nsIDocShellTreeItem).rootTreeItem.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIDOMWindow);
-      // *sob* - this check prevents the API from being injected in content
-      // loaded into a jetpack panel...
-      // if (mainWindow != window) {
-      //  return;
-      // }
-      for (let i in this.actions) {
-        this.actions[i]();
-      }
-      for (let i in this.providers) {
-        //dump("injecting api "+this.providers[i].name+"\n");
-        Injector._inject(aSubject, this.providers[i]);
-      }
-    },
-
-    inject: function() {
-      // arrange to setup windows created in the future...
-      window.appinjector.onLoad();
-      window.addEventListener("unload", function() window.appinjector.onUnload(), false);
-      // and setup Windows which exist now.
-      let browsers = window.document.querySelectorAll("tabbrowser");
-      for (let i = 0; i < browsers.length; i++) {
-        for (let j = 0; j < browsers[i].browsers.length; j++) {
-          let cw = browsers[i].browsers[j].contentWindow;
-          if (cw) {
-            window.appinjector.observe(cw);
+          for (var fn in obj) {
+            this._inject(aWindow, entry, fn, obj[fn]);
           }
-        }
       }
+    } catch(e) {
+      console.log(e.toString());
     }
-  };
+  },
+
+  onLoad: function() {
+    var obs = Cc["@mozilla.org/observer-service;1"].
+    getService(Ci.nsIObserverService);
+    obs.addObserver(this, 'content-document-global-created', false);
+  },
+
+  onUnload: function() {
+    var obs = Cc["@mozilla.org/observer-service;1"].getService(Ci.nsIObserverService);
+    obs.removeObserver(this, 'content-document-global-created');
+  },
+
+  observe: function(aWindow, aTopic, aData) {
+    this._createProperties(aWindow);
+  }
 }
 
+var gInjector;
 if (typeof exports !== "undefined") {
-  exports.InjectorInit = InjectorInit;
-} else {
-  var EXPORTED_SYMBOLS= ["InjectorInit"];
+  exports.init = function() {
+    if (!HAS_NAVIGATOR_INJECTOR)
+      gInjector = new NavigatorInjector();
+  }
 }

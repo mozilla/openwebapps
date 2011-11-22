@@ -67,6 +67,7 @@ function FFRepoImpl() {
     windowRefs: [],
     windowListeners: []
   };
+  this._updateListeners = [];
 }
 FFRepoImpl.prototype = {
   __proto__: Repo,
@@ -95,61 +96,53 @@ FFRepoImpl.prototype = {
     });
   },
 
-  watchUpdates: function(windowRef, callback) {
-    if (!callback || typeof callback != "function") {
-      return false;
-    }
-
-    // JS Objects cannot be keys in dictionaries, so we
-    // use two arrays instead. 'refs' holds the window object references
-    // while 'listeners' holds the callbacks for those windows. The
-    // index of the windowRef corresponds to the index of the array
-    // of callbacks associated with that window.
-    let idx = 0;    
-    let refs = this._watchers.windowRefs;
-    let listeners = this._watchers.windowListeners;
-
-    if (refs.indexOf(windowRef) != -1) {
-      // First time we're seeing this window
-      idx = listeners[refs.indexOf(windowRef)].push(callback) - 1;
-    } else {
-      // Add a callback to an existing window
-      idx = refs.push(windowRef) - 1;
-      listeners[idx] = [];
-      listeners[idx].push(callback);
-    }
-    
-    return idx;
+  /**
+   * watchUpdates
+   *
+   * start sending updates to a management app.  mgmtapi.js has logic for
+   * supporting more than one watcher callback in a management app
+   */
+  watchUpdates: function(worker) {
+    this._updateListeners.push(worker);
   },
 
-  clearWatch: function(windowRef, id) {
-    let refs = this._watchers.windowRefs;
-    let listeners = this._watchers.windowListeners;
-
-    // Find the window this belongs to and delete the callback
-    // TODO: Add window listener to clear window reference when
-    // tab is closed (and all associated callback). Currently,
-    // this is memory leak.
-    let idx = refs.indexOf(windowRef);
-    if (idx != -1) {
-      if (listeners[idx].length > id) {
-        delete listeners[idx][id];
-      }
-    }
+  /**
+   * clearWatch
+   *
+   * stops sending updates to a management window
+   */
+  clearWatch: function(worker) {
+    let id = this._updateListeners.indexOf(worker);
+    delete this._updateListeners[id];
   },
 
   _callWatchers: function(action, object) {
-    let wins = this._watchers.windowListeners;
-    for (let i = 0; i < wins.length; i++) {
-      let cbs = wins[i];
-      for (let j = 0; j < cbs.length; j++) {
-        let func = cbs[j];
+    for (let i = 0; i < this._updateListeners.length; i++) {
+        let worker = this._updateListeners[i]
         // Ignore if destination callback doesn't exist
         try {
-          if (func && typeof func == "function") func(action, object);
+          if (worker) worker.port.emit("owa.mgmt.update", [action, object]);
         } catch(e) {}
-      }
     }
+  },
+
+  // An application added to the local repo *without*
+  // user prompt. Used by sync, could be used by tests
+  // Do not expose to navigator.mozApps!
+  addApplication: function(origin, apprec, cb) {
+    let self = this;
+
+    Repo.addApplication(origin, apprec, function(success) {
+      if (success) {
+        self._observer.notifyObservers(
+          null, "openwebapp-installed", JSON.stringify({
+            origin: origin,
+            skipPostInstallDashboard: true
+          })
+        );
+        self._callWatchers("add", [apprec]);  
+      }
+    })
   },
 
   install: function _install(location, args, window) {
@@ -408,26 +401,7 @@ FFRepoImpl.prototype = {
             // notify the app if it is registered to handle it,
             // else, reload the page with the new URL?
             if (url != brs.currentURI.spec) {
-              if (app.services && app.services['link.transition']) {
-                try {
-                  var services = require("./services");
-                  var serviceInterface = new services.serviceInvocationHandler(browserWin);
-                  let activity = {
-                    action: 'link.transition',
-                    data: {url: url}
-                  };
-                  serviceInterface.invokeService(brs.contentWindow.wrappedJSObject, activity, 'transition',
-                    function(result) {},
-                    function(errob) {
-                      console.log("Failed to invoke link.transition", errob);
-                    }
-                  );
-                } catch (e) {
-                  console.log("Failed to invoke link.transition", e);
-                }
-              } else {
-                brs.loadURI(url, null, null); // Referrer is broken
-              }
+              brs.loadURI(url, null, null); // Referrer is broken
             }
 
             found = true;
@@ -449,52 +423,7 @@ FFRepoImpl.prototype = {
           ss.setTabValue(tab, "appURL", origin);
           bar.setAttribute("collapsed", true);
 
-          //when clicking install after being told 'app available',
-          //sometimes a user will have been not on the landing page,
-          //so we should try to launch them into the page they were on
-          //but now in the app experience
-          if (app.services && app.services['link.transition']) {
-            let launchService = function(e) {
-              try {
-                var services = require("./services");
-                var serviceInterface = new services.serviceInvocationHandler(recentWindow);
-                //TODO: this feels hacky. see line 425 for discussion
-                if (brs.contentWindow.wrappedJSObject._MOZ_SERVICES != undefined) {
-                  //console.log("services were ready");
-                  let activity = {
-                    action: 'link.transition',
-                    data: {url: url}
-                  };
-                  serviceInterface.invokeService(brs.contentWindow.wrappedJSObject, activity, 'transition',
-                    function(result) {},
-                    function(errob) {
-                      console.log("failed to invoke link.transition service", errob);
-                    }
-                  );
-                } else {
-                  //console.log("services weren't ready");
-                  // XXX - but what if it never becomes ready - we probably need
-                  // a retry counter with some limit...
-                  recentWindow.setTimeout(launchService, 500, false);
-                }
-              } catch (e) {
-                console.log("error invoking link.transition service", e);
-              }
-              recentWindow.document.removeEventListener("DOMContentLoaded", launchService, false);
-            };
-
-            // FIXME: for some reason using "load" here instead of "DOMContentLoaded" makes it never fire
-            // same with using let tabwindow = brs.getBrowserForTab(tab).contentWindow.wrappedJSObject;
-            // (and tabwindow.document) instead of recentWindow...
-            // try em out yourself i guess, as we may have missed one combination of options.
-            //this problem is what necessitates the above check on ._MOZ_SERVICES != undefined
-            recentWindow.document.addEventListener("DOMContentLoaded", launchService, false);
-
-            //let tabwindow = brs.getBrowserForTab(tab).contentWindow.wrappedJSObject;
-            //tabwindow.document.addEventListener("DOMContentLoaded", launchLater, false);
-          } else {
-            brs.loadURI(url, null, null); // Referrer is broken
-          }
+          brs.loadURI(url, null, null); // Referrer is broken
         } else {
           // This is a very odd case: no browser windows are open, so open a new one.
           var new_window = aWindow.open(url);

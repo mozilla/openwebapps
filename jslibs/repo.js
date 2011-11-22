@@ -88,6 +88,7 @@ Repo = (function() {
   // the HTML5 case, localStorage.
   var typedStorage = TypedStorage();
   var appStorage = typedStorage.open("app");
+  var deletedStorage = typedStorage.open("deletedapp");
 
   function invalidateCaches() {
     installedServices = undefined;
@@ -232,7 +233,7 @@ Repo = (function() {
         }
 
         // Save - blow away any existing value
-        appStorage.put(appOrigin, installation, cb);
+        addApplication(appOrigin, installation, cb);
 
         // and invalidate caches
         invalidateCaches();
@@ -320,6 +321,13 @@ Repo = (function() {
       });
     }
   };
+
+  /** Installs an application (without confirmation) */
+
+  function addApplication(origin, installation, cb) {
+    installation.last_modified = new Date().getTime();
+    appStorage.put(origin, installation, cb);
+  }
 
   /** Determines if an application is installed for the calling site */
 
@@ -533,12 +541,40 @@ Repo = (function() {
         });
       } else {
         appStorage.remove(origin, function() {
-          if (cb && typeof(cb) == "function") cb(true);
+          deletedStorage.put(origin, {last_modified: new Date().getTime()}, function () {
+            if (cb && typeof(cb) == "function") cb(true);
+          });
         });
         self.invalidateCaches()
       }
     });
   };
+
+  function removeDeletion(origin, cb) {
+    // FIXME: check if the deletion exists?
+    deletedStorage.remove(origin, cb);
+  }
+
+  function listUninstalled(cb) {
+    deletedStorage.keys(function (keys) {
+      if (! keys.length) {
+        cb([]);
+        return;
+      }
+      var result = [];
+      var remaining = keys.length;
+      for (var i=0; i<keys.length; i++) {
+        deletedStorage.get(keys[i], function (deleted) {
+          result.push(deleted);
+          remaining--;
+          if (! remaining) {
+            cb(result);
+          }
+        });
+      }
+    });
+  }
+
 
   // for now, this is the only function that returns a legitimate App data structure
   // refactoring of other calls is in order to get the right App abstraction, but one thing at a time.
@@ -576,7 +612,10 @@ Repo = (function() {
   return {
     list: list,
     install: install,
+    addApplication: addApplication,
     uninstall: uninstall,
+    removeDeletion: removeDeletion,
+    listUninstalled: listUninstalled,
     amInstalled: amInstalled,
     getInstalledBy: getInstalledBy,
     findServices: findServices,
