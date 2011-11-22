@@ -1,7 +1,12 @@
 /* For Jetpack */
 var win;
 if (typeof exports !== "undefined") {
-  const { Cc, Ci, Cm, Cu, Cr, components } = require("chrome");
+  var chrome = require("chrome");
+  var Cc = chrome.Cc;
+  var Ci = chrome.Ci;
+  var Cu = chrome.Cu;
+  var Cr = chrome.Cr;
+  var components = chrome.components;
   var wm = Cc["@mozilla.org/appshell/window-mediator;1"]
     .getService(Ci.nsIWindowMediator);  
   win = wm.getMostRecentWindow("navigator:browser"); 
