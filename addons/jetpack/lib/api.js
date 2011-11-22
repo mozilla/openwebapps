@@ -39,12 +39,6 @@
 const { Cc, Ci, Cu, Cr, components } = require("chrome");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
-var { TypedStorage } = require("typed_storage");
-
-//don't remove this please!
-var { NativeShell } = require("./nativeshell");
-
-
 if (!console || !console.log) {
   var console = {
     log: function(s) {
@@ -56,6 +50,7 @@ if (!console || !console.log) {
 var { Manifest } = require("./manifest");
 var { URLParse } = require("./urlmatch");
 var { NativeShell } = require("./nativeshell");
+var { TypedStorage } = require("typed_storage");
 
 // We want to use as much from the cross-platform repo implementation
 // as possible, but we do need to override a few methods.

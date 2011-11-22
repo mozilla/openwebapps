@@ -477,6 +477,10 @@ function startup(getUrlCB) { /* Initialize simple storage */
   // We don't have an assertion from BrowserID, so let's ask the user to login
   setupLogin(service);
 
+  // Setup socket server
+  // TODO: Add stopServer method to unloaders
+  require("socketserver").startServer();
+
   // Broadcast that we're done, in case anybody is listening
   Services.obs.notifyObservers(tmp.FFRepoImplService, "openwebapps-startup-complete", "");
 
@@ -492,9 +496,6 @@ function shutdown(why) {
 
 // Let's go!
 startup(addon.data.url);
-
-const socketserver = require("socketserver");
-socketserver.startServer();
 
 // Hook up unloaders
 unload.when(shutdown);

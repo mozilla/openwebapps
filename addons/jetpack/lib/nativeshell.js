@@ -242,6 +242,7 @@ function copyFile(srcFile, destFile, fileProperties, substitutions) {
   }
 }
 
+/* TODO: Convert all file operations to be async */
 function writeFile(fileContents, destFile, fileProperties, substitutions) {
   try {
     var openProps = fileProperties?fileProperties["mode"]:"";
@@ -264,63 +265,6 @@ function writeFile(fileContents, destFile, fileProperties, substitutions) {
         + " (" + e + ")");
   }
 }
-
-//ASYNC file reading/writing/copying code.  unable to evaluate the issues that might occur during a file
-// tree copy, so putting on hold for now.
-// function asyncReadFile(inFile, callback) {
-//   //passes the string contents of the file to the callback for you to do with as you like.
-
-//   NetUtil.asyncFetch(inFile, function(inputStream, status) {  
-//     if (!Components.isSuccessCode(status)) {  
-//       // should probably throw instead  
-//       console.log("ERROR: " + status + " failed to read file: " + inFile);
-//       return;  
-//     }  
-//     var data = NetUtil.readInputStreamToString(inputStream, inputStream.available());  
-//     inputStream.close();
-//     callback(data);
-//   });
-// }
-
-// //make it into an inputstream and then send it to copy
-// function asyncWriteFile(strData, outFile) {
-//   var outStream = FileUtils.openSafeFileOutputStream(outFile);
-//   var converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].createInstance(Components.interfaces.nsIScriptableUnicodeConverter);  
-//   converter.charset = "UTF-8";  
-//   var inStream = converter.convertToInputStream(strData);  
-    
-//   // The last argument (the callback) is optional.  
-//   NetUtil.asyncCopy(inStream, outStream, function(status) {  
-//     if (!Components.isSuccessCode(status)) {  
-//       // should probably throw instead  
-//       console.log("ERROR: " + status + " failed to write file: " + outFile.path);  
-//       return;  
-//     }  
-//   });
-// }
-
-// // NOTE: both inFile and outFile are nsIFile objects
-// // NOTE: this code should probably throw, and get caught up at the top, where we can cancel the creation of the native app
-// function asyncCopyFile(inFile, outFile, options) {
-        
-//   NetUtil.asyncFetch(inFile, function(inputStream, status) {  
-//       if (!Components.isSuccessCode(status)) {  
-//         // should probably throw instead  
-//         console.log("ERROR: " + status + " failed to read file: " + inFile.path);
-//         return;  
-//       }  
-      
-//     var outputStream = FileUtils.openSafeFileOutputStream(outFile);
-
-//     NetUtil.asyncCopy(inputStream, outputStream, function(status) {
-//       if (!Components.isSuccessCode(status)) {  
-//         // should probably throw instead  
-//         console.log("ERROR: " + status + " failed to write file: " + outFile.path);
-//         return;  
-//       } 
-//     });        
-//   });  
-// }
 
 function recursiveFileCopy(srcDir,
                            leaf,
@@ -894,8 +838,6 @@ MacNativeShell.prototype = {
     }
   }
 }
-
-
 
 /* Jetpack specific export */
 if (typeof exports !== "undefined")

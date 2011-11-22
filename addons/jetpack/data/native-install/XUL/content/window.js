@@ -312,32 +312,4 @@ function checkNativeIdentityDaemon(callingLocation, options, success, failure)
   attemptConnection();
 }
 
-/*
-window.appinjector.register({
-  apibase: "navigator.id",
-  name: "getVerifiedEmail",
-  script: null,
-  getapi: function(contentWindowRef) {
-      return function(callback, options) { // XXX what is the options API going to be?
-          checkNativeIdentityDaemon(contentWindowRef.location, options, function(assertion) {
-              // success: return to caller
-              var assert = JSON.parse(assertion);
-              if (assert.status == "ok" && assert.assertion) {
-                  callback(assert.assertion);
-              } else {
-                  // failure
-                  callback(null);
-              }
-          }, function() {
-              // failure: need to present BrowserID dialog
-              if (!options || !options.silent) {
-                  dump("OpenBrowserIDDialog\n");
-                  openBrowserIDDialog(callback, options);
-              } else {
-                  callback(null);
-              }
-          });
-      }
-  }
-});
-*/
+/* TODO: Add navigator.id.getVerifiedEmail */
