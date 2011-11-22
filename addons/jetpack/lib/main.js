@@ -44,6 +44,9 @@ const url = require("./urlmatch");
 const simple = require("simple-storage");
 const { Cc, Ci, Cm, Cu, Cr, components } = require("chrome");
 
+const TOOLBAR_ID = "openwebapps-toolbar-button";
+const APP_SYNC_URL = "https://myapps.mozillalabs.com";
+
 var tmp = {};
 Cu.import("resource://gre/modules/Services.jsm", tmp);
 Cu.import("resource://gre/modules/AddonManager.jsm", tmp);
@@ -65,7 +68,7 @@ function openwebapps(win, getUrlCB) {
   tmp = require("./api");
   this._repo = tmp.FFRepoImplService;
   
-  // setup page-modes
+  // setup page-mods
   this.setupManagerAPI();
 
   if (this.pendingRegistrations) {
@@ -313,6 +316,49 @@ function setupAboutPageMods() {
   });
 }
 
+/**
+ * setupLogin
+ * Shows a jetpack panel to get a BrowserID assertion from the user to
+ * authenticate to the sync service
+ */
+function setupLogin(service) {
+  let wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
+  let win = wm.getMostRecentWindow("navigator:browser");
+
+  /* Way to get the widget
+   * openwebapps@mozillalabs.com should be got from self.data
+   */
+  let button = win.document.getElementById("widget:openwebapps@mozillalabs.com-" + TOOLBAR_ID);
+  let panel = require("panel").Panel({
+    width: 300,
+    height: 200,
+    contentURL: APP_SYNC_URL + "/login.html"
+  });
+
+  pageMod.PageMod({
+    include: APP_SYNC_URL + "/login.html",
+    contentScriptWhen: "end",
+    contentScript: "var button = document.getElementById('signin_button');" +
+      "button.onclick = function() {" +
+      "  unsafeWindow.navigator.wrappedJSObject.id.getVerifiedEmail(function(assertion) {" +
+      "    self.port.emit('verifiedEmail', assertion);" +
+      "  });" +
+      "};",
+    onAttach: function(worker) {
+      worker.port.on("verifiedEmail", function(data) {
+        service.login({
+          assertion: data,
+          audience: APP_SYNC_URL 
+        }, function(err, info) {
+          console.log("Got back from login " + JSON.stringify(err) + " " + JSON.stringify(info));
+          service.syncNow();
+        });
+      });
+    }
+  });
+
+  panel.show(button);
+}
 
 /**
  * startup
@@ -383,7 +429,7 @@ function startup(getUrlCB) { /* Initialize simple storage */
 
   // Setup widget to launch dashboard
   require("widget").Widget({
-    id: "openwebapps-toolbar-button",
+    id: TOOLBAR_ID,
     label: "Apps",
     width: 60,
     contentURL: require("self").data.url("widget.html"),
@@ -399,8 +445,39 @@ function startup(getUrlCB) { /* Initialize simple storage */
     }
   });
 
+  // Setup Sync
+  let tmp = require("./api");
+  let sync = require("./sync");
+  let storage = require("./typed_storage");
+  let syncURL = require("preferences-service").get("apps.sync.url", APP_SYNC_URL + "/verify");
+  
+  let service = new sync.Service({
+    repo: tmp.FFRepoImplService,
+    server: new sync.Server(syncURL),
+    storage: new storage.TypedStorage().open("sync")
+  });
+
+  service.onstatus = function(status) {
+    if (status.error) {
+      console.log("Error syncing: " + JSON.stringify(status.detail));
+    } else if (status.status) {
+      if (status.status == 'sync_get') {
+        console.log("last_sync_get: " + status.timestamp);
+      } else if (status.status == 'sync_put_complete' || (status.status == 'sync_put' && status.count === 0)) {
+        console.log("last_sync_put: " + status.timestamp);
+      }
+    }
+  };
+
+  let scheduler = new sync.Scheduler(service);
+  scheduler.onerror = function (error) {
+    console.log("Error syncing: " + JSON.stringify(error));
+  };
+
+  // We don't have an assertion from BrowserID, so let's ask the user to login
+  setupLogin(service);
+
   // Broadcast that we're done, in case anybody is listening
-  let tmp = require("api");
   Services.obs.notifyObservers(tmp.FFRepoImplService, "openwebapps-startup-complete", "");
 
   // initialize the injector if we are <fx9
