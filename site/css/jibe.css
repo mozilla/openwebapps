@@ -51,6 +51,12 @@ A:visited {
 
 }
 
+#login {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+}
+
 /*overriding icongrid.css*/
 .icon {
   padding: 8px;
@@ -67,5 +73,5 @@ A:visited {
   background-color: #EEEEEE;
   -webkit-box-shadow: inset 1px 1px 3px 1px #cccccc;
   -moz-box-shadow: inset 1px 1px 3px 1px #cccccc;
-  box-shadow: inset 1px 1px 3px 1px #cccccc; 
+  box-shadow: inset 1px 1px 3px 1px #cccccc;
 }

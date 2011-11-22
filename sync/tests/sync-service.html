@@ -1,0 +1,230 @@
+<html>
+<head>
+<title>Sync Service</title>
+<link rel="stylesheet" href="../../tests/doctestjs/doctest.css">
+<script src="../../tests/doctestjs/doctest.js"></script>
+<script src="../mock-server.js"></script>
+<script src="../sync.js"></script>
+<script src="../../jsapi/eventmixin.js"></script>
+<script src="../../jsapi/typed-storage.js"></script>
+
+<script>
+
+// We're writing this mock repo just for this test, so we'll do it inline
+var MockRepo = function () {
+  if (this === window) {
+    throw 'You forgot new';
+  }
+  this._applications = {};
+  this._deleted = {};
+};
+
+MockRepo.prototype.list = function (callback) {
+  var result = [];
+  for (var i in this._applications) {
+    if (this._applications.hasOwnProperty(i)) {
+      result.push(this._applications[i]);
+    }
+  }
+  // Make async for better mocking:
+  setTimeout(function () {callback(result);}, 10);
+}
+
+// Like install, but doesn't fetch manifest and doesn't confirm installation:
+MockRepo.prototype.addApplication = function (origin, installRecord, callback) {
+  this._applications[origin] = installRecord;
+  if (! installRecord.last_modified) {
+    installRecord.last_modified = new Date().getTime();
+  }
+  writeln('Added application ', origin);
+  if (callback) {
+    setTimeout(function () {callback();}, 10);
+  }
+};
+
+MockRepo.prototype.removeDeletion = function (origin, callback) {
+  writeln('Removing deletion', origin);
+  delete this._deleted[origin];
+  if (callback) {
+    setTimeout(function () {
+      callback();
+    }, 10);
+  }
+};
+
+MockRepo.prototype.uninstall = function (origin, callback) {
+  writeln('Removed application ', origin);
+  var existing = !! (this._applications[origin]);
+  delete this._applications[origin];
+  this._deleted[origin] = new Date().getTime();
+  if (callback) {
+    setTimeout(function () {
+      if (existing) {
+        callback(true);
+      } else {
+        callback({error: ["noSuchApplication", "no application exists with the origin: " + origin]});
+      }
+    }, 10);
+  }
+};
+
+MockRepo.prototype.listUninstalled = function (callback) {
+  var result = [];
+  for (var i in this._deleted) {
+    if (this._deleted.hasOwnProperty(i)) {
+      result.push({last_modified: this._deleted[i], origin: i});
+    }
+  }
+  setTimeout(function () {
+    callback(result);
+  }, 10);
+};
+
+</script>
+
+</head>
+<body class="autodoctest">
+
+<h1>Sync Service</h1>
+
+<div>This is a test of the "sync service", that is the library portion
+that communicates with the server and the repository. </div>
+
+<div class="test">
+<h2>Setup</h2>
+
+<div>We'll setup the service.  Note that the service goes between a
+server and a repo.  We have a "real" mock server, but the repo
+(<code>MockRepo</code>) is just defined inline (view source to see
+it).</div>
+
+<pre class="doctest">
+$ localStorage.setItem('sync#lastSyncPut', null);
+$ localStorage.setItem('sync#lastSyncTime', null);
+$ if (doctest.params.server !== undefined) {
+>   server = new Server(doctest.params.server || '/verify');
+> } else {
+>   server = new MockServer();
+> }
+$ repo = new MockRepo();
+$ // pollTime: null means we'll manually trigger
+> service = new SyncService({pollTime: null, server: server, repo: repo});
+$ writeln(service);
+[SyncService pollTime: null server: ...]
+$ writeln(user = 'test-' + (new Date().getTime()) + '@example.com');
+test-?@example.com
+$ service.login(
+>   {assertion: user, audience: 'localhost'},
+>   Spy('service.login', {wait: true}));
+service.login(null, {
+  audience: "localhost",...
+  email: "test-?@example.com",
+  issuer: "browserid.org",
+  status: "okay",
+  "valid-until": ?
+})
+$ writeln(server._collectionURL || 'none');
+...
+</pre>
+
+</div>
+
+<div class="test">
+<div>Next we'll try installing applications into the repository, and then poke
+the sync service to get it to sync them to the server.</div>
+
+<pre class="doctest">
+$ repo.addApplication(
+> 'http://example.com',
+> {
+>   manifest: {name: "test app"},
+>   manifest_url: "http://example.com/manifest.webapp",
+>   origin: "http://example.com",
+>   install_data: null,
+>   install_origin: "http://store.example.com",
+>   install_time: new Date().getTime()
+> }, Spy('repo.addApplication', {wait: true}));
+Added application http://example.com
+repo.addApplication()
+$ writeln(service.lastSyncTime())
+0
+$ service.syncNow(Spy('service.syncNow', {wait: true}));
+service.syncNow()
+$ // Now we confirm that the update was received by the server
+> server.get(null, Spy('server.get', {wait: true}));
+server.get(null, {
+  applications: [
+    {
+      install_data: null,
+      install_origin: "http://store.example.com",
+      install_time: ?,
+      last_modified: ?,
+      manifest: {name: "test app"},
+      manifest_url: "http://example.com/manifest.webapp",
+      origin: "http://example.com"
+    }
+  ],
+  since: 0,
+  until: ?
+})
+$ server.put([{
+>   manifest: {name: "test 2"},
+>   manifest_url: "http://2.example.com/manifest.webapp",
+>   origin: "http://2.example.com",
+>   install_data: ["test"],
+>   install_origin: "http://store.example.com",
+>   install_time: new Date().getTime()-1,
+>   last_modified: new Date().getTime()-1
+> }], Spy('server.put', {wait: true}));
+server.put(null, {received: ?})
+$ service.syncNow(Spy('service.syncNow', {wait: true}));
+Added application http://2.example.com
+service.syncNow()
+$ server.put([{
+>   origin: "http://2.example.com",
+>   deleted: true,
+>   last_modified: new Date().getTime()
+> }], Spy('server.put', {wait: true}));
+server.put(null, {received: ?})
+$ service.syncNow(Spy('service.syncNow', {wait: true}));
+Removed application http://2.example.com
+service.syncNow()
+$ since = new Date().getTime();
+$ repo.addApplication(
+>   'http://2.example.com',
+>   {
+>     manifest: {name: "test app revised"},
+>     manifest_url: "http://2.example.com/manifest.webapp",
+>     origin: "http://2.example.com",
+>     install_data: ['receipt1'],
+>     install_origin: "http://store.example.com",
+>     install_time: since,
+>     last_modified: since
+>   },
+>   Spy('repo.addApplication', {wait: true})
+> );
+Added application http://2.example.com
+repo.addApplication()
+$ service.syncNow(Spy('service.syncNow', {wait: true}));
+service.syncNow()
+$ server.get(since, Spy('server.get', {wait: true}));
+server.get(null, {
+  applications: [
+    {
+      install_data: ["receipt1"],
+      install_origin: "http://store.example.com",
+      install_time: ?,
+      last_modified: ?,
+      manifest: {name: "test app revised"},
+      manifest_url: "http://2.example.com/manifest.webapp",
+      origin: "http://2.example.com"
+    }
+  ],
+  since: ?,
+  until: ?
+})
+</pre>
+
+</div>
+
+</body> </html>

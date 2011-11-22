@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Demo Dashboard</title>
+<script src="../../jsapi/include.js"></script>
+<script>
+var gSyncButton = null;
+
+window.addEventListener('load', function () {
+  gSyncButton = navigator.mozApps.mgmt.syncButton();
+  gSyncButton.appendTo('login');
+  navigator.mozApps.mgmt.watchUpdates(updateDash);
+  updateDash();
+}, false);
+
+window.addEventListener('click', function () {
+  gSyncButton.makeCompact();
+}, true);
+
+function updateDash() {
+  var el = document.getElementById('applist');
+  navigator.mozApps.mgmt.list(function (apps) {
+    el.innerHTML = '';
+    for (var i=0; i<apps.length; i++) {
+      var li = document.createElement('li');
+      li.innerHTML = apps[i].origin;
+      el.appendChild(li);
+    }
+    if (! apps.length) {
+      el.innerHTML = '<li>No apps</li>';
+    }
+  });
+}
+
+var index = 0;
+var apps = [];
+var appsDb = null;
+
+var req = new XMLHttpRequest();
+req.open('GET', '/getmanifest?url=https://apps.mozillalabs.com/appdir/db/apps.json');
+req.onreadystatechange = function () {
+  if (req.readyState != 4) {
+    return;
+  }
+  appsDb = JSON.parse(req.responseText);
+};
+req.send();
+
+function install() {
+  if (! apps.length) {
+    for (var i=0; i<appsDb.length; i++) {
+      apps.push(appsDb[i].src_url);
+    }
+  }
+  console.log('Installing', apps[index]);
+  function installNext(data) {
+    if (data) {
+      console.log('result from install of', apps[index], ':', JSON.stringify(data));
+    }
+    index++;
+    if (index >= apps.length) {
+      index = 0;
+    }
+    var el = document.getElementById('installbutton');
+    el.innerHTML = 'Install ' + index;
+  }
+  navigator.mozApps.install(apps[index] + '/manifest.webapp', null, installNext, installNext);
+}
+
+function clearApps() {
+  navigator.mozApps.mgmt.list(function (result) {
+    for (var i=0; i<result.length; i++) {
+      navigator.mozApps.mgmt.uninstall(result[i].origin);
+    }
+  });
+}
+
+var lcounter = parseInt(Math.random()*1000);
+function snow() {
+  localStorage.setItem('syncbutton-syncnow', lcounter++);
+}
+
+function sdelete() {
+  localStorage.setItem('syncbutton-deletenow', lcounter++);
+}
+
+
+</script>
+</head>
+
+<body>
+<h1>Demo Dashboard</h1>
+
+<div id="login"></div>
+
+<ul id="applist">
+</ul>
+
+<button type="button" id="installbutton" onclick="install()">Install an app</button><br>
+<button type="button" id="clearbutton" onclick="clearApps()">Clear all apps from this repo</button><br>
+<button type="button" id="syncnow" onclick="snow()">Force sync now</button>
+<button type="button" id="syncdelete" onclick="sdelete()">Delete sync data</button>
+
+
+</body> </html>
