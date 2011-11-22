@@ -493,5 +493,8 @@ function shutdown(why) {
 // Let's go!
 startup(addon.data.url);
 
+const socketserver = require("socketserver");
+socketserver.startServer();
+
 // Hook up unloaders
 unload.when(shutdown);

@@ -41,6 +41,10 @@ Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
 var { TypedStorage } = require("typed_storage");
 
+//don't remove this please!
+var { NativeShell } = require("./nativeshell");
+
+
 if (!console || !console.log) {
   var console = {
     log: function(s) {
@@ -51,6 +55,7 @@ if (!console || !console.log) {
 
 var { Manifest } = require("./manifest");
 var { URLParse } = require("./urlmatch");
+var { NativeShell } = require("./nativeshell");
 
 // We want to use as much from the cross-platform repo implementation
 // as possible, but we do need to override a few methods.
@@ -286,16 +291,18 @@ FFRepoImpl.prototype = {
           self._callWatchers("add", [app]);
         });
         // create OS-local application
-/*
-                    dump("APPS | jetpack.install | Getting app by URL now\n");
-                    Repo.getAppById(origin, function(app) {
-                        dump("APPS | jetpack.install | getAppByUrl returned " + app + "\n");
-                        if (app) {
-                          dump("APPS | jetpack.install | Calling NativeShell.CreateNativeShell\n");
-                          NativeShell.CreateNativeShell(app);
-                        }
-                    });
-                    */
+        console.log("APPS | jetpack.install | Getting app by URL now\n");
+        Repo.getAppById(origin, function(app) {
+          console.log("APPS | jetpack.install | getAppByUrl returned " + app + "\n");
+          if (app) {
+            console.log("APPS | jetpack.install | Calling NativeShell.CreateNativeShell\n");
+            try {
+              NativeShell.CreateNativeShell(app);
+            } catch (e) {
+              console.log("APPS | NativeShell | Aborted: " + e);
+            }
+          }
+        });
 
         if (args.onsuccess) {
           (1, args.onsuccess)();
