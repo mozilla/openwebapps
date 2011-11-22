@@ -1,0 +1,13 @@
+{
+  "foxlauncher":
+  {
+    "rename": "$APPNAME",
+    "mode": "b",
+    "isExecutable": true,
+    "substituteStrings": false
+  },
+  "specialfiles.json":
+  {
+    "ignore": true
+  }
+}

@@ -41,12 +41,22 @@
 /* Inject the People content API into window.navigator objects. */
 /* Partly based on code in the Geode extension. */
 
-const { Cc, Ci, Cu } = require("chrome");
-Cu.import("resource://gre/modules/XPCOMUtils.jsm");
-const xulApp = require("api-utils/xul-app");
+var HAS_NAVIGATOR_INJECTOR;
+if (typeof require !== "undefined") {
+  var { Cc, Ci, Cu } = require("chrome");
+  const xulApp = require("api-utils/xul-app");
+  HAS_NAVIGATOR_INJECTOR = xulApp.versionInRange(xulApp.version, "9.0a2", "*");
+} else {
+  var Cc = Components.classes;
+  var Ci = Components.interfaces;
+  var Cu = Components.utils;
 
-const HAS_NAVIGATOR_INJECTOR =
-        xulApp.versionInRange(xulApp.version, "9.0a2", "*");
+  var xulAppInfo = Cc["@mozilla.org/xre/app-info;1"].getService(Ci.nsIXULAppInfo);
+  var comparator = Cc["@mozilla.org/xpcom/version-comparator;1"].getService(Ci.nsIVersionComparator);
+  HAS_NAVIGATOR_INJECTOR = comparator.compare(xulAppInfo.version, "9.0a2");
+}
+
+Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
 /**
  * NavigatorInjector
@@ -170,9 +180,13 @@ NavigatorInjector.prototype = {
 }
 
 var gInjector;
-exports.init = function() {
+function init() {
   if (!HAS_NAVIGATOR_INJECTOR)
     gInjector = new NavigatorInjector();
 }
 
-
+if (typeof exports !== "undefined") {
+  exports.init = init;
+} else {
+  EXPORTED_SYMBOLS = ["init"];
+}
