@@ -322,7 +322,7 @@ function setupAboutPageMods() {
  * authenticate to the sync service
  */
 function setupLogin(service) {
-  let wm = Components.classes["@mozilla.org/appshell/window-mediator;1"].getService(Components.interfaces.nsIWindowMediator);
+  let wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
   let win = wm.getMostRecentWindow("navigator:browser");
 
   /* Way to get the widget
@@ -341,16 +341,16 @@ function setupLogin(service) {
     contentScript: "var button = document.getElementById('signin_button');" +
       "button.onclick = function() {" +
       "  unsafeWindow.navigator.wrappedJSObject.id.getVerifiedEmail(function(assertion) {" +
-      "    self.postMessage(assertion);" +
+      "    self.port.emit('verifiedEmail', assertion);" +
       "  });" +
       "};",
     onAttach: function(worker) {
-      worker.on("message", function(data) {
+      worker.port.on("verifiedEmail", function(data) {
         service.login({
           assertion: data,
           audience: APP_SYNC_URL 
         }, function(err, info) {
-          console.log("Got back from login " + JSON.stringify(err) + info);
+          console.log("Got back from login " + JSON.stringify(err) + " " + JSON.stringify(info));
           service.syncNow();
         });
       });
