@@ -4,3 +4,5 @@ site/tools/yuicompressor-2.4.2.jar
 site/tools/yuicompressor-2.4.2.zip
 site/tools/build-compressor
 deps/
+addons/jetpack/mac/foxlauncher.o
+openwebapps.xpi

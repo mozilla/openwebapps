@@ -2,6 +2,12 @@ APPNAME = fx-share-addon
 DEPS = github:addon-sdk,github:oauthorizer
 PYTHON = python
 
+MAKELAUNCHER =
+SYS := $(shell uname -s)
+ifeq ($(SYS), Darwin)
+	MAKELAUNCHER := ${MAKE} -C addons/jetpack/mac/
+endif
+
 ifeq ($(TOPSRCDIR),)
   export TOPSRCDIR = $(shell pwd)
 endif
@@ -43,7 +49,8 @@ endif
 
 all: xpi
 
-xpi:    pull
+xpi: pull
+	$(MAKELAUNCHER)
 	$(addon_sdk)/cfx xpi $(cfx_args)
 
 pull:
@@ -53,6 +60,7 @@ test:
 	$(addon_sdk)/cfx test $(cfx_args) $(test_args)
 
 run:
+	$(MAKELAUNCHER)
 	$(addon_sdk)/cfx run $(cfx_args)	
 
 .PHONY: xpi clean pull test run
