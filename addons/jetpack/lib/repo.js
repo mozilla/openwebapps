@@ -56,9 +56,9 @@
 // check if ambient TypedStorage or not
 // by looking for 'require' keyword from jetpack
 if (typeof require !== "undefined") {
-  var { TypedStorage } = require("./typed_storage");
-  var { URLParse } = require("./urlmatch");
-  var { Manifest } = require("./manifest");
+  var TypedStorage = require("./typed_storage").TypedStorage;
+  var URLParse = require("./urlmatch").URLParse;
+  var Manifest = require("./manifest").Manifest;
 }
 
 
@@ -82,9 +82,10 @@ Repo = (function() {
   // A TypedStorage singleton global object is expected to be present
   // Must be provided either by the FF extension, Chrome extension, or in
   // the HTML5 case, localStorage.
-  var appStorage = TypedStorage().open("app");
-  var stateStorage = TypedStorage().open("state");
-  var deletedStorage = TypedStorage().open("deleted");
+  var typedStorage = TypedStorage()
+  var appStorage = typedStorage.open("app");
+  var stateStorage = typedStorage.open("state");
+  var deletedStorage = typedStorage.open("deleted");
 
   function invalidateCaches() {
     installedServices = undefined;
@@ -307,7 +308,7 @@ Repo = (function() {
           try {
             fetchedManifest = JSON.parse(fetchedManifest);
           } catch (e) {
-            dump(e + "\n");
+            //dump(e + "\n");
             cb({
               error: ["manifestParseError", "couldn't parse manifest JSON from " + args.url]
             });
@@ -498,7 +499,7 @@ Repo = (function() {
   }
 
   function uninstall(origin, cb) {
-    let self = this;
+    var self = this;
     origin = normalizeOrigin(origin);
     appStorage.get(origin, function(item) {
       if (!item) {
@@ -523,7 +524,7 @@ Repo = (function() {
   }
 
   function listUninstalled(cb) {
-    let self = this;
+    var self = this;
     deletedStorage.keys(function (keys) {
       if (!keys.length) {
         cb([]);
@@ -531,7 +532,7 @@ Repo = (function() {
       }
       var result = [];
       var remaining = keys.length;
-      
+
       for (var i=0; i<keys.length; i++) {
         deletedStorage.get(keys[i], function(deleted) {
           result.push(deleted);
