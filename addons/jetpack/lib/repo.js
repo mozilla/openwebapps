@@ -67,27 +67,6 @@ if (typeof require !== "undefined") {
   } = require("./manifest");
 }
 
-// An App data structure
-
-
-function App(app_obj) {
-  this.origin = app_obj.origin;
-  this.install_origin = app_obj.install_origin;
-  this.install_time = app_obj.install_time;
-  this.install_data = app_obj.install_data;
-  this.manifest = app_obj.manifest;
-
-  if ("services" in this.manifest) {
-    this.services = this.manifest.services;
-
-    if (this.services.login) {
-      this.login_dialog_url = this.origin + this.services.login.dialog;
-    }
-  }
-
-  this.launch_url = this.origin;
-  if (this.manifest.launch_path) this.launch_url += this.manifest.launch_path;
-};
 
 // A helper to join a path to a base being tollerant of the path ending
 // in a slash and the path starting with one.
@@ -120,8 +99,6 @@ Repo = (function() {
   // iterates over all stored applications manifests and passes them to a
   // callback function. This function should be used instead of manual
   // iteration as it will parse manifests and purge any that are invalid.
-
-
   function iterateApps(callback) {
     // we'll automatically clean up malformed installation records as we go
     var toRemove = [];
@@ -235,11 +212,25 @@ Repo = (function() {
     return parsed.originOnly().toString()
   }
 
-  // "private" call used only by sync.js to add a previously installed
-  // application (from another device) to this repo
+  /**
+   * addApplication
+   * "private" call used only by sync.js to add a previously installed
+   * application (from another device) to this repo
+   *
+   * @param origin  url origin of the application
+   * @param apprec  application record (js object)
+   * @param cb      callback function
+   */
   function addApplication(origin, apprec, cb) {
     apprec.last_modified = new Date().getTime();
+    if (apprec.manifest.launch_path)
+      apprec.launch_url = appendPath(apprec.origin, apprec.manifest.launch_path);
+    else
+      apprec.launch_url = apprec.origin;
+
     appStorage.put(origin, apprec, cb);
+    // and invalidate caches
+    invalidateCaches();
   }
 
   // trigger application installation.
@@ -269,19 +260,13 @@ Repo = (function() {
           manifest: manifestToInstall,
           origin: appOrigin,
           install_time: new Date().getTime(),
-          last_modified: new Date().getTime(),
           install_origin: installOrigin
         };
 
         if (args.install_data) {
           installation.install_data = args.install_data;
         }
-
-        // Save - blow away any existing value
-        appStorage.put(appOrigin, installation, cb);
-
-        // and invalidate caches
-        invalidateCaches();
+        addApplication(appOrigin, installation, cb);
       } else {
         if (cb) cb({
           error: ["denied", "User denied installation request"]
@@ -426,7 +411,7 @@ Repo = (function() {
       if (installedServices === undefined) installedServices = {};
       for (var appid in apps) {
         var app = apps[appid];
-        var s = app.services;
+        var s = app.manifest.services;
 
         if (typeof s === 'object') {
           for (var service_key in s) {
