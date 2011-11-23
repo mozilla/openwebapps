@@ -47,6 +47,9 @@ $ writeln(SERVERS);
   no_delegated_install: "...",
   no_mgmt_api_off_repo_origin: "..."
 }
+$ window.addEventListener("message", function (event) {
+>   console.log('Message: ' + event.data);
+> }, false);
 </pre>
 </section>
 
@@ -78,7 +81,7 @@ navigator.mozApps.install
 navigator.mozApps.invokeService
 navigator.mozApps.mgmt.clearWatch
 navigator.mozApps.mgmt.launch
-navigator.mozApps.mgmt.list
+navigator.mozApps.mgmt.list...
 navigator.mozApps.mgmt.uninstall
 navigator.mozApps.mgmt.watchUpdates
 </pre>
@@ -164,6 +167,8 @@ apps.mgmt.list([
       {
         install_origin: "http://?:?",
         install_time: ?,
+        last_modified: ?,
+        launch_url: "http://?:?",
         manifest: {
           installs_allowed_from: ["*"],
           name: "Super Crazy Basic App"
@@ -472,6 +477,8 @@ watchUpdates("add", [
   {
     install_origin: "http://127.0.0.1:?",
     install_time: ?,
+    last_modified: ?,
+    launch_url: "http://127.0.0.1:?",
     manifest: {installs_allowed_from: ["*"], name: "Super Crazy Basic App"},
     origin: "http://127.0.0.1:?"
   }
@@ -482,6 +489,8 @@ watchUpdates("remove", [
   {
     install_origin: "http://127.0.0.1:?",
     install_time: ?,
+    last_modified: ?,
+    launch_url: "http://127.0.0.1:?",
     manifest: {installs_allowed_from: ["*"], name: "Super Crazy Basic App"},
     origin: "http://127.0.0.1:?"
   }
@@ -502,6 +511,8 @@ watchUpdates("add", [
   {
     install_origin: "http://127.0.0.1:?",
     install_time: ?,
+    last_modified: ?,
+    launch_url: "http://127.0.0.1:?",
     manifest: {name: "An application which does not grant permission for any other origin to install it"},
     origin: "http://127.0.0.1:?"
   }

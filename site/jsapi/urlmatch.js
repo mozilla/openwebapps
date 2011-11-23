@@ -1,1 +1,1 @@
-../../jslibs/urlmatch.js
+../../addons/jetpack/lib/urlmatch.js
