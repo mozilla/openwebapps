@@ -1,4 +1,67 @@
-/* For Jetpack */
+/* -*- Mode: JavaScript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* vim: set ts=2 et sw=2 tw=80: */
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is trusted.js; substantial portions derived
+ * from XAuth code originally produced by Meebo, Inc., and provided
+ * under the Apache License, Version 2.0; see http://github.com/xauth/xauth
+ *
+ * Contributor(s):
+ *     Michael Hanson <mhanson@mozilla.com>
+ *     Dan Walkowski <dwalkowski@mozilla.com>
+ *     Anant Narayanan <anant@kix.in>
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
+
+/* About sync.js:
+
+There are three main objects defined in this module:
+
+SyncServer: handles the actual interaction with the server.  This
+  handles the login process and stores the credentials, but otherwise
+  has no state.
+  
+SyncService: handles actual synchronization, and keeps state about the
+  sync progress.  This interacts with the server and the repo
+  (including some private methods, not just navigator.mozApps APIs)
+
+SyncScheduler: handles scheduling of calls to SyncService.  It should
+  also respond to events from the server (like a Retry-After) and 
+
+
+All functions here use Node-style error handling, where the functions
+take a callback with the signature callback(error, result), where
+error is null or undefined in case of success (result itself is
+optional depending on the function).
+
+*/
+
+
+/* This block only applies to Jetpack, to get an active window for use
+   with setTimeout/clearTimeout: */
 var win;
 if (typeof exports !== "undefined") {
   var chrome = require("chrome");
@@ -14,6 +77,7 @@ if (typeof exports !== "undefined") {
   win = window;
 }
 
+// FIXME: change args to positional arguments
 var SyncService = function (args) {
   var self = this;
   this.pollTime = args.pollTime;
@@ -25,6 +89,7 @@ var SyncService = function (args) {
   }
   this.server = args.server;
   this.repo = args.repo;
+  // FIXME: remove the TypedStorage default; this should always be passed in
   this.storage = args.storage || new TypedStorage().open('sync');
   this.storage.get('lastSyncTime', function (value) {
     if (value) {
@@ -64,8 +129,9 @@ SyncService.prototype.toString = function () {
   return '[SyncService pollTime: ' + this.pollTime + ' server: ' + this.server + ']';
 };
 
+/* Resets all state for the service; returns the service back to the state
+   as if it has never interacted with any server */
 SyncService.prototype.reset = function (callback) {
-  log('reset incoming');
   var steps = 0;
   var allSet = false;
   var self = this;
@@ -73,7 +139,6 @@ SyncService.prototype.reset = function (callback) {
     steps--;
     if (steps === 0 && allSet) {
       self.sendStatus({status: 'reset'});
-      log('reset outgoing, async');
       if (callback) {
         callback();
       }
@@ -87,7 +152,6 @@ SyncService.prototype.reset = function (callback) {
   this._appTracking = {};
   if (steps === 0) {
     self.sendStatus({status: 'reset'});
-    log('reset outgoing, sync');
     if (callback) {
       callback();
     }
@@ -96,6 +160,7 @@ SyncService.prototype.reset = function (callback) {
   }
 };
 
+/* Sends a status message to any listener */
 SyncService.prototype.sendStatus = function (message) {
   if (! this.onstatus) {
     return;
@@ -104,6 +169,10 @@ SyncService.prototype.sendStatus = function (message) {
   this.onstatus(message);
 };
 
+/* Confirms that the uuid received from the server matches the uuid we
+   expect; if it does not then it resets state and returns false.  Any
+   syncing in process should be abandoned in this case, and the sync
+   started over from the beginning. */
 SyncService.prototype.confirmUUID = function (uuid) {
   var self = this;
   if (uuid === undefined) {
@@ -128,6 +197,9 @@ SyncService.prototype.confirmUUID = function (uuid) {
   }
 };
 
+/* Logs into the server given assertionData, which should be
+   {assertion: string, audience: origin} as returned by a
+   navigator.id.getVerifiedEmail call */
 SyncService.prototype.login = function (assertionData, callback) {
   var self = this;
   this.server.login(assertionData, function (error, result) {
@@ -137,7 +209,7 @@ SyncService.prototype.login = function (assertionData, callback) {
       }
       return;
     }
-    self.confirmUUID(assertionData.uuid);
+    self.confirmUUID(result.uuid);
     if (self.onlogin) {
       self.onlogin(result);
     }
@@ -166,7 +238,8 @@ SyncService.prototype.logout = function (callback) {
   });
 };
 
-// FIXME: this also get called anytime the server doesn't like our login
+// FIXME: this also should get called anytime the server doesn't like
+// our login, like any failed get or put request
 SyncService.prototype.invalidateLogin = function () {
   if (this.onlogout) {
     this.onlogout();
@@ -174,6 +247,7 @@ SyncService.prototype.invalidateLogin = function () {
   this.sendStatus({login: false});
 };
 
+// Getter
 SyncService.prototype.lastSyncTime = function () {
   if (this._lastSyncTime) {
     return this._lastSyncTime;
@@ -215,6 +289,15 @@ SyncService.prototype.setAppTracking = function (value) {
   this.storage.put('appTracking', value);
 };
 
+/* Does a full sync, both getting updates and putting any pending
+   local changes.
+
+   By default if the collection has been deleted on the server this
+   will fail with callback({collection_deleted: true}), but if
+   forcePut is true then it will continue despite that change
+   (effectively recreating the collection and ignore the delete).
+   Ideally you should confirm with the user before recreating a
+   collection this way. */
 SyncService.prototype.syncNow = function (callback, forcePut) {
   var self = this;
   log('Starting syncNow');
@@ -263,6 +346,8 @@ SyncService.prototype.syncNow = function (callback, forcePut) {
   });
 };
 
+/* Deletes the server-side collection, not affecting anything local
+   The reason is stored on the server. */
 SyncService.prototype.deleteCollection = function (reason, callback) {
   var self = this;
   if (typeof reason == 'string') {
@@ -287,6 +372,9 @@ SyncService.prototype.deleteCollection = function (reason, callback) {
   });
 };
 
+/* Gets updates, immediately applying any changes to the repo.
+
+   Calls callback with no arguments on success */
 SyncService.prototype._getUpdates = function (callback) {
   var self = this;
   this.server.get(this.lastSyncTime(), function (error, results) {
@@ -324,6 +412,8 @@ SyncService.prototype._getUpdates = function (callback) {
   });
 };
 
+/* Given the applications from a server get request, applies those changes to
+   the repo. */
 SyncService.prototype._processUpdates = function (apps, callback) {
   var appsToAdd = [];
   var appsToDelete = [];
@@ -343,6 +433,9 @@ SyncService.prototype._processUpdates = function (apps, callback) {
       deletedByOrigin[deleted[i].origin] = deleted[i];
     }
     self.repo.list(function (existing) {
+      // FIXME: this coercion is due to some inconsistencies in list()
+      // implementations; should be removed once everyone is
+      // consistent:
       existing = objectValues(existing);
       log('got existing stuff', {existing: existing, deleted: deleted});
       var existingByOrigin = {};
@@ -411,6 +504,9 @@ SyncService.prototype._processUpdates = function (apps, callback) {
   }, function (error) {callback(error || undefined);});
 };
 
+/* Sends any updates the service finds to the remote server.
+
+   Calls callback() with no arguments on success. */
 SyncService.prototype._putUpdates = function (callback) {
   var lastUpdate = this._lastSyncPut;
   var self = this;
@@ -491,6 +587,7 @@ SyncService.prototype._putUpdates = function (callback) {
   }, function (error) {callback(error);});
 };
 
+// Just logging helpers, should be removed at some later date...
 function log(msg) {
   if (typeof console == 'undefined' || (! console.log)) {
     return;
@@ -551,13 +648,20 @@ function objectValues(o) {
   return result;
 }
 
+
+/* A wrapper around the server API.
+
+   The url is the url of the /verify entry point to the server */
 var Server = function (url) {
   this._url = url;
   this._loginStatus = null;
+  // After login ._collectionUrl is the actual place we put updates:
   this._collectionUrl = null;
+  // This is a header sent with all requests (after login):
   this._httpAuthorization = null;
 };
 
+/* Logs in with the assertion data {assertion: string, audience: origin} */
 Server.prototype.login = function (data, callback) {
   var self = this;
   var assertion = data.assertion;
@@ -615,6 +719,8 @@ Server.prototype.logout = function (callback) {
   callback();
 };
 
+/* The server takes the assertion and turns it into a real email
+   address etc, so this function gives access to those values */
 Server.prototype.userInfo = function () {
   if (this._loginStatus === null) {
     return null;
@@ -642,6 +748,8 @@ Server.prototype._createRequest = function (method, url) {
   return req;
 };
 
+/* Does a GET request on the server, getting all updates since the
+   given timestamp */
 Server.prototype.get = function (since, callback) {
   if (since === null) {
     since = 0;
@@ -673,7 +781,7 @@ Server.prototype.get = function (since, callback) {
   req.send();
 };
 
-// FIXME: should probably have since here:
+// FIXME: should have since/lastget here, to protect against concurrent puts
 Server.prototype.put = function (data, callback) {
   if (! this._loginStatus) {
     throw 'You have not yet logged in';
@@ -724,6 +832,7 @@ Server.prototype.toString = function () {
   return '[Server url: ' + this._url + ']';
 };
 
+
 function Scheduler(service) {
   var self = this;
   this.service = service;
@@ -750,18 +859,23 @@ function Scheduler(service) {
   this.onsuccess = null;
 }
 
+/* These default settings inform some of the adaptive scheduling */
+// FIXME: do some adaptive scheduling
 Scheduler.prototype.settings = {
   maxPeriod: 60*60000, // 1 hour
   minPeriod: 30000, // 30 seconds
   normalPeriod: 5000 // 5 minutes
 };
 
+/* Called when we should start regularly syncing (generally after
+   login) */
 Scheduler.prototype.activate = function () {
   this.deactivate();
   this.resetSchedule();
   this.schedule();
 };
 
+/* Stops any regular syncing, if any is happening */
 Scheduler.prototype.deactivate = function () {
   if (this._timeoutId) {
     win.clearTimeout(this._timeoutId);
