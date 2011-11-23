@@ -1,1 +1,1 @@
-../../jslibs/manifest.js
+../../addons/jetpack/lib/manifest.js

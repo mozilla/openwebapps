@@ -56,15 +56,9 @@
 // check if ambient TypedStorage or not
 // by looking for 'require' keyword from jetpack
 if (typeof require !== "undefined") {
-  var {
-    TypedStorage
-  } = require("./typed_storage");
-  var {
-    URLParse
-  } = require("./urlmatch");
-  var {
-    Manifest
-  } = require("./manifest");
+  var { TypedStorage } = require("./typed_storage");
+  var { URLParse } = require("./urlmatch");
+  var { Manifest } = require("./manifest");
 }
 
 
@@ -73,8 +67,8 @@ if (typeof require !== "undefined") {
 
 
 function appendPath(base, path) {
-  let baseEndsWithSlash = base.substr(-1) === "/";
-  let pathStartsWithSlash = path.substr(0, 1) === "/";
+  var baseEndsWithSlash = base.substr(-1) === "/";
+  var pathStartsWithSlash = path.substr(0, 1) === "/";
   if (baseEndsWithSlash && pathStartsWithSlash) {
     return base + path.substr(1);
   }
@@ -82,7 +76,7 @@ function appendPath(base, path) {
     return base + "/" + path;
   }
   return base + path;
-};
+}
 
 Repo = (function() {
   // A TypedStorage singleton global object is expected to be present
@@ -139,7 +133,7 @@ Repo = (function() {
         appStorage.get(aKey, makeAddOrRemoveFn(aKey));
       }
     });
-  };
+  }
 
   // Returns whether the given URL belongs to the specified domain (scheme://hostname[:nonStandardPort])
 
@@ -200,13 +194,13 @@ Repo = (function() {
 
 
   function normalizeOrigin(origin) {
-    let parsed = URLParse(origin).normalize();
+    var parsed = URLParse(origin).normalize();
     if (parsed.scheme === "resource") {
-      let str = parsed.toString();
+      var str = parsed.toString();
       // Look for the last slash and return the value *including* that
       // slash (so calling normalizeOrigin(url) multiple times on the
       // same URL returns the same value.
-      let lastSlash = str.lastIndexOf("/");
+      var lastSlash = str.lastIndexOf("/");
       return str.substr(0, lastSlash + 1);
     }
     return parsed.originOnly().toString()
@@ -214,8 +208,6 @@ Repo = (function() {
 
   /**
    * addApplication
-   * "private" call used only by sync.js to add a previously installed
-   * application (from another device) to this repo
    *
    * @param origin  url origin of the application
    * @param apprec  application record (js object)
@@ -358,7 +350,7 @@ Repo = (function() {
         error: ["missingManifest", "install requires a url argument"]
       });
     }
-  };
+  }
 
   /** Determines if an application is installed for the calling site */
 
@@ -379,7 +371,7 @@ Repo = (function() {
       }
       if (!done) cb(null);
     });
-  };
+  }
 
   /** Determines which applications were installed by the origin domain. */
 
@@ -395,7 +387,7 @@ Repo = (function() {
       }
       if (cb && typeof cb == 'function') cb(result);
     });
-  };
+  }
 
 
   // a map of service "names" to conduit urls
@@ -503,7 +495,7 @@ Repo = (function() {
         cb(ret);
       });
     }
-  };
+  }
 
   function uninstall(origin, cb) {
     let self = this;
@@ -523,7 +515,12 @@ Repo = (function() {
         self.invalidateCaches();
       }
     });
-  };
+  }
+
+  function removeDeletion(origin, cb) {
+    // FIXME: check if the deletion exists?
+    deletedStorage.remove(origin, cb);
+  }
 
   function listUninstalled(cb) {
     let self = this;
@@ -545,11 +542,11 @@ Repo = (function() {
         });
       }
     });
-  };
+  }
 
   function loadState(id, cb) {
     stateStorage.get(JSON.stringify(id), cb);
-  };
+  }
 
   function saveState(id, state, cb) {
     // storing undefined purges state
@@ -558,7 +555,7 @@ Repo = (function() {
     } else {
       stateStorage.put(JSON.stringify(id), state, cb);
     }
-  };
+  }
 
   // for now, this is the only function that returns a legitimate App data structure
   // refactoring of other calls is in order to get the right App abstraction, but one thing at a time.
@@ -566,7 +563,7 @@ Repo = (function() {
 
   function getAppById(id, cb) {
     iterateApps(function(apps) {
-      let found = false;
+      var found = false;
       for (var app in apps) {
         if (app == id) {
           cb(apps[app]);
@@ -575,14 +572,23 @@ Repo = (function() {
       }
       if (!found) cb(null);
     });
-  };
+  }
 
   // the result might be null if no app
 
 
   function getAppByUrl(url, cb) {
     getAppById(normalizeOrigin(url), cb);
-  };
+  }
+
+  function watchUpdates(callback) {
+    typedStorage.watchUpdates(function (event) {
+      if (event.objectType != 'app') {
+        return;
+      }
+      callback({"type": event.type, objects: event.objects});
+    });
+  }
 
   return {
     list: list,
@@ -600,7 +606,9 @@ Repo = (function() {
     getAppById: getAppById,
     getAppByUrl: getAppByUrl,
     addApplication: addApplication,
-    listUninstalled: listUninstalled
+    listUninstalled: listUninstalled,
+    removeDeletion: removeDeletion,
+    watchUpdates: watchUpdates
   };
 })();
 
