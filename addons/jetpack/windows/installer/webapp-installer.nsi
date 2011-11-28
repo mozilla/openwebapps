@@ -41,6 +41,7 @@ CRCCheck on
 RequestExecutionLevel user
 
 Var appName
+Var appID
 Var appURL
 Var appDesc
 Var iconPath
@@ -53,70 +54,72 @@ OutFile ..\..\data\native-install\windows\installer\install.exe
 
 Function .onInit
   ClearErrors
-  readAppName:
+  ReadINIStr $appID $EXEDIR\install.ini required appID
+  IfErrors error doneReadingAppID
+  doneReadingAppID:
   ReadINIStr $appName $EXEDIR\install.ini required appName
-  IfErrors 0 setOutDir
-    SetErrors
-    Goto cleanup
-  setOutDir:
-  StrCpy $INSTDIR $APPDATA\$appName
+  IfErrors error doneReadingAppName
+  doneReadingAppName:
+  ReadINIStr $INSTDIR $EXEDIR\install.ini required instDir
+  IfErrors error doneReadingInstDir
+  doneReadingInstDir:
   SetOutPath $INSTDIR
-  readFFPath:
   ReadINIStr $FFPath $EXEDIR\install.ini required FFPath
-  IfErrors 0 readOptionalInfo
-    SetErrors
-    Goto cleanup
-  readOptionalInfo:
+  IfErrors error doneReadingFFPath
+  error:
+  Abort
+  doneReadingFFPath:
   ReadINIStr $appURL $EXEDIR\install.ini optional appURL
   ReadINIStr $appDesc $EXEDIR\install.ini optional appDesc
   ReadINIStr $iconPath $EXEDIR\install.ini optional iconPath
   ReadINIStr $createDesktopShortcut $EXEDIR\install.ini optional createDesktopShortcut
   ReadINIStr $createStartMenuShortcut $EXEDIR\install.ini optional createStartMenuShortcut
-  ClearErrors
-  cleanup:
-  IfErrors 0 done
-    Abort
-  done:
 FunctionEnd
 
 Function WriteRegKeys
   DetailPrint "Writing registry keys"
   WriteRegStr HKCU \
-              "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appName" \
+              "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appID" \
               "DisplayName" \
               $appName
   WriteRegStr HKCU \
-              "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appName" \
+              "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appID" \
               "UninstallString" \
               "$OUTDIR\uninstall.exe"
   WriteRegStr HKCU \
-              "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appName" \
+              "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appID" \
               "InstallLocation" \
               "$OUTDIR"
   WriteRegStr HKCU \
-              "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appName" \
-              "DisplayIcon" \
-              "$iconPath"
-  WriteRegStr HKCU \
-              "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appName" \
+              "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appID" \
               "HelpLink" \
               "https://apps.mozillalabs.com/"
   WriteRegStr HKCU \
-              "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appName" \
+              "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appID" \
               "URLUpdateInfo" \
               "https://apps.mozillalabs.com/"
-  WriteRegStr HKCU \
-              "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appName" \
-              "URLInfoAbout" \
-              "$appURL"
   WriteRegDWORD HKCU \
-              "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appName" \
+              "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appID" \
               "NoModify" \
               0x1
   WriteRegDWORD HKCU \
-              "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appName" \
+              "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appID" \
               "NoRepair" \
               0x1
+  StrCmp $appURL "" doneWritingAppURL writeAppURL
+  writeAppURL:
+  WriteRegStr HKCU \
+              "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appID" \
+              "URLInfoAbout" \
+              "$appURL"
+  doneWritingAppURL:
+  StrCmp $iconPath "" doneWritingIconPath writeIconPath
+  writeIconPath:
+  WriteRegStr HKCU \
+              "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appID" \
+              "DisplayIcon" \
+              "$iconPath"
+  doneWritingIconPath:
   DetailPrint "Done"
 FunctionEnd
 
@@ -130,8 +133,8 @@ Function CreateShortcuts
                  "" \
                  "" \
                  $appDesc
-  maybeCreateDesktopShortcut:
-  StrCmp $createDesktopShortcut "y" 0 maybeCreateStartMenuShortcut
+  StrCmp $createDesktopShortcut "y" writeDesktopShortcut doneWritingDesktopShortcut
+  writeDesktopShortcut:
   CreateShortcut $DESKTOP\$appName.lnk \
                  $OUTDIR\$appName.lnk \
                  "" \
@@ -140,8 +143,9 @@ Function CreateShortcuts
                  "" \
                  "" \
                  $appDesc
-  maybeCreateStartMenuShortcut:
-  StrCmp $createStartMenuShortcut "y" 0 cleanup
+  doneWritingDesktopShortcut:
+  StrCmp $createStartMenuShortcut "y" writeStartMenuShortcut doneWritingStartMenuShortcut
+  writeStartMenuShortcut:
   CreateShortcut $SMPROGRAMS\$appName.lnk \
                  $OUTDIR\$appName.lnk \
                  "" \
@@ -150,7 +154,7 @@ Function CreateShortcuts
                  "" \
                  "" \
                  $appDesc
-  cleanup:
+  doneWritingStartMenuShortcut:
 FunctionEnd
 
 Section Install
@@ -161,42 +165,46 @@ SectionEnd
 
 Function un.onInit
   ClearErrors
-  readAppName:
-  ReadINIStr $appName $INSTDIR\uninstall.ini required appName
-  IfErrors 0 setUpPaths
-    SetErrors
-    Goto cleanup
-  setUpPaths:
-  ReadRegStr $INSTDIR \
+  ReadINIStr $appID $INSTDIR\uninstall.ini required appID
+  IfErrors error doneReadingAppID
+  doneReadingAppID:
+  ReadRegStr $OUTDIR \
              HKCU \
-            "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appName" \
+            "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appID" \
             "InstallLocation"
-  IfErrors 0 cleanup
-    StrCpy $INSTDIR "$APPDATA\$appName"
-  cleanup:
-  IfErrors 0 done
-    Abort
-  done:
+  IfErrors error doneReadingOutDir
+  doneReadingOutDir:
+  ReadRegStr $appName \
+             HKCU \
+            "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appID" \
+            "DisplayName"
+  IfErrors error doneReadingAppName
+  error:
+  Abort
+  doneReadingAppName:
 FunctionEnd
 
 Function un.RemoveAppDir
-  RMDir /r $INSTDIR
-  RMDir $INSTDIR
+  ClearErrors
+  RMDir /r $OUTDIR
+  RMDir $OUTDIR
 FunctionEnd
 
 Function un.RemoveAppData
+  ClearErrors
   RMDir /r $APPDATA\Mozilla\$appName
   RMDir $APPDATA\Mozilla\$appName
 FunctionEnd
 
 Function un.RemoveShortcuts
+  ClearErrors
   Delete $SMPROGRAMS\$appName.lnk
   Delete $DESKTOP\$appName.lnk
 FunctionEnd
 
 Function un.RemoveRegKeys
   ClearErrors
-  DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appName"
+  DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appID"
 FunctionEnd
 
 Section un.Install
@@ -204,5 +212,4 @@ Section un.Install
   Call un.RemoveAppData
   Call un.RemoveShortcuts
   Call un.RemoveRegKeys
-  RMDIR $INSTDIR\$appName
 SectionEnd

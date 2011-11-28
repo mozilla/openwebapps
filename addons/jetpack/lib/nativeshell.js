@@ -432,6 +432,7 @@ WinNativeShell.prototype = {
       let directoryService = Cc["@mozilla.org/file/directory_service;1"]
                              .getService(Ci.nsIProperties);
       this.installDir = directoryService.get("AppData", Ci.nsIFile);
+      this.installDir.append("Mozilla");
       this.installDir.append(this.appName);
 
       this.launchPath = app.origin;
@@ -454,8 +455,6 @@ WinNativeShell.prototype = {
       this.firefoxFile.append("firefox.exe");
   },
 
-  // TODO: Ask user whether to create desktop/start menu shortcuts
-  // TODO: Support App descriptions
   createExecutable : function(app)
   {
     try {
@@ -466,10 +465,16 @@ WinNativeShell.prototype = {
 
     let substitutions;
     try {
+      let ios = Cc["@mozilla.org/network/io-service;1"]
+                .getService(Ci.nsIIOService);
+
+      let appOriginURI = ios.newURI(app.origin, null, null);
+
       substitutions = {
         "\\$APPNAME": this.appName,
-        "\\$APPDOMAIN": app.origin,
-        "\\$APPDESC": "App descriptions are not yet supported",
+        "\\$APPDOMAIN": appOriginURI.host,
+        // Shortcut descriptions longer than 259 characters cause corruption
+        "\\$APPDESC": app.manifest.description.substring(0,259),
         "\\$FFPATH": this.firefoxFile.path,
         "\\$LAUNCHPATH": this.launchPath,
         "\\$INSTALLDIR": this.installDir.path,
@@ -479,7 +484,7 @@ WinNativeShell.prototype = {
       }
     } catch(e) {
       throw("createExecutable - "
-          + "Failure setting up substitutions");
+          + "Failure setting up substitutions (" + e + ")");
     }
 
     try {
@@ -510,12 +515,12 @@ WinNativeShell.prototype = {
     } catch(e) {
       // Don't fail the installation on icon failures
       console.log("createExecutable - "
-          + "Error synthesizing icon: " + e);
+                  + "Error synthesizing icon: " + e);
     }
 
     try {
       let process = Cc["@mozilla.org/process/util;1"]
-                  .createInstance(Ci.nsIProcess);
+                    .createInstance(Ci.nsIProcess);
 
       let installerFile = this.installerDir.clone();
       installerFile.append("install.exe");
@@ -529,6 +534,13 @@ WinNativeShell.prototype = {
     } catch (e) {
       throw("createExecutable - "
             + "Failure running installer (" + e + ")");
+    } finally {
+      try {
+        this.installerDir.remove(true);
+      } catch(e) {
+        console.log("createExecutable - "
+                    + "Failure cleaning up installer (" + e + ")");
+      }
     }
 
     try {
@@ -557,7 +569,7 @@ WinNativeShell.prototype = {
     } catch(e) {
       this.removeInstallation();
       throw("createExecutable - "
-          + "Failure copying files (" + e + ")");
+            + "Failure copying files (" + e + ")");
     }
   },
 
@@ -619,7 +631,8 @@ WinNativeShell.prototype = {
 
       iconStream =
           imgTools.encodeImage(imgContainer.value,
-                               "image/vnd.microsoft.icon");
+                               "image/vnd.microsoft.icon",
+                               "format=bmp");
     } catch (e) {
       console.log("APPS | nativeshell.win | synthesizeIcon - "
                   + "Failure converting icon"
