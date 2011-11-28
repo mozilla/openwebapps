@@ -10,7 +10,7 @@ The tests are [doctests](http://ianb.github.com/doctestjs), and are
 located in `sync/tests/`.  These are not directly runnable, you should
 use the appsync server.
 
-Once you are running the server, go to `http://localhost:5000/sync/tests/
+Once you are running the server, go to `http://localhost:5000/sync/tests/`
 
 
 ## Server
