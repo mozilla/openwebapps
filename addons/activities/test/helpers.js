@@ -80,11 +80,12 @@ exports.ensureNoTestApp = function(test, appPath, callback) {
                            function() {callback()}, function() {callback()});
 }
 
-
+var call_counter = 0;
 exports.invokeService = function(mediatorPanel, activity, cb, cberr) {
   let worker = mediatorPanel.handlers[activity.origin][activity.action][activity.message];
-  activity.success = "test_invoke_success";
-  activity.error = "test_invoke_error";
+  call_counter++;
+  activity.success = "test_invoke_success_"+call_counter;
+  activity.error = "test_invoke_error_"+call_counter;
   function postResult(result) {
     worker.port.removeListener(activity.error, postException);
     cb(result);
