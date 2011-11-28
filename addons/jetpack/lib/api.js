@@ -286,15 +286,12 @@ FFRepoImpl.prototype = {
           self._callWatchers("add", [app]);
         });
         // create OS-local application
-        //console.log("APPS | jetpack.install | Getting app by URL now\n");
         Repo.getAppById(origin, function(app) {
-          //console.log("APPS | jetpack.install | getAppByUrl returned " + app + "\n");
           if (app) {
-            //console.log("APPS | jetpack.install | Calling NativeShell.CreateNativeShell\n");
             try {
               NativeShell.CreateNativeShell(app);
             } catch (e) {
-              //console.log("APPS | NativeShell | Aborted: " + e);
+              console.log("APPS | NativeShell | Aborted: " + e);
             }
           }
         });
