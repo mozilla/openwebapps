@@ -58,7 +58,6 @@ var { XPCOMUtils, AddonManager, Services } = tmp;
  *
  * per-window initialization for owa
  */
-
 function openwebapps(win, getUrlCB) {
   this._getUrlCB = getUrlCB;
   this._window = win;
@@ -77,6 +76,12 @@ function openwebapps(win, getUrlCB) {
     }
     this.pendingRegistrations = null;
   }
+
+  // Load stylesheet
+  let uri = require("self").data.url("skin/overlay.css");
+  let document = win.document;
+  let pi = document.createProcessingInstruction("xml-stylesheet", "href=\"" + uri + "\" type=\"text/css\"");
+  document.insertBefore(pi, document.firstChild);
 
   // TODO: Figure out a way to do this without waiting for 500ms.
   // Also, intercept document loads that don't open in a new tab
