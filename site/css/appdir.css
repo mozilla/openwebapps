@@ -1,0 +1,105 @@
+.singleColumn > img {
+    height: 100px;
+    width: 100px;
+    padding: 10px;
+    border: 1px solid #bbb;
+    float: left;
+    background-color: #f2f2f2;
+    
+    background-image: -moz-linear-gradient(top, #fff 0%, #f2f2f2 100%);
+    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #fff), color-stop(100%, #f2f2f2));
+    
+    -webkit-border-radius: 5px;
+       -moz-border-radius: 5px;
+         -o-border-radius: 5px;
+            border-radius: 5px;
+    
+    -webkit-box-shadow: 0 1px 3px rgba(0,0,0,0.25) inset;
+       -moz-box-shadow: 0 1px 3px rgba(0,0,0,0.25) inset;
+         -o-box-shadow: 0 1px 3px rgba(0,0,0,0.25) inset;        
+            box-shadow: 0 1px 3px rgba(0,0,0,0.25) inset;
+}
+
+#contentWrap .singleColumn {
+    margin: 10px;
+    padding: 0;
+    position: relative;
+}
+
+#contentWrap .singleColumn div.name {
+    font-size: 14px;
+    width: 200px;
+    padding: 0 0 0 10px;
+    margin: 14px 0 0 0;
+    font-family: "Lucida Grande", Trebuchet MS, Verdana, sans-serif;
+    font-weight: bold;
+}
+
+#contentWrap .singleColumn div.attribution {
+    font-size: 14px;
+    padding: 0 0 0 10px;
+    width: 200px;
+    font-style: italic;
+}
+
+#contentWrap .singleColumn div.attribution a {
+    font-style: normal;
+}
+
+#contentWrap .singleColumn div {
+    float: left;
+}
+
+#contentWrap .singleColumn .button {
+    padding: 0px;
+    margin: 0px;
+    position: absolute;
+    left: 110px;
+    bottom: 5px;
+    font-family: "Lucida Grande", Trebuchet MS, Verdana, sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+    /*display: none;*/
+    text-align: right;
+    background-color: #fff;
+}
+
+#contentWrap .singleColumn .button img {
+    vertical-align: text-bottom;
+}
+
+#contentWrap .singleColumn .installed {
+    color: #5EA330;
+}
+
+#contentWrap .singleColumn .installable {
+    background-color: #fff;
+    border: 1px solid #004607;
+    padding: 3px 15px 3px 11px;
+    font-size: 12px;
+    cursor: pointer;
+    text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.4);
+    color: #004607;
+    background-color: #84C63C;
+    
+    background-image: -moz-linear-gradient(center top , #84C63C 0%, #5EA330 100%);
+    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #84C63C), color-stop(100%, #5EA330));
+    
+    -webkit-border-radius: 2px;
+       -moz-border-radius: 2px;
+         -o-border-radius: 2px;
+            border-radius: 2px;
+}
+
+#contentWrap .singleColumn .installable:active {
+    -webkit-box-shadow: 0 0 3px rgba(0,0,0,0.75) inset, 0 0 20px rgba(0,0,0,0.25) inset;
+       -moz-box-shadow: 0 0 3px rgba(0,0,0,0.75) inset, 0 0 20px rgba(0,0,0,0.25) inset;
+         -o-box-shadow: 0 0 3px rgba(0,0,0,0.75) inset, 0 0 20px rgba(0,0,0,0.25) inset;
+            box-shadow: 0 0 3px rgba(0,0,0,0.75) inset, 0 0 20px rgba(0,0,0,0.25) inset;
+}
+
+#contentWrap div.singleColumn:hover .button {
+    display: block;
+}
+
+
