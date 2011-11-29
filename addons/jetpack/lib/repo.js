@@ -511,7 +511,6 @@ Repo = (function() {
           deletedStorage.put(origin, {last_modified: new Date().getTime()}, function() {
             if (cb && typeof(cb) == "function") cb(true);
           });
-          if (cb && typeof(cb) == "function") cb(true);
         });
         self.invalidateCaches();
       }
