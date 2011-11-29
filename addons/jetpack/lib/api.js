@@ -145,40 +145,52 @@ FFRepoImpl.prototype = {
     // sent in, to make it easy to install app straight from the lower-right prompt.
     var autoInstall = args._autoInstall;
 
+    // We default to installing a native app, but allow the user to override
+    let _makeNativeApp = true;
+
     function displayPrompt(installOrigin, appOrigin, manifestToInstall, isUpdate, installConfirmationFinishFn) {
       dump("APPS | api.install.displayPrompt | Checking for prompt\n");
       if (autoInstall) return installConfirmationFinishFn(true);
 
       let acceptButton = new Object();
-      let declineButton = new Object();
+      let noNativeButton = new Object();
 
       let message = "Are you sure you want to install " + manifestToInstall.name + "?";
 
-      acceptButton.label = "Install";
+      acceptButton.label = "Install (with Native app)";
       acceptButton.accessKey = "i";
       acceptButton.callback = function() {
         installConfirmationFinishFn(true);
       };
 
-      declineButton.label = "Cancel";
-      declineButton.accessKey = 'c';
-      declineButton.callback = function() {
-        installConfirmationFinishFn(false);
+      noNativeButton.label = "Install (without Native app)";
+      noNativeButton.accessKey = "n";
+      noNativeButton.callback = function() {
+        // Don't generate a native app
+        _makeNativeApp = false;
+        installConfirmationFinishFn(true);  
       };
 
       let ret = window.PopupNotifications.show(
-      window.gBrowser.selectedBrowser, "openwebapps-install-notification", message, null, acceptButton, [declineButton], {
-        "persistence": 1,
-        "persistWhileVisible": true,
-        "eventCallback": function(state) {
-          // If the user dismisses the prompt, we cancel
-          // installation
-          if (state == "dismissed") {
-            installConfirmationFinishFn(false);
-            ret.remove();
+        window.gBrowser.selectedBrowser,
+        "openwebapps-install-notification",
+        message,
+        null,
+        acceptButton,
+        [noNativeButton],
+        {
+          "persistence": 1,
+          "persistWhileVisible": true,
+          "eventCallback": function(state) {
+            // If the user dismisses the prompt, we cancel
+            // installation
+            if (state == "dismissed") {
+              installConfirmationFinishFn(false);
+              ret.remove();
+            }
           }
         }
-      });
+      );
     }
 
     function fetchManifest(url, cb) {
@@ -284,10 +296,9 @@ FFRepoImpl.prototype = {
             skipPostInstallDashboard: args.skipPostInstallDashboard ? args.skipPostInstallDashboard : false
           }));
           self._callWatchers("add", [app]);
-        });
-        // create OS-local application
-        Repo.getAppById(origin, function(app) {
-          if (app) {
+
+          // create OS-local application
+          if (_makeNativeApp) {
             try {
               NativeShell.CreateNativeShell(app);
             } catch (e) {
