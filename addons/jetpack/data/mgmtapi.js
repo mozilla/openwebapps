@@ -31,9 +31,9 @@ function _makeCall(msg, args, callback, errcb) {
 }
 
 let _watches = [];
-function _updateWatchers() {
+function _updateWatchers(args) {
   for (var i=0; i < _watches.length; i++) {
-    _watches[i](arguments);
+    _watches[i](args[0], args[1]);
   }
 }
 function _clearWatcher(fn) {
