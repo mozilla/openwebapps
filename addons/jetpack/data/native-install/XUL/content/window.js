@@ -81,10 +81,15 @@ MozAppsAPI.prototype = {
       verifyReceipt: function(callback, options, cb, verifyOnly) {
         doVerifyReceipt(aWindow, callback, options, cb, verifyOnly);
       },
+
+      registerAppMenu: function(menuNode) {
+        doRegisterAppMenu(menuNode);
+      },
       
       __exposedProps__: {
         amInstalled: "r",
-        verifyReceipt: "r"
+        verifyReceipt: "r",
+        registerAppMenu: "r"
       }
     };
   }
