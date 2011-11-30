@@ -19,6 +19,7 @@
 #
 # Contributor(s):
 #   Tarek Ziade (tarek@mozilla.com)
+#   Shane Caraveo (scaraveo@mozilla.com)
 #
 # Alternatively, the contents of this file may be used under the terms of
 # either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -36,11 +37,10 @@
 import os
 import sys
 import subprocess
-
+import json
+from optparse import OptionParser
 
 CURDIR = os.path.dirname(__file__)
-REPOS = {'github': ('git', 'https://github.com/mozilla/%s.git'),
-         'mozilla': ('hg', 'https://hg.mozilla.org/labs/%s')}
 PYTHON = sys.executable
 
 
@@ -67,122 +67,161 @@ def get_latest_tag():
 
 
 def _run(command):
-    print(command)
     os.system(command)
 
 
-def _envname(name):
-    return name.upper().replace('-', '_')
-
-
-def _update_cmd(project, latest_tags=False, repo_type='git'):
-    if latest_tags:
-        if repo_type == 'hg':
-            return 'hg up -r "%s"' % get_latest_tag()
+def _update_cmd(tag, type='git'):
+    if type == 'git':
+        if tag and verify_tag(tag):
+            return 'git checkout %s' % tag
         else:
-            return 'git checkout -r "%s"' % get_latest_tag()
-    else:
-        # looking for an environ with a specific tag or rev
-        rev = os.environ.get(_envname(project))
-        if rev is not None:
-            if not verify_tag(rev):
-                print('Unknown tag or revision: %s' % rev)
-                sys.exit(1)
-            if repo_type == 'git':
-                return 'git checkout -r "%s"' % rev
-            else:
-                return 'hg up -r "%s"' % rev
-        if repo_type == 'git':
-            return 'git checkout'
+            return 'git pull'
+    elif type == 'hg':
+        if tag:
+            return 'hg up -r "%s"' % tag
         else:
             return 'hg up'
 
 
-def build_app(name, latest_tags, deps):
-    # building deps first
-    build_deps(deps, latest_tags)
-
-    # build the app now
-    if not _has_spec():
-        latest_tags = False
-
-    _run(_update_cmd(name, latest_tags))
-    #_run('%s setup.py develop' % PYTHON)
+def get_deps_dir(dependencies):
+    deps_dir = dependencies.get('location')
+    if not os.path.isabs(deps_dir):
+        deps_dir = os.path.abspath(os.path.join(CURDIR, deps_dir))
+    if not os.path.exists(deps_dir):
+        os.mkdir(deps_dir)
+    return deps_dir
 
 
-def build_deps(deps, latest_tags):
+def pull_app(package, dependencies):
+    type, repo, branch, tag = dependencies.get('project')
+    name = os.path.basename(repo).split('.')[0]
+    update_cmd = _update_cmd("", type)
+    print "updating %s with: %s" % (name, update_cmd)
+    _run(update_cmd)
+
+
+def pull_deps(dependencies):
     """Will make sure dependencies are up-to-date"""
     location = os.getcwd()
     # do we want the latest tags ?
     try:
-        deps_dir = os.path.abspath(os.environ.get('DEPSDIR', os.path.join(CURDIR, 'deps')))
-        if not os.path.exists(deps_dir):
-            os.mkdir(deps_dir)
-
-        for dep in deps:
-            root, name = dep.split(':')
-            repo_type, repo_root = REPOS[root]
-            repo = repo_root % name
+        deps_dir = get_deps_dir(dependencies)
+        for project in dependencies.get('projects', []):
+            type, repo, branch, tag = project
+            name = os.path.basename(repo).split('.')[0]
             target = os.path.join(deps_dir, name)
-            if os.path.exists(target):
-                os.chdir(target)
-                if repo_type == 'git':
-                    _run('git pull')
-                else:
-                    _run('hg pull')
-            else:
-                if repo_type == 'git':
+            if not os.path.exists(target):
+                print "cloning ", name
+                if type == 'git':
                     _run('git clone %s %s' % (repo, target))
                 else:
                     _run('hg clone %s %s' % (repo, target))
 
-                os.chdir(target)
-            update_cmd = _update_cmd(dep, latest_tags, repo_type)
+            os.chdir(target)
+            if type == 'git' and branch:
+                print "checkout branch %s for %s" % (branch, name)
+                _run('git checkout %s' % branch)
+            update_cmd = _update_cmd(tag, type)
+            print "updating %s with: %s" % (name, update_cmd)
             _run(update_cmd)
-            #_run('%s setup.py develop' % PYTHON)
     finally:
         os.chdir(location)
 
 
-def _has_spec():
-    specs = [file_ for file_ in os.listdir('.')
-             if file_.endswith('.spec')]
-    return len(specs)
+def get_package(package):
+    return json.load(open(package))
 
 
-def main(project_name, deps):
-    # check the provided values in the environ
-    latest_tags = 'LATEST_TAGS' in os.environ
+def get_dependencies(dependencies):
+    return json.load(open(dependencies))
 
-    if not latest_tags:
-        # if we have some tags in the environ, check that they are all defined
-        projects = list(deps)
 
-        # is the root a project itself or just a placeholder ?
-        if _has_spec():
-            projects.append(project_name)
+def pull_release(options, package, dependencies):
+    project = dependencies.get('project', [])
+    project[3] = options.reltag
+    pull_app(package, dependencies)
+    # update dependencies now
+    dependencies = get_dependencies(options.dependencies)
+    pull_deps(dependencies)
 
-        tags = {}
-        missing = 0
-        for project in projects:
-            tag = _envname(project)
-            if tag in os.environ:
-                tags[tag] = os.environ[tag]
+
+def tag_release(package, dependencies):
+    rel_tag = "v%(version)s" % package
+    if verify_tag(rel_tag):
+        raise Exception("repository already tagged for release")
+
+    location = os.getcwd()
+    # get the current revision and branch we're working with, update
+    # dependencies.json, then tag the repository we're in
+    import copy
+    old_deps = copy.copy(dependencies)
+    try:
+        deps_dir = get_deps_dir(dependencies)
+        for project in dependencies.get('projects', []):
+            type, repo, branch, tag = project
+            name = os.path.basename(repo).split('.')[0]
+            target = os.path.join(deps_dir, name)
+            os.chdir(target)
+            # tag the repo
+            if type == 'git':
+                # lightweight tags for dependency repos
+                p = os.popen("git log --pretty=format:'%h' -n 1")
+                project[3] = p.read()
             else:
-                tags[tag] = 'Not provided'
-                missing += 1
+                raise Exception("tagging not implemented for ", type)
+            print "tagging %s with %s" % (name, project[3])
+        print dependencies
+    finally:
+        os.chdir(location)
 
-        # we want all tag or no tag
-        if missing > 0 and missing < len(projects):
-            print("You did not specify all tags: ")
-            for project, tag in tags.items():
-                print('    %s: %s' % (project, tag))
-            sys.exit(1)
+    dependencies_file = os.path.abspath(os.path.join(CURDIR, 'dependencies.json'))
+    json.dump(dependencies, open(dependencies_file, mode="w"), indent=2)
 
-    build_app(project_name, latest_tags, deps)
+    # now, tag our project
+    rel_tag = "v%(version)s" % package
+    tag_msg = "release version %(version)s" % package
+    print "tagging %s with %s" % (package.get('name'), rel_tag)
+    # tag the repo
+    if type == 'git':
+        # lightweight tags for dependency repos
+        _run('git commit %s -m "update dependency tags"' % dependencies_file)
+        _run('git tag -a %s -m "%s" && git push origin --tags' % (rel_tag, tag_msg))
+    else:
+        raise Exception("tagging not implemented for ", type)
 
 
 if __name__ == '__main__':
-    project_name = sys.argv[1]
-    deps = [dep.strip() for dep in sys.argv[2].split(',')]
-    main(project_name, deps)
+    # defaults
+    dependencies_file = os.path.abspath(os.path.join(CURDIR, 'dependencies.json'))
+    package_file = os.path.abspath(os.path.join(CURDIR, 'package.json'))
+
+    # options
+    parser = OptionParser()
+    parser.add_option("-v", "--version", dest="version",
+                      action="store_true", default=False,
+                      help="version from package.json")
+    parser.add_option("-r", "--pull-release", dest="reltag",
+                      help="pull a specific release from the repositories")
+    parser.add_option("-t", "--tag", dest="tag",
+                      action="store_true", default=False,
+                      help="tag repositories with the release version from package.json")
+    parser.add_option("-p", "--package", dest="package",
+                      default=package_file,
+                      help="Addon SDK package.json file", metavar="FILE")
+    parser.add_option("-d", "--dependencies", dest="dependencies", 
+                      default=dependencies_file, metavar="FILE",
+                      help="repository dependencies.json file")
+    (options, args) = parser.parse_args()
+    package = get_package(options.package)
+    dependencies = get_dependencies(options.dependencies)
+    
+    if options.version:
+        print package.get('version')
+        sys.exit(0)
+    if options.reltag:
+        pull_release(options, package, dependencies)
+    else:
+        pull_app(package, dependencies)
+        pull_deps(dependencies)
+    if options.tag:
+        tag_release(package, dependencies)
