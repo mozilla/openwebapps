@@ -1,3 +1,39 @@
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is Open Web Apps for Firefox.
+ *
+ * The Initial Developer of the Original Code is The Mozilla Foundation.
+ * Portions created by the Initial Developer are Copyright (C) 2011
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *    Michael Hanson <mhanson@mozilla.com>
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
+
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -11,32 +47,71 @@ const char *ENVIRONMENT_DIR = "env";
 const char *FIREFOX_EXECUTABLE = "firefox-bin";
 const char *VERSION_FILE = "ffx.version";
 
-NSString *pathToCurrentFirefox();
-int updateApplicationEnvironment(NSString *firefoxPath, char *appEnvDirPath);
-int deleteApplicationEnvironment(char *appEnvDirPath);
-int buildApplicationEnvironment(NSString *firefoxPath, char *appEnvDirPath);
 void launchApplication();
-char *readAppEnvVersion(char *appEnvDirPath);
+
+NSString *pathToCurrentFirefox();
+
+int updateApplicationEnvironment(char *firefoxPath, char *appEnvDirPath);
+
+int deleteApplicationEnvironment(char *appEnvDirPath);
+int buildApplicationEnvironment(char *firefoxPath, char *appEnvDirPath);
+
+char *readFirefoxVersion(char *firefoxPath);
+char *currentEnvironmentVersion(char *appEnvDirPath);
 
 int gVerbose = 0;
 
+
+
+/*
+  * What is the current newest non-beta Firefox
+    * Or if -p is set, use that
+  * Do we have a symlink directory?
+    * If yes, does it point to the directory of Firefox that I found above
+      * If yes, is it the same version as when I made the symlinks? (XX: Need to stash a version code)
+        * If yes, happy days, execute
+  * If no on ANYTHING:
+    * Delete symlink directory
+    * Make new one (iterate all contents of Firefox directly making links)
+    * Execute
+
+*/
+
 int main(int argc, char **argv)
 {
-  if (argc > 1 && !strcmp(argv[1], "-v")) {
-    gVerbose = 1;
+  int i;
+  NSString *firefoxPath = NULL;    
+  for (i=1;i < argc;i++)
+  {
+    if (!strcmp(argv[i], "-v")) {
+      gVerbose = 1;
+    } else if (!strcmp(argv[i], "-p")) {
+      if (i+1 < argc) {
+        firefoxPath = [[NSString alloc] initWithCString:argv[i+1]];
+        i++;
+      }
+    }
   }
 
   NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];  
-  NSString *firefoxPath = pathToCurrentFirefox(); // XXX developer feature to specify other firefox here
   if (!firefoxPath) {
-    // Launch a dialog to explain to the user that there's no compatible web runtime
-    return 0;
+    firefoxPath = pathToCurrentFirefox(); // XXX developer feature to specify other firefox here
+    if (!firefoxPath) {
+      // Launch a dialog to explain to the user that there's no compatible web runtime
+      return 0;
+    }
   }
-
+  if (gVerbose) {
+      printf("Using Firefox at path %s\n", [firefoxPath UTF8String]);
+  }
+  
   char appEnvDirPath[4096];
+  char firefoxMacPath[4096];
+  
   snprintf(appEnvDirPath, 4096, "%s/Contents/MacOS/%s", [[[NSBundle mainBundle] bundlePath] UTF8String], ENVIRONMENT_DIR);
+  snprintf(firefoxMacPath, 4096, "%s/Contents/MacOS", [firefoxPath UTF8String]);
 
-  int rc = updateApplicationEnvironment(firefoxPath, appEnvDirPath);
+  int rc = updateApplicationEnvironment(firefoxMacPath, appEnvDirPath);
   if (rc) {
     exit(-1);
   }
@@ -45,6 +120,8 @@ int main(int argc, char **argv)
   exit(-1);
 }
 
+/* Find the currently installed Firefox, if any, and return
+ * an absolute path to it. */
 NSString *pathToCurrentFirefox()
 {
   NSString *firefoxRoot = [[NSWorkspace sharedWorkspace] absolutePathForAppBundleWithIdentifier:@"org.mozilla.firefox"];
@@ -54,14 +131,13 @@ NSString *pathToCurrentFirefox()
     return NULL;
   }
 }
-  
-// const char *appdir = [[[NSBundle mainBundle] bundlePath] UTF8String];
-//  NSString *FirefoxRoot = [[NSWorkspace sharedWorkspace] absolutePathForAppBundleWithIdentifier:@"org.mozilla.firefox"];
 
-char *currentAppVersion()
+/* Reads the currently installed version from the local environment directory*/
+char *currentEnvironmentVersion(char *appEnvDirPath)
 {
   char appVersionPath[4096];
-  snprintf(appVersionPath, 4096, "%s/Contents/MacOS/%s/%s", [[[NSBundle mainBundle] bundlePath] UTF8String], ENVIRONMENT_DIR, VERSION_FILE);
+  snprintf(appVersionPath, 4096, "%s/%s", appEnvDirPath, VERSION_FILE);
+  
   FILE *fp = fopen(appVersionPath, "r");
   if (fp) {
     char buf[512];
@@ -77,7 +153,49 @@ char *currentAppVersion()
   return NULL;
 }
 
-int updateApplicationEnvironment(NSString *firefoxPath, char *appEnvDirPath)
+char *readFirefoxVersion(char *firefoxPath)
+{
+  char appIniPath[4096];
+  snprintf(appIniPath, 4096, "%s/application.ini", firefoxPath);
+  FILE *fp = fopen(appIniPath, "r");
+  
+  // Scan for Version= line
+  if (fp) {
+    while (1) {
+      char lineBuf[1024];
+      char *line = fgets(lineBuf, 1024, fp);
+      if (!line) break;
+      if (strncmp(line, "Version=", 8) == 0) {
+        int trim = strlen(line)-1;
+        while (trim > 0) {
+          if (line[trim] == '\n') {
+            line[trim] = 0;
+            trim--;
+          } else break;
+        }
+
+        fclose(fp);
+        return strdup(line+8);
+      }
+    }
+    fclose(fp);
+  }
+  return NULL;
+}
+
+int applicationVersionsMatch(char *appEnvDirPath, char *firefoxPath)
+{
+  char *envVer = currentEnvironmentVersion(appEnvDirPath);
+  if (gVerbose) printf("Local environment version is %s\n", envVer);
+  
+  char *ffxVer = readFirefoxVersion(firefoxPath);
+  if (gVerbose) printf("Current Firefox version is %s\n", ffxVer);
+  
+  if (ffxVer && envVer && strcmp(ffxVer, envVer) == 0) return 1;
+  return 0;
+}
+
+int updateApplicationEnvironment(char *firefoxPath, char *appEnvDirPath)
 {
   int rc;
   struct stat my_stat;
@@ -88,11 +206,11 @@ int updateApplicationEnvironment(NSString *firefoxPath, char *appEnvDirPath)
   } else if (rc == 0) {
     // exists - check it
     if ((my_stat.st_mode & S_IFDIR) == 0) {
-      fprintf(stderr, "Error while updating application environment: env is not a directory");
+      fprintf(stderr, "Error while updating application environment: env is not a directory\n");
       return -1;      
     }
     
-    if (applicationVersionsMatch(appEnvDirPath)) {
+    if (applicationVersionsMatch(appEnvDirPath, firefoxPath)) {
       if (gVerbose) printf("Application environment version match\n");
       // To be super-careful we could check whether all the symlinks are
       // still the same...
@@ -106,39 +224,11 @@ int updateApplicationEnvironment(NSString *firefoxPath, char *appEnvDirPath)
 
   } else {
     // anything else is bad.
-    fprintf(stderr, "Error while updating application environment: %s (%d)", strerror(errno), rc);
+    fprintf(stderr, "Error while updating application environment: %s (%d)\n", strerror(errno), rc);
     return rc;
   }
   rc = buildApplicationEnvironment(firefoxPath, appEnvDirPath);
   return rc;
-}
-
-int applicationVersionsMatch(char *appEnvDirPath)
-{
-  char *curVer = currentAppVersion();
-  char *envVer = readAppEnvVersion(appEnvDirPath);
-  if (curVer && envVer && strcmp(curVer, envVer) == 0) return 1;
-  return 0;
-}
-
-char *readAppEnvVersion(char *appEnvDirPath)
-{
-  char appIniPath[4096];
-  snprintf(appIniPath, 4096, "%s/application.ini", appEnvDirPath);
-  FILE *fp = fopen(appIniPath, "r");
-  if (fp) {
-    while (1) {
-      char lineBuf[1024];
-      char *line = fgets(lineBuf, 1024, fp);
-      if (!line) break;
-      if (strncmp(line, "Version=", 8) == 0) {
-        fclose(fp);
-        return strdup(line+8);
-      }
-    }
-    fclose(fp);
-  }
-  return NULL;
 }
 
 int deleteApplicationEnvironment(char *appEnvDirPath)
@@ -160,7 +250,7 @@ int deleteApplicationEnvironment(char *appEnvDirPath)
     snprintf(delPath, 4096, "%s/%s", appEnvDirPath, dp->d_name);
     rc = unlink(delPath);
     if (rc) {
-      fprintf(stderr, "Error while deleting application environment: %s (%d)", strerror(errno), errno);
+      fprintf(stderr, "Error while deleting application environment: %s (%d)\n", strerror(errno), errno);
       (void)closedir(dirp);
       return rc;
     }
@@ -170,28 +260,26 @@ int deleteApplicationEnvironment(char *appEnvDirPath)
   (void)closedir(dirp);
   rc = rmdir(appEnvDirPath);
   if (rc) {
-    fprintf(stderr, "Error while deleting application environment: %s (%d)", strerror(errno), errno);
+    fprintf(stderr, "Error while deleting application environment: %s (%d)\n", strerror(errno), errno);
     return rc;
   }
   return 0;
 }
 
-int buildApplicationEnvironment(NSString *firefoxPath, char *appEnvDirPath)
+int buildApplicationEnvironment(char *firefoxPath, char *appEnvDirPath)
 {
   struct dirent *dp = NULL;
   if (gVerbose) printf("Building new application environment\n");
     
   int rc = mkdir(appEnvDirPath, 0755); // rwxr_xr_x
   if (rc) {
-    fprintf(stderr, "Error while creating application environment: %s (%d)", strerror(errno), errno);
+    fprintf(stderr, "Error while creating application environment: %s (%d)\n", strerror(errno), errno);
     return rc;
   }
 
-  char firefoxBundlePath[4096];
-  snprintf(firefoxBundlePath, 4096, "%s/Contents/MacOS", [firefoxPath UTF8String]);
-  DIR *dirp = opendir(firefoxBundlePath);
+  DIR *dirp = opendir(firefoxPath);
   if (dirp == NULL) {
-    fprintf(stderr, "Error while creating application environment: can't open Firefox bundle");
+    fprintf(stderr, "Error while creating application environment: can't open Firefox bundle\n");
     return -1;
   }
 
@@ -202,11 +290,11 @@ int buildApplicationEnvironment(NSString *firefoxPath, char *appEnvDirPath)
     if (strcmp(dp->d_name, ".") == 0 || strcmp(dp->d_name, "..") == 0)
       continue;
 
-    snprintf(sourcePath, 4096, "%s/%s", firefoxBundlePath, dp->d_name);
+    snprintf(sourcePath, 4096, "%s/%s", firefoxPath, dp->d_name);
     snprintf(destPath, 4096, "%s/%s", appEnvDirPath, dp->d_name);
     int rc = symlink(sourcePath, destPath);
     if (rc) {
-      fprintf(stderr, "Error while constructing application environment: %s (%d)", strerror(errno), rc);
+      fprintf(stderr, "Error while constructing application environment: %s (%d)\n", strerror(errno), rc);
       (void)closedir(dirp);
       return rc;
     }
@@ -218,7 +306,7 @@ int buildApplicationEnvironment(NSString *firefoxPath, char *appEnvDirPath)
   snprintf(versionPath, 4096, "%s/%s", appEnvDirPath, VERSION_FILE);
   FILE *fp = fopen(versionPath, "w");
   if (fp) {
-    fprintf(fp, "%s", readAppEnvVersion(appEnvDirPath));
+    fprintf(fp, "%s", readFirefoxVersion(firefoxPath));
     fclose(fp);
   }
   return 0;
@@ -242,19 +330,3 @@ void launchApplication()
 
   execv(launchPath, (char **)newargv);
 }
-
-
-/*
-
-  * What is the current newest non-beta Firefox
-    * (FUTURE: Way for developer to specify beta, alpha, nightly)
-  * Do we have a symlink directory?
-    * If yes, does it point to the directory of Firefox that I found above
-      * If yes, is it the same version as when I made the symlinks? (XX: Need to stash a version code)
-        * If yes, happy days, execute
-  * If no on ANYTHING:
-    * Delete symlink directory
-    * Make new one (iterate all contents of Firefox directly making links)
-    * Execute
-
-*/
