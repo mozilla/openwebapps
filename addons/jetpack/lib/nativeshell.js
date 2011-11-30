@@ -458,6 +458,7 @@ WinNativeShell.prototype = {
   createExecutable : function(app)
   {
     try {
+      this.isInstallAborted = false;
       this.setUpPaths(app);
     } catch(e) {
       throw("createExecutable - Failure setting up paths (" + e + ")");
@@ -567,6 +568,7 @@ WinNativeShell.prototype = {
       contentDir.append("content");
       embedMozAppsAPIFiles(contentDir);
     } catch(e) {
+      this.isInstallAborted = true;
       this.removeInstallation();
       throw("createExecutable - "
             + "Failure copying files (" + e + ")");
@@ -579,24 +581,22 @@ WinNativeShell.prototype = {
         let uninstallerFile = this.installDir.clone();
         uninstallerFile.append("uninstall.exe");
 
-        if (uninstallerFile.exists()) {
+        if (!uninstallerFile.exists()) {
+          this.installDir.remove(true);
+        } else{
           let process = Cc["@mozilla.org/process/util;1"]
                         .createInstance(Ci.nsIProcess);
           process.init(uninstallerFile);
-          // TODO: Run this asynchronously
-          process.run(true, ["/S"], 1);
+          // NOTE: Even if we wanted to run this synchronously, it would be
+          // impossible.  NSIS uninstallers copy themselves to a temporary
+          // location and run the copy (terminating the original process) so
+          // that the uninstaller can be removed.  The exit code is meaningless
+          // for this same reason
+          process.runAsync(["/S"], 1);
         }
       }
     } catch(e) {
-
-    }
-
-    try {
-      if(this.installDir.exists()) {
-        this.installDir.remove(true);
-      }
-    } catch(e) {
-
+      console.log("Failure attempting to remove installation (" + e + ")");
     }
   },
 
@@ -614,6 +614,11 @@ WinNativeShell.prototype = {
                              mimeType,
                              imageStream)
   {
+    if(this.isInstallAborted) {
+      this.removeInstallation();
+      return;
+    }
+
     if (!components.isSuccessCode(resultCode)) {
       console.log("APPS | nativeshell.win | synthesizeIcon - "
                   + "Attempt to retrieve icon returned result code "
@@ -737,6 +742,7 @@ MacNativeShell.prototype = {
       "\\$REVERSED_APPDOMAIN": /*reverseDNS(*/app.origin/*)*/,
       "\\$LAUNCHPATH": launchPath
     }
+
     file.mkpath(this.installDir.path);
 
       recursiveFileCopy("native-install/mac",
