@@ -204,18 +204,15 @@ function embedInstallRecord(app, destination) {
 //using the same scheme as self.data?
 function embedMozAppsAPIFiles(destDir)
 {
-  //find where the jetpack addon is, and where it is keeping the necessary
-  //js files we need to copy into the native app
-  var mozappsD = Cc["@mozilla.org/file/directory_service;1"]
-                 .getService(Ci.nsIProperties)
-                 .get("ProfD", Ci.nsIFile);
-  mozappsD.append("extensions");
-  mozappsD.append(self.id);
-  mozappsD.append("resources");
-  mozappsD.append("openwebapps-at-mozillalabs-dot-com-openwebapps-lib");
-
-  var injectorSrc = mozappsD.clone();
+  //this is slightly sketchy, going up out of the data dir and into the lib dir to fetch a file...
+  let dataURL = self.data.url(".");
+  let dataPath = url.toFilename(dataURL);
+  let injectorSrc = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
+  injectorSrc.initWithPath(dataPath);
+  injectorSrc.append("..");
+  injectorSrc.append("lib");
   injectorSrc.append("injector.js");
+
   var injectorDest = destDir.clone();
   injectorDest.append("injector.js");
 
