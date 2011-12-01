@@ -680,9 +680,13 @@ WinNativeShell.prototype = {
 
 // Mac implementation
 //
-// Our Mac strategy for now is to create a .webloc file and
-// to put the app icon on it. We also create a "Web Apps"
-// subfolder in the Applications folder.
+// Our Mac strategy for now is to synthesize a bundle containing
+// a small executable in the Applications directory of the user.
+// The executable finds the Firefox executable and creates a 
+// symlink to it inside the bundle.  This seems to make
+// MacOS 10.6 and later happy, and also recovers gracefully
+// if the bundle is moved to another machine or the Firefox
+// executable moves or changes.
 //
 // This does _not_ give us document opening (boo) but it will
 // interact reasonably with the Finder and the Dock
