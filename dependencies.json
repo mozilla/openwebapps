@@ -1,0 +1,23 @@
+{
+  "project": [
+    "git", 
+    "https://github.com/mozilla/openwebapps.git", 
+    "develop", 
+    ""
+  ], 
+  "location": "deps", 
+  "projects": [
+    [
+      "git", 
+      "https://github.com/mozilla/addon-sdk.git", 
+      "master", 
+      ""
+    ], 
+    [
+      "git", 
+      "https://github.com/mozilla/oauthorizer.git", 
+      "develop", 
+      ""
+    ]
+  ]
+}

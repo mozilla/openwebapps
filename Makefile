@@ -1,5 +1,3 @@
-APPNAME = fx-share-addon
-DEPS = github:addon-sdk,github:oauthorizer
 PYTHON = python
 
 MAKELAUNCHER =
@@ -21,19 +19,23 @@ ifneq ($(DEPSDIR),)
   deps := $(DEPSDIR)
 endif
 
+binary  := 
+ifneq ($(MOZ_BINARY),)
+  binary := -b "$(MOZ_BINARY)"
+endif
+
 addon_sdk := $(deps)/addon-sdk/bin
 oauthorizer := $(deps)/oauthorizer
 openwebapps := $(TOPSRCDIR)/addons/jetpack
 activities := $(TOPSRCDIR)/addons/activities
 
-#cfx_args :=  --pkgdir=$(TOPSRCDIR) $(profile) --package-path=$(oauthorizer) --package-path=$(openwebapps) --binary-args="-console -purgecaches"
 ifeq ($(TARGET),activities)
-  cfx_args :=  --pkgdir=$(activities) $(profile) --package-path=$(oauthorizer) --package-path=$(openwebapps) --binary-args="-console -purgecaches $(BINARYARGS)"
+  pkgdir := $(activities)
+  cfx_args :=  --pkgdir=$(pkgdir) $(binary) $(profile) --package-path=$(oauthorizer) --package-path=$(openwebapps) --binary-args="-console -purgecaches $(BINARYARGS)"
 else
-  cfx_args :=  --pkgdir=$(openwebapps) $(profile) --binary-args="-console -purgecaches $(BINARYARGS)"
+  pkgdir := $(openwebapps)
+  cfx_args :=  --pkgdir=$(pkgdir) $(binary) $(profile) --binary-args="-console -purgecaches $(BINARYARGS)"
 endif
-
-xpi_name := openwebapps.xpi
 
 test_args :=
 ifneq ($(TEST),)
@@ -49,15 +51,15 @@ endif
 
 all: xpi
 
-xpi: pull
-	$(MAKELAUNCHER)
+xpi:    pull
 	$(addon_sdk)/cfx xpi $(cfx_args)
 
 pull:
-	$(PYTHON) build.py $(APPNAME) $(DEPS)
+	$(MAKELAUNCHER)
+	$(PYTHON) build.py -p $(pkgdir)/package.json
 
 test:
-	$(addon_sdk)/cfx test $(cfx_args) $(test_args)
+	$(addon_sdk)/cfx test -v $(cfx_args) $(test_args)
 
 run:
 	$(MAKELAUNCHER)
