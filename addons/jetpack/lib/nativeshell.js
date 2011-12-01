@@ -431,27 +431,23 @@ WinNativeShell.prototype = {
 
       let directoryService = Cc["@mozilla.org/file/directory_service;1"]
                              .getService(Ci.nsIProperties);
-      this.installDir = directoryService.get("AppData", Ci.nsILocalFile);
+      this.installDir = directoryService.get("AppData", Ci.nsIFile);
       this.installDir.append("Mozilla");
-      // We use appendRelativePath to avoid ".." injection
-      this.installDir.appendRelativePath(this.appName);
+      this.installDir.append(this.appName);
 
       this.launchPath = app.origin;
       if (app.manifest.launch_path) {
         this.launchPath += app.manifest.launch_path;
       }
 
-      this.iconFile = this.installDir.clone()
-                      .QueryInterface(Ci.nsILocalFile);
+      this.iconFile = this.installDir.clone();
       this.iconFile.append("chrome");
       this.iconFile.append("icons");
       this.iconFile.append("default");
-      // We use appendRelativePath to avoid ".." injection
-      this.iconFile.appendRelativePath(this.appName + ".ico");
+      this.iconFile.append(this.appName + ".ico");
 
-      this.installerDir = directoryService.get("TmpD", Ci.nsILocalFile);
-      // We use appendRelativePath to avoid ".." injection
-      this.installerDir.appendRelativePath(this.appName);
+      this.installerDir = directoryService.get("TmpD", Ci.nsIFile);
+      this.installerDir.append(this.appName);
       this.installerDir.createUnique(Ci.nsIFile.DIRECTORY_TYPE, 0777);
 
       this.firefoxFile = directoryService.get("CurProcD", Ci.nsIFile);
