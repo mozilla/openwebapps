@@ -88,16 +88,37 @@ function substituteStrings(inputString, substituteStrings)
   }
 }
 
-function reverseDNS(domain)
+/* Creates a UTI for use in a BundleIdentifier on MacOS from 
+ * domain name; see 
+ * http://developer.apple.com/library/mac/#documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+ *
+ * The bare inverted domain name is used for standard-port HTTP
+ * An inverted domain name suffixed with "https" is used for standard-port HTTPS.
+ * A port number is added to the tuple, at the end, but before
+ *   the scheme, if the port number is non-standard.
+ */
+function createInvertedDNSIdentifier(domain)
 {
-  var d = domain.split(".");
-  var s = "";
-  for (var i=d.length-1;i--;i>=0)
-  {
-    if (s.length > 0) s += ".";
-    s += d[i];
+  try {
+    var schemeSplit = domain.split("//");
+    var hostSplit = schemeSplit[1].split(":");
+    var nameSplit = hostSplit[0].split(".");
+    var scheme = schemeSplit[0].split(":")[0];
+    var customPort;
+    if (hostSplit.length > 1) customPort = hostSplit[1];
+    
+    var s = "";
+    for (var i=nameSplit.length-1;i--;i>=0)
+    {
+      if (s.length > 0) s += ".";
+      s += nameSplit[i];
+    }
+    if (customPort) s += "." + customPort;
+    if (scheme != "http") s += "." + scheme;
+    return s;
+  } catch (e) {
+    return "generic.webapp";
   }
-  return s;
 }
 
 function getBiggestIcon(app, callback) {
@@ -731,7 +752,7 @@ MacNativeShell.prototype = {
     let substitutions = {
       "\\$APPNAME": app.manifest.name,
       "\\$APPDOMAIN": app.origin,
-      "\\$REVERSED_APPDOMAIN": /*reverseDNS(*/app.origin/*)*/,
+      "\\$REVERSED_APPDOMAIN": createInvertedDNSIdentifier(app.origin),
       "\\$LAUNCHPATH": launchPath
     }
     file.mkpath(this.installDir.path);
