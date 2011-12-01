@@ -1,5 +1,6 @@
 var gContainerSource = null;
 var gCurrentUsername = null;
+var gUpdated = null;
 
 window.addEventListener('storage', function (event) {
   if (event.key !== 'syncbutton-comm') {
@@ -29,13 +30,55 @@ function updateStatus(value) {
     statusMessage.innerHTML = value.status;
   }
   if (value.last_sync_get || value.last_sync_put) {
-    var statusUpdated = document.getElementById('status-updated');
     var date = new Date(value.last_sync_get || value.last_sync_put);
     // FIXME: format better:
-    statusUpdated.innerHTML = date.toDateString() + ' ' + date.toTimeString();
+    gUpdated = date;
+    displayUpdated();
     document.getElementById('sync-now').innerHTML = 'sync now';
   }
 }
+
+function displayUpdated() {
+  if (gUpdated === null) {
+    return;
+  }
+  var seconds = (gUpdated - new Date()) / 1000;
+  var disp;
+  if (seconds > 60*60*24) {
+    disp = parseInt(seconds / 60 / 60 / 24);
+    if (disp == 1) {
+      disp = 'yesterday';
+    } else {
+      disp = disp + ' days ago';
+    }
+  } else if (seconds > 60*60) {
+    disp = parseInt(seconds / 60 / 60);
+    if (disp == 1) {
+      disp = '1 hour ago';
+    } else {
+      disp = disp + ' hours ago';
+    }
+  } else if (seconds > 60) {
+    disp = parseInt(seconds / 60);
+    if (disp == 1) {
+      disp = '1 minute ago';
+    } else {
+      disp = disp + ' minutes ago';
+    }
+  } else {
+    if (seconds > 10) {
+      disp = seconds + ' seconds ago';
+    } else {
+      disp = 'just now';
+    }
+  }
+  var statusUpdated = document.getElementById('status-updated');
+  statusUpdated.innerHTML = 'synced ' + disp;
+}
+
+// We have to update this display periodically because it's a
+// relative, not absolute displayed time:
+setInterval(displayUpdated, 5*60*1000);
 
 function setUsername(username) {
   document.getElementById('syncbutton-expander').setAttribute('title', username);
