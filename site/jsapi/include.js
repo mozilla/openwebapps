@@ -845,11 +845,12 @@ if (!navigator.mozApps.install || navigator.mozApps.html5Implementation) {
         return;
       }
 
-      for (var origin in _lastListResults) {
-        if (origin === id) {
-          var url = origin;
-          if (_lastListResults[origin].manifest.launch_path !== undefined) {
-            url += _lastListResults[origin].manifest.launch_path;
+      for (var i=0; i<_lastListResults.length; i++) {
+        var item = _lastListResults[i];
+        if (item.origin === id) {
+          var url = item.origin;
+          if (item.manifest.launch_path !== undefined) {
+            url += item.manifest.launch_path;
           }
           // generate a deterministic and portable name for the "name" of the launced window.
           // this will prevent multiple launches of the same app from opening new windows.
@@ -983,7 +984,7 @@ if (!navigator.mozApps.install || navigator.mozApps.html5Implementation) {
           }
           var message = JSON.parse(event.data);
           if (message.size == 'expanded') {
-            iframe.style.height = '200px';
+            iframe.style.height = '150px';
           } else if (message.size == 'compact') {
             iframe.style.height = '22px';
           }
