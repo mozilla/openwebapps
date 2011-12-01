@@ -43,13 +43,13 @@ There are three main objects defined in this module:
 SyncServer: handles the actual interaction with the server.  This
   handles the login process and stores the credentials, but otherwise
   has no state.
-  
+
 SyncService: handles actual synchronization, and keeps state about the
   sync progress.  This interacts with the server and the repo
   (including some private methods, not just navigator.mozApps APIs)
 
 SyncScheduler: handles scheduling of calls to SyncService.  It should
-  also respond to events from the server (like a Retry-After) and 
+  also respond to events from the server (like a Retry-After) and
 
 
 All functions here use Node-style error handling, where the functions
@@ -71,8 +71,8 @@ if (typeof exports !== "undefined") {
   var Cr = chrome.Cr;
   var components = chrome.components;
   var wm = Cc["@mozilla.org/appshell/window-mediator;1"]
-    .getService(Ci.nsIWindowMediator);  
-  win = wm.getMostRecentWindow("navigator:browser"); 
+    .getService(Ci.nsIWindowMediator);
+  win = wm.getMostRecentWindow("navigator:browser");
 } else {
   win = window;
 }
@@ -517,7 +517,7 @@ SyncService.prototype._putUpdates = function (callback) {
     }
     var appTracking = self._appTracking;
     appList = objectValues(appList);
-    log('putUpdates processing', {appList: appList, lastPut: self._lastSyncPut});
+    log('putUpdates processing', {lastPut: self._lastSyncPut});
     var toUpdate = [];
     for (var i=0; i<appList.length; i++) {
       var app = appList[i];
@@ -665,7 +665,7 @@ var Server = function (url) {
 Server.prototype.login = function (data, callback) {
   var self = this;
   var assertion = data.assertion;
-  
+
   if (! assertion) {
     throw "You must provide an assertion ({assertion: 'value'})";
   }
@@ -727,7 +727,7 @@ Server.prototype.userInfo = function () {
   }
   // Not sure if any other records should be included?
   return {
-    email: this._loginStatus.email, 
+    email: this._loginStatus.email,
     "valid-until": this._loginStatus['valid-until']
   };
 };
@@ -903,7 +903,7 @@ Scheduler.prototype.schedule = function () {
         if (self.onsuccess) {
           self.onsuccess();
         }
-      });        
+      });
     } catch (e) {
       if (self.onerror) {
         self.onerror(e);
