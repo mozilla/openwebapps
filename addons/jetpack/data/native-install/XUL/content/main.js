@@ -26,10 +26,3 @@ if ("Darwin" === os) {
   var observerService = Cc["@mozilla.org/observer-service;1"].getService(Ci.nsIObserverService);
   observerService.addObserver(observer, "xul-window-destroyed", false);
 };
-
-// Create the first window
-var appName = "$APPNAME";
-var ww = Cc["@mozilla.org/embedcomp/window-watcher;1"]
-                   .getService(Ci.nsIWindowWatcher);
-var win = ww.openWindow(null, "chrome://webapp/content/window.xul",
-                        appName, "chrome,centerscreen,resizable", null);

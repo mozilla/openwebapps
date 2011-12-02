@@ -1,5 +1,64 @@
 <?xml version="1.0"?>
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<?xul-overlay href="chrome://global/content/globalOverlay.xul"?>
+
+<!DOCTYPE overlay [
+<!ENTITY % brandDTD SYSTEM "chrome://branding/locale/brand.dtd">
+%brandDTD;
+<!ENTITY % baseMenuOverlayDTD SYSTEM "chrome://browser/locale/baseMenuOverlay.dtd">
+%baseMenuOverlayDTD;
+<!ENTITY % browserDTD SYSTEM "chrome://browser/locale/browser.dtd" >
+%browserDTD;
+]>
+
 <window id="main" title="main" width="0" height="0" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"> 
   <script type="application/javascript" src="chrome://webapp/content/main.js"/>
+ 
+  <commandset id="mainCommandSet">
+    <command id="cmd_quitApplication" oncommand="goQuitApplication()"/>
+  </commandset>
+
+  <keyset>
+	<key id="key_quitApplication"
+         key="&quitApplicationCmdMac.key;"
+         command="cmd_quitApplication"
+         modifiers="accel"/>
+<!-- These are used to build the Application menu under Cocoa widgets -->
+	<key id="key_preferencesCmdMac"
+		 key="&preferencesCmdMac.commandkey;"
+		 modifiers="accel"/>
+	<key id="key_hideThisAppCmdMac"
+		 key="&hideThisAppCmdMac.commandkey;"
+		 modifiers="accel"/>
+	<key id="key_hideOtherAppsCmdMac"
+		 key="&hideOtherAppsCmdMac.commandkey;"
+		 modifiers="accel,alt"/>
+  </keyset>
+  
+  <menubar id="main-menubar">
+	<menu id="file-menu" label="&fileMenu.label;"
+		  accesskey="&fileMenu.accesskey;">
+	  <menupopup id="menu_FilePopup">
+
+<!-- nsMenuBarX hides these and uses them to build the Application menu.
+     When using Carbon widgets for Mac OS X widgets, some of these are not
+     used as they only apply to Cocoa widget builds. All version of Firefox
+     through Firefox 2 will use Carbon widgets. 
+        <menuitem id="menu_preferences" label="&preferencesCmdMac.label;" key="key_preferencesCmdMac" oncommand="openPreferences();"/>
+        <menuitem id="menu_mac_services" label="&servicesMenuMac.label;"/>
+        <menuitem id="menu_mac_hide_app" label="&hideThisAppCmdMac.label;" key="key_hideThisAppCmdMac"/>
+        <menuitem id="menu_mac_hide_others" label="&hideOtherAppsCmdMac.label;" key="key_hideOtherAppsCmdMac"/>
+        <menuitem id="menu_mac_show_all" label="&showAllAppsCmdMac.label;"/>
+ Mac window menu -->
+
+        <menuseparator id="menu_FileQuitSeparator"/>
+		<menuitem id="menu_FileQuitItem"
+				   label="&quitApplicationCmd.label;"
+				   accesskey="&quitApplicationCmd.accesskey;"
+				   command="cmd_quitApplication"/>
+
+	   </menupopup>
+	 </menu>
+  </menubar>
+
 </window>
