@@ -295,7 +295,10 @@ function doVerifyReceipt(contentWindowRef, cb, options) {
     }, function(err) {
       // Ideally we'd implement a fallback here where we open a BrowserID
       // popup dialog. But this is not trivial to do, punting for now.
-      cb({"error": "Could not obtain Identity: " + err});
+      if (!errorSent) {
+        cb({"error": "Could not obtain Identity: " + err});
+        errorSent = true; 
+      }
     });
   });
 }
@@ -311,7 +314,10 @@ function checkNativeIdentityDaemon(callingLocation, options, success, failure)
 
   // XXX what do we do if we are not passed a requiredEmail?
   // could fail immediately, or could ask Firefox for a default somehow
-  if (!options || !options.requiredEmail) failure();
+  if (!options || !options.requiredEmail) {
+    failure();
+    return;
+  }
 
   var port = 7350;
   var output, input, scriptableStream;
