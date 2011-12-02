@@ -142,13 +142,12 @@ function getInstallRecord(cb) {
 function doVerifyReceipt(contentWindowRef, options, cb, rcptVerified) {
   getInstallRecord(function(record) {
     if (!record) {
-      cb({"error": "Invalid Receipt"});
+      cb({"error": "Application not installed"});
       return;
     }
 
     if (typeof cb !== "function") {
-      dump("callback not provided in doVerifyReceipt\n");
-      return;
+      throw "Callback not provided in doVerifyReceipt";
     }
 
     function base64urldecode(arg) {
@@ -179,12 +178,15 @@ function doVerifyReceipt(contentWindowRef, options, cb, rcptVerified) {
     }
       
     try {
-      var receipt = parseReceipt(record.install_data.receipt); 
+      if (!record.install_data) {
+        throw "Receipt not found"; 
+      }
+      var receipt = parseReceipt(record.install_data.receipt);
       if (!receipt) {
         throw "Invalid Receipt";
       }
     } catch (e) {
-      cb({"error": "Invalid Receipt"});
+      cb({"error": e});
       return;
     }
       
@@ -232,7 +234,8 @@ function doVerifyReceipt(contentWindowRef, options, cb, rcptVerified) {
 
     // Start BrowserID verification
     var options = {"silent": true, "requiredEmail": receipt.user.value};
-    checkNativeIdentityDaemon(contentWindowRef.location, options, function(assertion) {
+    checkNativeIdentityDaemon(contentWindowRef.location, options, function(ast) {
+      assertion = ast;
       if (!assertion) {
         cb({"error": "Invalid Identity"});
         return;
