@@ -139,10 +139,15 @@ function getInstallRecord(cb) {
   });
 }
 
-function doVerifyReceipt(contentWindowRef, options, cb, verifyOnly) {
+function doVerifyReceipt(contentWindowRef, options, cb, rcptVerified) {
   getInstallRecord(function(record) {
     if (!record) {
       cb({"error": "Invalid Receipt"});
+      return;
+    }
+
+    if (typeof cb !== "function") {
+      cb({"error": "Invalid Callback"});
       return;
     }
 
@@ -173,14 +178,19 @@ function doVerifyReceipt(contentWindowRef, options, cb, verifyOnly) {
       return parsed;
     }
       
-    var receipt = parseReceipt(record.install_data.receipt);
-    if (!receipt) {
+    try {
+      var receipt = parseReceipt(record.install_data.receipt); 
+      if (!receipt) {
+        throw "Invalid Receipt";
+      }
+    } catch (e) {
       cb({"error": "Invalid Receipt"});
       return;
     }
       
     // Two status "flags", one for verify XHR other for BrowserID XHR
-    // These two XHRs run in parallel, and the last one to finish invokes cb()
+    // These two XHRs run in parallel, and the first one to error out invokes cb()
+    // If both XHRs succeed, the last one to succeed will invoke cb()
     var assertion;
     var errorSent = false;
     var verifyStatus = false;
@@ -194,15 +204,15 @@ function doVerifyReceipt(contentWindowRef, options, cb, verifyOnly) {
         try {
           if (verifyReq.status == 200) {
             var resp = JSON.parse(verifyReq.responseText);
-            if (verifyOnly && typeof verifyOnly == "function") {
-              verifyOnly(receipt);
-            }
             if (resp.status != "ok") {
               throw resp.status;
             }
 
             dump("verifyReq success! " + verifyReq.responseText + "\n");
             verifyStatus = true;
+            if (rcptVerified && typeof rcptVerified == "function") {
+              rcptVerified(receipt);
+            }
             if (verifyStatus && assertStatus) {
               cb({"success": {"receipt": receipt, "assertion": assertion}});
             }
@@ -210,8 +220,8 @@ function doVerifyReceipt(contentWindowRef, options, cb, verifyOnly) {
             throw verifyReq.status;
           }
         } catch(e) {
+          dump("error in verifyReq! " + verifyReq.responseText);
           if (!errorSent) {
-            dump("error in verifyReq! " + verifyReq.responseText);
             cb({"error": "Invalid Receipt: " + verifyReq.responseText}); 
             errorSent = true;
           }
@@ -248,8 +258,8 @@ function doVerifyReceipt(contentWindowRef, options, cb, verifyOnly) {
               throw assertReq.status;
             }
           } catch(e) {
+            dump("error in assertReq! " + assertReq.responseText);
             if (!errorSent) {
-              dump("error in assertReq! " + assertReq.responseText);
               cb({"error": "Invalid Identity: " + assertReq.responseText}); 
               errorSent = true;
             }
