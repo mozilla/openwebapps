@@ -88,16 +88,37 @@ function substituteStrings(inputString, substituteStrings)
   }
 }
 
-function reverseDNS(domain)
+/* Creates a UTI for use in a BundleIdentifier on MacOS from 
+ * domain name; see 
+ * http://developer.apple.com/library/mac/#documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+ *
+ * The bare inverted domain name is used for standard-port HTTP
+ * An inverted domain name suffixed with "https" is used for standard-port HTTPS.
+ * A port number is added to the tuple, at the end, but before
+ *   the scheme, if the port number is non-standard.
+ */
+function createInvertedDNSIdentifier(domain)
 {
-  var d = domain.split(".");
-  var s = "";
-  for (var i=d.length-1;i--;i>=0)
-  {
-    if (s.length > 0) s += ".";
-    s += d[i];
+  try {
+    var schemeSplit = domain.split("//");
+    var hostSplit = schemeSplit[1].split(":");
+    var nameSplit = hostSplit[0].split(".");
+    var scheme = schemeSplit[0].split(":")[0];
+    var customPort;
+    if (hostSplit.length > 1) customPort = hostSplit[1];
+    
+    var s = "";
+    for (var i=nameSplit.length-1;i--;i>=0)
+    {
+      if (s.length > 0) s += ".";
+      s += nameSplit[i];
+    }
+    if (customPort) s += "." + customPort;
+    if (scheme != "http") s += "." + scheme;
+    return s;
+  } catch (e) {
+    return "generic.webapp";
   }
-  return s;
 }
 
 function getBiggestIcon(app, callback) {
@@ -209,7 +230,7 @@ function embedMozAppsAPIFiles(destDir)
   let dataPath = url.toFilename(dataURL);
   let injectorSrc = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
   injectorSrc.initWithPath(dataPath);
-  injectorSrc.append("..");
+  injectorSrc = injectorSrc.parent;
   injectorSrc.append("lib");
   injectorSrc.append("injector.js");
 
@@ -455,6 +476,7 @@ WinNativeShell.prototype = {
   createExecutable : function(app)
   {
     try {
+      this.isInstallAborted = false;
       this.setUpPaths(app);
     } catch(e) {
       throw("createExecutable - Failure setting up paths (" + e + ")");
@@ -564,6 +586,7 @@ WinNativeShell.prototype = {
       contentDir.append("content");
       embedMozAppsAPIFiles(contentDir);
     } catch(e) {
+      this.isInstallAborted = true;
       this.removeInstallation();
       throw("createExecutable - "
             + "Failure copying files (" + e + ")");
@@ -576,24 +599,22 @@ WinNativeShell.prototype = {
         let uninstallerFile = this.installDir.clone();
         uninstallerFile.append("uninstall.exe");
 
-        if (uninstallerFile.exists()) {
+        if (!uninstallerFile.exists()) {
+          this.installDir.remove(true);
+        } else{
           let process = Cc["@mozilla.org/process/util;1"]
                         .createInstance(Ci.nsIProcess);
           process.init(uninstallerFile);
-          // TODO: Run this asynchronously
-          process.run(true, ["/S"], 1);
+          // NOTE: Even if we wanted to run this synchronously, it would be
+          // impossible.  NSIS uninstallers copy themselves to a temporary
+          // location and run the copy (terminating the original process) so
+          // that the uninstaller can be removed.  The exit code is meaningless
+          // for this same reason
+          process.runAsync(["/S"], 1);
         }
       }
     } catch(e) {
-
-    }
-
-    try {
-      if(this.installDir.exists()) {
-        this.installDir.remove(true);
-      }
-    } catch(e) {
-
+      console.log("Failure attempting to remove installation (" + e + ")");
     }
   },
 
@@ -611,6 +632,11 @@ WinNativeShell.prototype = {
                              mimeType,
                              imageStream)
   {
+    if(this.isInstallAborted) {
+      this.removeInstallation();
+      return;
+    }
+
     if (!components.isSuccessCode(resultCode)) {
       console.log("APPS | nativeshell.win | synthesizeIcon - "
                   + "Attempt to retrieve icon returned result code "
@@ -659,9 +685,13 @@ WinNativeShell.prototype = {
 
 // Mac implementation
 //
-// Our Mac strategy for now is to create a .webloc file and
-// to put the app icon on it. We also create a "Web Apps"
-// subfolder in the Applications folder.
+// Our Mac strategy for now is to synthesize a bundle containing
+// a small executable in the Applications directory of the user.
+// The executable finds the Firefox executable and creates a 
+// symlink to it inside the bundle.  This seems to make
+// MacOS 10.6 and later happy, and also recovers gracefully
+// if the bundle is moved to another machine or the Firefox
+// executable moves or changes.
 //
 // This does _not_ give us document opening (boo) but it will
 // interact reasonably with the Finder and the Dock
@@ -691,6 +721,10 @@ MacNativeShell.prototype = {
 
       this.installDir = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
       this.installDir.initWithPath(installDirPath);
+      if (!this.installDir.exists()) {
+        this.installDir.create(Components.interfaces.nsIFile.DIRECTORY_TYPE, 0777);    
+      }
+
       this.installDir.append(this.appName);
 
       let webRTPath = self.data.url("native-install/mac/xulrunner");
@@ -731,9 +765,10 @@ MacNativeShell.prototype = {
     let substitutions = {
       "\\$APPNAME": app.manifest.name,
       "\\$APPDOMAIN": app.origin,
-      "\\$REVERSED_APPDOMAIN": /*reverseDNS(*/app.origin/*)*/,
+      "\\$REVERSED_APPDOMAIN": createInvertedDNSIdentifier(app.origin),
       "\\$LAUNCHPATH": launchPath
     }
+
     file.mkpath(this.installDir.path);
 
       recursiveFileCopy("native-install/mac",

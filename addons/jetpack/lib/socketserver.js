@@ -145,7 +145,7 @@ IdentityServer.prototype = {
 		console.log("Passing identity " + id + " to browserid\n");
 		try {
 			pageWorkers.Page({
-			  contentURL: "https://browserid.org",
+			  contentURL: "https://browserid.org/sign_in",
 			  contentScript: "unsafeWindow.BrowserID.User.setOrigin(\"" + audience + "\");" +
 			  	"unsafeWindow.BrowserID.User.getAssertion(\"" + id + "\", " + 
 			  	"function(res) {self.postMessage({status:\"ok\", assertion:res});}, " + 

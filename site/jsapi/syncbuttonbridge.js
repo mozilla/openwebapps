@@ -65,8 +65,8 @@ window.addEventListener('load', function () {
 function syncNow(callback, forcePut) {
   sync.syncNow(function (error, result) {
     // FIXME: get better way to display error
-    if (error) {
-      setButtonData({status: "Error syncing: " + JSON.stringify(error)}, true);
+    if (error && (! error.error == 'uuid_changed')) {
+      sync.onstatus({error: true, detail: error});
     } else {
       setButtonData({lastUpdate: new Date().getTime()}, true);
     }
@@ -115,7 +115,13 @@ var sync = new SyncService({
 
 sync.onstatus = function (status) {
   if (status.error) {
-    setButtonData({status: "Error syncing: " + JSON.stringify(status.detail)}, true);
+    if (status.detail.error != 'uuid_changed') {
+      var message = JSON.stringify(status.detail);
+      if (status.detail.message) {
+        message = status.detail.message;
+      }
+      setButtonData({status: "Error: " + message}, true);
+    }
   } else if (status.status) {
     if (status.status == 'sync_get') {
       setButtonData({last_sync_get: status.timestamp}, true);
@@ -127,5 +133,5 @@ sync.onstatus = function (status) {
 
 var scheduler = new Scheduler(sync);
 scheduler.onerror = function (error) {
-  setButtonData({status: "Error syncing: " + JSON.stringify(error)}, true);
+  sync.onstatus({error: true, detail: error});
 };

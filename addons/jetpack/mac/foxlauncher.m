@@ -58,6 +58,8 @@ int buildApplicationEnvironment(char *firefoxPath, char *appEnvDirPath);
 
 char *readFirefoxVersion(char *firefoxPath);
 char *currentEnvironmentVersion(char *appEnvDirPath);
+void displayErrorAlert(CFStringRef title, CFStringRef message);
+
 
 int gVerbose = 0;
 
@@ -98,6 +100,8 @@ int main(int argc, char **argv)
     firefoxPath = pathToCurrentFirefox(); // XXX developer feature to specify other firefox here
     if (!firefoxPath) {
       // Launch a dialog to explain to the user that there's no compatible web runtime
+      displayErrorAlert(CFSTR("Cannot start"),
+        CFSTR("Cannot start application.  This application requires that Firefox be installed.\n\nDownload it from http://getfirefox.com"));
       return 0;
     }
   }
@@ -117,7 +121,25 @@ int main(int argc, char **argv)
   }
   launchApplication();
   [pool drain];
-  exit(-1);
+  exit(1);
+}
+
+
+void displayErrorAlert(CFStringRef title, CFStringRef message)
+{
+  CFUserNotificationDisplayNotice(0, kCFUserNotificationNoteAlertLevel, 
+    NULL, NULL, NULL, 
+    title,
+    message,
+    CFSTR("Quit")
+    );
+}
+
+void displayGenericFirefoxErrorAlert()
+{
+  displayErrorAlert(CFSTR("Cannot start"),
+    CFSTR("Cannot start application.  It may be damaged, or your Firefox installation may contain errors.  Try reinstalling the application."));
+
 }
 
 /* Find the currently installed Firefox, if any, and return
@@ -139,6 +161,9 @@ char *currentEnvironmentVersion(char *appEnvDirPath)
   snprintf(appVersionPath, 4096, "%s/%s", appEnvDirPath, VERSION_FILE);
   
   FILE *fp = fopen(appVersionPath, "r");
+  if (!fp) {
+    return "";
+  }  
   if (fp) {
     char buf[512];
     size_t read = fread(buf, 1, 511, fp);
@@ -158,6 +183,9 @@ char *readFirefoxVersion(char *firefoxPath)
   char appIniPath[4096];
   snprintf(appIniPath, 4096, "%s/application.ini", firefoxPath);
   FILE *fp = fopen(appIniPath, "r");
+  if (!fp) {
+    return "";
+  }
   
   // Scan for Version= line
   if (fp) {
@@ -189,6 +217,7 @@ int applicationVersionsMatch(char *appEnvDirPath, char *firefoxPath)
   if (gVerbose) printf("Local environment version is %s\n", envVer);
   
   char *ffxVer = readFirefoxVersion(firefoxPath);
+  if (!envVer) return 0;
   if (gVerbose) printf("Current Firefox version is %s\n", ffxVer);
   
   if (ffxVer && envVer && strcmp(ffxVer, envVer) == 0) return 1;
@@ -207,6 +236,7 @@ int updateApplicationEnvironment(char *firefoxPath, char *appEnvDirPath)
     // exists - check it
     if ((my_stat.st_mode & S_IFDIR) == 0) {
       fprintf(stderr, "Error while updating application environment: env is not a directory\n");
+      displayGenericFirefoxErrorAlert();
       return -1;      
     }
     
@@ -225,6 +255,7 @@ int updateApplicationEnvironment(char *firefoxPath, char *appEnvDirPath)
   } else {
     // anything else is bad.
     fprintf(stderr, "Error while updating application environment: %s (%d)\n", strerror(errno), rc);
+    displayGenericFirefoxErrorAlert();
     return rc;
   }
   rc = buildApplicationEnvironment(firefoxPath, appEnvDirPath);
@@ -237,7 +268,11 @@ int deleteApplicationEnvironment(char *appEnvDirPath)
   int rc;
 
   DIR *dirp = opendir(appEnvDirPath);
-  if (dirp == NULL) return;
+  if (dirp == NULL) {
+    fprintf(stderr, "Error while deleting application environment: cannot open directory\n");
+    displayGenericFirefoxErrorAlert();
+    return;
+  }
   
   while ((dp = readdir(dirp)) != NULL)
   {
@@ -251,6 +286,7 @@ int deleteApplicationEnvironment(char *appEnvDirPath)
     rc = unlink(delPath);
     if (rc) {
       fprintf(stderr, "Error while deleting application environment: %s (%d)\n", strerror(errno), errno);
+      displayGenericFirefoxErrorAlert();
       (void)closedir(dirp);
       return rc;
     }
@@ -261,6 +297,7 @@ int deleteApplicationEnvironment(char *appEnvDirPath)
   rc = rmdir(appEnvDirPath);
   if (rc) {
     fprintf(stderr, "Error while deleting application environment: %s (%d)\n", strerror(errno), errno);
+    displayGenericFirefoxErrorAlert();
     return rc;
   }
   return 0;
@@ -274,12 +311,14 @@ int buildApplicationEnvironment(char *firefoxPath, char *appEnvDirPath)
   int rc = mkdir(appEnvDirPath, 0755); // rwxr_xr_x
   if (rc) {
     fprintf(stderr, "Error while creating application environment: %s (%d)\n", strerror(errno), errno);
+    displayGenericFirefoxErrorAlert();
     return rc;
   }
 
   DIR *dirp = opendir(firefoxPath);
   if (dirp == NULL) {
     fprintf(stderr, "Error while creating application environment: can't open Firefox bundle\n");
+    displayGenericFirefoxErrorAlert();
     return -1;
   }
 
@@ -295,6 +334,7 @@ int buildApplicationEnvironment(char *firefoxPath, char *appEnvDirPath)
     int rc = symlink(sourcePath, destPath);
     if (rc) {
       fprintf(stderr, "Error while constructing application environment: %s (%d)\n", strerror(errno), rc);
+      displayGenericFirefoxErrorAlert();    
       (void)closedir(dirp);
       return rc;
     }
