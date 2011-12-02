@@ -230,7 +230,7 @@ function embedMozAppsAPIFiles(destDir)
   let dataPath = url.toFilename(dataURL);
   let injectorSrc = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
   injectorSrc.initWithPath(dataPath);
-  injectorSrc.append("..");
+  injectorSrc = injectorSrc.parent;
   injectorSrc.append("lib");
   injectorSrc.append("injector.js");
 
