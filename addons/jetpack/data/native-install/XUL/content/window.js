@@ -147,7 +147,7 @@ function doVerifyReceipt(contentWindowRef, options, cb, rcptVerified) {
     }
 
     if (typeof cb !== "function") {
-      cb({"error": "Invalid Callback"});
+      dump("callback not provided in doVerifyReceipt\n");
       return;
     }
 
