@@ -508,7 +508,7 @@ Repo = (function() {
         });
       } else {
         appStorage.remove(origin, function() {
-          deletedStorage.put(origin, {last_modified: new Date().getTime()}, function() {
+          deletedStorage.put(origin, {origin: origin, last_modified: new Date().getTime()}, function() {
             if (cb && typeof(cb) == "function") cb(true);
           });
         });
