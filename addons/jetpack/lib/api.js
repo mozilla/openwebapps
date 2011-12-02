@@ -365,16 +365,6 @@ FFRepoImpl.prototype = {
     throw ['permissionDenied', "to access open web apps management apis, you must be on the same domain " + "as the application repository"];
   },
 
-  loginStatus: function loginStatus(location, args) {
-    verifyMgmtPermission(location.href);
-    let loginInfo = {
-      loginLink: location.protocol + '//' + location.host + '/login.html',
-      logoutLink: location.protocol + '//' + location.host + '/logout'
-    };
-    let userInfo = sync.readProfile();
-    return [userInfo, loginInfo];
-  },
-
   launch: function _launch(id, dest) {
     function openAppURL(url, app) {
       let ss = Cc["@mozilla.org/browser/sessionstore;1"].getService(Ci.nsISessionStore);
