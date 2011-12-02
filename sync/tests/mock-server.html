@@ -119,7 +119,7 @@ server.put(null, {
   received: ?
 })
 $ // Now we should see that update:
-> server.get(0, Spy('server.get', {wait: true}));
+> server.get(0, spy=Spy('server.get', {wait: true}));
 server.get(null, {
   applications: [
     {
@@ -138,6 +138,7 @@ server.get(null, {
   until: ?,
   uuid: "..."
 })
+$ until = spy.args[1].until;
 $ // But we won't see it if we have a later since time:
 > server.get(until+2, Spy('server.get', {wait: true}));
 server.get(null, {
@@ -149,6 +150,42 @@ server.get(null, {
 </pre>
 
 </div>
+
+<div class="test">
+  Server re-login test; this only really makes sense for the actual server
+
+<pre class="doctest">
+$ if (doctest.params.server === undefined) {
+>   AbortSection();
+> }
+$ server1 = new Server(doctest.params.server || "/verify");
+$ server2 = new Server(doctest.params.server || "/verify");
+$ server1.login(
+>   {assertion: user+'?a=localhost', audience: 'localhost'},
+>   Spy('server1.login', {wait: true})
+> );
+server1.login(null, ...)
+$ writeln(server1.authData);
+{
+  audience: "localhost",
+  collection_url: "...",
+  email: "...",
+  http_authorization: "AppSync ...",
+  issuer: "browserid.org",
+  status: "okay",
+  "valid-until": ?
+}
+$ server2._processLogin(server1.authData, Spy('server2._processLogin', {wait: true}));
+server2._processLogin(null, ...)
+$ writeln(server2.authData);
+{
+  audience: "localhost",
+...}
+</pre>
+
+</div>
+
+
 
 <div class="test">
 <h2>Invalid requests</h2>
