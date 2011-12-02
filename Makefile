@@ -36,6 +36,7 @@ else
   pkgdir := $(openwebapps)
   cfx_args :=  --pkgdir=$(pkgdir) $(binary) $(profile) --binary-args="-console -purgecaches $(BINARYARGS)"
 endif
+native_xpi := 
 
 test_args :=
 ifneq ($(TEST),)
@@ -51,17 +52,26 @@ endif
 
 all: xpi
 
+# this step builds a jetpack, which strips down to the files from addon-sdk
+# that we actually use, then extracts that into our XUL app template
+nativeapp:
+	$(addon_sdk)/cfx xpi --pkgdir=$(TOPSRCDIR)/addons/nativeapp
+	mkdir -p $(openwebapps)/data/native-install/XUL/app-sdk
+	unzip -o nativeapp.xpi -x install.rdf -d $(openwebapps)/data/native-install/XUL/app-sdk/
+# -x harness-options.json install.rdf bootstrap.js 
+
 xpi:    pull
 	$(addon_sdk)/cfx xpi $(cfx_args)
 
 pull:
-	$(MAKELAUNCHER)
 	$(PYTHON) build.py -p $(pkgdir)/package.json
+	$(MAKELAUNCHER)
+	nativeapp
 
 test:
 	$(addon_sdk)/cfx test -v $(cfx_args) $(test_args)
 
-run:
+run: nativeapp
 	$(MAKELAUNCHER)
 	$(addon_sdk)/cfx run $(cfx_args)	
 

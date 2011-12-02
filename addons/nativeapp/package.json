@@ -1,0 +1,11 @@
+{
+    "name": "nativeapp", 
+    "license": "MPL 1.1/GPL 2.0/LGPL 2.1", 
+    "author": "Mozilla Labs", 
+    "version": "0.1.0", 
+    "fullName": "NativeApp", 
+    "id": "nativeapp@mozillalabs.com", 
+    "description": "Native platform support for WebApps.",
+    "dependencies": ["api-utils", "addon-kit"],
+    "main": "./main.js"
+}
