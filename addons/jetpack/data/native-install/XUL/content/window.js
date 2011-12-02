@@ -78,8 +78,8 @@ MozAppsAPI.prototype = {
         getInstallRecord(callback);
       },
 
-      verifyReceipt: function(callback, options, cb, verifyOnly) {
-        doVerifyReceipt(aWindow, callback, options, cb, verifyOnly);
+      verifyReceipt: function(callback, options) {
+        doVerifyReceipt(aWindow, callback, options);
       },
       
       __exposedProps__: {
@@ -139,7 +139,7 @@ function getInstallRecord(cb) {
   });
 }
 
-function doVerifyReceipt(contentWindowRef, options, cb, rcptVerified) {
+function doVerifyReceipt(contentWindowRef, cb, options) {
   getInstallRecord(function(record) {
     if (!record) {
       cb({"error": "Application not installed"});
@@ -212,8 +212,8 @@ function doVerifyReceipt(contentWindowRef, options, cb, rcptVerified) {
 
             dump("verifyReq success! " + verifyReq.responseText + "\n");
             verifyStatus = true;
-            if (rcptVerified && typeof rcptVerified == "function") {
-              rcptVerified(receipt);
+            if (options && options.receiptVerified && typeof options.receiptVerified == "function") {
+              options.receiptVerified(receipt);
             }
             if (verifyStatus && assertStatus) {
               cb({"success": {"receipt": receipt, "assertion": assertion}});
@@ -230,11 +230,20 @@ function doVerifyReceipt(contentWindowRef, options, cb, rcptVerified) {
         }
       }
     };
-    verifyReq.send(record.install_data.receipt);
+
+    try {
+      verifyReq.send(record.install_data.receipt); 
+    } catch (e) {
+      // Offline
+      if (!errorSent) {
+        cb({"error": "Offline: Could not verify receipt"}); 
+        errorSent = true;
+      }
+    }
 
     // Start BrowserID verification
-    var options = {"silent": true, "requiredEmail": receipt.user.value};
-    checkNativeIdentityDaemon(contentWindowRef.location, options, function(ast) {
+    var idOptions = {"silent": true, "requiredEmail": receipt.user.value};
+    checkNativeIdentityDaemon(contentWindowRef.location, idOptions, function(ast) {
       assertion = ast;
       if (!assertion) {
         cb({"error": "Invalid Identity"});
@@ -273,7 +282,16 @@ function doVerifyReceipt(contentWindowRef, options, cb, rcptVerified) {
       var body = "assertion=" + encodeURIComponent(assertion) + "&audience=" +
         encodeURIComponent(contentWindowRef.location.protocol + "//" + contentWindowRef.location.host);
       assertReq.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-      assertReq.send(body);
+
+      try {
+        assertReq.send(body); 
+      } catch (e) {
+        // Offline
+        if (!errorSent) {
+          cb({"error": "Offline: Could not verify receipt"}); 
+          errorSent = true;
+        }
+      }
     }, function(err) {
       // Ideally we'd implement a fallback here where we open a BrowserID
       // popup dialog. But this is not trivial to do, punting for now.
