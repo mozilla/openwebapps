@@ -21,13 +21,13 @@ mkdir ../../rpms
 
 mkdir -p $buildroot
 cd $buildroot
-mkdir -p BUILD
-mkdir -p BUILDROOT
-mkdir -p RPMS
-mkdir -p SOURCES
-mkdir -p SPECS
-mkdir -p SRPMS
-rm -rf myapps
+rm -rf $buildroot/*
+mkdir BUILD
+mkdir BUILDROOT
+mkdir RPMS
+mkdir SOURCES
+mkdir SPECS
+mkdir SRPMS
 mkdir myapps
 
 cd myapps
@@ -41,6 +41,6 @@ rm -f $buildroot/SOURCES/myapps*
 rm -rf $buildroot/BUILDROOT/myapps-*
 tar cfz $buildroot/SOURCES/myapps-$version.tar.gz myapps-$version
 cd $dir/tools
-rpmbuild -ba --buildroot $buildroot -v myapps.spec
+rpmbuild -ba -v myapps.spec
 
-mv $buildroot/RPMS/*.rpm $rpms/
+mv $buildroot/RPMS/noarch/*.rpm $rpms/
