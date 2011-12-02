@@ -52,16 +52,24 @@ A:visited {
 
 #usageInfo {
     display: none;
-    position: absolute;
-    top: 300px;
-    left: 270px;
+    position: relative;
     width: 450px;
+    top:260px;
     text-align: left;
-    border: 1px solid #BBBBBB;
+    border: 2px solid #000000;
     border-radius: 5px 5px 5px 5px;
     box-shadow: 5px 10px 10px rgba(0, 0, 0, 0.25);
     background-color: white;
-    z-index: 10000;
+    z-index: 100000;
+    clear: left;
+    margin: 0 auto;
+}
+
+#centerfield {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 100%;
 }
 
 
