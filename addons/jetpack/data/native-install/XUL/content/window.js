@@ -187,33 +187,41 @@ function doVerifyReceipt(contentWindowRef, options, cb, verifyOnly) {
 
     var verifyURL = receipt.verify;
     var verifyReq = new XMLHttpRequest();  
-    verifyReq.open('GET', verifyURL, true);  
+    verifyReq.open('POST', verifyURL, true);  
     verifyReq.onreadystatechange = function (aEvt) {  
       if (verifyReq.readyState == 4) {
-        // FIXME: 404? Yeah, because that's what we get now
-        // Hook up to real verification when it's done on AMO
-        // and change this to 200 !!!
         verifyStatus = true;
-        if (verifyReq.status == 404) {
-          if (verifyOnly && typeof verifyOnly == "function") {
-            verifyOnly(receipt);
+        try {
+          if (verifyReq.status == 200) {
+            var resp = JSON.parse(verifyReq.responseText);
+            if (verifyOnly && typeof verifyOnly == "function") {
+              verifyOnly(receipt);
+            }
+            if (resp.status != "ok") {
+              throw resp.status;
+            }
+
+            dump("verifyReq success! " + verifyReq.responseText + "\n");
+            if (verifyStatus && assertStatus) {
+              cb({"success": {"receipt": receipt, "assertion": assertion}});
+            }
+          } else {
+            throw verifyReq.status;
           }
+        } catch(e) {
+          dump("errored verify! " + verifyReq.responseText);
           if (verifyStatus && assertStatus) {
-            cb({"success": {"receipt": receipt, "assertion": assertion}});
-          }
-        } else {
-          if (verifyStatus && assertStatus) {
-            cb({"error": "Invalid Receipt: " + req.responseText});
+            verifyStatus = false;
+            cb({"error": "Invalid Receipt: " + verifyReq.responseText});
           }
         }
       }
     };
-    verifyReq.send(null);
+    verifyReq.send(record.install_data.receipt);
 
     // Start BrowserID verification
     var options = {"silent": true, "requiredEmail": receipt.user.value};
-    checkNativeIdentityDaemon(contentWindowRef.location, options, function(ast) {
-      assertion = ast;
+    checkNativeIdentityDaemon(contentWindowRef.location, options, function(assertion) {
       if (!assertion) {
         cb({"error": "Invalid Identity"});
         return;
@@ -224,15 +232,23 @@ function doVerifyReceipt(contentWindowRef, options, cb, verifyOnly) {
       assertReq.onreadystatechange = function(aEvt) {
         if (assertReq.readyState == 4) {
           assertStatus = true;
+          try {
+            if (assertReq.status == 200) {
+              var resp = JSON.parse(assertReq.responseText);
+              if (resp["status"] != "okay") {
+                throw resp.status;
+              }
 
-          // FIXME: a 200 status code doesn't mean OK, check
-          // the responseText
-          if (assertReq.status == 200) {
-            if (verifyStatus && assertStatus) {
-              cb({"success": {"receipt": receipt, "assertion": assertion}});
+              dump("assertReq success! " + assertReq.responseText + "\n");
+              if (verifyStatus && assertStatus) {
+                cb({"success": {"receipt": receipt, "assertion": assertion}});
+              }
+            } else {
+              throw assertReq.status;
             }
-          } else {
+          } catch(e) {
             if (verifyStatus && assertStatus) {
+              assertStatus = false;
               cb({"error": "Invalid Identity: " + assertReq.responseText});
             }
           }
@@ -240,8 +256,13 @@ function doVerifyReceipt(contentWindowRef, options, cb, verifyOnly) {
       };
 
       var body = "assertion=" + encodeURIComponent(assertion) + "&audience=" +
-        contentWindowRef.location.protocol + "//" + contentWindowRef.location.host;
+        encodeURIComponent(contentWindowRef.location.protocol + "//" + contentWindowRef.location.host);
+      assertReq.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
       assertReq.send(body);
+    }, function(err) {
+      // Ideally we'd implement a fallback here where we open a BrowserID
+      // popup dialog. But this is not trivial to do, punting for now.
+      cb({"error": "Could not obtain Identity: " + err});
     });
   });
 }
@@ -250,9 +271,9 @@ function checkNativeIdentityDaemon(callingLocation, options, success, failure)
 {
   dump("CheckNativeIdentityDaemon " + callingLocation + " " + JSON.stringify(options) + "\n");
   if (typeof failure != "function") {
-      function failure(e) {
-          dump("Failure callback not defined, shimmed " + e);
-      }
+    function failure(e) {
+      dump("Failure callback not defined, shimmed " + e);
+    }
   }
 
   // XXX what do we do if we are not passed a requiredEmail?
@@ -269,45 +290,56 @@ function checkNativeIdentityDaemon(callingLocation, options, success, failure)
   var buf = "IDCHECK " + options.requiredEmail + " " + domain + "\r\n\r\n";
 
   var eventSink = {
-      onTransportStatus: function(aTransport, aStatus, aProgress, aProgressMax) {
-          if (aStatus == aTransport.STATUS_CONNECTED_TO) {
-              output.write(buf, buf.length);
-          } else if (aStatus == aTransport.STATUS_RECEIVING_FROM) {
-              var chunk = scriptableStream.read(8192);
-              if (chunk.length> 1) {
-                  success(chunk);
-                  return;
-              } else {
-                  failure();
-                  return;
-              }
-          } else if (false /* connection refused */) {
-              port++;
-              attemptConnection();
+    onTransportStatus: function(aTransport, aStatus, aProgress, aProgressMax) {
+      if (aStatus == aTransport.STATUS_CONNECTED_TO) {
+        output.write(buf, buf.length);
+      } else if (aStatus == aTransport.STATUS_RECEIVING_FROM) {
+        var chunk = scriptableStream.read(8192);
+        if (chunk.length> 1) {
+          try {
+            var assert = JSON.parse(chunk.replace(/\s/g, ''));
+            if (assert['assertion']) {
+              success(assert['assertion']);
+            } else {
+              throw "Invalid assertion"; 
+            }
+          } catch (e) {
+            failure();
           }
+          return;
+        } else {
+          failure();
+          return;
+        }
+      } else if (aStatus == aTransport.STATUS_CONNECTING_TO) {
+        // If socket is not "alive" at this stage, it means connection refused
+        if (!aTransport.isAlive()) {
+          port++;
+          attemptConnection();
+        }
       }
+    }
   };
 
   var threadMgr = Cc["@mozilla.org/thread-manager;1"].getService();
   function attemptConnection() {
-      if (port > 7550) {
-          failure();
-          return;
-      }
-      var transport = sockTransportService.createTransport(null, 0, "127.0.0.1", port, null);
-      transport.setEventSink(eventSink, threadMgr.currentThread);
-      try {
-          output = transport.openOutputStream(transport.OPEN_BLOCKING, 0, 0);
-          output.write(buf, buf.length);
-          input = transport.openInputStream(transport.OPEN_BLOCKING, 0, 0);
-          scriptableStream = Cc["@mozilla.org/scriptableinputstream;1"]  
-                               .createInstance(Ci.nsIScriptableInputStream);  
-          scriptableStream.init(input);
-      } catch (e) {
-          alert(e);
-          port++;
-          attemptConnection();
-      }
+    if (port > 7550) {
+      failure();
+      return;
+    }
+    var transport = sockTransportService.createTransport(null, 0, "127.0.0.1", port, null);
+    transport.setEventSink(eventSink, threadMgr.currentThread);
+    try {
+      output = transport.openOutputStream(transport.OPEN_BLOCKING, 0, 0);
+      output.write(buf, buf.length);
+      input = transport.openInputStream(transport.OPEN_BLOCKING, 0, 0);
+      scriptableStream = Cc["@mozilla.org/scriptableinputstream;1"]  
+                        .createInstance(Ci.nsIScriptableInputStream);  
+      scriptableStream.init(input);
+    } catch (e) {
+      port++;
+      attemptConnection();
+    }
   }
   attemptConnection();
 }
