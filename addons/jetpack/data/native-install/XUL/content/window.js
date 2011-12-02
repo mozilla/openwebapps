@@ -182,6 +182,7 @@ function doVerifyReceipt(contentWindowRef, options, cb, verifyOnly) {
     // Two status "flags", one for verify XHR other for BrowserID XHR
     // These two XHRs run in parallel, and the last one to finish invokes cb()
     var assertion;
+    var errorSent = false;
     var verifyStatus = false;
     var assertStatus = false;
 
@@ -190,7 +191,6 @@ function doVerifyReceipt(contentWindowRef, options, cb, verifyOnly) {
     verifyReq.open('POST', verifyURL, true);  
     verifyReq.onreadystatechange = function (aEvt) {  
       if (verifyReq.readyState == 4) {
-        verifyStatus = true;
         try {
           if (verifyReq.status == 200) {
             var resp = JSON.parse(verifyReq.responseText);
@@ -202,6 +202,7 @@ function doVerifyReceipt(contentWindowRef, options, cb, verifyOnly) {
             }
 
             dump("verifyReq success! " + verifyReq.responseText + "\n");
+            verifyStatus = true;
             if (verifyStatus && assertStatus) {
               cb({"success": {"receipt": receipt, "assertion": assertion}});
             }
@@ -209,10 +210,10 @@ function doVerifyReceipt(contentWindowRef, options, cb, verifyOnly) {
             throw verifyReq.status;
           }
         } catch(e) {
-          dump("errored verify! " + verifyReq.responseText);
-          if (verifyStatus && assertStatus) {
-            verifyStatus = false;
-            cb({"error": "Invalid Receipt: " + verifyReq.responseText});
+          if (!errorSent) {
+            dump("error in verifyReq! " + verifyReq.responseText);
+            cb({"error": "Invalid Receipt: " + verifyReq.responseText}); 
+            errorSent = true;
           }
         }
       }
@@ -231,7 +232,6 @@ function doVerifyReceipt(contentWindowRef, options, cb, verifyOnly) {
       assertReq.open('POST', 'https://browserid.org/verify', true);
       assertReq.onreadystatechange = function(aEvt) {
         if (assertReq.readyState == 4) {
-          assertStatus = true;
           try {
             if (assertReq.status == 200) {
               var resp = JSON.parse(assertReq.responseText);
@@ -240,6 +240,7 @@ function doVerifyReceipt(contentWindowRef, options, cb, verifyOnly) {
               }
 
               dump("assertReq success! " + assertReq.responseText + "\n");
+              assertStatus = true;
               if (verifyStatus && assertStatus) {
                 cb({"success": {"receipt": receipt, "assertion": assertion}});
               }
@@ -247,9 +248,10 @@ function doVerifyReceipt(contentWindowRef, options, cb, verifyOnly) {
               throw assertReq.status;
             }
           } catch(e) {
-            if (verifyStatus && assertStatus) {
-              assertStatus = false;
-              cb({"error": "Invalid Identity: " + assertReq.responseText});
+            if (!errorSent) {
+              dump("error in assertReq! " + assertReq.responseText);
+              cb({"error": "Invalid Identity: " + assertReq.responseText}); 
+              errorSent = true;
             }
           }
         }
