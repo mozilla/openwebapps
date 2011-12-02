@@ -8,26 +8,26 @@
 ## Started on  Tue Nov 15 13:57:03 2011 Ian Bicking
 ## Last update Tue Nov 15 13:57:03 2011 Ian Bicking
 ##
-
+set -x
 set -e
 
 dir=$(pwd)/..
 rpms=$dir/../rpms
 version=$(cat VERSION)
-buildroot=/tmp/rpmbuild
+buildroot=~/rpmbuild
 
 rm -rf ../../rpms
 mkdir ../../rpms
-rm -rf $buildroot
-mkdir -p $buildroot
 
+mkdir -p $buildroot
 cd $buildroot
-mkdir BUILD
-mkdir BUILDROOT
-mkdir RPMS
-mkdir SOURCES
-mkdir SPECS
-mkdir SRPMS
+mkdir -p BUILD
+mkdir -p BUILDROOT
+mkdir -p RPMS
+mkdir -p SOURCES
+mkdir -p SPECS
+mkdir -p SRPMS
+rm -rf myapps
 mkdir myapps
 
 cd myapps
