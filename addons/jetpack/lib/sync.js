@@ -220,6 +220,29 @@ SyncService.prototype.login = function (assertionData, callback) {
   });
 };
 
+/* After a login has occurred, you can call this to get data that can
+   be used to avoid logging in later */
+SyncService.prototype.getAuthData = function () {
+  return this.server.authData;
+};
+
+/* Having gotten authData, you can shortcut the login process by
+   calling setAuthData */
+SyncService.prototype.setAuthData = function (data, callback) {
+  var self = this;
+  this.server._processLogin(data, function (error, result) {
+    if (! error) {
+      if (self.onlogin) {
+        self.onlogin(result);
+      }
+      self.sendStatus({login: true, account: result});
+    }
+    if (callback) {
+      callback(error, data);
+    }
+  });
+};
+
 SyncService.prototype.loggedIn = function () {
   return this.server.loggedIn();
 };
@@ -426,7 +449,7 @@ SyncService.prototype._processUpdates = function (apps, callback) {
     callback();
     return;
   }
-  log('processing updates', {apps: apps, repo: this.repo, uninstall: this.repo.listUninstalled});
+  log('processing updates', {length: apps.length, apps: apps});
   this.repo.listUninstalled(function (deleted) {
     var deletedByOrigin = {};
     for (var i=0; i<deleted.length; i++) {
@@ -511,80 +534,113 @@ SyncService.prototype._putUpdates = function (callback) {
   var lastUpdate = this._lastSyncPut;
   var self = this;
   this.repo.list(function (appList) {
-    if (self._appTracking === null) {
-      log('appTracking has not been fetched yet, cancelling put');
-      return;
-    }
-    var appTracking = self._appTracking;
-    appList = objectValues(appList);
-    log('putUpdates processing', {lastPut: self._lastSyncPut});
-    var toUpdate = [];
-    for (var i=0; i<appList.length; i++) {
-      var app = appList[i];
-      if (! app.last_modified) {
-        log('App missing last_modified', {app: app});
-        app.last_modified = new Date().getTime();
-        // We'll update the repo, but we don't need to wait for that to finish,
-        // as we've updated "our" copy of the app
-        self.repo.addApplication(app.origin, app);
-        // FIXME: this should signal some error, but to whom?
-        continue;
-      }
-      // FIXME: strictly speaking, we shouldn't really skip these, as this
-      // allows apps to be replicated around...
-      if (app.remotely_installed) {
-        continue;
-      }
-      if ((! self._lastSyncPut)
-          || (! appTracking[app.origin])
-          || (app.last_modified > appTracking[app.origin])) {
-        log('Adding app toUpdate:', {origin: app.origin, lastSyncPut: self._lastSyncPut, last_modified: app.last_modified, tracking: appTracking[app.origin]});
-        toUpdate.push(app);
-      }
-    }
-    self.sendStatus({status: 'sync_put', count: toUpdate.length});
-    if (! toUpdate.length) {
-      log('No updates to send');
+    self.repo.listUninstalled(function (uninstalled) {
+      self._putUpdatesFromApps(appList, uninstalled, callback);
+    }, function (error) {
       if (callback) {
-        callback();
+        callback(error || true);
+      }
+    });
+  }, function (error) {
+    if (callback) {
+      callback(error || true);
+    }
+  });
+};
+
+SyncService.prototype._putUpdatesFromApps = function (appList, uninstalled, callback) {
+  var appTracking = this._appTracking;
+  var self = this;
+  if (appTracking === null || appTracking === undefined) {
+    log('appTracking has not been fetched yet, cancelling put');
+    // FIXME: should we put an error here?
+    callback();
+    return;
+  }
+  appList = objectValues(appList);
+  log('putUpdates processing', {lastPut: this._lastSyncPut});
+  var toUpdate = [];
+  for (var i=0; i<appList.length; i++) {
+    var app = appList[i];
+    if (! app.last_modified) {
+      log('App missing last_modified', {app: app});
+      app.last_modified = new Date().getTime();
+      // We'll update the repo, but we don't need to wait for that to finish,
+      // as we've updated "our" copy of the app
+      this.repo.addApplication(app.origin, app);
+      // FIXME: this should signal some error, but to whom?
+      continue;
+    }
+    // FIXME: strictly speaking, we shouldn't really skip these, as this
+    // allows apps to be replicated around...
+    if (app.remotely_installed) {
+      continue;
+    }
+    if ((! this._lastSyncPut)
+        || (! appTracking[app.origin])
+        || (app.last_modified > appTracking[app.origin])) {
+      log('Adding app toUpdate:', {origin: app.origin, lastSyncPut: this._lastSyncPut, last_modified: app.last_modified, tracking: appTracking[app.origin]});
+      toUpdate.push(app);
+    } else {
+      log('Skipping toUpdate:', {app: app, lastSyncPut: this._lastSyncPut, lastModified: app.last_modified, appTracking: appTracking});
+    }
+  }
+  for (var i=0; i<uninstalled.length; i++) {
+    var app = uninstalled[i];
+    if (! app.last_modified) {
+      log('Uninstalled app missing last_modified', {app: app});
+      // We don't have a good way to fix this
+      continue;
+    }
+    if ((! this._lastSyncPut)
+        || (! appTracking[app.origin])
+        || (app.last_modified > appTracking[app.origin])) {
+      log('Adding deletion to toUpdate:', {origin: app.origin});
+      toUpdate.push({origin: app.origin, deleted: true, last_modified: app.last_modified});
+    }
+  }
+  this.sendStatus({status: 'sync_put', count: toUpdate.length});
+  if (! toUpdate.length) {
+    log('No updates to send');
+    if (callback) {
+      callback();
+    }
+    return;
+  }
+  log('putUpdates', {updates: toUpdate});
+  // FIXME: we *must* include a 'since' key here to protect from
+  // a concurrent update since our last get
+  this.server.put(toUpdate, function (error, result) {
+    log('server put completed', {error: error, result: result});
+    if (error) {
+      self.sendStatus({error: 'sync_put', detail: error});
+      if (callback) {
+        callback(error);
       }
       return;
     }
-    log('putUpdates', {updates: toUpdate});
-    // FIXME: we *must* include a 'since' key here to protect from
-    // a concurrent update since our last get
-    self.server.put(toUpdate, function (error, result) {
-      log('server put completed', {error: error, result: result});
-      if (error) {
-        self.sendStatus({error: 'sync_put', detail: error});
-        if (callback) {
-          callback(error);
-        }
-        return;
+    if (! self.confirmUUID(result.uuid)) {
+      if (callback) {
+        callback({error: "uuid_changed"});
       }
-      if (! self.confirmUUID(result.uuid)) {
-        if (callback) {
-          callback({error: "uuid_changed"});
-        }
-        return;
+      return;
+    }
+    self.sendStatus({status: 'sync_put_complete'});
+    var tracking = self.storage.get('appTracking', function (tracking) {
+      if (! tracking) {
+        log('WARNING: appTracking is not set');
+        tracking = {};
       }
-      self.sendStatus({status: 'sync_put_complete'});
-      var tracking = self.storage.get('appTracking', function (tracking) {
-        if (! tracking) {
-          log('WARNING: appTracking is not set');
-          tracking = {};
-        }
-        for (var i=0; i<toUpdate.length; i++) {
-          tracking[toUpdate[i].origin] = toUpdate[i].last_modified;
-        }
-        self._appTracking = tracking;
-        self.storage.put('appTracking', tracking);
-      });
-      self._setLastSyncPut(result.received);
-      self._setLastSyncTime(result.received);
-      callback();
+      for (var i=0; i<toUpdate.length; i++) {
+        tracking[toUpdate[i].origin] = toUpdate[i].last_modified;
+      }
+      self._appTracking = tracking;
+      self.storage.put('appTracking', tracking);
     });
-  }, function (error) {callback(error);});
+    self._setLastSyncPut(result.received);
+    self._setLastSyncTime(result.received);
+    callback();
+  });
 };
 
 // Just logging helpers, should be removed at some later date...
@@ -659,6 +715,7 @@ var Server = function (url) {
   this._collectionUrl = null;
   // This is a header sent with all requests (after login):
   this._httpAuthorization = null;
+  this.authData = null;
 };
 
 /* Logs in with the assertion data {assertion: string, audience: origin} */
@@ -702,10 +759,13 @@ Server.prototype._processLogin = function (data, callback) {
     callback(data);
     return;
   }
+  this.authData = data;
   this._loginStatus = data;
   this._collectionUrl = data.collection_url;
   this._httpAuthorization = data.http_authorization;
-  callback(null, data);
+  if (callback) {
+    callback(null, data);
+  }
 };
 
 Server.prototype.loggedIn = function () {
@@ -716,6 +776,7 @@ Server.prototype.logout = function (callback) {
   this._loginStatus = null;
   this._collectionUrl = null;
   this._httpAuthorization = null;
+  this.authData = null;
   callback();
 };
 
