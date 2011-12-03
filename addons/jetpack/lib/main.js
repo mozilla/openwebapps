@@ -165,20 +165,6 @@ openwebapps.prototype = {
             worker.port.emit(msg.success, apps)
           });
         });
-        worker.port.on("owa.mgmt.loginStatus", function(msg) {
-          let result = repo.loginStatus(msg.data);
-          worker.port.emit(msg.success, result);
-        });
-        worker.port.on("owa.mgmt.loadState", function(msg) {
-          repo.loadState(msg.location, function(value) {
-            worker.port.emit(msg.success, value)
-          });
-        });
-        worker.port.on("owa.mgmt.saveState", function(msg) {
-          repo.saveState(msg.location, msg.data, function(success) {
-            worker.port.emit(msg.success, success)
-          });
-        });
         worker.port.on("owa.mgmt.uninstall", function(msg) {
           repo.uninstall(msg.data, function(success) {
             if (success)
