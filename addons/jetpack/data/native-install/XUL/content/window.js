@@ -23,7 +23,7 @@ window.addEventListener("click", function(e) {
 }, false);
 
 // Commands:
-var appName = "$APPNAME";
+var appName = $NAME_AS_JS_STRING;
 function newWindow()
 {
     var ww = Components.classes["@mozilla.org/embedcomp/window-watcher;1"]

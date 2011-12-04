@@ -445,7 +445,39 @@ WinNativeShell.prototype = {
   },
 
   setUpPaths : function(app) {
-      this.appName = app.manifest.name;
+      let re = new RegExp("[^"
+                        + "\\w" // Allow word chars
+                        + "\\s" // Allow whitespace
+                        + "'"   // e.g. Dave's Galaxy
+                        + "!"   // Lots of apps probably want this
+                        + "&"
+                        + "\\("
+                        + "\\)"
+                        + "\\{"
+                        + "\\}"
+                        + "\\-"
+                        + "\\+"
+                     // Uncomment these if we decide we want them, append
+                     // others as appropriate
+                     // + "\`"
+                     // + "@"
+                     // + "#"
+                     // + "\\$"
+                     // + "%"
+                     // + "\\^"
+                     // + "="
+                     // + ":"
+                     // + ";"
+                        + "]", "gi");
+
+      this.appName = app.manifest.name.replace(re, "").substring(0, 128);
+
+      if(app.developer) {
+        if(app.developer.name) {
+          this.developerName =
+                app.manifest.developer.name.replace(re, "").substring(0, 128);
+        }
+      }
 
       let directoryService = Cc["@mozilla.org/file/directory_service;1"]
                              .getService(Ci.nsIProperties);
@@ -453,10 +485,29 @@ WinNativeShell.prototype = {
       this.installDir.append("Mozilla");
       this.installDir.append(this.appName);
 
-      this.launchPath = app.origin;
+      this.uninstallerFile = this.installDir.clone();
+      this.uninstallerFile.append("uninstall.exe");
+
+      let ios = Cc["@mozilla.org/network/io-service;1"]
+                .getService(Ci.nsIIOService);
+      this.launchURI = ios.newURI(app.origin, null, null);
       if (app.manifest.launch_path) {
-        this.launchPath += app.manifest.launch_path;
+        this.launchURI.spec =
+                this.launchURI.resolve(app.manifest.launch_path);
       }
+
+      this.shortDescription = "";
+      if(app.manifest.description.length <= 256) {
+        this.shortDescription = app.manifest.description;
+      } else {
+        let index = app.manifest.description.indexOf("\n");
+        if(index != -1 && index < 256) {
+          this.shortDescription = app.manifest.description.substring(0,index);
+        } else {
+          this.shortDescription = app.manifest.description.substring(0,253) + "...";
+        }
+      }
+      this.shortDescription = this.shortDescription.replace(re, "");
 
       this.iconFile = this.installDir.clone();
       this.iconFile.append("chrome");
@@ -484,22 +535,16 @@ WinNativeShell.prototype = {
 
     let substitutions;
     try {
-      let ios = Cc["@mozilla.org/network/io-service;1"]
-                .getService(Ci.nsIIOService);
-
-      let appOriginURI = ios.newURI(app.origin, null, null);
-
       substitutions = {
-        "\\$APPNAME": this.appName,
-        "\\$APPDOMAIN": appOriginURI.host,
-        // Shortcut descriptions longer than 259 characters cause corruption
-        "\\$APPDESC": app.manifest.description.substring(0,259),
-        "\\$FFPATH": this.firefoxFile.path,
-        "\\$LAUNCHPATH": this.launchPath,
-        "\\$INSTALLDIR": this.installDir.path,
-        "\\$ICONPATH": this.iconFile.path,
-        "\\$DESKTOP_SHORTCUT": "y",
-        "\\$SM_SHORTCUT": "y"
+        "\\$NAME_AS_XUL_APP_PROPERTY": this.appName,
+        "\\$VERSION_AS_XUL_APP_PROPERTY": this.versionStr,
+        "\\$BUILD_ID_AS_XUL_APP_PROPERTY": "",
+        "\\$ORIGIN_AS_XUL_APP_PROPERTY": this.launchURI.prePath,
+
+        "\\$NAME_AS_JS_STRING": "\"" + this.appName + "\"",
+
+        "\\$NAME_AS_XML_STRING": "\"" + this.appName + "\"",
+        "\\$LAUNCH_PATH_AS_XML_STRING": "\"" + this.launchURI.spec + "\""
       }
     } catch(e) {
       throw("createExecutable - "
@@ -515,52 +560,60 @@ WinNativeShell.prototype = {
                         undefined);
     } catch (e) {
       throw("createExecutable - "
-            + "Failure copying installer to temporary location "
-            + this.installerDir.path
-            + " (" + e + ")");
+          + "Failure copying installer to temporary location "
+          + this.installerDir.path
+          + " (" + e + ")");
     }
 
     try {
-      this.removeInstallation();
-      this.installDir.create(Ci.nsIFile.DIRECTORY_TYPE, 0777);
-      this.iconFile.parent.create(Ci.nsIFile.DIRECTORY_TYPE, 0777);
-    } catch(e) {
-      throw("createExecutable - "
-            + "Failure setting up target location (" + e + ")");
-    }
-
-    try {
-      this.synthesizeIcon(app);
-    } catch(e) {
-      // Don't fail the installation on icon failures
-      console.log("createExecutable - "
-                  + "Error synthesizing icon: " + e);
-    }
-
-    try {
-      let process = Cc["@mozilla.org/process/util;1"]
-                    .createInstance(Ci.nsIProcess);
-
-      let installerFile = this.installerDir.clone();
-      installerFile.append("install.exe");
-
-      process.init(installerFile);
-      // TODO: Run this asynchronously
-      process.run(true, ["/S"], 1);
-      if(0 !== process.exitValue) {
-        throw("Installer returned " + process.exitValue);
-      }
-    } catch (e) {
-      throw("createExecutable - "
-            + "Failure running installer (" + e + ")");
-    } finally {
       try {
-        this.installerDir.remove(true);
+        this.removeInstallation();
+        this.installDir.create(Ci.nsIFile.DIRECTORY_TYPE, 0777);
+        this.iconFile.parent.create(Ci.nsIFile.DIRECTORY_TYPE, 0777);
       } catch(e) {
-        console.log("createExecutable - "
-                    + "Failure cleaning up installer (" + e + ")");
+        throw("createExecutable - "
+              + "Failure setting up target location (" + e + ")");
       }
-    }
+
+      try {
+        this.synthesizeIcon(app);
+      } catch(e) {
+        // Don't fail the installation on icon failures
+        console.log("createExecutable - "
+                    + "Error synthesizing icon: " + e);
+      }
+
+      try {
+        this.writeRegKeys(app);
+      } catch (e) {
+          throw("createExecutable - " +
+                "Failure writing registry keys (" + e + ")");
+      }
+
+      try {
+        let process = Cc["@mozilla.org/process/util;1"]
+                      .createInstance(Ci.nsIProcess);
+
+        let installerFile = this.installerDir.clone();
+        installerFile.append("install.exe");
+
+        process.init(installerFile);
+        process.run(true, [//"/S",
+                           "/FIREFOX_PATH=",
+                           this.firefoxFile.path,
+                           "/ORIGIN_SCHEME=",
+                           this.launchURI.scheme,
+                           "/ORIGIN_URI=",
+                           this.launchURI.host + ":" + this.launchURI.port,
+                           "/CreateDesktopShortcut",
+                           "/CreateStartMenuShortcut"], 6);
+        if(0 !== process.exitValue) {
+          throw("Installer returned " + process.exitValue);
+        }
+      } catch (e) {
+        throw("createExecutable - "
+              + "Failure running installer (" + e + ")");
+      }
 
     try {
       recursiveFileCopy("native-install/windows/app",
@@ -593,28 +646,65 @@ WinNativeShell.prototype = {
     }
   },
 
+  writeRegKeys : function() {
+    let uninstallKey = Cc["@mozilla.org/windows-registry-key;1"]
+                       .createInstance(Ci.nsIWindowsRegKey);
+    uninstallKey.open(uninstallKey.ROOT_KEY_CURRENT_USER,
+                      "SOFTWARE\\Microsoft\\Windows\\"
+                    + "CurrentVersion\\Uninstall",
+                      uninstallKey.ACCESS_WRITE);
+    uninstallKey = uninstallKey.createChild(this.launchURI.scheme + "://"
+                                          + this.launchURI.host
+                                          + ":" + this.launchURI.port,
+                                            uninstallKey.ACCESS_WRITE);
+    uninstallKey.writeStringValue("DisplayName", this.appName);
+    uninstallKey.writeStringValue("DisplayIcon", this.iconFile.path);
+    uninstallKey.writeStringValue("UninstallString",
+                                  this.uninstallerFile.path);
+    uninstallKey.writeStringValue("InstallLocation", this.installDir.path);
+    uninstallKey.writeIntValue("NoModify", 1);
+    uninstallKey.writeIntValue("NoRepair", 1);
+    // TODO: Maybe grab info from BrowserID for this?
+    uninstallKey.writeStringValue("RegOwner", "Your name here");
+    //uninstallKey.writeStringValue("ProductID", "");
+    uninstallKey.writeStringValue("UrlUpdateInfo",
+                                  "http://apps.mozillalabs.com");
+    if(this.developerName) {
+      uninstallKey.writeStringValue("Publisher",
+                                    this.developerName);
+    }
+    uninstallKey.writeStringValue("DisplayVersion",
+                                  this.versionStr);
+    // TODO: Can we figure out what store we're installing from?
+    uninstallKey.writeStringValue("InstallSource", "");
+    uninstallKey.writeStringValue("Comments",
+                                  this.shortDescription);
+    uninstallKey.writeStringValue("HelpLink",
+                                  "http://apps.mozillalabs.com");
+    uninstallKey.writeStringValue("URLInfoAbout",
+                                  this.launchURI.prePath);
+    uninstallKey.writeStringValue("Contact", "http://apps.mozillalabs.com");
+    // TODO: Maybe link to the description in the store here?
+    //uninstallKey.writeStringValue("Readme", "http://apps.mozillalabs.com");
+  },
+
   removeInstallation : function() {
     try {
-      if(this.installDir.exists()) {
-        let uninstallerFile = this.installDir.clone();
-        uninstallerFile.append("uninstall.exe");
-
-        if (!uninstallerFile.exists()) {
-          this.installDir.remove(true);
-        } else{
-          let process = Cc["@mozilla.org/process/util;1"]
-                        .createInstance(Ci.nsIProcess);
-          process.init(uninstallerFile);
-          // NOTE: Even if we wanted to run this synchronously, it would be
-          // impossible.  NSIS uninstallers copy themselves to a temporary
-          // location and run the copy (terminating the original process) so
-          // that the uninstaller can be removed.  The exit code is meaningless
-          // for this same reason
-          process.runAsync(["/S"], 1);
-        }
-      }
+      let uninstallKey = Cc["@mozilla.org/windows-registry-key;1"]
+                         .createInstance(Ci.nsIWindowsRegKey);
+      uninstallKey.open(uninstallKey.ROOT_KEY_CURRENT_USER,
+                        "SOFTWARE\\Microsoft\\Windows\\"
+                      + "CurrentVersion\\Uninstall",
+                        uninstallKey.ACCESS_WRITE);
+      uninstallKey.removeChild(this.launchURI.host);
     } catch(e) {
-      console.log("Failure attempting to remove installation (" + e + ")");
+
+    }
+
+    try {
+      this.installDir.remove(true);
+    } catch(e) {
+
     }
   },
 

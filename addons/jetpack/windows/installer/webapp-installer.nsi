@@ -40,176 +40,153 @@ SetCompressor /SOLID /FINAL lzma
 CRCCheck on
 RequestExecutionLevel user
 
-Var appName
-Var appID
-Var appURL
-Var appDesc
-Var iconPath
-Var createDesktopShortcut
-Var createStartMenuShortcut
-Var FFPath
+Var PARAMETERS
 
-Name $appName
+Var ORIGIN_SCHEME
+Var ORIGIN_URI
+Var FIREFOX_PATH
+
+Var SHORTCUT_NAME
+Var SHORTCUT_COMMENT
+Var ICON_PATH
+
+Name "Mozilla App Installer"
 OutFile ..\..\data\native-install\windows\installer\install.exe
 
 Function .onInit
-  ClearErrors
-  ReadINIStr $appID $EXEDIR\install.ini required appID
-  IfErrors error doneReadingAppID
-  doneReadingAppID:
-  ReadINIStr $appName $EXEDIR\install.ini required appName
-  IfErrors error doneReadingAppName
-  doneReadingAppName:
-  ReadINIStr $INSTDIR $EXEDIR\install.ini required instDir
-  IfErrors error doneReadingInstDir
-  doneReadingInstDir:
-  SetOutPath $INSTDIR
-  ReadINIStr $FFPath $EXEDIR\install.ini required FFPath
-  IfErrors error doneReadingFFPath
-  error:
-  Abort
-  doneReadingFFPath:
-  ReadINIStr $appURL $EXEDIR\install.ini optional appURL
-  ReadINIStr $appDesc $EXEDIR\install.ini optional appDesc
-  ReadINIStr $iconPath $EXEDIR\install.ini optional iconPath
-  ReadINIStr $createDesktopShortcut $EXEDIR\install.ini optional createDesktopShortcut
-  ReadINIStr $createStartMenuShortcut $EXEDIR\install.ini optional createStartMenuShortcut
 FunctionEnd
 
-Function WriteRegKeys
-  DetailPrint "Writing registry keys"
-  WriteRegStr HKCU \
-              "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appID" \
-              "DisplayName" \
-              $appName
-  WriteRegStr HKCU \
-              "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appID" \
-              "UninstallString" \
-              "$OUTDIR\uninstall.exe"
-  WriteRegStr HKCU \
-              "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appID" \
-              "InstallLocation" \
-              "$OUTDIR"
-  WriteRegStr HKCU \
-              "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appID" \
-              "HelpLink" \
-              "https://apps.mozillalabs.com/"
-  WriteRegStr HKCU \
-              "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appID" \
-              "URLUpdateInfo" \
-              "https://apps.mozillalabs.com/"
-  WriteRegDWORD HKCU \
-              "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appID" \
-              "NoModify" \
-              0x1
-  WriteRegDWORD HKCU \
-              "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appID" \
-              "NoRepair" \
-              0x1
-  StrCmp $appURL "" doneWritingAppURL writeAppURL
-  writeAppURL:
-  WriteRegStr HKCU \
-              "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appID" \
-              "URLInfoAbout" \
-              "$appURL"
-  doneWritingAppURL:
-  StrCmp $iconPath "" doneWritingIconPath writeIconPath
-  writeIconPath:
-  WriteRegStr HKCU \
-              "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appID" \
-              "DisplayIcon" \
-              "$iconPath"
-  doneWritingIconPath:
-  DetailPrint "Done"
+Function RealInit
+  ClearErrors
+
+  ${GetParameters} $PARAMETERS
+  IfErrors 0 +2
+    Abort "No command line arguments specified"
+  DetailPrint "Command line: $PARAMETERS"
+
+  ${GetOptions} $PARAMETERS "/FIREFOX_PATH= " $FIREFOX_PATH
+  IfErrors 0 +2
+    Abort "Path to firefox.exe not specified"
+  DetailPrint "FIREFOX_PATH=$FIREFOX_PATH"
+
+  ${GetOptions} $PARAMETERS "/ORIGIN_SCHEME= " $ORIGIN_SCHEME
+  IfErrors 0 +2
+    Abort "Origin URI scheme not specified"
+  DetailPrint "ORIGIN_SCHEME=$ORIGIN_SCHEME"
+
+  ${GetOptions} $PARAMETERS "/ORIGIN_URI= " $ORIGIN_URI
+  IfErrors 0 +2
+    Abort "Origin URI host not specified"
+  DetailPrint "ORIGIN_URI=$ORIGIN_URI"
+
+  ReadRegStr $INSTDIR \
+             HKCU \
+            "Software\Microsoft\Windows\CurrentVersion\Uninstall\$ORIGIN_SCHEME://$ORIGIN_URI" \
+            "InstallLocation"
+  IfErrors 0 +2
+    Abort "Could not read install location from registry"
+  DetailPrint "INSTDIR=$INSTDIR"
+  SetOutPath $INSTDIR
+
+  # Optional items
+  ReadRegStr $SHORTCUT_NAME \
+             HKCU \
+            "Software\Microsoft\Windows\CurrentVersion\Uninstall\$ORIGIN_SCHEME://$ORIGIN_URI" \
+            "DisplayName"
+  IfErrors +2
+    DetailPrint "SHORTCUT_NAME=$SHORTCUT_NAME"
+
+  ReadRegStr $SHORTCUT_COMMENT \
+             HKCU \
+            "Software\Microsoft\Windows\CurrentVersion\Uninstall\$ORIGIN_SCHEME://$ORIGIN_URI" \
+            "Comments"
+  IfErrors +2
+    DetailPrint "SHORTCUT_COMMENT=$SHORTCUT_COMMENT"
+
+  ReadRegStr $ICON_PATH \
+             HKCU \
+            "Software\Microsoft\Windows\CurrentVersion\Uninstall\$ORIGIN_SCHEME://$ORIGIN_URI" \
+            "DisplayIcon"
+  IfErrors +2
+    DetailPrint "ICON_PATH=$ICON_PATH"
+
+  Return
 FunctionEnd
 
 Function CreateShortcuts
   ClearErrors
-  CreateShortcut $OUTDIR\$appName.lnk \
-                 $FFPath \
+  Push $R0
+
+  CreateShortcut $INSTDIR\$SHORTCUT_NAME.lnk \
+                 $FIREFOX_PATH \
                  '-app "$OUTDIR\application.ini"' \
-                 $iconPath \
+                 $ICON_PATH \
                  0 \
                  "" \
                  "" \
-                 $appDesc
-  StrCmp $createDesktopShortcut "y" writeDesktopShortcut doneWritingDesktopShortcut
-  writeDesktopShortcut:
-  CreateShortcut $DESKTOP\$appName.lnk \
-                 $OUTDIR\$appName.lnk \
+                 $SHORTCUT_COMMENT
+
+  ${GetOptions} $PARAMETERS "/CreateDesktopShortcut" $R0
+  IfErrors +2
+  CreateShortcut $DESKTOP\$SHORTCUT_NAME.lnk \
+                 $INSTDIR\$SHORTCUT_NAME.lnk \
                  "" \
-                 $iconPath \
+                 $ICON_PATH \
                  0 \
                  "" \
                  "" \
-                 $appDesc
-  doneWritingDesktopShortcut:
-  StrCmp $createStartMenuShortcut "y" writeStartMenuShortcut doneWritingStartMenuShortcut
-  writeStartMenuShortcut:
-  CreateShortcut $SMPROGRAMS\$appName.lnk \
-                 $OUTDIR\$appName.lnk \
+                 $SHORTCUT_COMMENT
+
+  ${GetOptions} $PARAMETERS "/CreateStartMenuShortcut" $R0
+  IfErrors +2
+  CreateShortcut $SMPROGRAMS\$SHORTCUT_NAME.lnk \
+                 $INSTDIR\$SHORTCUT_NAME.lnk \
                  "" \
-                 $iconPath \
+                 $ICON_PATH \
                  0 \
                  "" \
                  "" \
-                 $appDesc
-  doneWritingStartMenuShortcut:
+                 $SHORTCUT_COMMENT
+
+  Pop $R0
 FunctionEnd
 
 Section Install
-  Call WriteRegKeys
+  Call RealInit
   Call CreateShortcuts
   WriteUninstaller $OUTDIR\uninstall.exe
 SectionEnd
 
 Function un.onInit
-  ClearErrors
-  ReadINIStr $appID $INSTDIR\uninstall.ini required appID
-  IfErrors error doneReadingAppID
-  doneReadingAppID:
-  ReadRegStr $OUTDIR \
-             HKCU \
-            "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appID" \
-            "InstallLocation"
-  IfErrors error doneReadingOutDir
-  doneReadingOutDir:
-  ReadRegStr $appName \
-             HKCU \
-            "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appID" \
-            "DisplayName"
-  IfErrors error doneReadingAppName
-  error:
-  Abort
-  doneReadingAppName:
-FunctionEnd
-
-Function un.RemoveAppDir
-  ClearErrors
-  RMDir /r $OUTDIR
-  RMDir $OUTDIR
-FunctionEnd
-
-Function un.RemoveAppData
-  ClearErrors
-  RMDir /r $APPDATA\Mozilla\$appName
-  RMDir $APPDATA\Mozilla\$appName
-FunctionEnd
-
-Function un.RemoveShortcuts
-  ClearErrors
-  Delete $SMPROGRAMS\$appName.lnk
-  Delete $DESKTOP\$appName.lnk
-FunctionEnd
-
-Function un.RemoveRegKeys
-  ClearErrors
-  DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\$appID"
 FunctionEnd
 
 Section un.Install
-  Call un.RemoveAppDir
-  Call un.RemoveAppData
-  Call un.RemoveShortcuts
-  Call un.RemoveRegKeys
+  ${GetParameters} $PARAMETERS
+  IfErrors 0 +2
+    Abort "Please use the Windows Control Panel to remove this application"
+  ${GetOptions} $PARAMETERS "/ORIGIN_SCHEME= " $ORIGIN_SCHEME
+  IfErrors 0 +2
+    Abort "Please use the Windows Control Panel to remove this application"
+  ${GetOptions} $PARAMETERS "/ORIGIN_URI= " $ORIGIN_URI
+  IfErrors 0 +2
+    Abort "Please use the Windows Control Panel to remove this application"
+
+  ReadRegStr $INSTDIR \
+             HKCU \
+            "Software\Microsoft\Windows\CurrentVersion\Uninstall\$ORIGIN_SCHEME://$ORIGIN_URI" \
+            "InstallLocation"
+  IfErrors 0 +2
+    Abort "The installation appears to be corrupted; cannot continue with uninstall"
+  SetOutPath $INSTDIR
+
+  ReadRegStr $SHORTCUT_NAME \
+             HKCU \
+            "Software\Microsoft\Windows\CurrentVersion\Uninstall\$ORIGIN_SCHEME://$ORIGIN_URI" \
+            "DisplayName"
+
+  Delete $SMPROGRAMS\$SHORTCUT_NAME.lnk
+  Delete $DESKTOP\$SHORTCUT_NAME.lnk
+  RMDir /r $OUTDIR
+  RMDir $OUTDIR
+  DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\$ORIGIN_SCHEME://$ORIGIN_URI"
 SectionEnd

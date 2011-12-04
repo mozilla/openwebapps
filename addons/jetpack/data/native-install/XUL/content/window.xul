@@ -11,7 +11,7 @@
 %browserDTD;
 ]>
 
-<window id="$APPNAME" windowtype="app" title="$APPNAME" width="1024" height="800" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"> <!-- TODO Escape quotes! -->
+<window id=$NAME_AS_XML_STRING windowtype="app" title=$NAME_AS_XML_STRING width="1024" height="800" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
   <script type="application/javascript" src="chrome://webapp/content/window.js"/>
 
   <commandset id="mainCommandSet">
@@ -37,5 +37,5 @@
 	 </menu>
   </menubar>
 
-  <browser id="content_browser" type="content" src="$LAUNCHPATH" flex="1"/>
+  <browser id="content_browser" type="content" src=$LAUNCH_PATH_AS_XML_STRING flex="1"/>
 </window>
