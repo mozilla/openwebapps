@@ -177,7 +177,6 @@ Section un.Install
             "InstallLocation"
   IfErrors 0 +2
     Abort "The installation appears to be corrupted; cannot continue with uninstall"
-  SetOutPath $INSTDIR
 
   ReadRegStr $SHORTCUT_NAME \
              HKCU \
@@ -186,7 +185,7 @@ Section un.Install
 
   Delete $SMPROGRAMS\$SHORTCUT_NAME.lnk
   Delete $DESKTOP\$SHORTCUT_NAME.lnk
-  RMDir /r $OUTDIR
-  RMDir $OUTDIR
+  RMDir /r $INSTDIR
+  RMDir $INSTDIR
   DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\$ORIGIN_SCHEME://$ORIGIN_HOST_AND_PORT"
 SectionEnd
