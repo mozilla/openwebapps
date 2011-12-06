@@ -508,7 +508,7 @@ Repo = (function() {
         });
       } else {
         appStorage.remove(origin, function() {
-          deletedStorage.put(origin, {last_modified: new Date().getTime()}, function() {
+          deletedStorage.put(origin, {origin: origin, last_modified: new Date().getTime()}, function() {
             if (cb && typeof(cb) == "function") cb(true);
           });
         });
@@ -542,19 +542,6 @@ Repo = (function() {
         });
       }
     });
-  }
-
-  function loadState(id, cb) {
-    stateStorage.get(JSON.stringify(id), cb);
-  }
-
-  function saveState(id, state, cb) {
-    // storing undefined purges state
-    if (state === undefined) {
-      stateStorage.remove(JSON.stringify(id), cb);
-    } else {
-      stateStorage.put(JSON.stringify(id), state, cb);
-    }
   }
 
   // for now, this is the only function that returns a legitimate App data structure
@@ -596,8 +583,6 @@ Repo = (function() {
     uninstall: uninstall,
     amInstalled: amInstalled,
     getInstalledBy: getInstalledBy,
-    loadState: loadState,
-    saveState: saveState,
     findServices: findServices,
     renderChooser: renderChooser,
     iterateApps: iterateApps,

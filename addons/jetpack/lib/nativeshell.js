@@ -230,7 +230,7 @@ function embedMozAppsAPIFiles(destDir)
   let dataPath = url.toFilename(dataURL);
   let injectorSrc = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
   injectorSrc.initWithPath(dataPath);
-  injectorSrc.append("..");
+  injectorSrc = injectorSrc.parent;
   injectorSrc.append("lib");
   injectorSrc.append("injector.js");
 
@@ -721,6 +721,10 @@ MacNativeShell.prototype = {
 
       this.installDir = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
       this.installDir.initWithPath(installDirPath);
+      if (!this.installDir.exists()) {
+        this.installDir.create(Components.interfaces.nsIFile.DIRECTORY_TYPE, 0777);    
+      }
+
       this.installDir.append(this.appName);
 
       let webRTPath = self.data.url("native-install/mac/xulrunner");

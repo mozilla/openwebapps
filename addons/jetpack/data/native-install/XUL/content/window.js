@@ -50,6 +50,7 @@ var BOOTSTRAP_REASONS = {
 
   Cu.import("resource://gre/modules/NetUtil.jsm");    
 
+
   var appDirectory = Cc["@mozilla.org/file/directory_service;1"].
     getService(Ci.nsIProperties).  
     get("CurProcD", Ci.nsIFile);
@@ -89,7 +90,6 @@ var BOOTSTRAP_REASONS = {
 // Copy the reason values from the global object into the bootstrap scope.
 for (let name in BOOTSTRAP_REASONS)
   bootstrap[name] = BOOTSTRAP_REASONS[name];
-
 
 // Add other stuff that extensions want.
 //const features = [ "Worker", "ChromeWorker" ];

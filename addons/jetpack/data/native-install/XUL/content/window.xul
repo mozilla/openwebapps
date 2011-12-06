@@ -1,17 +1,41 @@
 <?xml version="1.0"?>
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<?xul-overlay href="chrome://global/content/globalOverlay.xul"?>
+
+<!DOCTYPE overlay [
+<!ENTITY % brandDTD SYSTEM "chrome://branding/locale/brand.dtd">
+%brandDTD;
+<!ENTITY % baseMenuOverlayDTD SYSTEM "chrome://browser/locale/baseMenuOverlay.dtd">
+%baseMenuOverlayDTD;
+<!ENTITY % browserDTD SYSTEM "chrome://browser/locale/browser.dtd" >
+%browserDTD;
+]>
+
 <window id="$APPNAME" windowtype="app" title="$APPNAME" width="1024" height="800" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"> <!-- TODO Escape quotes! -->
   <script type="application/javascript" src="chrome://webapp/content/window.js"/>
-  <commandset>
+
+  <commandset id="mainCommandSet">
+    <command id="cmd_quitApplication" oncommand="goQuitApplication()"/>
   	<command id="new_window" oncommand="newWindow()"/>
   </commandset>
+  
+  <keyset>
+	<key id="key_quitApplication" key="&quitApplicationCmd.accesskey;" command="cmd_quitApplication" modifiers="accel"/>
+  </keyset>
 
-  <menubar>
-      <menu label="File">
-      <menupopup>
-        <menuitem label="New Window" command="new_window"/>
-      </menupopup>
-      </menu>
+  <menubar id="main-menubar">
+	<menu id="file-menu" label="&fileMenu.label;"
+		  accesskey="&fileMenu.accesskey;">
+	  <menupopup id="menu_FilePopup">
+		<menuitem label="New Window" command="new_window"/>
+        <menuseparator id="menu_FileQuitSeparator"/>
+		<menuitem id="menu_FileQuitItem"
+				  label="&quitApplicationCmd.label;"
+				  accesskey="&quitApplicationCmd.accesskey;"
+				  command="cmd_quitApplication"/>
+	   </menupopup>
+	 </menu>
   </menubar>
+
   <browser id="content_browser" type="content" src="$LAUNCHPATH" flex="1"/>
 </window>

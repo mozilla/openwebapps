@@ -75,4 +75,7 @@ run: nativeapp
 	$(MAKELAUNCHER)
 	$(addon_sdk)/cfx run $(cfx_args)	
 
-.PHONY: xpi clean pull test run
+build_rpms:
+	cd site/tools; ./build_rpm.sh
+
+.PHONY: xpi clean pull test run build_rpms

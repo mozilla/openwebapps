@@ -51,15 +51,6 @@ unsafeWindow.navigator.wrappedJSObject.mozApps.mgmt = {
   list: function(callback) {
     _makeCall('owa.mgmt.list', null, callback);
   },
-  loginStatus: function(args, callback) {
-    _makeCall('owa.mgmt.loginStatus', args, callback);
-  },
-  loadState: function(callback) {
-    _makeCall('owa.mgmt.loadState', null, callback);
-  },
-  saveState: function(state, callback) {
-    _makeCall('owa.mgmt.saveState', state, callback);
-  },
   uninstall: function(key, callback, onerror) {
     _makeCall('owa.mgmt.uninstall', key, callback, onerror);
   },

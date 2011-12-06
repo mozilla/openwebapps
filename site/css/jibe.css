@@ -47,9 +47,31 @@ A:visited {
 
 #usage {
   margin-top: 24px;
-    margin-right: auto;
-
+  margin-right: auto;
 }
+
+#usageInfo {
+    display: none;
+    position: relative;
+    width: 450px;
+    top:260px;
+    text-align: left;
+    border: 2px solid #000000;
+    border-radius: 5px 5px 5px 5px;
+    box-shadow: 5px 10px 10px rgba(0, 0, 0, 0.25);
+    background-color: white;
+    z-index: 100000;
+    clear: left;
+    margin: 0 auto;
+}
+
+#centerfield {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+}
+
 
 #login {
   position: absolute;
