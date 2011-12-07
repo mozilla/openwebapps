@@ -62,7 +62,6 @@ var mediators = {};
 // the User-Agent (ie, into Firefox) or be extensions.
 var agentCreators = {}; // key is service name, value is a callable.
 
-var nextinvocationid = 0;
 /**
  * MediatorPanel
  *
@@ -85,7 +84,6 @@ function MediatorPanel(window, activity) {
   this.mediator = mediators[this.methodName];
 
   this.panel = null;
-  this.invocationid = nextinvocationid++;
   this.invalidated = true;
 
   // we use document-element-inserted here rather than
@@ -96,11 +94,8 @@ function MediatorPanel(window, activity) {
   this.contentScriptFile = [require("self").data.url("servicesapi.js")];
 
   this._createPopupPanel();
-
-  window.gBrowser.tabContainer.addEventListener("TabSelect", function() {
-    this.invalidated = true;
-  }.bind(this), false);
 }
+
 MediatorPanel.prototype = {
   startActivity: function(activity, successCB, errorCB) {
     let tabData = {
@@ -112,6 +107,16 @@ MediatorPanel.prototype = {
     if (!tab.activity)
       tab.activity = {};
     tab.activity[this.methodName] = tabData;
+    // If the tab is closed or deactivated we want to hide and invalidate the
+    // panel so our state doesn't get messed up.
+    tab.on("close", function() {
+      this.invalidated = true;
+      this.panel.hide();
+    }.bind(this));
+    tab.on("deactivate", function() {
+      this.invalidated = true;
+      this.panel.hide();
+    }.bind(this));
     this.invalidated = true;
   },
   
@@ -189,14 +194,6 @@ MediatorPanel.prototype = {
   updateargs: function(data) { return data },
 
   /**
-   * handlers for show/hide of the panel - will be hooked up if a subclass
-   * defines them.
-   * XXX - rename these to _on_panel_shown etc?
-   */
-  //_panelShown: function() {},
-  //_panelHidden: function() {},
-
-  /**
    * onOWASuccess
    *
    * the result data is sent back to the content that invoked the service,
@@ -230,8 +227,7 @@ MediatorPanel.prototype = {
       this.tabData.activity.data = this.updateargs(this.tabData.activity.data);
       this.panel.port.emit("owa.mediation.setup", {
               activity: this.tabData.activity,
-              serviceList: serviceList,
-              invocationid: this.invocationid
+              serviceList: serviceList
       });
     }.bind(this));
   },
@@ -301,6 +297,24 @@ MediatorPanel.prototype = {
     }
   },
 
+  onPanelShown: function() {
+    // nothing to do here yet, but sub-classes might want to override this.
+  },
+
+  onPanelHidden: function() {
+    // there is a timing issue here when tabs are being switched - as the
+    // panel hide event comes the "old" tab is active, but by the time we
+    // message the contentScript and it messages back, the "new" tab is
+    // active.  So we must take care to remember the "old" tab before doing
+    // the message dance.
+    var activityToUpdate = this.tabData.activity;
+    var tab = tabs.activeTab;
+    this.panel.port.once("owa.mediation.setMediatorState", function(state) {
+      activityToUpdate.mediatorState = state;
+    });
+    this.panel.port.emit("owa.mediation.panelHidden");
+  },
+
   attachHandlers: function() {
     this.panel.port.on("owa.success", this.onOWASuccess.bind(this));
     this.panel.port.on("owa.failure", this.onOWAFailure.bind(this));
@@ -310,6 +324,9 @@ MediatorPanel.prototype = {
     this.panel.port.on("owa.mediation.invoke", this.onOWAInvoke.bind(this));
     this.panel.port.on("owa.mediation.sizeToContent", this.onOWASizeToContent.bind(this));
     this.panel.port.on("owa.mediation.doLogin", this.onOWALogin.bind(this));
+    // and handlers related to the panel itself
+    this.panel.on("show", this.onPanelShown.bind(this));
+    this.panel.on("hide", this.onPanelHidden.bind(this));
   },
   /* end message api */
 
@@ -341,12 +358,6 @@ MediatorPanel.prototype = {
       width: this.width, height: this.height
     });
 
-    if (this._panelShown) {
-      thePanel.on("show", this._panelShown.bind(this));
-    }
-    if (this._panelHidden) {
-      thePanel.on("hide", this._panelHidden.bind(this));
-    }
     this.panel = thePanel;
   },
 
@@ -359,6 +370,7 @@ MediatorPanel.prototype = {
     if (this.invalidated) {
       this.tabData.activity.data = this.updateargs(this.tabData.activity.data);
       this.panel.port.emit("owa.mediation.updateActivity", this.tabData.activity);
+      this.invalidated = false;
     }
     this.panel.show(this.anchor);
   },
@@ -566,16 +578,19 @@ serviceInvocationHandler.prototype = {
   },
 
   get: function(activity, successCB, errorCB) {
-    let panel;
     for each (let panel in this._popups) {
       if (activity.action == panel.methodName) {
+        // We are going to replace the existing activity (if any) for the
+        // current tab with this new activity - but if there is some
+        // mediatorState for that tab we want to keep that.
+        activity.mediatorState = panel.tabData.activity.mediatorState;
         panel.startActivity(activity, successCB, errorCB);
         return panel;
       }
     }
     // if we didn't find it, create it
     let agent = agentCreators[activity.action] ? agentCreators[activity.action] : MediatorPanel;
-    panel = new agent(this._window, activity);
+    let panel = new agent(this._window, activity);
     panel.startActivity(activity, successCB, errorCB);
     // attach our response listeners
     panel.attachHandlers();
@@ -601,6 +616,5 @@ serviceInvocationHandler.prototype = {
   }
 };
 
-var EXPORTED_SYMBOLS = ["serviceInvocationHandler"];
 exports.serviceInvocationHandler = serviceInvocationHandler;
 exports.MediatorPanel = MediatorPanel;
