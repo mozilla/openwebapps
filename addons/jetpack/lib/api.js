@@ -210,7 +210,25 @@ FFRepoImpl.prototype = {
           }
         }
       };
-      xhr.send(null);
+
+      try {
+        xhr.send(null); 
+      } catch (e) {
+        console.log("XHR in fetchManifest threw " + e);
+        cb(null);
+      }
+
+      let wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
+      let win = wm.getMostRecentWindow("navigator:browser");
+      if (win) {
+        win.setTimeout(function() {
+          if (xhr.readyState !== 4) {
+            dump("Failed to get manifest: timeout\n");
+            xhr.abort();
+            cb(null);
+          }
+        }, 5000);
+      }
     }
 
     // Fetch from local file:// or resource:// URI (eg. for faker apps)
