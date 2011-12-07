@@ -4,15 +4,15 @@ var Cc = Components.classes;
 var Ci = Components.interfaces;
 
 var os = Cc["@mozilla.org/xre/app-info;1"].getService(Ci.nsIXULRuntime).OS;
-    
+
 // only make the tiny window that handles window closing events (and quits the app) for Mac OS
 if ("Darwin" === os) {
   var observer = {
     observe: function(contentWindow, aTopic, aData) {
       if (aTopic == 'xul-window-destroyed') {
         // If there is nothing left but the main (invisible) window, quit
-        var wm = Cc["@mozilla.org/appshell/window-mediator;1"]  
-          .getService(Ci.nsIWindowMediator);  
+        var wm = Cc["@mozilla.org/appshell/window-mediator;1"]
+                 .getService(Ci.nsIWindowMediator);
         var enumerator = wm.getEnumerator("app");
         if (enumerator.hasMoreElements()) return;
 
