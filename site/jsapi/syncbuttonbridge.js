@@ -23,7 +23,7 @@ window.addEventListener('storage', function (event) {
         setButtonData({status: "Logout failed: " + error}, true);
         return;
       }
-      localStorage.setItem('syncbutton-saved-login', null);
+      localStorage.setItem('syncbutton-saved-authdata', null);
       setButtonData({logout: true}, false);
     });
     return;
@@ -34,28 +34,26 @@ window.addEventListener('storage', function (event) {
 }, false);
 
 function login(loginData) {
-  sync.login(
-    loginData, 
-    function (error, status) {
-      if (error) {
-        setButtonData({status: "Login failed: " + JSON.stringify(error)}, true);
-        localStorage.setItem('syncbutton-saved-login', null);
-        setButtonData({logout: true}, false);
-        return;
-      }
-      localStorage.setItem('syncbutton-saved-login', JSON.stringify(loginData));
-      setButtonData({logout: false, username: status.email, status: null}, false);
-      // FIXME: this needs to be a much fancier loop:
-    }
-  );
+  sync.login(loginData, loginHandler);
+}
+
+function loginHandler(error, status) {
+  if (error) {
+    setButtonData({status: "Login failed: " + JSON.stringify(error)}, true);
+    localStorage.setItem('syncbutton-saved-authdata', null);
+    setButtonData({logout: true}, false);
+    return;
+  }
+  localStorage.setItem('syncbutton-saved-authdata', JSON.stringify(sync.getAuthData()));
+  setButtonData({logout: false, username: status.email, status: null}, false);
 }
 
 window.addEventListener('load', function () {
-  var loginData = localStorage.getItem('syncbutton-saved-login');
-  if (loginData) {
-    loginData = JSON.parse(loginData);
-    if (loginData) {
-      login(loginData);
+  var authData = localStorage.getItem('syncbutton-saved-authdata');
+  if (authData) {
+    authData = JSON.parse(authData);
+    if (authData) {
+      sync.setAuthData(authData, loginHandler);
       return;
     }
   }
