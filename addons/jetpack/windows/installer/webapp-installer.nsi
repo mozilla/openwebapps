@@ -43,7 +43,8 @@ RequestExecutionLevel user
 Var PARAMETERS
 
 Var ORIGIN_SCHEME
-Var ORIGIN_HOST_AND_PORT
+Var ORIGIN_HOST
+Var ORIGIN_PORT
 Var FIREFOX_PATH
 
 Var SHORTCUT_NAME
@@ -74,14 +75,19 @@ Function RealInit
     Abort "Origin URI scheme not specified"
   DetailPrint "ORIGIN_SCHEME=$ORIGIN_SCHEME"
 
-  ${GetOptions} $PARAMETERS "/ORIGIN_HOST_AND_PORT= " $ORIGIN_HOST_AND_PORT
+  ${GetOptions} $PARAMETERS "/ORIGIN_HOST= " $ORIGIN_HOST
   IfErrors 0 +2
     Abort "Origin URI host not specified"
-  DetailPrint "ORIGIN_HOST_AND_PORT=$ORIGIN_HOST_AND_PORT"
+  DetailPrint "ORIGIN_HOST=$ORIGIN_HOST"
+
+  ${GetOptions} $PARAMETERS "/ORIGIN_PORT= " $ORIGIN_PORT
+  IfErrors 0 +2
+    Abort "Origin URI port not specified"
+  DetailPrint "ORIGIN_PORT=$ORIGIN_PORT"
 
   ReadRegStr $INSTDIR \
              HKCU \
-            "Software\Microsoft\Windows\CurrentVersion\Uninstall\$ORIGIN_SCHEME://$ORIGIN_HOST_AND_PORT" \
+            "Software\Microsoft\Windows\CurrentVersion\Uninstall\$ORIGIN_SCHEME://$ORIGIN_HOST:$ORIGIN_PORT" \
             "InstallLocation"
   IfErrors 0 +2
     Abort "Could not read install location from registry"
@@ -91,21 +97,21 @@ Function RealInit
   # Optional items
   ReadRegStr $SHORTCUT_NAME \
              HKCU \
-            "Software\Microsoft\Windows\CurrentVersion\Uninstall\$ORIGIN_SCHEME://$ORIGIN_HOST_AND_PORT" \
-            "DisplayName"
+            "Software\Microsoft\Windows\CurrentVersion\Uninstall\$ORIGIN_SCHEME://$ORIGIN_HOST:$ORIGIN_PORT" \
+            "ShortcutName"
   IfErrors +2
     DetailPrint "SHORTCUT_NAME=$SHORTCUT_NAME"
 
   ReadRegStr $SHORTCUT_COMMENT \
              HKCU \
-            "Software\Microsoft\Windows\CurrentVersion\Uninstall\$ORIGIN_SCHEME://$ORIGIN_HOST_AND_PORT" \
+            "Software\Microsoft\Windows\CurrentVersion\Uninstall\$ORIGIN_SCHEME://$ORIGIN_HOST:$ORIGIN_PORT" \
             "Comments"
   IfErrors +2
     DetailPrint "SHORTCUT_COMMENT=$SHORTCUT_COMMENT"
 
   ReadRegStr $ICON_PATH \
              HKCU \
-            "Software\Microsoft\Windows\CurrentVersion\Uninstall\$ORIGIN_SCHEME://$ORIGIN_HOST_AND_PORT" \
+            "Software\Microsoft\Windows\CurrentVersion\Uninstall\$ORIGIN_SCHEME://$ORIGIN_HOST:$ORIGIN_PORT" \
             "DisplayIcon"
   IfErrors +2
     DetailPrint "ICON_PATH=$ICON_PATH"
@@ -167,25 +173,28 @@ Section un.Install
   ${GetOptions} $PARAMETERS "/ORIGIN_SCHEME= " $ORIGIN_SCHEME
   IfErrors 0 +2
     Abort "Please use the Windows Control Panel to remove this application"
-  ${GetOptions} $PARAMETERS "/ORIGIN_HOST_AND_PORT= " $ORIGIN_HOST_AND_PORT
+  ${GetOptions} $PARAMETERS "/ORIGIN_HOST= " $ORIGIN_HOST
+  IfErrors 0 +2
+    Abort "Please use the Windows Control Panel to remove this application"
+  ${GetOptions} $PARAMETERS "/ORIGIN_PORT= " $ORIGIN_PORT
   IfErrors 0 +2
     Abort "Please use the Windows Control Panel to remove this application"
 
   ReadRegStr $INSTDIR \
              HKCU \
-            "Software\Microsoft\Windows\CurrentVersion\Uninstall\$ORIGIN_SCHEME://$ORIGIN_HOST_AND_PORT" \
+            "Software\Microsoft\Windows\CurrentVersion\Uninstall\$ORIGIN_SCHEME://$ORIGIN_HOST:$ORIGIN_PORT" \
             "InstallLocation"
   IfErrors 0 +2
     Abort "The installation appears to be corrupted; cannot continue with uninstall"
 
   ReadRegStr $SHORTCUT_NAME \
              HKCU \
-            "Software\Microsoft\Windows\CurrentVersion\Uninstall\$ORIGIN_SCHEME://$ORIGIN_HOST_AND_PORT" \
-            "DisplayName"
+            "Software\Microsoft\Windows\CurrentVersion\Uninstall\$ORIGIN_SCHEME://$ORIGIN_HOST:$ORIGIN_PORT" \
+            "ShortcutName"
 
   Delete $SMPROGRAMS\$SHORTCUT_NAME.lnk
   Delete $DESKTOP\$SHORTCUT_NAME.lnk
   RMDir /r $INSTDIR
   RMDir $INSTDIR
-  DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\$ORIGIN_SCHEME://$ORIGIN_HOST_AND_PORT"
+  DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\$ORIGIN_SCHEME://$ORIGIN_HOST:$ORIGIN_PORT"
 SectionEnd

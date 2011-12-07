@@ -45,8 +45,8 @@ const self = require("self");
 const url = require("url");
 
 //used for several things
-Components.utils.import("resource://gre/modules/NetUtil.jsm");  
-Components.utils.import("resource://gre/modules/FileUtils.jsm");  
+Components.utils.import("resource://gre/modules/NetUtil.jsm");
+Components.utils.import("resource://gre/modules/FileUtils.jsm");
 
 NativeShell = (function() {
   function CreateNativeShell(app)
@@ -60,7 +60,7 @@ NativeShell = (function() {
       nativeShell = new MacNativeShell();
     }
     if(nativeShell) {
-      nativeShell.createAppNativeLauncher(app);
+      createAppNativeLauncher(app, nativeShell);
     } else {
       console.log("APPS | CreateNativeShell | "
                   + "No OS-specific native shell could be created");
@@ -71,6 +71,32 @@ NativeShell = (function() {
     CreateNativeShell: CreateNativeShell
   }
 })();
+
+function makeJSString(str) {
+  // Replace double-quotes (") and slashes (\)
+  // with escaped versions of each
+  let escapeRE = new RegExp("([\"\\\\])", "gi");
+  return "\"" + str.replace(escapeRE, "\\$&") + "\"";
+}
+
+function makeXMLString(str) {
+  // There are 5 items that need to be escaped
+  // in XML strings
+  let quoteRE = new RegExp("\"", "gi");
+  let aposRE = new RegExp("\\'", "gi");
+  let ltRE = new RegExp("\\<", "gi");
+  let gtRE = new RegExp("\\>", "gi");
+  let ampRE = new RegExp("&", "gi");
+  // Just be sure to replace ampersand before replacing
+  // the others
+  return "\""
+       + str.replace(ampRE, "&amp;")
+            .replace(quoteRE, "&quot;")
+            .replace(aposRE, "&apos;")
+            .replace(ltRE, "&lt;")
+            .replace(gtRE, "&gt;")
+      + "\"";
+}
 
 function substituteStrings(inputString, substituteStrings)
 {
@@ -88,25 +114,27 @@ function substituteStrings(inputString, substituteStrings)
   }
 }
 
-/* Creates a UTI for use in a BundleIdentifier on MacOS from 
- * domain name; see 
+/* Creates a UTI for use in a BundleIdentifier on MacOS from
+ * domain name; see
  * http://developer.apple.com/library/mac/#documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
  *
  * The bare inverted domain name is used for standard-port HTTP
- * An inverted domain name suffixed with "https" is used for standard-port HTTPS.
+ * An inverted domain name suffixed with "https" is used for standard-port
+ * HTTPS.
  * A port number is added to the tuple, at the end, but before
  *   the scheme, if the port number is non-standard.
  */
 function createInvertedDNSIdentifier(domain)
 {
   try {
+    // TODO: Use nsIURI for this
     var schemeSplit = domain.split("//");
     var hostSplit = schemeSplit[1].split(":");
     var nameSplit = hostSplit[0].split(".");
     var scheme = schemeSplit[0].split(":")[0];
     var customPort;
     if (hostSplit.length > 1) customPort = hostSplit[1];
-    
+
     var s = "";
     for (var i=nameSplit.length-1;i--;i>=0)
     {
@@ -121,10 +149,10 @@ function createInvertedDNSIdentifier(domain)
   }
 }
 
-function getBiggestIcon(app, callback) {
+function getBiggestIcon(icons) {
   let icon = 0;
-  if (app.manifest.icons) {
-    for (z in app.manifest.icons) {
+  if (icons) {
+    for (z in icons) {
       let size = parseInt(z, 10);
       if (size > icon) {
         icon = size;
@@ -134,73 +162,87 @@ function getBiggestIcon(app, callback) {
   if (icon === 0) {
     return null;
   } else {
-    icon = app.manifest.icons[icon];
+    return icons[icon];
+  }
+}
+
+function getIconFromURI(nativeShell) {
+  if(!nativeShell.iconURI) {
+    throw("getIconFromURI - "
+        + "Invalid URI");
   }
 
-  if (icon.indexOf("data:") === 0) {
-    let tIndex = icon.indexOf(";");
-    mimeType = icon.substring(5, tIndex);
+  let mimeService = Cc["@mozilla.org/mime;1"]
+                    .getService(Ci.nsIMIMEService)
 
-    let base64 = icon.indexOf("base64,");
-    if (base64 < 0) {
-      throw("getBiggestIcon - "
-            + "Found a data URL but it appears not to be base64 encoded");
+  let mimeType;
+  try {
+    if("data" === nativeShell.iconURI.scheme) {
+      let tIndex = nativeShell.iconURI.path.indexOf(";");
+      mimeType = nativeShell.iconURI.path.substring(tIndex);
+    } else {
+      mimeType = mimeService.getTypeFromURI(nativeShell.iconURI);
+    }
+  } catch(e) {
+    throw("getIconFromURI - "
+        + "Failed to determine MIME type");
+  }
+
+  try {
+    let outputStream;
+    let pipe;
+    if(nativeShell.useTmpFileForIcon) {
+      tmpIcon = Cc["@mozilla.org/file/directory_service;1"]
+                .getService(Ci.nsIProperties)
+                .get("TmpD", Ci.nsIFile);
+      tmpIcon.append("tmpicon."
+                   + mimeService.getPrimaryExtension(mimeType, ""));
+      tmpIcon.createUnique(Ci.nsIFile.NORMAL_FILE_TYPE, 0600);
+      outputStream = FileUtils.openSafeFileOutputStream(tmpIcon);
+    } else {
+      pipe = Cc["@mozilla.org/pipe;1"]
+             .createInstance(Ci.nsIPipe);
+      pipe.init(true, true, 0, PR_UINT32_MAX, null);
+      outputStream = pipe.outputStream;
     }
 
-    let binaryStream;
-    try {
-      let base64Data = icon.substring(base64 + 7);
-
-      const AppShellService =
-            Cc["@mozilla.org/appshell/appShellService;1"]
-            .getService(Ci.nsIAppShellService);
-      let binaryData =
-            AppShellService.hiddenDOMWindow.atob(String(base64Data));
-      let stringStream = Cc["@mozilla.org/io/string-input-stream;1"]
-                         .createInstance(Ci.nsIStringInputStream);
-      stringStream.setData(binaryData, binaryData.length);
-      binaryStream = Cc["@mozilla.org/binaryinputstream;1"]
-                     .createInstance(Ci.nsIObjectInputStream);
-      binaryStream.setInputStream(stringStream);
-    } catch(e) {
-      throw("getBiggestIcon - "
-            + "Failure converting base64 data "
-            + "(" + e + ")");
-    }
-
-    try {
-      callback(0, mimeType, binaryStream);
-    } catch(e) {
-      throw("getBiggestIcon - "
-            + "Failure in callback "
-            + "(" + e + ")");
-    }
-  } else {
-    // TODO: Come up with a smarter way to determine MIME type
-    try {
-      if (icon.indexOf(".png") > 0) {
-        mimeType = "image/png";
-      } else if ((icon.indexOf(".jpeg") > 0)
-                || (icon.indexOf(".jpg") > 0)) {
-        mimeType = "image/jpeg";
-      }
-    } catch(e) {
-      throw("getBiggestIcon - "
-            + "Failure determining MIME type of " + icon
-            + " (" + e + ")");
-    }
-
-    let iconPath = app.origin + icon;
-    NetUtil.asyncFetch(iconPath,
-                       function(inputStream, resultCode, request) {
-        try {
-          callback(resultCode, mimeType, inputStream);
-        } catch (e) {
-          console.log("getBiggestIcon - "
-            + "Failure in callback function"
-            + " (" + e + ")");
+    let listener = Cc["@mozilla.org/network/simple-stream-listener;1"]
+                   .createInstance(Ci.nsISimpleStreamListener);
+    listener.init(outputStream, {
+        onStartRequest: function(aRequest, aContext) {},
+        onStopRequest: function(aRequest, aContext, aStatusCode) {
+            outputStream.close();
+            if(nativeShell.isInstallAborted) {
+              nativeShell.removeInstallation();
+              return;
+            }
+            if (!components.isSuccessCode(resultCode)) {
+              console.log("Attempt to retrieve icon returned result code "
+                        + resultCode);
+              nativeShell.postIconProcessing();
+              return;
+            }
+            try {
+              nativeShell.processIcon(mimeType,
+                                      nativeShell.useTmpFileForIcon
+                                    ? tmpIcon
+                                    : pipe.inputStream);
+            } catch(e) {
+              console.log("Failure processing icon (" + e + ")");
+              nativeShell.postIconProcessing();
+            }
         }
     });
+
+    let channel = NetUtil.newChannel(iconURI);
+    Cu.import("resource://gre/modules/CertUtils.jsm");
+    // Pass true to avoid optional redirect-cert-checking behavior.
+    channel.notificationCallbacks = new BadCertHandler(true);
+
+    channel.asyncOpen(listener, null);
+  } catch(e) {
+    throw("getIconFromURI - "
+        + "Failure getting icon (" + e + ")");
   }
 }
 
@@ -228,7 +270,8 @@ function embedMozAppsAPIFiles(destDir)
   //this is slightly sketchy, going up out of the data dir and into the lib dir to fetch a file...
   let dataURL = self.data.url(".");
   let dataPath = url.toFilename(dataURL);
-  let injectorSrc = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
+  let injectorSrc = Cc['@mozilla.org/file/local;1']
+                    .createInstance(Ci.nsILocalFile);
   injectorSrc.initWithPath(dataPath);
   injectorSrc = injectorSrc.parent;
   injectorSrc.append("lib");
@@ -434,193 +477,186 @@ function recursiveFileCopy(srcDir,
   }
 }
 
+function setUpSharedVariables(app, out) {
+   let ios = Cc["@mozilla.org/network/io-service;1"]
+             .getService(Ci.nsIIOService);
+   let originURI = ios.newURI(app.origin, null, null);
+   out.launchURI = originURI.clone();
+   if (app.manifest.launch_path) {
+     out.launchURI.spec =
+             originURI.resolve(app.manifest.launch_path);
+   }
+   let biggestIcon = getBiggestIcon(app.manifest.icons);
+   if(biggestIcon) {
+     if(0 !== biggestIcon.indexOf("/")) {
+       out.iconURI = ios.newURI(biggestIcon, null, null);
+     } else {
+       out.iconURI = originURI.clone();
+       out.iconURI.spec = originURI.resolve(biggestIcon);
+     }
+   }
+
+   let unprintableRE = new RegExp("["
+                                + "\\x00-\\x1F"
+                                + "\\x7F"
+                                + "]"
+                                ,"gi");
+   out.appName = app.manifest.name.replace(unprintableRE, "");
+
+   if(app.developer) {
+     if(app.developer.name) {
+       out.developerName =
+             app.manifest.developer.name.substring(0, 128);
+     }
+   }
+
+   out.shortDescription = "";
+   if(!app.manifest.description) {
+     out.shortDescription = out.appName;
+   } else {
+     if(app.manifest.description.length <= 256) {
+       out.shortDescription = app.manifest.description;
+     } else {
+       let index = app.manifest.description.indexOf("\n");
+       if(index != -1 && index < 256) {
+         out.shortDescription = app.manifest.description.substring(0,index);
+       } else {
+         out.shortDescription = app.manifest.description.substring(0,253) + "...";
+       }
+     }
+   }
+   out.shortDescription = out.shortDescription.replace(unprintableRE, "");
+
+   out.versionStr = "Developer Preview";
+
+   out.substitutions = {
+     "\\$NAME_AS_XUL_APP_PROPERTY": out.appName,
+
+     "\\$VERSION_AS_XUL_APP_PROPERTY": out.versionStr,
+     "\\$ORIGIN_AS_XUL_APP_PROPERTY": out.launchURI.prePath,
+
+     "\\$NAME_AS_JS_STRING": makeJSString(out.appName),
+
+     "\\$NAME_AS_XML_STRING": makeXMLString(out.appName),
+     "\\$LAUNCH_PATH_AS_XML_STRING": makeXMLString(out.launchURI.spec)
+   }
+}
+
+function createAppNativeLauncher(app, nativeShell) {
+  try {
+    nativeShell.isInstallAborted = false;
+    nativeShell.setUpVariables(app);
+    nativeShell.removeInstallation();
+    nativeShell.installDir.create(Ci.nsIFile.DIRECTORY_TYPE, 0777);
+  } catch(e) {
+    throw("createExecutable - Failure initializing native install "
+        + "(" + e + ")");
+  }
+
+  try {
+    getIconFromURI(nativeShell);
+  } catch(e) {
+    nativeShell.postIconProcessing();
+  }
+
+  try {
+    nativeShell.copyInstallationFiles();
+
+    //add the install record to the native app bundle
+    embedInstallRecord(app, nativeShell.XULDir);
+
+    //add injector.js, which we need to inject some apis
+    //into the webapp content page
+    let contentDir = nativeShell.XULDir.clone();
+    contentDir.append("content");
+    embedMozAppsAPIFiles(contentDir);
+  } catch(e) {
+    abortInstallation(nativeShell);
+    throw("createExecutable - "
+        + "Failure copying files (" + e + ")");
+  }
+}
+
 // Windows implementation
 function WinNativeShell() {
 }
 
 WinNativeShell.prototype = {
-  createAppNativeLauncher : function(app)
-  {
-    this.createExecutable(app);
+  setUpVariables : function(app) {
+    setUpSharedVariables(app, this);
+    let filenameRE = new RegExp("["
+                              + "<"
+                              + ">"
+                              + ":"
+                              + "\""
+                              + "/"
+                              + "\\\\"
+                              + "|"
+                              + "\\?"
+                              + "\\*"
+                              + "]"
+                              ,"gi");
+
+    this.appNameAsFilename = this.appName.replace(filenameRE, "");
+
+    let directoryService = Cc["@mozilla.org/file/directory_service;1"]
+                           .getService(Ci.nsIProperties);
+    this.installDir = directoryService.get("AppData", Ci.nsIFile);
+    this.installDir.append(this.launchURI.host + ";"
+                        +  this.launchURI.scheme + ";"
+                        +  this.launchURI.port);
+
+    this.XULDir = this.installDir.clone();
+
+    this.uninstallerFile = this.installDir.clone();
+    this.uninstallerFile.append("uninstall.exe");
+
+    this.iconFile = this.installDir.clone();
+    this.iconFile.append("chrome");
+    this.iconFile.append("icons");
+    this.iconFile.append("default");
+    this.iconFile.append(this.appNameAsFilename + ".ico");
+
+    this.installerDir = directoryService.get("TmpD", Ci.nsIFile);
+    this.installerDir.append(this.appNameAsFilename);
+    this.installerDir.createUnique(Ci.nsIFile.DIRECTORY_TYPE, 0777);
+
+    this.firefoxFile = directoryService.get("CurProcD", Ci.nsIFile);
+    // TODO: Is there a way to get the currently running process?
+    this.firefoxFile.append("firefox.exe");
+
+    this.desktopShortcut = directoryService.get("Desk", Ci.nsIFile);
+    this.desktopShortcut.append(this.appNameAsFilename + ".lnk");
+
+    this.startMenuShortcut = directoryService.get("Progs", Ci.nsIFile);
+    this.startMenuShortcut.append(this.appNameAsFilename + ".lnk");
+
+    this.uninstallSubkeyStr = this.launchURI.scheme
+                            + "://"
+                            + this.launchURI.host
+                            + ":"
+                            + this.launchURI.port;
+
+    this.substitutions["\\$PROFILE_DIR"] = this.installDir.leafName;
+    // Slashes in the app name cause the XUL app to fail to launch :(
+    this.substitutions["\\$NAME_AS_XUL_APP_PROPERTY"] =
+                                 this.appName.replace("\\", "");
   },
 
-  setUpPaths : function(app) {
-      let re = new RegExp("[^"
-                        + "\\w" // Allow word chars
-                        + "\\s" // Allow whitespace
-                        + "'"   // e.g. Dave's Galaxy
-                        + "!"   // Lots of apps probably want this
-                        + "&"   // e.g. Rock & Roll
-                        + "\\("
-                        + "\\)"
-                        + "\\-"
-                        + "\\+"
-                        + "\\."
-                     // Uncomment these if we decide we want them, append
-                     // others as appropriate
-                     // + "\\{"
-                     // + "\\}"
-                     // + "\`"
-                     // + "@"
-                     // + "#"
-                     // + "\\$"
-                     // + "%"
-                     // + "\\^"
-                     // + "="
-                     // + ":"
-                     // + ";"
-                        + "]", "gi");
+  copyInstallationFiles : function() {
+    recursiveFileCopy("native-install/windows/app",
+                      "",
+                      this.installDir.path,
+                      "\\",
+                      this.substitutions,
+                      undefined);
 
-      this.appName = app.manifest.name.replace(re, "").substring(0, 128);
-
-      if(app.developer) {
-        if(app.developer.name) {
-          this.developerName =
-                app.manifest.developer.name.replace(re, "").substring(0, 128);
-        }
-      }
-
-      let directoryService = Cc["@mozilla.org/file/directory_service;1"]
-                             .getService(Ci.nsIProperties);
-      this.installDir = directoryService.get("AppData", Ci.nsIFile);
-      this.installDir.append("Mozilla");
-      this.installDir.append(this.appName);
-
-      this.uninstallerFile = this.installDir.clone();
-      this.uninstallerFile.append("uninstall.exe");
-
-      let ios = Cc["@mozilla.org/network/io-service;1"]
-                .getService(Ci.nsIIOService);
-      this.launchURI = ios.newURI(app.origin, null, null);
-      if (app.manifest.launch_path) {
-        this.launchURI.spec =
-                this.launchURI.resolve(app.manifest.launch_path);
-      }
-      this.launchURIhostnameAndPort = 
-
-      this.shortDescription = "";
-      if(app.manifest.description.length <= 256) {
-        this.shortDescription = app.manifest.description;
-      } else {
-        let index = app.manifest.description.indexOf("\n");
-        if(index != -1 && index < 256) {
-          this.shortDescription = app.manifest.description.substring(0,index);
-        } else {
-          this.shortDescription = app.manifest.description.substring(0,253) + "...";
-        }
-      }
-      this.shortDescription = this.shortDescription.replace(re, "");
-
-      this.iconFile = this.installDir.clone();
-      this.iconFile.append("chrome");
-      this.iconFile.append("icons");
-      this.iconFile.append("default");
-      this.iconFile.append(this.appName + ".ico");
-
-      this.installerDir = directoryService.get("TmpD", Ci.nsIFile);
-      this.installerDir.append(this.appName);
-      this.installerDir.createUnique(Ci.nsIFile.DIRECTORY_TYPE, 0777);
-
-      this.firefoxFile = directoryService.get("CurProcD", Ci.nsIFile);
-      // TODO: What if FF has been renamed?
-      this.firefoxFile.append("firefox.exe");
-
-      this.uninstallSubkeyStr = this.launchURI.scheme
-                              + "://"
-                              + this.launchURI.hostPort;
-  },
-
-  createExecutable : function(app)
-  {
-    try {
-      this.isInstallAborted = false;
-      this.setUpPaths(app);
-    } catch(e) {
-      throw("createExecutable - Failure setting up paths (" + e + ")");
-    }
-
-    let substitutions;
-    try {
-      substitutions = {
-        "\\$NAME_AS_XUL_APP_PROPERTY": this.appName,
-        "\\$VERSION_AS_XUL_APP_PROPERTY": this.versionStr,
-        "\\$ORIGIN_AS_XUL_APP_PROPERTY": this.launchURI.prePath,
-
-        "\\$NAME_AS_JS_STRING": "\"" + this.appName + "\"",
-
-        "\\$NAME_AS_XML_STRING": "\"" + this.appName + "\"",
-        "\\$LAUNCH_PATH_AS_XML_STRING": "\"" + this.launchURI.spec + "\""
-      }
-    } catch(e) {
-      throw("createExecutable - "
-          + "Failure setting up substitutions (" + e + ")");
-    }
-
-    try {
-      this.removeInstallation();
-      this.installDir.create(Ci.nsIFile.DIRECTORY_TYPE, 0777);
-      this.iconFile.parent.create(Ci.nsIFile.DIRECTORY_TYPE, 0777);
-    } catch(e) {
-      throw("createExecutable - "
-            + "Failure setting up target location (" + e + ")");
-    }
-
-    try {
-      this.writeRegKeys(app);
-    } catch (e) {
-        throw("createExecutable - " +
-              "Failure writing registry keys (" + e + ")");
-    }
-
-    try {
-      recursiveFileCopy("native-install/windows/app",
-                        "",
-                        this.installDir.path,
-                        "\\",
-                        substitutions,
-                        undefined);
-
-      recursiveFileCopy("native-install/XUL",
-                        "",
-                        this.installDir.path,
-                        "\\",
-                        substitutions,
-                        undefined);
-
-      //add the install record to the native app bundle
-      embedInstallRecord(app, this.installDir);
-
-      //add injector.js, which we need to inject some apis
-      //into the webapp content page
-      let contentDir = this.installDir.clone();
-      contentDir.append("content");
-      embedMozAppsAPIFiles(contentDir);
-    } catch(e) {
-      this.abortInstallation();
-      throw("createExecutable - "
-            + "Failure copying files (" + e + ")");
-    }
-
-    try {
-      recursiveFileCopy("native-install/windows/installer",
-                        "",
-                        this.installerDir.path,
-                        "\\",
-                        substitutions,
-                        undefined);
-    } catch (e) {
-      throw("createExecutable - "
-          + "Failure copying installer to temporary location "
-          + " (" + e + ")");
-    }
-
-    try {
-      this.synthesizeIcon(app);
-    } catch(e) {
-      // Don't fail the installation on icon failures
-      console.log("createExecutable - "
-                  + "Error synthesizing icon: " + e);
-    }
+    recursiveFileCopy("native-install/XUL",
+                      "",
+                      this.installDir.path,
+                      "\\",
+                      this.substitutions,
+                      undefined);
   },
 
   writeRegKeys : function() {
@@ -629,7 +665,7 @@ WinNativeShell.prototype = {
 
     try {
       uninstallKey = Cc["@mozilla.org/windows-registry-key;1"]
-                         .createInstance(Ci.nsIWindowsRegKey);
+                     .createInstance(Ci.nsIWindowsRegKey);
       uninstallKey.open(uninstallKey.ROOT_KEY_CURRENT_USER,
                         "SOFTWARE\\Microsoft\\Windows\\"
                       + "CurrentVersion\\Uninstall",
@@ -648,13 +684,18 @@ WinNativeShell.prototype = {
 
       try {
         subKey.writeStringValue("DisplayName", this.appName);
-        subKey.writeStringValue("DisplayIcon", this.iconFile.path);
+        subKey.writeStringValue("ShortcutName", this.appNameAsFilename);
+        if(this.iconFile) {
+          subKey.writeStringValue("DisplayIcon", this.iconFile.path);
+        }
         subKey.writeStringValue("UninstallString",
                                 this.uninstallerFile.path
                               + " /ORIGIN_SCHEME="
                               + " \"" + this.launchURI.scheme + "\""
-                              + " /ORIGIN_HOST_AND_PORT="
-                              + " \"" + this.launchURI.hostPort + "\"");
+                              + " /ORIGIN_HOST="
+                              + " \"" + this.launchURI.host + "\""
+                              + " /ORIGIN_PORT="
+                              + " \"" + this.launchURI.port + "\"");
         subKey.writeStringValue("InstallLocation", this.installDir.path);
         subKey.writeIntValue("NoModify", 1);
         subKey.writeIntValue("NoRepair", 1);
@@ -662,21 +703,21 @@ WinNativeShell.prototype = {
         subKey.writeStringValue("RegOwner", "Your name here");
         //subKey.writeStringValue("ProductID", "");
         subKey.writeStringValue("UrlUpdateInfo",
-                                      "http://apps.mozillalabs.com");
+                                "http://apps.mozillalabs.com");
         if(this.developerName) {
           subKey.writeStringValue("Publisher",
-                                        this.developerName);
+                                  this.developerName);
         }
         subKey.writeStringValue("DisplayVersion",
-                                      this.versionStr);
+                                this.versionStr);
         // TODO: Can we figure out what store we're installing from?
         subKey.writeStringValue("InstallSource", "");
         subKey.writeStringValue("Comments",
-                                      this.shortDescription);
+                                this.shortDescription);
         subKey.writeStringValue("HelpLink",
                                       "http://apps.mozillalabs.com");
         subKey.writeStringValue("URLInfoAbout",
-                                      this.launchURI.prePath);
+                                this.launchURI.prePath);
         subKey.writeStringValue("Contact", "http://apps.mozillalabs.com");
         // TODO: Maybe link to the description in the store here?
         //subKey.writeStringValue("Readme", "http://apps.mozillalabs.com");
@@ -688,11 +729,6 @@ WinNativeShell.prototype = {
     } finally {
       uninstallKey.close();
     }
-  },
-
-  abortInstallation : function() {
-    this.isInstallAborted = true;
-    this.removeInstallation();
   },
 
   removeInstallation : function() {
@@ -714,7 +750,9 @@ WinNativeShell.prototype = {
     }
 
     try {
-      this.installDir.remove(true);
+      if(this.installDir.exists()) {
+        this.installDir.remove(true);
+      }
     } catch(e) {
 
     }
@@ -723,17 +761,17 @@ WinNativeShell.prototype = {
       let directoryService = Cc["@mozilla.org/file/directory_service;1"]
                              .getService(Ci.nsIProperties);
       try {
-        let desktopShortcut = directoryService.get("Desk", Ci.nsIFile);
-        desktopShortcut.append(this.appName + ".lnk");
-        desktopShortcut.remove(false);
+        if(this.desktopShortcut.exists()) {
+          this.desktopShortcut.remove(false);
+        }
       } catch(e) {
 
       }
 
       try {
-        let startMenuShortcut = directoryService.get("Progs", Ci.nsIFile);
-        startMenuShortcut.append(this.appName + ".lnk");
-        startMenuShortcut.remove(false);
+        if(this.startMenuShortcut.exsists()) {
+          this.startMenuShortcut.remove(false);
+        }
       } catch(e) {
 
       }
@@ -742,72 +780,62 @@ WinNativeShell.prototype = {
     }
   },
 
-  synthesizeIcon : function(app)
+  processIcon : function(mimeType, imageStream)
   {
-    try {
-      getBiggestIcon(app,
-                     this.onIconRetrieved.bind(this));
-    } catch(e) {
-      throw("synthesizeIcon - Failure reading icon information (" + e + ")");
-    }
+      let iconStream;
+      try {
+        let imgTools = Cc["@mozilla.org/image/tools;1"]
+                       .createInstance(Ci.imgITools);
+        let imgContainer = { value: null };
+
+        imgTools.decodeImageData(imageStream, mimeType, imgContainer);
+
+        iconStream =
+            imgTools.encodeImage(imgContainer.value,
+                                 "image/vnd.microsoft.icon",
+                                 "format=bmp");
+      } catch (e) {
+        throw("processIcon - "
+            + "Failure converting icon"
+            + " (" + e + ")");
+      }
+
+      try {
+        this.iconFile.parent.create(Ci.nsIFile.DIRECTORY_TYPE, 0777);
+        let outputStream =
+                FileUtils.openSafeFileOutputStream(this.iconFile);
+        NetUtil.asyncCopy(iconStream,
+                          outputStream,
+                          this.postIconProcessing.bind(this));
+      } catch(e) {
+        throw("processIcon - "
+            + "Failure writing icon"
+            + " (" + e + ")");
+      }
   },
 
-  onIconRetrieved : function(resultCode,
-                             mimeType,
-                             imageStream)
-  {
+  postIconProcessing : function() {
     if(this.isInstallAborted) {
       this.removeInstallation();
       return;
     }
-
-    if (!components.isSuccessCode(resultCode)) {
-      console.log("APPS | nativeshell.win | synthesizeIcon - "
-                  + "Attempt to retrieve icon returned result code "
-                  + resultCode);
-      return;
-    }
-
-    let iconStream;
     try {
-      let imgTools = Cc["@mozilla.org/image/tools;1"]
-                     .createInstance(Ci.imgITools);
-      let imgContainer = { value: null };
-
-      imgTools.decodeImageData(imageStream, mimeType, imgContainer);
-
-      iconStream =
-          imgTools.encodeImage(imgContainer.value,
-                               "image/vnd.microsoft.icon",
-                               "format=bmp");
-    } catch (e) {
-      console.log("APPS | nativeshell.win | synthesizeIcon - "
-                  + "Failure converting icon"
-                  + " (" + e + ")");
+      this.writeRegKeys();
+    } catch(e) {
+      console.log("APPS | nativeshell.win | writeRegKeys - "
+                + "Failure writing reg keys (" + e + ")");
+      abortInstallation(this);
       return;
     }
 
     try {
-      let outputStream = FileUtils.openSafeFileOutputStream(this.iconFile);
-      NetUtil.asyncCopy(iconStream,
-                        outputStream,
-                        this.onIconWritten.bind(this));
-    } catch (e) {
-      console.log("APPS | nativeshell.win | synthesizeIcon - "
-                  + "Failure writing icon file "
-                  + " (" + e + ")");
-      return;
-    }
-  },
+      recursiveFileCopy("native-install/windows/installer",
+                        "",
+                        this.installerDir.path,
+                        "\\",
+                        this.substitutions,
+                        undefined);
 
-  onIconWritten : function(result) {
-    if (!Components.isSuccessCode(result)) {
-      console.log("APPS | nativeshell.win | synthesizeIcon - "
-                  + "Failure writing icon file "
-                  + " (" + result + ")");
-    }
-
-    try {
       let process = Cc["@mozilla.org/process/util;1"]
                     .createInstance(Ci.nsIProcess);
 
@@ -815,22 +843,30 @@ WinNativeShell.prototype = {
       installerFile.append("install.exe");
 
       process.init(installerFile);
-      process.run(true, [//"/S",
+      process.run(true, ["/S",
                          "/FIREFOX_PATH=",
                          this.firefoxFile.path,
                          "/ORIGIN_SCHEME=",
                          this.launchURI.scheme,
-                         "/ORIGIN_HOST_AND_PORT=",
-                         this.launchURI.hostPort,
-                         "/CreateDesktopShortcut",
-                         "/CreateStartMenuShortcut"], 8);
+                         "/ORIGIN_HOST=",
+                         this.launchURI.host,
+                         "/ORIGIN_PORT=",
+                         this.launchURI.port], 9);
       if(0 !== process.exitValue) {
         console.log("Installer returned " + process.exitValue);
-        this.abortInstallation();
+        abortInstallation(this);
+        return;
       }
+
+      let shortcut = this.installDir.clone();
+      shortcut.append(this.appNameAsFilename + ".lnk");
+
+      // TODO: Only create these if the user wants us to
+      shortcut.copyTo(this.desktopShortcut.parent, "");
+      shortcut.copyTo(this.startMenuShortcut.parent, "");
     } catch (e) {
       console.log("Failure running installer (" + e + ")");
-      this.abortInstallation();
+      abortInstallation(this);
     } finally {
       try {
         this.installerDir.remove(true);
@@ -858,187 +894,92 @@ function MacNativeShell() {
 
 }
 
-function sanitizeMacFileName(path)
-{
-  return path.replace(":", "-").replace("/", "-");
-}
-
 MacNativeShell.prototype = {
-
-  createAppNativeLauncher : function(app)
-  {
-    dump("APPS | nativeshell.mac | Creating app native launcher\n");
-    this.createExecutable(app);
+  removeInstallation : function() {
+    this.installDir.remove(true);
   },
 
-  setUpPaths : function(app) {
+  copyInstallationFiles : function() {
+    recursiveFileCopy("native-install/mac",
+                      "",
+                      this.installDir.path,
+                      "/",
+                      substitutions);
 
-      let installDirPath = "~/Applications";
-
-      this.appName = sanitizeMacFileName(app.manifest.name) + ".app";
-
-      this.installDir = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
-      this.installDir.initWithPath(installDirPath);
-      if (!this.installDir.exists()) {
-        this.installDir.create(Components.interfaces.nsIFile.DIRECTORY_TYPE, 0777);    
-      }
-
-      this.installDir.append(this.appName);
-
-      let webRTPath = self.data.url("native-install/mac/xulrunner");
-      this.webRTDir = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
-      this.webRTDir.initWithPath(url.toFilename(webRTPath));
-
-      this.webRTConfigFile = this.installDir.clone();
-      this.webRTConfigFile.append("webRT.config");
-      console.log(this.webRTConfigFile.path);
-
-      this.iconFile = this.installDir.clone();
-      this.iconFile.append("Contents");
-      this.iconFile.append("Resources");
-      this.iconFile.append("appicon.icns");
+    recursiveFileCopy("native-install/XUL",
+                      "",
+                      this.XULDir.path,
+                      "/",
+                      substitutions);
   },
 
+  setUpVariables : function(app) {
+    setUpSharedVariables(app, this);
 
-  createExecutable : function(app)
-  {
+    let filenameRE = new RegExp("["
+                              + ":"
+                              + "/"
+                              + "]"
+                              ,"gi");
+    this.appNameAsFilename = this.appName
+                             .replace(filenameRE, "-")
+                           + ".app";
+
+    this.installDir = Cc['@mozilla.org/file/local;1']
+                      .createInstance(Ci.nsILocalFile);
+    this.installDir.initWithPath("~/Applications");
+    if (!this.installDir.exists()) {
+      this.installDir.create(Ci.nsIFile.DIRECTORY_TYPE, 0777);
+    }
+    this.installDir.append(this.appNameAsFilename);
+
+    this.XULDir = this.installDir.clone();
+    this.XULDir.append("XUL");
+
+    let webRTPath = self.data.url("native-install/mac/xulrunner");
+    this.webRTDir = Cc['@mozilla.org/file/local;1']
+                    .createInstance(Ci.nsILocalFile);
+    this.webRTDir.initWithPath(url.toFilename(webRTPath));
+
+    this.webRTConfigFile = this.installDir.clone();
+    this.webRTConfigFile.append("webRT.config");
+    console.log(this.webRTConfigFile.path);
+
+    this.iconFile = this.installDir.clone();
+    this.iconFile.append("Contents");
+    this.iconFile.append("Resources");
+    this.iconFile.append("appicon.icns");
+
+    this.substitutions["\\$REVERSED_APPDOMAIN"] =
+                            createInvertedDNSIdentifier(app.origin);
+    this.substitutions["\\$PROFILE_DIR"] = this.installDir.leafName;
+  },
+
+  processIcon : function(mimeType, icon) {
     try {
-      this.setUpPaths(app);
+      var process = Cc["@mozilla.org/process/util;1"]
+                    .createInstance(Ci.nsIProcess);
+      var sipsFile = Cc["@mozilla.org/file/local;1"]
+                    .createInstance(Ci.nsILocalFile);
+      sipsFile.initWithPath("/usr/bin/sips");
+
+      process.init(sipsFile);
+      process.run(["-s",
+                   "format", "icns",
+                   filePath.path,
+                   "--out", this.iconFile.path,
+                   "-z", "128", "128"],
+                   9);
     } catch(e) {
-      throw("createExecutable - Failure setting up paths (" + e + ")");
-    }
-
-    if (file.exists(this.installDir.path))
-    {
-      // recursive delete
-      this.installDir.remove(true);
-    }
-    
-    // Now we synthesize a .app by copying the mac-app-template directory from our internal state
-    var launchPath = app.origin;
-    if (app.manifest.launch_path) {
-      launchPath += app.manifest.launch_path;
-    }
-
-    let substitutions = {
-      "\\$APPNAME": app.manifest.name,
-      "\\$APPDOMAIN": app.origin,
-      "\\$REVERSED_APPDOMAIN": createInvertedDNSIdentifier(app.origin),
-      "\\$LAUNCHPATH": launchPath
-    }
-
-    file.mkpath(this.installDir.path);
-
-      recursiveFileCopy("native-install/mac",
-                           "",
-                           this.installDir.path,
-                           "/",
-                           substitutions);
-
-      recursiveFileCopy("native-install/XUL",
-                           "",
-                           this.installDir.path + "/XUL",
-                           "/",
-                           substitutions);
-
-    //////////////////////////////////////////////
-    //this code should be cross-platform   
-    var XULDir = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsILocalFile);
-    XULDir.initWithPath(this.installDir.path);
-    XULDir.append("XUL");
-    var contentDir = XULDir.clone();
-    contentDir.append("content");
-
-    //add the install record to the native app bundle
-    embedInstallRecord(app, XULDir);
-    //add injector.js, which we need to inject some apis into the webapp content page
-    embedMozAppsAPIFiles(contentDir);
-    /////////////////////////////////////////////
-
-    this.synthesizeIcon(app);
-  },
-
-  synthesizeIcon : function(app)
-  {
-    getBiggestIcon(app, this.onIconRetrieved.bind(this));
-  },
-
-  onIconRetrieved : function(resultCode, mimeType, iconStream) {
-      if (!components.isSuccessCode(resultCode)) {
-      console.log("APPS | nativeshell.mac | synthesizeIcon - "
-          + "Attempt to retrieve icon returned result code "
-          + resultCode);
+      console.log("processIcon - "
+                + "Failure processing icon"
+                + " (" + e + ")");
       return;
     }
-
-    try {
-      var filePath = Cc["@mozilla.org/file/directory_service;1"]
-                     .getService(Ci.nsIProperties)
-                     .get("TmpD", Ci.nsIFile);
-
-
-      var tSuffix; 
-      if(mimeType === "image/jpeg") { 
-        tSuffix = ".jpeg"; 
-      } else if(mimeType === "image/png") { 
-        tSuffix = ".png"; 
-      } else {
-         // log error 
-      }
-      
-      filePath.append("tmpicon" + tSuffix);
-      filePath.createUnique(Ci.nsIFile.NORMAL_FILE_TYPE, 0600);
-
-      var outputStream = Cc["@mozilla.org/network/safe-file-output-stream;1"].createInstance(Ci.nsIFileOutputStream);
-
-      // readwrite, create, truncate
-      outputStream.init(filePath, 0x04 | 0x08 | 0x20, 0600, 0);
-
-      var self = this;
-      console.log("filePath.path: " + filePath.path);
-      NetUtil.asyncCopy(iconStream,
-                        outputStream,
-                        function(result) {
-                          if (!Components.isSuccessCode(result)) {
-                            console.log("APPS | nativeshell.mac | synthesizeIcon - "
-                            + "Failure writing temporary icon file "
-                            + " (" + result + ")");
-                            return;
-                          }
-
-                          self.onTmpIconWritten(filePath);
-                        });
-                        //this.onTmpIconWritten.bind(this, filePath));
-    } catch(e) {
-      console.log("APPS | nativeshell.mac | synthesizeIcon - "
-                  + "Failure creating temp icon"
-                  + " (" + e + ")");
-    }
   },
 
-  onTmpIconWritten : function(filePath) {
-    console.log("onTmpIconWritten: " + filePath.path);
+  postIconProcessing : function() {
 
-    try {
-    var process = Cc["@mozilla.org/process/util;1"]
-                  .createInstance(Ci.nsIProcess);
-    var sipsFile = Cc["@mozilla.org/file/local;1"]
-                  .createInstance(Ci.nsILocalFile);
-    sipsFile.initWithPath("/usr/bin/sips");
-
-    process.init(sipsFile);
-    process.runAsync(["-s",
-                      "format", "icns",
-                      filePath.path,
-                      "--out", this.iconFile.path,
-                      "-z", "128", "128"],
-                      9);
-    } catch(e) {
-      console.log("APPS | nativeshell.mac | synthesizeIcon - "
-                  + "Failure writing icon file"
-                  + " (" + e + ")");
-      return;
-    }
   }
 }
 
