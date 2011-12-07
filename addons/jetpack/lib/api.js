@@ -140,7 +140,47 @@ FFRepoImpl.prototype = {
     })
   },
 
+  _fetchManifest: function(url, cb) {
+    dump("APPS | api.install.fetchManifest | Fetching manifest from " + url + "\n");
+    // contact our server to retrieve the URL
+    let xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"].
+    createInstance(Ci.nsIXMLHttpRequest);
+    xhr.open("GET", url, true);
+    xhr.onreadystatechange = function(aEvt) {
+      if (xhr.readyState == 4) {
+        if (xhr.status == 200) {
+          dump("APPS | api.install.fetchManifest | Got manifest (200) " + xhr.responseText.length + " bytes\n");
+          cb(xhr.responseText, xhr.getResponseHeader('Content-Type'));
+        } else {
+          dump("Failed to get manifest (" + xhr.status + ")\n");
+          cb(null);
+        }
+      }
+    };
+
+    try {
+      xhr.send(null); 
+    } catch (e) {
+      console.log("XHR in fetchManifest threw " + e);
+      cb(null);
+    }
+    
+    let timer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
+    timer.initWithCallback({
+      notify: function(timer) {
+        if (xhr.readyState !== 4) {
+          // Note: calling abort() will set readyState to 4 but status to 0
+          // and will call onreadystatechange!
+          xhr.abort();
+        }
+      }
+    }, 5000, Ci.nsITimer.TYPE_ONE_SHOT);
+
+  },
+
   install: function _install(location, args, window) {
+    let self = this;
+
     // added a quick hack to forgo the prompt if a special argument is
     // sent in, to make it easy to install app straight from the lower-right prompt.
     var autoInstall = args._autoInstall;
@@ -193,26 +233,6 @@ FFRepoImpl.prototype = {
       );
     }
 
-    function fetchManifest(url, cb) {
-      dump("APPS | api.install.fetchManifest | Fetching manifest from " + url + "\n");
-      // contact our server to retrieve the URL
-      let xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"].
-      createInstance(Ci.nsIXMLHttpRequest);
-      xhr.open("GET", url, true);
-      xhr.onreadystatechange = function(aEvt) {
-        if (xhr.readyState == 4) {
-          if (xhr.status == 200) {
-            dump("APPS | api.install.fetchManifest | Got manifest (200) " + xhr.responseText.length + " bytes\n");
-            cb(xhr.responseText, xhr.getResponseHeader('Content-Type'));
-          } else {
-            dump("Failed to get manifest (" + xhr.status + ")\n");
-            cb(null);
-          }
-        }
-      };
-      xhr.send(null);
-    }
-
     // Fetch from local file:// or resource:// URI (eg. for faker apps)
     let originalOrigin = {};
 
@@ -256,7 +276,7 @@ FFRepoImpl.prototype = {
     }
 
     // Choose appropriate fetcher depending on where the manifest lives
-    let fetcher = fetchManifest;
+    let fetcher = self._fetchManifest;
     if (args.url.indexOf("resource://") === 0 || args.url.indexOf("file://") === 0) {
       fetcher = fetchLocalManifest;
       if (!args.origin) throw "Local manifest specified without origin!";
@@ -267,7 +287,6 @@ FFRepoImpl.prototype = {
       args.url = args.origin;
     }
 
-    let self = this;
     return Repo.install(location, args, displayPrompt, fetcher, function(result) {
       //dump("        APPS | jetpack.install | Repo install returned to callback; result is " + result + "\n");
       // install is complete
