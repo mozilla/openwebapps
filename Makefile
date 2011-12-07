@@ -56,8 +56,9 @@ all: xpi
 # that we actually use, then extracts that into our XUL app template
 nativeapp:
 	$(addon_sdk)/cfx xpi --pkgdir=$(TOPSRCDIR)/addons/nativeapp
-	mkdir -p $(openwebapps)/data/native-install/XUL/app-sdk
-	unzip -o nativeapp.xpi -x install.rdf -d $(openwebapps)/data/native-install/XUL/app-sdk/
+	mkdir -p $(openwebapps)/data/native-install/XUL/distribution/extensions
+	cp nativeapp.xpi $(openwebapps)/data/native-install/XUL/distribution/extensions/nativeapp@mozillalabs.com.xpi
+	#unzip -o nativeapp.xpi -d $(openwebapps)/data/native-install/XUL/distribution/extensions/nativeapp@mozillalabs.com
 # -x harness-options.json install.rdf bootstrap.js 
 
 xpi:    pull

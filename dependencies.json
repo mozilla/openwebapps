@@ -8,8 +8,8 @@
   "location": "deps", 
   "projects": [
     [
-      "git", 
-      "https://github.com/mozilla/addon-sdk.git", 
+      "git", // need the hidden-frame and install.rdf patches
+      "https://github.com/mixedpuppy/addon-sdk.git", 
       "master", 
       ""
     ], 

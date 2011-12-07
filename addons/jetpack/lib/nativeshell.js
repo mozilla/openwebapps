@@ -242,8 +242,9 @@ function embedMozAppsAPIFiles(destDir)
 
 function copyFile(srcFile, destFile, fileProperties, substitutions) {
   try {
+    //console.log("copy "+srcFile+" to "+destFile+" props "+JSON.stringify(fileProperties));
     //open the source file and read in the contents
-    var openProps = fileProperties?fileProperties["mode"]:"";
+    var openProps = fileProperties?fileProperties["mode"]:"b";
     let inputStream = file.open(srcFile, openProps);
     let fileContents = inputStream.read();
     inputStream.close();
@@ -263,7 +264,7 @@ function copyFile(srcFile, destFile, fileProperties, substitutions) {
 /* TODO: Convert all file operations to be async */
 function writeFile(fileContents, destFile, fileProperties, substitutions) {
   try {
-    var openProps = fileProperties?fileProperties["mode"]:"";
+    var openProps = fileProperties?fileProperties["mode"]:"b";
     //do string substitutions if necessary
     let finalContents;
     if(fileProperties && fileProperties["substituteStrings"]) {
@@ -387,7 +388,7 @@ function recursiveFileCopy(srcDir,
     let fileProperties = {"ignore": false,
                           "rename": leaf,
                           "isExecutable": false,
-                          "mode": "",
+                          "mode": "b",
                           "substituteStrings": true};
     if(leaf in specialFiles) {
       for(let property in fileProperties) {

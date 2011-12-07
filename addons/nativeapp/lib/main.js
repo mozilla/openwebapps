@@ -2,6 +2,12 @@ const { Cc, Ci, Cm, Cu, Cr, components } = require("chrome");
 const addon = require("self");
 const pageMod = require("page-mod");
 
+var tmp = {};
+Cu.import("resource://gre/modules/NetUtil.jsm", tmp);
+Cu.import("resource://gre/modules/FileUtils.jsm", tmp);
+Cu.import("resource://gre/modules/XPCOMUtils.jsm", tmp);
+var { NetUtil, FileUtils, XPCOMUtils } = tmp;
+
 
 function NavigatorAPI() {};
 NavigatorAPI.prototype = {
@@ -61,12 +67,6 @@ let MozAppsAPIFactory = {
   }
 };
 
-Cm.QueryInterface(Ci.nsIComponentRegistrar).registerFactory(
-  MozAppsAPIClassID, "MozAppsAPI", MozAppsAPIContract, MozAppsAPIFactory
-);
-Cc["@mozilla.org/categorymanager;1"].getService(Ci.nsICategoryManager)
-  .addCategoryEntry("JavaScript-navigator-property", "mozApps", MozAppsAPIContract, false, true);
-
 /* TODO: Unload injector
 unloaders.push(function() {
   Cm.QueryInterface(Ci.nsIComponentRegistrar).unregisterFactory(
@@ -86,9 +86,6 @@ function getInstallRecord(cb) {
   aNsLocalFile.initWithFile(appDirectory);
   aNsLocalFile.appendRelativePath("installrecord.json");
 
-  Cu.import("resource://gre/modules/NetUtil.jsm");
-  Cu.import("resource://gre/modules/FileUtils.jsm");
-          
   dump(aNsLocalFile.path + "\n");
   NetUtil.asyncFetch(aNsLocalFile, function(inputStream, status) {  
       if (!Components.isSuccessCode(status)) {  
@@ -121,7 +118,7 @@ function doVerifyReceipt(contentWindowRef, options, cb, verifyOnly) {
         case 3: s += "="; break; // One pad char
         default: throw new InputException("Illegal base64url string!");
       }
-      return window.atob(s); // Standard base64 decoder
+      return contentWindowRef.atob(s); // Standard base64 decoder
     }
 
     function parseReceipt(rcptData) {
@@ -150,7 +147,8 @@ function doVerifyReceipt(contentWindowRef, options, cb, verifyOnly) {
     var assertStatus = false;
 
     var verifyURL = receipt.verify;
-    var verifyReq = new XMLHttpRequest();  
+    var verifyReq = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"]
+      .createInstance(Ci.nsIXMLHttpRequest);
     verifyReq.open('GET', verifyURL, true);  
     verifyReq.onreadystatechange = function (aEvt) {  
       if (verifyReq.readyState == 4) {
@@ -176,13 +174,14 @@ function doVerifyReceipt(contentWindowRef, options, cb, verifyOnly) {
 
     // Start BrowserID verification
     var options = {"silent": true, "requiredEmail": receipt.user.value};
-    getBrowserIDAssertion(contentWindowRef.location, options, function(err, assertion) {
+    getBrowserIDAssertion(contentWindowRef, options, function(err, assertion) {
       if (err) {
         cb({"error": err});
         return;
       }
 
-      var assertReq = new XMLHttpRequest();
+      var assertReq = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"]
+                      .createInstance(Ci.nsIXMLHttpRequest);
       assertReq.open('POST', 'https://browserid.org/verify', true);
       assertReq.onreadystatechange = function(aEvt) {
         if (assertReq.readyState == 4) {
@@ -209,8 +208,10 @@ function doVerifyReceipt(contentWindowRef, options, cb, verifyOnly) {
   });
 }
 
-function getBrowserIDAssertion(origin, options, cb)
+function getBrowserIDAssertion(contentWindowRef, options, cb)
 {
+  let origin = contentWindowRef.location;
+  let document = contentWindowRef.document;
   // First check the identity daemon, if not running or unable
   // to get assertion, fallback to popup.
   // cb is a node style callback (err, assertion);
@@ -230,7 +231,7 @@ function getBrowserIDAssertion(origin, options, cb)
       }
 
       frame.addEventListener("DOMContentLoaded", loaded, false);
-      document.getElementById(appName).appendChild(frame);
+      document.documentElement.appendChild(frame);
       frame.setAttribute("src", "http://proness.kix.in/misc/check.html");
       /*
       var win = frame.contentWindow.wrappedJSObject;
@@ -307,17 +308,23 @@ function checkNativeIdentityDaemon(callingLocation, options, callback)
 exports.main = function(options, callbacks) {
   console.log("native app addon starting");
 
+  Cm.QueryInterface(Ci.nsIComponentRegistrar).registerFactory(
+    MozAppsAPIClassID, "MozAppsAPI", MozAppsAPIContract, MozAppsAPIFactory
+  );
+  Cc["@mozilla.org/categorymanager;1"].getService(Ci.nsICategoryManager)
+    .addCategoryEntry("JavaScript-navigator-property", "mozApps", MozAppsAPIContract, false, true);
+/*
   pageMod.PageMod({
     include: "*", // XXX we could be more specific
     contentScriptWhen: "start",
-    contentScriptFile: ["https://browserid.org/include.js", addon.data.url('nativeapi.js')],
+    contentScriptFile: addon.data.url('nativeapi.js'),
     onAttach: function(worker) {
       worker.port.on("verifiedEmail", function(data) {
         console.log("Got back from login " + JSON.stringify(data));
       });
     }
   });
-
+*/
   // initialize the injector if we are <fx9
   require("./injector").init();
 }
