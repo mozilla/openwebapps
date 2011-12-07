@@ -352,6 +352,53 @@ function setupLogin(service) {
 }
 
 /**
+ * migrateApps
+ *
+ * We *move* (not copy), apps that were previously installed using the HTML5 shim
+ * library, hosted at https://myapps.mozillalabs.com/
+ */
+function migrateApps() {
+  var pageWorkers = require("page-worker");
+
+  try {
+    console.log("Creating page worker");
+    var worker = pageWorkers.Page({
+      contentURL: "https://myapps.mozillalabs.com",
+      contentScript: "var apps = [];" +
+        "for (var i = 0; i < localStorage.length; i++) {" +
+        " var key = localStorage.key(i);" +
+        " if (key.slice(0, 4) == 'app#') {" +
+        "   apps.push(localStorage.getItem(key));" +
+        " }" +
+        // Once we have the apps we want, just clean up everything
+        // This clears dashbaord state too.
+        "}" +
+        "localStorage.clear();" +
+        "self.port.emit('gotApps', JSON.stringify(apps));",
+      contentScriptWhen: "end"
+    });
+
+    worker.port.on("gotApps", function(apps) {
+      // Put these apps into extension's storage
+      var gotApps = JSON.parse(apps);
+      for (var i = 0; i < gotApps.length; i++) {
+        var appRec = JSON.parse(gotApps[i]);
+        console.log("Migrating app " + appRec.origin);
+
+        let repo = require("./api").FFRepoImplService;
+        repo.addApplication(appRec.origin, appRec, function(done) {
+          if (!done) {
+            console.log("Error while migrating app " + appRec.origin);
+          }
+        }); 
+      }
+    });
+  } catch (e) {
+    console.log("Error in migrateApps " + e);
+  }
+}
+
+/**
  * startup
  *
  * all per-instance initialization should be started from here.  The window
@@ -464,6 +511,9 @@ function startup(getUrlCB) { /* Initialize simple storage */
   scheduler.onerror = function (error) {
     console.log("Error syncing: " + JSON.stringify(error));
   };
+
+  // Migrate apps, if neccessary, from HTML5 installs
+  migrateApps();
 
   // We don't have an assertion from BrowserID, so let's ask the user to login
   setupLogin(service);
