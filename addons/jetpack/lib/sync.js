@@ -280,10 +280,6 @@ SyncService.prototype.lastSyncTime = function () {
 };
 
 SyncService.prototype._setLastSyncTime = function (timestamp) {
-  if ((! timestamp) && timestamp !== 0) {
-    // FIXME: not sure if it should ever be valid not to give a timestamp
-    timestamp = new Date().getTime();
-  }
   if (typeof timestamp != 'number') {
     throw 'Must _setLastSyncTime to number (not ' + timestamp + ')';
   }
@@ -294,10 +290,6 @@ SyncService.prototype._setLastSyncTime = function (timestamp) {
 };
 
 SyncService.prototype._setLastSyncPut = function (timestamp) {
-  if ((! timestamp) && timestamp !== 0) {
-    // FIXME: not sure if it should ever be valid not to give a timestamp
-    timestamp = new Date().getTime();
-  }
   if (typeof timestamp != 'number') {
     throw 'Must _setLastSyncPut to number (not ' + timestamp + ')';
   }

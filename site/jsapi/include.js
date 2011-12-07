@@ -669,6 +669,16 @@ if (!navigator.mozApps.install || navigator.mozApps.html5Implementation) {
     // Called once on first command to create the iframe to myapps.mozillalabs.com
 
 
+    function isMobile() {
+      // FIXME: this doesn't detect mobile Firefox, but I'm not sure that
+      // mobile Firefox has the same issues (it could though)
+      var ua = navigator.userAgent;
+      if (ua.search(/AppleWebKit/) == -1) {
+        return false;
+      }
+      return ua.search(/iPhone|iPod|Android/) != -1;
+    }
+
     function setupWindow() {
       if (iframe) {
         return;
@@ -678,9 +688,17 @@ if (!navigator.mozApps.install || navigator.mozApps.html5Implementation) {
       var doc = win.document;
       iframe = document.createElement("iframe");
       iframe.id = dialogId;
-      iframe.style.position = "fixed";
+      if (isMobile()) {
+        iframe.style.position = "absolute";
+      } else {
+        iframe.style.position = "fixed";
+      }
       iframe.style.left = "50%";
-      iframe.style.top = "40%";
+      if (isMobile()) {
+        iframe.style.top = (window.pageYOffset + 166) + 'px';
+      } else {
+        iframe.style.top = "40%";
+      }
       iframe.style.width = "410px";
       iframe.style.marginLeft = "-205px"; // half of the previous value
       iframe.style.height = "332px";
