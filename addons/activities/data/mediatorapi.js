@@ -14,10 +14,10 @@ let allServices = {} // keyed by handler URL.
 // launch_url: The end-point of the service itself.
 
 function S4() {
-   return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+  return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
 }
 function guid() {
-   return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
+  return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
 }
 var invokeId = 0;
 
@@ -139,7 +139,7 @@ unsafeWindow.navigator.wrappedJSObject.mozActivities.mediation.startLogin = func
 // Note the invocation handler will be called once initially, and possibly
 // again as the configuration of apps changes (ie, as apps are added or
 // removed).
-unsafeWindow.navigator.wrappedJSObject.mozActivities.mediation.ready = function(configureServices, updateActivity) {
+unsafeWindow.navigator.wrappedJSObject.mozActivities.mediation.ready = function(configureServices, updateActivity, fetchState) {
   self.port.on("owa.app.ready", function(origin) {
     //console.log("owa.app.ready for", origin);
     if (allServices[origin]) {
@@ -147,11 +147,22 @@ unsafeWindow.navigator.wrappedJSObject.mozActivities.mediation.ready = function(
     }
   });
 
+  let onPanelHidden = function(msg) {
+    // even if no state function was provided by the mediator (or if it fails)
+    // we emit a null state so the .once() handler for the state is invoked.
+    let mediatorState = null;
+    if (fetchState) {
+      try {
+        mediatorState = fetchState();
+      } catch (ex) {
+        console.error("mediator fetchState function failed", ex, ex.stack);
+      }
+    }
+    self.port.emit("owa.mediation.setMediatorState", mediatorState);
+  };
+
   let setupHandler = function(msg) {
     //console.log("setup event has", msg.serviceList.length, "services");
-    // We record the invocation ID in the mediator window so we can later
-    // link the "app ready" calls back to the specific mediator instance.
-    unsafeWindow.navigator.wrappedJSObject.mozActivities.mediation._invocationid = msg.invocationid;
     let document = unsafeWindow.document;
 
     // TODO: do not create iframes when mediators are converted to templates,
@@ -187,8 +198,10 @@ unsafeWindow.navigator.wrappedJSObject.mozActivities.mediation.ready = function(
       // send the services configuration to the mediator content
       configureServices(msg.activity, services);
   
-      // listen for activity changes, but also call directly on initial setup
+      // listen for activity changes.
       self.port.on("owa.mediation.updateActivity", updateActivity);
+      // and for panel hide notifications
+      self.port.on("owa.mediation.panelHidden", onPanelHidden);
     });
     self.port.emit("owa.mediation.frames", frameCreateInfo);
     self.port.once("owa.mediation.reconfigure", function() {
@@ -209,6 +222,7 @@ unsafeWindow.navigator.wrappedJSObject.mozActivities.mediation.ready = function(
     self.port.once("owa.mediation.setup", setupHandler);
     self.port.emit("owa.mediation.ready");
     self.port.removeListener("owa.mediation.updateActivity", updateActivity);
+    self.port.removeListener("owa.mediation.panelHidden", onPanelHidden);
   };
 
   doSetup();
