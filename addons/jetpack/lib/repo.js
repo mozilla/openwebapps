@@ -298,7 +298,7 @@ Repo = (function() {
           cb({
             error: ["networkError", "couldn't retrieve application manifest from network"]
           });
-        } else if (!contentType) {// || contentType.indexOf("application/x-web-app-manifest+json") != 0) {
+        } else if (!contentType || contentType.indexOf("application/x-web-app-manifest+json") != 0) {
           //dump("APPS | repo.install | Application manifest had incorrect contentType\n");
           cb({
             error: ["invalidManifest", "application manifests must be of Content-Type \"application/x-web-app-manifest+json\""]
