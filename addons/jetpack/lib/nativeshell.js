@@ -188,19 +188,15 @@ function getIconFromURI(nativeShell) {
     let listener;
     if(nativeShell.useTmpFileForIcon) {
       let downloadObserver = {
-        onDownloadComplete: function(nativeShell,
-                                     mimeType,
-                                     downloader,
+        onDownloadComplete: function(downloader,
                                      request,
                                      cx,
                                      aStatus,
                                      file) {
-                              onIconDownloaded(nativeShell,
-                                               mimeType,
-                                               aStatus,
+                              onIconDownloaded(aStatus,
                                                file,
                                                downloader);
-            }.bind(undefined, nativeShell, mimeType)
+            }
       };
 
       tmpIcon = Cc["@mozilla.org/file/directory_service;1"]
@@ -208,7 +204,8 @@ function getIconFromURI(nativeShell) {
                 .get("TmpD", Ci.nsIFile);
       tmpIcon.append("tmpicon."
                    + mimeService.getPrimaryExtension(mimeType, ""));
-      tmpIcon.createUnique(Ci.nsIFile.NORMAL_FILE_TYPE, 0600);
+      tmpIcon.createUnique(Ci.nsIFile.NORMAL_FILE_TYPE,
+                           0x1b6); // octal 666
       listener = Cc["@mozilla.org/network/downloader;1"]
                  .createInstance(Ci.nsIDownloader);
       listener.init(downloadObserver, tmpIcon);
@@ -221,9 +218,7 @@ function getIconFromURI(nativeShell) {
                  .createInstance(Ci.nsISimpleStreamListener);
       listener.init(pipe.outputStream, {
           onStartRequest: function(aRequest, aContext) {},
-          onStopRequest: function(nativeShell,
-                                  mimeType,
-                                  aRequest,
+          onStopRequest: function(aRequest,
                                   aContext,
                                   aStatusCode) {
                             pipe.outputStream.close();
@@ -231,7 +226,7 @@ function getIconFromURI(nativeShell) {
                                              mimeType,
                                              aStatusCode,
                                              pipe.inputStream);
-                         }.bind(undefined, nativeShell, mimeType)
+                         }
       });
     }
 
@@ -483,7 +478,7 @@ function recursiveFileCopy(srcDir,
                              .createInstance(Ci.nsILocalFile);
           aNsLocalFile.initWithPath(dest);
           aNsLocalFile.create(aNsLocalFile.NORMAL_FILE_TYPE,
-                              0x1ed); // octal 755
+                              0x1ff); // octal 777
         } catch(e) {
           throw("recursiveFileCopy - "
               + "Failed creating executable file "
@@ -581,7 +576,8 @@ function createAppNativeLauncher(app, nativeShell) {
 
   try {
     nativeShell.removeInstallation();
-    nativeShell.installDir.create(Ci.nsIFile.DIRECTORY_TYPE, 0777);
+    nativeShell.installDir.create(Ci.nsIFile.DIRECTORY_TYPE,
+                                  0x1ff); // octal 777
   } catch(e) {
     throw("createAppNativeLauncher - Failure setting up installation directory "
         + "(" + e + ")");
@@ -656,7 +652,8 @@ WinNativeShell.prototype = {
 
     this.installerDir = directoryService.get("TmpD", Ci.nsIFile);
     this.installerDir.append(this.appNameAsFilename);
-    this.installerDir.createUnique(Ci.nsIFile.DIRECTORY_TYPE, 0777);
+    this.installerDir.createUnique(Ci.nsIFile.DIRECTORY_TYPE,
+                                   0x1ff); // octal 777
 
     this.firefoxFile = directoryService.get("CurProcD", Ci.nsIFile);
     // TODO: Is there a way to get the currently running process?
@@ -840,7 +837,8 @@ WinNativeShell.prototype = {
       }
 
       try {
-        this.iconFile.parent.create(Ci.nsIFile.DIRECTORY_TYPE, 0777);
+        this.iconFile.parent.create(Ci.nsIFile.DIRECTORY_TYPE,
+                                    0x1ff); // octal 777
         let outputStream =
                 FileUtils.openSafeFileOutputStream(this.iconFile);
         NetUtil.asyncCopy(iconStream,
@@ -985,7 +983,7 @@ MacNativeShell.prototype = {
     this.substitutions["\\$PROFILE_DIR"] = "Mozilla/" + this.appNameAsFilename;
     this.substitutions["\\$NAME_AS_FILENAME"] = this.appNameAsFilename;
     this.substitutions["\\$FILENAME_AS_XML"] =
-                  makeXMLString(this.appNameAsFilename;
+                  makeXMLString(this.appNameAsFilename);
   },
 
   processIcon : function(mimeType, icon) {
@@ -997,7 +995,7 @@ MacNativeShell.prototype = {
       sipsFile.initWithPath("/usr/bin/sips");
 
       process.init(sipsFile);
-      process.run(["-s",
+      process.run(true, ["-s",
                    "format", "icns",
                    icon.path,
                    "--out", this.iconFile.path,
