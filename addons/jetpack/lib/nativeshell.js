@@ -982,7 +982,7 @@ MacNativeShell.prototype = {
 
     this.substitutions["\\$REVERSED_APPDOMAIN"] =
                             createInvertedDNSIdentifier(this.launchURI);
-    this.substitutions["\\$PROFILE_DIR"] = this.installDir.leafName;
+    this.substitutions["\\$PROFILE_DIR"] = "Mozilla/" + this.appNameAsFilename;
     this.substitutions["\\$NAME_AS_FILENAME"] = this.appNameAsFilename;
     this.substitutions["\\$FILENAME_AS_XML"] =
                   makeXMLString(this.appNameAsFilename;
