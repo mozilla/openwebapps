@@ -121,40 +121,16 @@ FunctionEnd
 
 Function CreateShortcuts
   ClearErrors
-  Push $R0
-
+  ${GetParent} $FIREFOX_PATH $OUTDIR
   CreateShortcut $INSTDIR\$SHORTCUT_NAME.lnk \
                  $FIREFOX_PATH \
-                 '-app "$OUTDIR\application.ini"' \
+                 '-app "$INSTDIR\application.ini"' \
                  $ICON_PATH \
                  0 \
                  "" \
                  "" \
                  $SHORTCUT_COMMENT
-
-  ${GetOptions} $PARAMETERS "/CreateDesktopShortcut" $R0
-  IfErrors +2
-  CreateShortcut $DESKTOP\$SHORTCUT_NAME.lnk \
-                 $INSTDIR\$SHORTCUT_NAME.lnk \
-                 "" \
-                 $ICON_PATH \
-                 0 \
-                 "" \
-                 "" \
-                 $SHORTCUT_COMMENT
-
-  ${GetOptions} $PARAMETERS "/CreateStartMenuShortcut" $R0
-  IfErrors +2
-  CreateShortcut $SMPROGRAMS\$SHORTCUT_NAME.lnk \
-                 $INSTDIR\$SHORTCUT_NAME.lnk \
-                 "" \
-                 $ICON_PATH \
-                 0 \
-                 "" \
-                 "" \
-                 $SHORTCUT_COMMENT
-
-  Pop $R0
+  SetOutPath $INSTDIR
 FunctionEnd
 
 Section Install

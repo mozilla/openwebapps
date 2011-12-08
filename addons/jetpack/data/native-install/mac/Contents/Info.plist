@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDisplayName</key>
-	<string>$APPNAME</string>
+	<string>$NAME_AS_XML_STRING</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleExecutable</key>
-	<string>$APPNAME</string>
+	<string>$NAME_AS_FILENAME</string>
 	<key>CFBundleGetInfoString</key>
-	<string>$APPNAME</string>
+	<string>$NAME_AS_XML_STRING</string>
 	<key>CFBundleIconFile</key>
 	<string>appicon</string>
 	<key>CFBundleIdentifier</key>
@@ -17,7 +17,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>$APPNAME</string>
+	<string>$NAME_AS_FILENAME</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
