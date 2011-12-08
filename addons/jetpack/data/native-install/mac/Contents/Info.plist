@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleExecutable</key>
-	<string>$NAME_AS_FILENAME</string>
+	<string>$FILENAME_AS_XML</string>
 	<key>CFBundleGetInfoString</key>
 	<string>$NAME_AS_XML_STRING</string>
 	<key>CFBundleIconFile</key>

@@ -984,6 +984,8 @@ MacNativeShell.prototype = {
                             createInvertedDNSIdentifier(this.launchURI);
     this.substitutions["\\$PROFILE_DIR"] = this.installDir.leafName;
     this.substitutions["\\$NAME_AS_FILENAME"] = this.appNameAsFilename;
+    this.substitutions["\\$FILENAME_AS_XML"] =
+                  makeXMLString(this.appNameAsFilename;
   },
 
   processIcon : function(mimeType, icon) {
