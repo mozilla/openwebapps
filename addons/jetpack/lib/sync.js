@@ -48,7 +48,7 @@ SyncService: handles actual synchronization, and keeps state about the
   sync progress.  This interacts with the server and the repo
   (including some private methods, not just navigator.mozApps APIs)
 
-SyncScheduler: handles scheduling of calls to SyncService.  It should
+Scheduler: handles scheduling of calls to SyncService.  It should
   also respond to events from the server (like a Retry-After) and
 
 
