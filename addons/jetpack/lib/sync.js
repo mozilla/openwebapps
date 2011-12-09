@@ -48,7 +48,7 @@ SyncService: handles actual synchronization, and keeps state about the
   sync progress.  This interacts with the server and the repo
   (including some private methods, not just navigator.mozApps APIs)
 
-SyncScheduler: handles scheduling of calls to SyncService.  It should
+Scheduler: handles scheduling of calls to SyncService.  It should
   also respond to events from the server (like a Retry-After) and
 
 
@@ -80,13 +80,6 @@ if (typeof exports !== "undefined") {
 // FIXME: change args to positional arguments
 var SyncService = function (args) {
   var self = this;
-  this.pollTime = args.pollTime;
-  if (this.pollTime === undefined) {
-    this.pollTime = null;
-  }
-  if (this.pollTime !== null && typeof this.pollTime !== 'number') {
-    throw 'Invalid pollTime argument (should be null or a number): ' + this.pollTime;
-  }
   this.server = args.server;
   this.repo = args.repo;
   // FIXME: remove the TypedStorage default; this should always be passed in
@@ -121,12 +114,13 @@ var SyncService = function (args) {
   this.onlogin = null;
   this.onlogout = null;
   this.onstatus = null;
-  // FIXME: we need to catch any Retry-After values, and call this:
-  this.onretryafter = null;
+  this.server.onautherror = function () {
+    self.invalidateLogin();
+  };
 };
 
 SyncService.prototype.toString = function () {
-  return '[SyncService pollTime: ' + this.pollTime + ' server: ' + this.server + ']';
+  return '[SyncService server: ' + this.server + ']';
 };
 
 /* Resets all state for the service; returns the service back to the state
@@ -708,6 +702,73 @@ var Server = function (url) {
   // This is a header sent with all requests (after login):
   this._httpAuthorization = null;
   this.authData = null;
+  /* This is a callback for anytime a Retry-After or X-Sync-Poll-Time
+     header is set, or when there is a 5xx error (all cases when the
+     client should back off)
+
+     Gets as its argument an object with .retryAfter (if that or
+     X-Sync-Poll-Time is set), a value in seconds, and a .status
+     attribute (integer response code).
+  */
+  this.onretryafter = null;
+  /* This is a callback whenever there is a 401 error */
+  this.onautherror = null;
+};
+
+/* Checks a request for Retry-After or X-Sync-Poll headers, and calls
+   onretryafter.  This should be called for every request, including
+   unsuccessful requests */
+Server.prototype.checkRetryRequest = function (req) {
+  if (! this.onretryafter) {
+    // No one cares, so we don't need to check anything
+    return;
+  }
+  var retryAfter = req.getResponseHeader('Retry-After');
+  if (! retryAfter) {
+    retryAfter = req.getResponseHeader('X-Sync-Poll-Time');
+  }
+  if (retryAfter) {
+    var val = parseInt(retryAfter);
+    if (isNaN(val)) {
+      // Might be a date...
+      val = new Date(retryAfter);
+      // Convert to seconds:
+      val = parseInt((val - new Date()) / 1000);
+    }
+    // Now some sanity checks:
+    if (this.isSaneRetryAfter(val)) {
+      this.onretryafter({retryAfter: val, status: req.status});
+      return;
+    }
+  }
+  if (req.status === 0 || (req.status >= 500 && req.status < 600)) {
+    this.onretryafter({status: req.status});
+  }
+};
+
+Server.prototype.isSaneRetryAfter = function (val) {
+  if (isNaN(val) || ! val) {
+    return false;
+  }
+  if (val <= 0) {
+    return false;
+  }
+  if (val > 60*60*24*2) {
+    // Any value over 2 days is too long
+    return false;
+  }
+  return true;
+};
+
+Server.prototype.checkAuthRequest = function (req) {
+  if (req.status === 401 && this.onautherror) {
+    this.onautherror();
+  }
+};
+
+Server.prototype.checkRequest = function (req) {
+  this.checkRetryRequest(req);
+  this.checkAuthRequest(req);
 };
 
 /* Logs in with the assertion data {assertion: string, audience: origin} */
@@ -730,6 +791,7 @@ Server.prototype.login = function (data, callback) {
     }
     // FIXME: maybe should check for status == 0 specifically; that typically
     // means some CORS error or other connection issue
+    // FIXME: also some kind of retry system
     if (req.status != 200) {
       callback({error: "Bad response from " + self._url + ": " + req.status,
                 request: req, text: req.responseText});
@@ -804,6 +866,7 @@ Server.prototype._createRequest = function (method, url) {
 /* Does a GET request on the server, getting all updates since the
    given timestamp */
 Server.prototype.get = function (since, callback) {
+  var self = this;
   if (since === null) {
     since = 0;
   }
@@ -820,11 +883,17 @@ Server.prototype.get = function (since, callback) {
     if (req.readyState != 4) {
       return;
     }
+    self.checkRequest(req);
     if (req.status != 200) {
       callback({error: "Non-200 response code", code: req.status, url: url, request: req, text: req.responseText});
       return;
     }
-    var data = JSON.parse(req.responseText);
+    try {
+      var data = JSON.parse(req.responseText);
+    } catch (e) {
+      callback({error: "invalid_json", exception: e, data: req.responseText});
+      return;
+    }
     if (data.collection_deleted) {
       callback(data, null);
     } else {
@@ -836,6 +905,7 @@ Server.prototype.get = function (since, callback) {
 
 // FIXME: should have since/lastget here, to protect against concurrent puts
 Server.prototype.put = function (data, callback) {
+  var self = this;
   if (! this._loginStatus) {
     throw 'You have not yet logged in';
   }
@@ -846,6 +916,7 @@ Server.prototype.put = function (data, callback) {
     if (req.readyState != 4) {
       return;
     }
+    self.checkRequest(req);
     if (req.status != 200) {
       callback({error: "Non-200 response code", code: req.status, url: this._collectionUrl, request: req});
       return;
@@ -857,6 +928,7 @@ Server.prototype.put = function (data, callback) {
 };
 
 Server.prototype.deleteCollection = function (reason, callback) {
+  var self = this;
   if (! this._loginStatus) {
     throw 'You have not logged in yet';
   }
@@ -867,6 +939,9 @@ Server.prototype.deleteCollection = function (reason, callback) {
     if (req.readyState != 4) {
       return;
     }
+    // We don't call checkRequest() because we don't have retry-after handling for this
+    // operation:
+    this.checkAuthRequest(req);
     if (req.status != 200) {
       callback({error: "Non-200 response code", code: req.status, url: url, request: req});
       return;
@@ -895,14 +970,11 @@ function Scheduler(service) {
   this.service.onlogout = function () {
     self.deactivate();
   };
-  this.service.onretryafter = function (retryAfter) {
-    self.resetSchedule();
-    self._period = retryAfter;
-    self.schedule();
-  };
   this._timeoutId = null;
-  this._nextRun = null;
   this._period = this.settings.normalPeriod;
+  // This is an amount to be added to the *next* request period,
+  // but not repeated after:
+  this._periodAddition = 0;
   this._retryAfter = null;
   if (this.service.loggedIn()) {
     this.activate();
@@ -910,21 +982,40 @@ function Scheduler(service) {
   this.lastSuccessfulSync = null;
   this.onerror = null;
   this.onsuccess = null;
+  this.service.server.onretryafter = function (value) {
+    self.retryAfter(value);
+    self.schedule();
+  };
+  // FIXME: there's a loop condition here that could be a problem,
+  // where sync updates calls watchUpdates and so forth:
+  //this.service.repo.watchUpdates(function () {
+  //  self.scheduleImmediately();
+  //});
 }
 
 /* These default settings inform some of the adaptive scheduling */
 // FIXME: do some adaptive scheduling
 Scheduler.prototype.settings = {
+  // This is as long as we allow successive backoffs to get:
   maxPeriod: 60*60000, // 1 hour
-  minPeriod: 30000, // 30 seconds
-  normalPeriod: 5000 // 5 minutes
+  // This is as short as we allow the time to get:
+  minPeriod: 30 * 1000, // 30 seconds
+  // Each time there's a failure (e.g., 5xx) we increase the period by this much:
+  failureIncrease: 5*60000, // +5 minute for each failure
+  // This is how often we poll normally:
+  normalPeriod: 5*60000, // 5 minutes
+  // When the repo is updated we sync within this amount of time
+  // (this allows quick successive updates to be batched):
+  immediateUpdateDelay: 500 // .5 seconds
 };
 
 /* Called when we should start regularly syncing (generally after
-   login) */
+   login).  We also do one sync *right now* */
 Scheduler.prototype.activate = function () {
   this.deactivate();
   this.resetSchedule();
+  // This forces the next sync to happen immediately:
+  this._periodAddition = -this._period;
   this.schedule();
 };
 
@@ -936,10 +1027,13 @@ Scheduler.prototype.deactivate = function () {
   }
 };
 
+/* Resets the schedule to the normal pacing, undoing any adjustments */
 Scheduler.prototype.resetSchedule = function () {
-  this._nextRun = this.settings.normalPeriod;
+  this._period = this.settings.normalPeriod;
+  this._periodAddition = 0;
 };
 
+/* Schedules the next sync job, using this._period and this._periodAddition */
 Scheduler.prototype.schedule = function () {
   var self = this;
   if (this._timeoutId) {
@@ -951,8 +1045,12 @@ Scheduler.prototype.schedule = function () {
         if (error && self.onerror) {
           self.onerror(error);
         }
+        if (! error) {
+          // Reset period on success:
+          self.resetSchedule();
+        }
         self.schedule();
-        this.lastSuccessfulSync = new Date().getTime();
+        self.lastSuccessfulSync = new Date().getTime();
         if (self.onsuccess) {
           self.onsuccess();
         }
@@ -963,7 +1061,41 @@ Scheduler.prototype.schedule = function () {
       }
       self.schedule();
     }
-  }, this._nextRun);
+  }, this._period + this._periodAddition);
+  this._periodAddition = 0;
+};
+
+/* Run sync immediately, or at least very soon */
+Scheduler.prototype.scheduleImmediately = function () {
+  this._periodAddition = (-this._period) + this.settings.immediateUpdateDelay;
+  this.schedule();
+};
+
+/* Use this to do very few sync operations, typically when the user wouldn't
+   care about promptness (e.g., dashboard is not visible) */
+Scheduler.prototype.scheduleSlowly = function () {
+  this._period = this.settings.maxPeriod;
+  this.schedule();
+}
+
+/* Called when the server gives back a Retry-After or similar response
+   that should affect scheduling */
+Scheduler.prototype.retryAfter = function (value) {
+  var retryAfter = value.retryAfter;
+  if (! retryAfter) {
+    // Must be a 5xx error
+    this._period += this.settings.failureIncrease;
+    if (this._period > this.settings.maxPeriod) {
+      this._period = this.settings.maxPeriod;
+    }
+  } else {
+    retryAfter = retryAfter * 1000;
+    if (retryAfter < this.settings.minPeriod) {
+      retryAfter = this.settings.minPeriod;
+    }
+    this._periodAddition = retryAfter - this._period;
+  }
+  // FIXME: should I use this.settings.maxPeriod as a limit
 };
 
 /* For Jetpack */

@@ -114,10 +114,12 @@ var sync = new SyncService({
 sync.onstatus = function (status) {
   if (status.error) {
     if (status.detail.error != 'uuid_changed') {
-      var message = JSON.stringify(status.detail);
+      var message = status.detail.error;
       if (status.detail.message) {
         message = status.detail.message;
-      }
+      } else if (status.detail.error == 'Non-200 response code') {
+        message = 'server error';
+      } 
       setButtonData({status: "Error: " + message}, true);
     }
   } else if (status.status) {
