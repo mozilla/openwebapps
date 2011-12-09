@@ -1,3 +1,4 @@
 {
-	"name": "../Evil App"
+	"name": "../Evil App2",
+   "installs_allowed_from": ["*"]
 }

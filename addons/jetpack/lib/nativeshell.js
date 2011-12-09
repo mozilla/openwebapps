@@ -498,6 +498,20 @@ function abortInstallation(nativeShell) {
   nativeShell.removeInstallation();
 }
 
+function stripStringForFilename(possiblyBadFilenameString) {
+  //strip everything from the front up to the first [0-9a-zA-Z]
+
+  let stripFrontRE = new RegExp("^\\W*","gi");
+  let stripBackRE = new RegExp("\\W*$","gi");
+
+  let stripped = possiblyBadFilenameString.replace(stripFrontRE, "");
+  stripped = stripped.replace(stripBackRE, "");
+  return stripped;
+}
+
+
+
+
 function setUpSharedVariables(app, out) {
    let ios = Cc["@mozilla.org/network/io-service;1"]
              .getService(Ci.nsIIOService);
@@ -523,6 +537,9 @@ function setUpSharedVariables(app, out) {
                                 + "]"
                                 ,"gi");
    out.appName = app.manifest.name.replace(unprintableRE, "");
+   //remove creepy stuff from front and back
+   out.appNameAsFilename = stripStringForFilename(out.appName);
+
 
    if(app.developer) {
      if(app.developer.name) {
@@ -629,7 +646,7 @@ WinNativeShell.prototype = {
                               + "]"
                               ,"gi");
 
-    this.appNameAsFilename = this.appName.replace(filenameRE, "");
+    this.appNameAsFilename = this.appNameAsFilename.replace(filenameRE, "");
 
     let directoryService = Cc["@mozilla.org/file/directory_service;1"]
                            .getService(Ci.nsIProperties);
@@ -962,8 +979,8 @@ MacNativeShell.prototype = {
                               + "/"
                               + "]"
                               ,"gi");
-    this.appNameAsFilename = this.appName
-                                 .replace(filenameRE, "-");
+    
+    this.appNameAsFilename = this.appNameAsFilename.replace(filenameRE, "-");
 
     this.installDir = Cc['@mozilla.org/file/local;1']
                       .createInstance(Ci.nsILocalFile);

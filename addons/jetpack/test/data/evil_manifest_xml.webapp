@@ -1,3 +1,4 @@
 {
-	"name": "Evil App ><XML>tagInjection</XML>"
+   "name": "Evil App ><XML>tagInjection</XML>",
+   "installs_allowed_from": ["*"]
 }
