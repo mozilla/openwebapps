@@ -193,9 +193,11 @@ function getIconFromURI(nativeShell) {
                                      cx,
                                      aStatus,
                                      file) {
-                              onIconDownloaded(aStatus,
+                              onIconDownloaded(nativeShell,
+                                               mimeType,
+                                               aStatus,
                                                file,
-                                               downloader);
+                                               downloader); // pass downloader just to keep reference around
             }
       };
 
