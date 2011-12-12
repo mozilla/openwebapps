@@ -312,7 +312,7 @@ function setupAboutPageMods() {
  * Shows a jetpack panel to get a BrowserID assertion from the user to
  * authenticate to the sync service
  */
-function setupLogin(service) {
+function setupLogin(service, scheduler) {
   let loggingIn = false;
   let wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
   let win = wm.getMostRecentWindow("navigator:browser");
@@ -348,7 +348,7 @@ function setupLogin(service) {
         }, function(err, info) {
           console.log("Got back from login " + JSON.stringify(err) + " " + JSON.stringify(info));
           if (!err) {
-            service.syncImmediately();  
+            scheduler.scheduleImmediately();
           }
           loggingIn = false;
           return;
@@ -535,7 +535,7 @@ function startup(getUrlCB) { /* Initialize simple storage */
   migrateApps();
 
   // We don't have an assertion from BrowserID, so let's ask the user to login
-  setupLogin(service);
+  setupLogin(service, scheduler);
 
   // Setup socket server
   // TODO: Add stopServer method to unloaders
