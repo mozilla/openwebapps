@@ -313,6 +313,7 @@ function setupAboutPageMods() {
  * authenticate to the sync service
  */
 function setupLogin(service) {
+  let loggingIn = false;
   let wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
   let win = wm.getMostRecentWindow("navigator:browser");
 
@@ -322,7 +323,7 @@ function setupLogin(service) {
   let button = win.document.getElementById("widget:openwebapps@mozillalabs.com-" + TOOLBAR_ID);
   let panel = require("panel").Panel({
     width: 300,
-    height: 200,
+    height: 100,
     contentURL: APP_SYNC_URL + "/login.html"
   });
 
@@ -337,18 +338,36 @@ function setupLogin(service) {
       "};",
     onAttach: function(worker) {
       worker.port.on("verifiedEmail", function(data) {
+        // loggedIn() isn't set to true for a while, so prevent 
+        // immediate popup when BrowserID dialog returns
+        loggingIn = true;
+        
         service.login({
           assertion: data,
           audience: APP_SYNC_URL 
         }, function(err, info) {
           console.log("Got back from login " + JSON.stringify(err) + " " + JSON.stringify(info));
-          service.syncNow();
+          if (!err) {
+            service.syncImmediately();  
+          }
+          loggingIn = false;
+          return;
         });
       });
     }
   });
 
-  panel.show(button);
+  /* Only show panel when on dashbord page and not loggedIn */
+  function showPanel(tab) {
+    let dboard = "https://myapps.mozillalabs.com";
+    if (tab.url.slice(0, dboard.length) == dboard) {
+      if (loggingIn) return;
+      if (!service.loggedIn()) {
+        panel.show(button); 
+      }
+    }
+  }
+  tabs.on('activate', showPanel);
 }
 
 /**
