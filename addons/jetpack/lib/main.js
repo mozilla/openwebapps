@@ -312,8 +312,8 @@ function setupAboutPageMods() {
  * Shows a jetpack panel to get a BrowserID assertion from the user to
  * authenticate to the sync service
  */
-var _isLoggedIn = false;
 function setupLogin(service) {
+  let loggingIn = false;
   let wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
   let win = wm.getMostRecentWindow("navigator:browser");
 
@@ -338,16 +338,21 @@ function setupLogin(service) {
       "};",
     onAttach: function(worker) {
       worker.port.on("verifiedEmail", function(data) {
+        // loggedIn() isn't set to true for a while, so prevent 
+        // immediate popup when BrowserID dialog returns
+        loggingIn = true;
+        
         service.login({
           assertion: data,
           audience: APP_SYNC_URL 
         }, function(err, info) {
           console.log("Got back from login " + JSON.stringify(err) + " " + JSON.stringify(info));
+          if (!err) {
+            service.syncImmediately();  
+          }
+          loggingIn = false;
           return;
         });
-
-        service.syncNow();
-        _isLoggedIn = true;
       });
     }
   });
@@ -355,11 +360,13 @@ function setupLogin(service) {
   /* Only show panel when on dashbord page and not loggedIn */
   function showPanel(tab) {
     let dboard = "https://myapps.mozillalabs.com";
-    if ((tab.url.slice(0, dboard.length) == dboard) && !_isLoggedIn) {
-      panel.show(button);
+    if (tab.url.slice(0, dboard.length) == dboard) {
+      if (loggingIn) return;
+      if (!service.loggedIn()) {
+        panel.show(button); 
+      }
     }
   }
-  tabs.on('open', showPanel);
   tabs.on('activate', showPanel);
 }
 
