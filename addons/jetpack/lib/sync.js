@@ -762,6 +762,7 @@ Server.prototype.isSaneRetryAfter = function (val) {
 
 Server.prototype.checkAuthRequest = function (req) {
   if (req.status === 401 && this.onautherror) {
+    this.logout();
     this.onautherror();
   }
 };
