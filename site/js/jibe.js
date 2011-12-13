@@ -79,12 +79,16 @@ $(document).ready(function() {
             if (cmd == "add") {
                 for (i = 0; i < itemArray.length; i++){
                     var app = itemArray[i];
-                    appCount++;
-                    if (appCount > 0) $("#help").css({display: 'none'});
 
-                    gridDash.addItemToGrid(
+                    var wasAdded = gridDash.addItemToGrid(
                         app.origin, {itemTitle: app.manifest.name, itemImgURL: app.origin + getIconForSize(48, app.manifest)}
                     );
+
+                    if (wasAdded) {
+                        appCount++;
+                        if (appCount > 0) $("#help").css({display: 'none'});
+                    }
+
                 }
             } else if (cmd == "remove") {
                 for (i = 0; i < itemArray.length; i++){
