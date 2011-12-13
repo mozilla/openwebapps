@@ -165,6 +165,19 @@ $ // The date should get parsed; but we'll end up with minPeriod
 Poll: 300000 -270000
 </pre>
 
+Next, we'll give a quick try at triggering logout/auth:
+
+<pre class="doctest">
+$ writeln(service.loggedIn());
+true
+$ override('__testing__', {status: 401});
+Completed
+$ get();
+...
+$ writeln(service.loggedIn());
+false
+</pre>
+
 </div>
 
 </body> </html>
