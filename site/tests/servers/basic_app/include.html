@@ -12,7 +12,7 @@
 
   function myonload() {
     // update repo origin for the test environment
-    navigator.apps.setRepoOrigin(SERVERS['_primary']);
+    navigator.mozApps.setRepoOrigin(SERVERS['_primary']);
 
     var chan = Channel.build({
       window: window.parent,
@@ -22,7 +22,7 @@
 
     chan.bind("amInstalled", function(trans) {
       trans.delayReturn(true);
-      navigator.apps.amInstalled(
+      navigator.mozApps.amInstalled(
         function(v) { trans.complete(v); },
         function(errObj) { trans.error(errObj.code, errObj.message) }
       );

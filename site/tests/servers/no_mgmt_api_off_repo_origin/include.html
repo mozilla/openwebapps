@@ -12,7 +12,7 @@
   <script>
   function myonload() {
     // update repo origin for the test environment
-    navigator.apps.setRepoOrigin(SERVERS['_primary']);
+    navigator.mozApps.setRepoOrigin(SERVERS['_primary']);
 
     var chan = Channel.build({
       window: window.parent,
@@ -22,25 +22,9 @@
 
     chan.bind("launch", function(trans, p) {
       trans.delayReturn(true);
-      navigator.apps.mgmt.launch(
+      navigator.mozApps.mgmt.launch(
         // any ol' app id will do, we shouldn't get that far, we don't have mgmt perms
         SERVERS['basic_app'],
-        function(v) { trans.complete(v); },
-        function(errObj) { trans.error(errObj.code, errObj.message) }
-      );
-    });
-
-    chan.bind("loadState", function(trans) {
-      trans.delayReturn(true);
-      navigator.apps.mgmt.loadState(
-        function(v) { trans.complete(v); },
-        function(errObj) { trans.error(errObj.code, errObj.message) }
-      );
-    });
-
-    chan.bind("loginStatus", function(trans) {
-      trans.delayReturn(true);
-      navigator.apps.mgmt.loginStatus(
         function(v) { trans.complete(v); },
         function(errObj) { trans.error(errObj.code, errObj.message) }
       );
@@ -48,7 +32,7 @@
 
     chan.bind("list", function(trans) {
       trans.delayReturn(true);
-      navigator.apps.mgmt.list(
+      navigator.mozApps.mgmt.list(
         function(v) { trans.complete(v); },
         function(errObj) { trans.error(errObj.code, errObj.message) }
       );
@@ -56,18 +40,9 @@
 
     chan.bind("uninstall", function(trans) {
       trans.delayReturn(true);
-      navigator.apps.mgmt.uninstall(
+      navigator.mozApps.mgmt.uninstall(
         // any ol' app id will do, we shouldn't get that far, we don't have mgmt perms
         SERVERS['basic_app'],
-        function(v) { trans.complete(v); },
-        function(errObj) { trans.error(errObj.code, errObj.message) }
-      );
-    });
-
-    chan.bind("saveState", function(trans) {
-      trans.delayReturn(true);
-      navigator.apps.mgmt.saveState(
-        { some: "fake state" },
         function(v) { trans.complete(v); },
         function(errObj) { trans.error(errObj.code, errObj.message) }
       );

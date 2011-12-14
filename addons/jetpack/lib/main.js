@@ -1,3 +1,5 @@
+/* -*- Mode: JavaScript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* vim: set ts=2 et sw=2 tw=80: */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -34,539 +36,522 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-const ui = require("./ui");
-const url = require("./urlmatch");
 const tabs = require("tabs");
 const addon = require("self");
+const pageMod = require("page-mod");
 const unload = require("unload");
+const url = require("./urlmatch");
 const simple = require("simple-storage");
-const {Cc, Ci, Cm, Cu, Cr, components} = require("chrome");
+const { Cc, Ci, Cm, Cu, Cr, components } = require("chrome");
+
+const TOOLBAR_ID = "openwebapps-toolbar-button";
+const APP_SYNC_URL = "https://myapps.mozillalabs.com";
 
 var tmp = {};
 Cu.import("resource://gre/modules/Services.jsm", tmp);
 Cu.import("resource://gre/modules/AddonManager.jsm", tmp);
 Cu.import("resource://gre/modules/XPCOMUtils.jsm", tmp);
-var {XPCOMUtils, AddonManager, Services} = tmp;
+var { XPCOMUtils, AddonManager, Services } = tmp;
 
-function openwebapps(win, getUrlCB)
-{
-    this._getUrlCB = getUrlCB;
-    this._window = win;
+/**
+ * openwebapps
+ *
+ * per-window initialization for owa
+ */
+function openwebapps(win, getUrlCB) {
+  this._getUrlCB = getUrlCB;
+  this._window = win;
 
-    Cc["@mozilla.org/observer-service;1"]
-      .getService(Ci.nsIObserverService)
-          .addObserver( this, "openwebapp-installed", false);
-    Cc["@mozilla.org/observer-service;1"]
-      .getService(Ci.nsIObserverService)
-          .addObserver( this, "openwebapp-uninstalled", false);
-    
-    // Base initialization
-    let tmp = {};
-    tmp = require("./api");
-    this._repo = tmp.FFRepoImplService;
+  // Base initialization
+  let tmp = {};
+  tmp = require("./api");
+  this._repo = tmp.FFRepoImplService;
+  
+  // setup page-mods
+  this.setupManagerAPI();
 
-    tmp = require("./injector");
-    tmp.InjectorInit(this._window); 
-    this._inject();
-    win.appinjector.inject();
-
-    tmp = require("./services");
-    this._services = new tmp.serviceInvocationHandler(this._window);
-
-    tmp = {};
-    Cu.import("resource://services-sync/main.js", tmp);
-    if (tmp.Weave.Status.ready) {
-        this._registerSyncEngine();
-    } else {
-        tmp = {};
-        Cu.import("resource://services-sync/util.js", tmp);
-        tmp.Svc.Obs.add("weave:service:ready", this);
+  if (this.pendingRegistrations) {
+    for each(let reg in this.pendingRegistrations) {
+      this._repo._registerBuiltInApp(reg[0], reg[1], reg[2]);
     }
-            
-    if (this.pendingRegistrations) {
-        for each (let reg in this.pendingRegistrations) {
-            this._repo._registerBuiltInApp(reg[0], reg[1], reg[2]);
+    this.pendingRegistrations = null;
+  }
+
+  // Load stylesheet
+  let uri = require("self").data.url("skin/overlay.css");
+  let document = win.document;
+  let pi = document.createProcessingInstruction("xml-stylesheet", "href=\"" + uri + "\" type=\"text/css\"");
+  document.insertBefore(pi, document.firstChild);
+
+  // TODO: Figure out a way to do this without waiting for 500ms.
+  // Also, intercept document loads that don't open in a new tab
+  // (this should be done in the content-document-global-created observer?)
+  let self = this;
+  win.gBrowser.tabContainer.addEventListener("TabOpen", function(e) {
+    self._window.setTimeout(function(e) {
+      if (e.target.pinned) return;
+
+      let browser = self._window.gBrowser.getBrowserForTab(e.target);
+      // empty tabs have no currentURI
+      if (!browser || !browser.currentURI) return;
+      let origin = url.URLParse(browser.currentURI.spec).originOnly().toString();
+
+      self._repo.getAppByUrl(origin, function(app) {
+        if (app) {
+          self._repo.launch(origin, browser.currentURI.spec);
+          self._window.gBrowser.removeTab(e.target);
         }
-        this.pendingRegistrations = null;
+      });
+    }, 500, e);
+  }, false);
+
+
+  // Handle the case of our special app tab being selected so we
+  // can hide the URL bar etc.
+  let container = this._window.gBrowser.tabContainer;
+  let ss = Cc["@mozilla.org/browser/sessionstore;1"].getService(Ci.nsISessionStore);
+  let wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
+
+  function appifyTab(evt) {
+    let win = wm.getMostRecentWindow("navigator:browser");
+    let box = win.document.getElementById("nav-bar");
+
+    if (ss.getTabValue(evt.target, "appURL")) {
+      box.setAttribute("collapsed", true);
+    } else {
+      box.setAttribute("collapsed", false);
     }
-          
-    // Keep an eye out for LINK headers that contain manifests:
-    let obs = Cc["@mozilla.org/observer-service;1"].
-              getService(Ci.nsIObserverService);
-    this._linkListenerAttached = false;
-    obs.addObserver(this, 'content-document-global-created', false);
+  }
 
-    this._ui = new ui.openwebappsUI(win, getUrlCB, this._repo);
-    
-    // Prompt user if we detect that the page has an app via tabs module
-    let self = this;
-    tabs.on('activate', function(tab) {
-        // If user switches tab via keyboard shortcuts, it does not dismiss
-        // the offer panel (clicking does); so hide it if present
-        self._ui._hideOffer();
-
-        let cUrl = url.URLParse(tab.url).originOnly().toString();
-        let record = simple.storage.links[cUrl];
-        dump("APPS | onTabActivate | Checking url " + cUrl + " - found stored record " + JSON.stringify(record) + "\n");
-        if (record) self.offerInstallIfNeeded(cUrl);
-    });
-
-    // TODO: Figure out a way to do this without waiting for 500ms.
-    // Also, intercept document loads that don't open in a new tab
-    // (this should be done in the content-document-global-created observer?)
-    win.gBrowser.tabContainer.addEventListener("TabOpen", function(e) {
-        self._window.setTimeout(function(e) {
-            if (e.target.pinned) return;
-
-            let browser = self._window.gBrowser.getBrowserForTab(e.target);
-            let origin = url.URLParse(browser.currentURI.spec)
-                .originOnly().toString();
-
-            self._repo.getAppByUrl(origin, function(app) {
-                if (app) {
-                    self._repo.launch(origin, browser.currentURI.spec);
-                    self._window.gBrowser.removeTab(e.target);
-                }
-            });
-        }, 500, e);
-    }, false);
+  container.addEventListener("TabSelect", appifyTab, false);
 }
 
 openwebapps.prototype = {
-    _inject: function() {
-        let repo = this._repo;
-        let win = this._window;
-        let self = this;
-        
-        win.appinjector.register({
-            apibase: "navigator.apps", name: "install", script: null,
-            getapi: function (contentWindowRef) {
-                return function (args) {
-                    repo.install(contentWindowRef.location, args, win);
-                }
-            }
-        });
-        win.appinjector.register({
-            apibase: "navigator.apps", name: "amInstalled", script: null,
-            getapi: function (contentWindowRef) {
-                return function (callback) {
-                    repo.amInstalled(contentWindowRef.location, callback);
-                }
-            }
-        });
-        win.appinjector.register({
-            apibase: "navigator.apps", name: "getInstalledBy", script: null,
-            getapi: function (contentWindowRef) {
-                return function (callback) {
-                    repo.getInstalledBy(contentWindowRef.location, callback);
-                }
-            }
-        });
-        win.appinjector.register({
-            apibase: "navigator.apps", name: "setRepoOrigin", script: null,
-            getapi: function () {
-                return function (args) {}
-            }
-        });
 
-        win.appinjector.register({
-            apibase: "navigator.apps", name: "invokeService", script: null,
-            getapi: function (contentWindowRef) {
-                return function (methodName, args, successCB, errorCB) {
-                  self._services.invoke(contentWindowRef, methodName, args, successCB, errorCB);
-                }
-            }
-        });
-
-        // this one kinda sucks - but it is the only way markh can find to
-        // pass a content object (eg, the iframe or the frame's content window).
-        // Attempting to pass it via self.emit() fails...
-        win.appinjector.register({
-            apibase: "navigator.apps.mediation", name: "_invokeService", script: null,
-            getapi: function (contentWindowRef) {
-                return function (iframe, activity, message, args, cb, cberr) {
-                  args = JSON.parse(JSON.stringify(args));
-                  self._services.invokeService(iframe.wrappedJSObject, activity, message, args, cb, cberr)
-                }
-            }
-        });
-
-        // services APIs
-        win.appinjector.register({
-            apibase: "navigator.apps.services", name: "ready", script: null,
-            getapi: function(contentWindowRef) {
-                return function(args) {
-                    self._services.initApp(contentWindowRef.wrappedJSObject);
-                }
-            }
-        });
-
-        win.appinjector.register({
-            apibase: "navigator.apps.services", name: "registerHandler", script: null,
-            getapi: function(contentWindowRef) {
-                return function(activity, message, func) {
-                    self._services.registerServiceHandler(contentWindowRef.wrappedJSObject, activity, message, func);
-                }
-            }
-        });
-
-        // management APIs:
-        win.appinjector.register({
-            apibase: "navigator.apps.mgmt", name: "launch", script: null,
-            getapi: function (contentWindowRef) {
-                return function (args) {
-                    repo.verifyMgmtPermission(contentWindowRef.location);
-                    repo.launch(args);
-                }
-            }
-        });
-        win.appinjector.register({
-            apibase: "navigator.apps.mgmt", name: "list", script: null,
-            getapi: function (contentWindowRef) {
-                return function (callback) {
-                    repo.verifyMgmtPermission(contentWindowRef.location);
-                    repo.list(callback);
-                }
-            }
-        });
-        win.appinjector.register({
-            apibase: "navigator.apps.mgmt", name: "loginStatus", script: null,
-            getapi: function (contentWindowRef) {
-                return function (args) {
-                    repo.verifyMgmtPermission(contentWindowRef.location);
-                    return repo.loginStatus(args);
-                }
-            }
-        });
-        win.appinjector.register({
-            apibase: "navigator.apps.mgmt", name: "loadState", script: null,
-            getapi: function (contentWindowRef) {
-                return function (callback) {
-                    repo.verifyMgmtPermission(contentWindowRef.location);
-                    repo.loadState(contentWindowRef.location, callback);
-                }
-            }
-        });
-        win.appinjector.register({
-            apibase: "navigator.apps.mgmt", name: "saveState", script: null,
-            getapi: function (contentWindowRef) {
-                return function (state, callback) {
-                    repo.verifyMgmtPermission(contentWindowRef.location);
-                    repo.saveState(contentWindowRef.location, state, callback);
-                }
-            }
-        });
-        win.appinjector.register({
-            apibase: "navigator.apps.mgmt", name: "uninstall", script: null,
-            getapi: function (contentWindowRef) {
-                return function (key, callback, onerror) {
-                    repo.verifyMgmtPermission(contentWindowRef.location);
-                    repo.uninstall(key, callback, onerror);
-                }
-            }
-        });
-        win.appinjector.registerAction(function() {
-            // Clear out the current page URL on every page load
-            let toolbarButton = win.document.getElementById("openwebapps-toolbar-button");
-            if (toolbarButton) {
-                toolbarButton.classList.remove("highlight");
-            }
-            repo.setCurrentPageAppURL(null);
-        });
-    },
-    
-    _registerSyncEngine: function() {
-        /*
-        let tmp = {};
-        Cu.import("resource://services-sync/main.js", tmp);
-        tmp.AppsEngine = require("./sync").AppsEngine;
-            
-        if (!tmp.Weave.Engines.get("apps")) {
-            tmp.Weave.Engines.register(tmp.AppsEngine);
-            unloaders.push(function() {
-                tmp.Weave.Engines.unregister("apps");
-            });
-        }
-        
-        let prefname = "services.sync.engine.apps";
-        if (Services.prefs.getPrefType(prefname) ==
-            Ci.nsIPrefBranch.PREF_INVALID) {
-            Services.prefs.setBoolPref(prefname, true);    
-        }
-        */
-    },
-
-    observe: function(subject, topic, data) {
-        if (topic == "weave:service:ready") {
-            this._registerSyncEngine();
-        } else if (topic == "openwebapp-installed") {
-//             let installData = JSON.parse(data)
-//             this._ui._renderDockIcons(installData.origin);
-//             if (!installData.hidePostInstallPrompt) {
-//                 this._ui._showDock();
-//             }
-            try{
-               this._ui._updateDashboard('yes');
-            } catch (e) {
-                console.log(e);
-            }
-
-        } else if (topic == "openwebapp-uninstalled") {
-//             this._ui._renderDockIcons();
-               this._ui._updateDashboard();
-        } else if (topic == "content-document-global-created") {
-
-            let mainWindow = subject
-                         .QueryInterface(Ci.nsIInterfaceRequestor)
-                         .getInterface(Ci.nsIWebNavigation)
-                         .QueryInterface(Ci.nsIDocShellTreeItem)
-                         .rootTreeItem
-                         .QueryInterface(Ci.nsIInterfaceRequestor)
-                         .getInterface(Ci.nsIDOMWindow);
-
-            let self = this;
-            if (this._window != mainWindow) { // exclude other windows
-              return;
-            }
-            if (subject != this._window.content) { //exclude jetpack panels and iframes
-              return;
-            }
-            if (self._linkListenerAttached) { // don't fire more than once
-              return;
-            }
-
-            let linkHandler = function(aEvent) {
-              // Links could come in any order!  Be ready for that.
-              if (aEvent.target.rel == "application-manifest" || aEvent.target.rel == "application-preferred-store")
-              {
-                let href = aEvent.target.href;
-                let page = url.URLParse(aEvent.target.baseURI);
-                page = page.normalize().originOnly().toString();
-
-                if (!simple.storage.links[page]) {
-                    // XXX: Should we restrict the href to be associated in
-                    // a limited way with the page?
-                    // Yes, perhaps .well-known or at the very least same origin
-                    simple.storage.links[page] = {
-                        "show": true,
-                        "url": href
-                    };
-                }
-
-                // If we just found this on the currently active page,
-                // manually call UI hook because tabs.on('activate') will
-                // not be called for this page
-                let cUrl = url.URLParse(tabs.activeTab.url);
-                cUrl = cUrl.normalize().originOnly().toString();
-
-                if (cUrl == page) {
-                  if (aEvent.target.rel == "application-manifest")
-                  {
-                    self.offerInstallIfNeeded(page);
-                  } 
-                  else if (aEvent.target.rel == "application-preferred-store")
-                  {
-                    // TODO do nothing if we're installed already
-                    // let the UI know we've got a store here
-                    simple.storage.links[page].store = href;
-                    self._ui._showPageHasStoreApp(page, self);
-                    
-                    // create a hidden iframe to talk to the store:
-                    let doc = self._window.document;
-                    let XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
-                    let xulPanel = doc.createElementNS(XUL_NS, "panel");
-                    xulPanel.setAttribute("type", "arrow");// <-- this is mandatory.  why??
-                    let frame = doc.createElementNS(XUL_NS, "browser");      
-                    frame.setAttribute("type", "content");
-                    xulPanel.appendChild(frame);
-                    doc.getElementById("mainPopupSet").appendChild(xulPanel);
-                    frame.setAttribute("src", href);
-                    xulPanel.sizeTo(0, 0);
-                    
-                    frame.addEventListener("DOMContentLoaded", function(event) {
-                      // and ask the store for details:
-                      self._services.invokeService( frame.contentWindow.wrappedJSObject, "appstore", "getOffer", {domain:cUrl}, function(result)
-                      {
-                        //dump("APPS | appstore.getOffer service | Got getOffer result for " + page + ": " + JSON.stringify(result) + "\n");
-                        simple.storage.links[page].offer = result;
-                        self._ui._showPageHasStoreApp(page, self);
-                      }, true /* is privileged */);
-                    }, false);
-                  }
-                }
-              }
-            };
-            mainWindow.addEventListener("DOMLinkAdded", linkHandler, false);
-            self._linkListenerAttached = true;
-        }
-    },
-    
-    performPurchaseActivity: function(store, domain, cb)
-    {
-      let self = this;
-
-      // HACK: This is really kind of gross, I don't want to have to do this here.
-      // create a hidden iframe to talk to the store:
-      let doc = self._window.document;
-      let XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
-      let xulPanel = doc.createElementNS(XUL_NS, "panel");
-      xulPanel.setAttribute("type", "arrow");// <-- this is mandatory.  why??
-      let frame = doc.createElementNS(XUL_NS, "browser");      
-      frame.setAttribute("type", "content");
-      xulPanel.appendChild(frame);
-      doc.getElementById("mainPopupSet").appendChild(xulPanel);
-      frame.setAttribute("src", store);
-      xulPanel.sizeTo(0, 0);
-      
-      frame.addEventListener("DOMContentLoaded", function(event) {
-        // and ask the store for details:
-        self._services.invokeService( frame.contentWindow.wrappedJSObject, "appstore", "purchase", {domain:domain}, function(result)
-        {
-          dump("APPS | performPurchaseActivity | Purchase completed - result is " + result);
-          cb(result);
-        }, true /* is privileged */);
-      }, false);
-    },
-    
-    // TODO: Don't be so annoying and display the offer everytime the app site
-    // is visited. If the user says 'no', don't display again for the session
-    offerInstallIfNeeded: function(origin) {
-        let self = this;
-        this._repo.getAppByUrl(origin, function(app) {
-            if (!app)
-                self._ui._showPageHasApp(origin, self);
-        });
-    },
-
-    registerBuiltInApp: function(domain, app, injector) {
-        if (!this._repo) {
-            if (!this.pendingRegistrations) this.pendingRegistrations = [];
-            this.pendingRegistrations.push( [domain, app, injector] );
-        } else{
-            this._repo._registerBuiltInApp(domain, app, injector);
-        }
+  registerBuiltInApp: function(domain, app, injector) {
+    // XXX is anything using this call?  if dead remove it
+    if (!this._repo) {
+      if (!this.pendingRegistrations) this.pendingRegistrations = [];
+      this.pendingRegistrations.push([domain, app, injector]);
+    } else {
+      this._repo._registerBuiltInApp(domain, app, injector);
     }
+  },
+  
+  setupManagerAPI: function() {
+    let repo = this._repo;
+
+    // XXX TODO if a manager app is installed,
+    // we need to add it to the allowedOrigins
+    let allowedOrigins = [
+      "https?://myapps.mozillalabs.com",
+      "*.myapps.mozillalabs.com",
+      "https?://apps.mozillalabs.com",
+      "https?://localhost",
+      "http://127.0.0.1:60172/*",
+      "about:apps"
+    ];
+  
+    pageMod.PageMod({
+      include: allowedOrigins,
+      contentScriptWhen: 'start',
+      contentScriptFile: require("self").data.url("mgmtapi.js"),
+      onAttach: function onAttach(worker) {
+        worker.port.on("owa.mgmt.launch", function(msg) {
+          repo.launch(msg.data);
+        });
+        worker.port.on("owa.mgmt.list", function(msg) {
+          repo.list(function(apps) {
+            worker.port.emit(msg.success, apps)
+          });
+        });
+        worker.port.on("owa.mgmt.uninstall", function(msg) {
+          repo.uninstall(msg.data, function(success) {
+            if (success)
+              worker.port.emit(msg.success, null);
+            else
+              worker.port.emit(msg.error, null);
+          });
+        });
+        worker.port.on("owa.mgmt.watchUpdates", function(msg) {
+          repo.watchUpdates(worker);
+        });
+        worker.port.on("owa.mgmt.clearWatch", function(msg) {
+          repo.clearWatch(worker);
+        });
+      }
+    });    
+  }
+
 
 };
 
+//----- navigator.mozApps api implementation
+function NavigatorAPI() {};
+NavigatorAPI.prototype = {
+  QueryInterface: XPCOMUtils.generateQI([Ci.nsIDOMGlobalPropertyInitializer]),
+  init: function API_init(aWindow) {
+    //console.log("API object init for "+aWindow.location);
+    let chromeObject = this._getObject(aWindow);
+  
+    // We need to return an actual content object here, instead of a wrapped
+    // chrome object. This allows things like console.log.bind() to work.
+    let contentObj = Cu.createObjectIn(aWindow);
+    function genPropDesc(fun) {
+      return { enumerable: true, configurable: true, writable: true,
+               value: chromeObject[fun].bind(chromeObject) };
+    }
+    let properties = {};
+    
+    for (var fn in chromeObject.__exposedProps__) {
+      //console.log("adding property "+fn);
+      properties[fn] = genPropDesc(fn);
+    }
+  
+    Object.defineProperties(contentObj, properties);
+    Cu.makeObjectPropsNormal(contentObj);
+  
+    return contentObj;
+  }
+};
+
+MozAppsAPIContract = "@mozilla.org/openwebapps/mozApps;1";
+MozAppsAPIClassID = Components.ID("{19c6a16b-18d1-f749-a2c7-fa23e70daf2b}");
+function MozAppsAPI() {}
+MozAppsAPI.prototype = {
+  __proto__: NavigatorAPI.prototype,
+  classID: MozAppsAPIClassID,
+  _getObject: function(aWindow) {
+    let tmp = {};
+    tmp = require("./api");
+    let repo = tmp.FFRepoImplService;
+    return {
+      // window.console API
+      install: function(origin, data, onsuccess, onerror) {
+        let wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
+        let recentWindow = wm.getMostRecentWindow("navigator:browser");
+        let args = {
+          url: origin, install_data: data,
+          onsuccess: onsuccess, onerror: onerror
+        };
+        repo.install(aWindow.location, args, recentWindow);
+      },
+      amInstalled: function(callback) {
+        repo.amInstalled(aWindow.location, callback);
+      },
+      getInstalledBy: function(callback) {
+        repo.getInstalledBy(aWindow.location, callback);
+      },
+      __exposedProps__: {
+        install: "r",
+        amInstalled: "r",
+        getInstalledBy: "r"
+      }
+    };
+  }
+}
+let MozAppsAPIFactory = {
+  createInstance: function(outer, iid) {
+    if (outer != null) throw Cr.NS_ERROR_NO_AGGREGATION;
+    return new MozAppsAPI().QueryInterface(iid);
+  }
+};
+
+//----- navigator.mozApps api implementation
 
 
 //----- about:apps implementation
 const AboutAppsUUID = components.ID("{1DD224F3-7720-4E62-BAE9-30C1DCD6F519}");
 const AboutAppsContract = "@mozilla.org/network/protocol/about;1?what=apps";
 let AboutAppsFactory = {
-    createInstance: function(outer, iid) {
-        if (outer != null)
-            throw Cr.NS_ERROR_NO_AGGREGATION;
-        return AboutApps.QueryInterface(iid);
-    }
+  createInstance: function(outer, iid) {
+    if (outer != null) throw Cr.NS_ERROR_NO_AGGREGATION;
+    return AboutApps.QueryInterface(iid);
+  }
 };
 let AboutApps = {
-    QueryInterface: XPCOMUtils.generateQI([Ci.nsIAboutModule]),
+  QueryInterface: XPCOMUtils.generateQI([Ci.nsIAboutModule]),
 
-    getURIFlags: function(aURI) {
-        return Ci.nsIAboutModule.ALLOW_SCRIPT;
-    },
+  getURIFlags: function(aURI) {
+    return Ci.nsIAboutModule.ALLOW_SCRIPT;
+  },
 
-    newChannel: function(aURI) {
-        let ios = Cc["@mozilla.org/network/io-service;1"].
-                  getService(Ci.nsIIOService);
-        let channel = ios.newChannel(
-            addon.data.url("about.html"), null, null
-        );
-        channel.originalURI = aURI;
-        return channel;
-    }
-};
-//----- end about:apps (but see ComponentRegistrar call in startup())
-
-//----- about:appshome implementation
-const AboutAppsHomeUUID = components.ID("{C5A1D035-1A11-4152-8C17-7B6126FBA2CD}");
-const AboutAppsHomeContract = "@mozilla.org/network/protocol/about;1?what=appshome";
-let AboutAppsHomeFactory = {
-    createInstance: function(outer, iid) {
-        if (outer != null)
-            throw Cr.NS_ERROR_NO_AGGREGATION;
-        return AboutAppsHome.QueryInterface(iid);
-    }
-};
-let AboutAppsHome = {
-    QueryInterface: XPCOMUtils.generateQI([Ci.nsIAboutModule]),
-
-    getURIFlags: function(aURI) {
-        return Ci.nsIAboutModule.ALLOW_SCRIPT;
-    },
-
-    newChannel: function(aURI) {
-        let ios = Cc["@mozilla.org/network/io-service;1"].
-                  getService(Ci.nsIIOService);
-        let channel = ios.newChannel(
-            addon.data.url("home.xhtml"), null, null
-        );
-        channel.originalURI = aURI;
-        return channel;
-    }
+  newChannel: function(aURI) {
+    let ios = Cc["@mozilla.org/network/io-service;1"].
+    getService(Ci.nsIIOService);
+    let channel = ios.newChannel(
+    addon.data.url("about.html"), null, null);
+    channel.originalURI = aURI;
+    return channel;
+  }
 };
 //----- end about:apps (but see ComponentRegistrar call in startup())
 
 let unloaders = [];
-function startup(getUrlCB) {
-    /* Initialize simple storage */
-    if (!simple.storage.links) simple.storage.links = {};
-
-    /* We use winWatcher to create an instance per window (current and future) */
-    let iter = Cc["@mozilla.org/appshell/window-mediator;1"]
-               .getService(Ci.nsIWindowMediator)
-               .getEnumerator("navigator:browser");
-    while (iter.hasMoreElements()) {
-        let aWindow = iter.getNext().QueryInterface(Ci.nsIDOMWindow);
-        aWindow.apps = new openwebapps(aWindow, getUrlCB);
+/**
+ * setupAboutPageMods
+ *
+ * since the pages will get a location that is "about:apps" we need to
+ * pagemod them and send them the actual resource url so css, images, etc.
+ * will continue to load correctly without hard-coded resource urls.
+ */
+function setupAboutPageMods() {
+  var pageMod = require("page-mod");
+  pageMod.PageMod({
+    include: ["about:apps*"],
+    contentScriptWhen: 'start',
+    contentScriptFile: addon.data.url('about.js'),
+    onAttach: function onAttach(worker) {
+      worker.port.emit('data-url', addon.data.url());
     }
-    function winWatcher(subject, topic) {
-        if (topic != "domwindowopened")
-            return;
-        subject.addEventListener("load", function() {
-            subject.removeEventListener("load", arguments.callee, false);
-            let doc = subject.document.documentElement;
-            if (doc.getAttribute("windowtype") == "navigator:browser") {
-                subject.apps = new openwebapps(subject, getUrlCB);
-            }
-        }, false);
-    }
-    Services.ww.registerNotification(winWatcher);
-    unloaders.push(function() Services.ww.unregisterNotification(winWatcher));
-    
-    Cm.QueryInterface(Ci.nsIComponentRegistrar).registerFactory(
-        AboutAppsUUID, "About Apps", AboutAppsContract, AboutAppsFactory
-    );
-    Cm.QueryInterface(Ci.nsIComponentRegistrar).registerFactory(
-        AboutAppsHomeUUID, "About Apps Home", AboutAppsHomeContract, AboutAppsHomeFactory
-    );
-
-    unloaders.push(function() {
-        Cm.QueryInterface(Ci.nsIComponentRegistrar).unregisterFactory(
-            AboutAppsUUID, AboutAppsFactory
-        );
-        Cm.QueryInterface(Ci.nsIComponentRegistrar).unregisterFactory(
-            AboutAppsHomeUUID, AboutAppsHomeFactory
-        );
-    });
-
-    // Broadcast that we're done, in case anybody is listening
-    let observerService = Cc["@mozilla.org/observer-service;1"]
-               .getService(Ci.nsIObserverService);
-
-    let tmp = require("api");
-    observerService.notifyObservers(tmp.FFRepoImplService, "openwebapps-startup-complete", "");
+  });
 }
 
-function shutdown(why)
-{
-    // variable why is one of 'uninstall', 'disable', 'shutdown', 'upgrade' or
-    // 'downgrade'. doesn't matter now, but might later
-    unloaders.forEach(function(unload) unload && unload());
+/**
+ * setupLogin
+ * Shows a jetpack panel to get a BrowserID assertion from the user to
+ * authenticate to the sync service
+ */
+function setupLogin(service, scheduler) {
+  let loggingIn = false;
+  let wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
+  let win = wm.getMostRecentWindow("navigator:browser");
 
-    // TODO: Hookup things to unload from ui.js module
+  /* Way to get the widget
+   * openwebapps@mozillalabs.com should be got from self.data
+   */
+  let button = win.document.getElementById("widget:openwebapps@mozillalabs.com-" + TOOLBAR_ID);
+  let panel = require("panel").Panel({
+    width: 300,
+    height: 100,
+    contentURL: APP_SYNC_URL + "/login.html"
+  });
+
+  pageMod.PageMod({
+    include: APP_SYNC_URL + "/login.html",
+    contentScriptWhen: "end",
+    contentScript: "var button = document.getElementById('signin_button');" +
+      "button.onclick = function() {" +
+      "  unsafeWindow.navigator.wrappedJSObject.id.getVerifiedEmail(function(assertion) {" +
+      "    self.port.emit('verifiedEmail', assertion);" +
+      "  });" +
+      "};",
+    onAttach: function(worker) {
+      worker.port.on("verifiedEmail", function(data) {
+        // loggedIn() isn't set to true for a while, so prevent 
+        // immediate popup when BrowserID dialog returns
+        loggingIn = true;
+        
+        service.login({
+          assertion: data,
+          audience: APP_SYNC_URL 
+        }, function(err, info) {
+          console.log("Got back from login " + JSON.stringify(err) + " " + JSON.stringify(info));
+          if (!err) {
+            scheduler.scheduleImmediately();
+          }
+          loggingIn = false;
+          return;
+        });
+      });
+    }
+  });
+
+  /* Only show panel when on dashbord page and not loggedIn */
+  function showPanel(tab) {
+    let dboard = "https://myapps.mozillalabs.com";
+    if (tab.url.slice(0, dboard.length) == dboard) {
+      if (loggingIn) return;
+      if (!service.loggedIn()) {
+        panel.show(button); 
+      }
+    }
+  }
+  tabs.on('activate', showPanel);
+}
+
+/**
+ * migrateApps
+ *
+ * We *move* (not copy), apps that were previously installed using the HTML5 shim
+ * library, hosted at https://myapps.mozillalabs.com/
+ */
+function migrateApps() {
+  var pageWorkers = require("page-worker");
+
+  try {
+    console.log("Creating page worker");
+    var worker = pageWorkers.Page({
+      contentURL: "https://myapps.mozillalabs.com",
+      contentScript: "var apps = [];" +
+        "for (var i = 0; i < localStorage.length; i++) {" +
+        " var key = localStorage.key(i);" +
+        " if (key.slice(0, 4) == 'app#') {" +
+        "   apps.push(localStorage.getItem(key));" +
+        " }" +
+        // Once we have the apps we want, just clean up everything
+        // This clears dashbaord state too.
+        "}" +
+        "localStorage.clear();" +
+        "self.port.emit('gotApps', JSON.stringify(apps));",
+      contentScriptWhen: "end"
+    });
+
+    worker.port.on("gotApps", function(apps) {
+      // Put these apps into extension's storage
+      var gotApps = JSON.parse(apps);
+      for (var i = 0; i < gotApps.length; i++) {
+        var appRec = JSON.parse(gotApps[i]);
+        console.log("Migrating app " + appRec.origin);
+
+        let repo = require("./api").FFRepoImplService;
+        repo.addApplication(appRec.origin, appRec, function(done) {
+          if (!done) {
+            console.log("Error while migrating app " + appRec.origin);
+          }
+        }); 
+      }
+    });
+  } catch (e) {
+    console.log("Error in migrateApps " + e);
+  }
+}
+
+/**
+ * startup
+ *
+ * all per-instance initialization should be started from here.  The window
+ * watcher will create an instance of openwebapps per navigator window.
+ * addon-sdk widgets manage their own per-window initialization, don't replicate
+ * that.
+ *
+ * Notifications are made per-window after owa has finished it's per-window
+ * to allow other addons with owa as a dependency to have a reliable
+ * way to initialize per-window.
+ */
+function startup(getUrlCB) { /* Initialize simple storage */
+  if (!simple.storage.links) simple.storage.links = {};
+  Services.obs.notifyObservers(null, "openwebapps-mediator-init", "");
+
+  /* We use winWatcher to create an instance per window (current and future) */
+  let iter = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator).getEnumerator("navigator:browser");
+  while (iter.hasMoreElements()) {
+    let aWindow = iter.getNext().QueryInterface(Ci.nsIDOMWindow);
+    aWindow.apps = new openwebapps(aWindow, getUrlCB);
+    Services.obs.notifyObservers(aWindow, "openwebapps-mediator-load", "");
+  }
+
+  function winWatcher(subject, topic) {
+    if (topic != "domwindowopened") return;
+    subject.addEventListener("load", function() {
+      subject.removeEventListener("load", arguments.callee, false);
+      let doc = subject.document.documentElement;
+      if (doc.getAttribute("windowtype") == "navigator:browser") {
+        subject.apps = new openwebapps(subject, getUrlCB);
+        Services.obs.notifyObservers(subject, "openwebapps-mediator-load", "");
+      }
+    }, false);
+  }
+  Services.ww.registerNotification(winWatcher);
+  unloaders.push(function() Services.ww.unregisterNotification(winWatcher));
+
+  Cm.QueryInterface(Ci.nsIComponentRegistrar).registerFactory(
+    AboutAppsUUID, "About Apps", AboutAppsContract, AboutAppsFactory
+  );
+
+  unloaders.push(function() {
+    Cm.QueryInterface(Ci.nsIComponentRegistrar).unregisterFactory(
+      AboutAppsUUID, AboutAppsFactory
+    );
+  });
+
+  // register our navigator api's that will be globally attached
+  Cm.QueryInterface(Ci.nsIComponentRegistrar).registerFactory(
+    MozAppsAPIClassID, "MozAppsAPI", MozAppsAPIContract, MozAppsAPIFactory
+  );
+  Cc["@mozilla.org/categorymanager;1"].getService(Ci.nsICategoryManager).
+              addCategoryEntry("JavaScript-navigator-property", "mozApps",
+                      MozAppsAPIContract,
+                      false, true);
+
+  unloaders.push(function() {
+    Cm.QueryInterface(Ci.nsIComponentRegistrar).unregisterFactory(
+      MozAppsAPIClassID, MozAppsAPIFactory
+    );
+    Cc["@mozilla.org/categorymanager;1"].getService(Ci.nsICategoryManager).
+                deleteCategoryEntry("JavaScript-navigator-property", "mozApps", false);
+  });
+
+  setupAboutPageMods();
+
+  // Setup widget to launch dashboard
+  require("widget").Widget({
+    id: TOOLBAR_ID,
+    label: "Apps",
+    width: 60,
+    contentURL: require("self").data.url("widget.html"),
+    onClick: function() {
+      let found = false;
+      for each (let tab in tabs) {
+        let origin = url.URLParse(tab.url).originOnly().toString();
+        if (origin == "https://myapps.mozillalabs.com") {
+          tab.activate(); found = true; break;
+        }
+      }
+      if (!found) tabs.open("https://myapps.mozillalabs.com");
+    }
+  });
+
+  // Setup Sync
+  let tmp = require("./api");
+  let sync = require("./sync");
+  let storage = require("./typed_storage");
+  let syncURL = require("preferences-service").get("apps.sync.url", APP_SYNC_URL + "/verify");
+  
+  let service = new sync.Service({
+    repo: tmp.FFRepoImplService,
+    server: new sync.Server(syncURL),
+    storage: new storage.TypedStorage().open("sync")
+  });
+
+  service.onstatus = function(status) {
+    if (status.error) {
+      console.log("Error syncing: " + JSON.stringify(status.detail));
+    } else if (status.status) {
+      if (status.status == 'sync_get') {
+        console.log("last_sync_get: " + status.timestamp);
+      } else if (status.status == 'sync_put_complete' || (status.status == 'sync_put' && status.count === 0)) {
+        console.log("last_sync_put: " + status.timestamp);
+      }
+    }
+  };
+
+  let scheduler = new sync.Scheduler(service);
+  scheduler.onerror = function (error) {
+    console.log("Error syncing: " + JSON.stringify(error));
+  };
+
+  // Migrate apps, if neccessary, from HTML5 installs
+  migrateApps();
+
+  // We don't have an assertion from BrowserID, so let's ask the user to login
+  setupLogin(service, scheduler);
+
+  // Setup socket server
+  // TODO: Add stopServer method to unloaders
+  require("socketserver").startServer();
+
+  // Broadcast that we're done, in case anybody is listening
+  Services.obs.notifyObservers(tmp.FFRepoImplService, "openwebapps-startup-complete", "");
+
+  // initialize the injector if we are <fx9
+  require("./injector").init();
+}
+
+function shutdown(why) {
+  // variable why is one of 'uninstall', 'disable', 'shutdown', 'upgrade' or
+  // 'downgrade'. doesn't matter now, but might later
+  unloaders.forEach(function(unload) unload && unload());
 }
 
 // Let's go!
@@ -574,4 +559,3 @@ startup(addon.data.url);
 
 // Hook up unloaders
 unload.when(shutdown);
-

@@ -1,0 +1,96 @@
+<html>
+<head>
+<title>Manifest-to-Native App Test Data</title>
+<style>
+.case {padding:12px;border:1px solid #f0f0f0;margin-bottom:16px;}
+.head { font : bold 12pt sans-serif; margin-bottom:4px;}
+.explain { font : 10pt sans-serif;}
+.control { float:right; padding:2px 4px 16px 16px}
+p {
+	font:12pt sans-serif;
+	padding:12px;
+	border:1px solid #e0e0e0;
+	background-color:#f0f0f0;
+}
+code{
+	background-color:#f0f0f0;
+	border:1px solid #e0e0e0;
+}
+</style>
+
+<script>
+function doInstall(path) {
+	navigator.mozApps.install(path, null, function() {
+		alert("Successfully installed")
+	}, function(x) {
+		alert("Error on install: " + x.message);
+	});
+}
+</script>
+</head>
+<body>
+
+<p>
+This directory contains test manifests for various native app synthesis functions.
+You can attempt installation of the apps by clicking their Install buttons.
+</p>
+
+<div class="case">
+<div class="control"><button onclick="doInstall('./evil_manifest_dirtraversal.webapp')">Install</button></div>
+
+<div class="head">Directory Traversal, Backslash</div>
+<div class="explain">This manifest contains a directory traversal attack in its name using Windows-style (backslash) path delimiters.</div>
+</div>
+
+<div class="case">
+<div class="control"><button onclick="doInstall('./evil_manifest_dirtraversal2.webapp')">Install</button></div>
+
+<div class="head">Directory Traversal, Forward Slash</div>
+<div class="explain">This manifest contains a directory traversal attack in its name using Unix-style (forward-slash) path delimiters.</div>
+</div>
+
+
+
+<div class="case">
+<div class="control"><button onclick="doInstall('./ok_manifest_quotes.webapp')">Install</button></div>
+
+<div class="head">Quotes in App Name</div>
+<div class="explain">This manifest contains an app that has both double and single quotes in its name.  It should be displayed properly, as 
+<br><code>"Buckaroo" Bob's Cool App</code>, on all systems.</div>
+</div>
+
+
+<div class="case">
+<div class="control"><button onclick="doInstall('evil_manifest_js.webapp')">Install</button></div>
+
+<div class="head">JS Injection, name</div>
+<div class="explain">This manifest contains a JS injection attack in its name.  If it succeeds, a call to jsInjection() will be made at chrome privileges.</div>
+</div>
+
+
+<div class="case">
+<div class="control"><button onclick="doInstall('evil_manifest_launchpath_js.webapp')">Install</button></div>
+
+<div class="head">JS Injection, launch path</div>
+<div class="explain">This manifest contains a JS injection attack in its launch path.  If it succeeds, a call to jsInjection() will be made at chrome privileges.</div>
+</div>
+
+
+<div class="case">
+<div class="control"><button onclick="doInstall('evil_manifest_xml.webapp')">Install</button></div>
+
+<div class="head">XML Injection, name</div>
+<div class="explain">This manifest contains an XML injection attack in its name.  If it succeeds, a new XMLTag element will be placed in the Info.plist for the app bundle on MacOS.</div>
+</div>
+
+
+<div class="case">
+<div class="control"><button onclick="doInstall('ok_manifest_xml.webapp')">Install</button></div>
+
+<div class="head">Angle Brackets in Name</div>
+<div class="explain">This manifest contains angle brackets in its name.  It should display properly, as &lt;&lt;MY COOL APP&gt;&gt; on all systems.</div>
+</div>
+
+
+</body>
+</html>

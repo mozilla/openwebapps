@@ -1,0 +1,1 @@
+../addons/jetpack/lib/sync.js

@@ -1,99 +1,154 @@
-### Sync
+# Sync
 
-This is a technical description of how the repository synchronizes installed applications between different devices or repositories. There are two parts described in this document:
+This is a description of sync in open web apps, ideally thorough enough to double as a specification.  This documentation describes how sync *will* be implemented, not (at this time) any current implementation.
 
-* How the protocol looks over the wire, common to all devices and repositories
+As a quick overview, this specifies several aspects of the protocol:
 
-* How the HTML5 sync work
+1. The documents that describe individual applications, along with a "key" by which they can be accessed
+2. The basic sync API, and authentication to the sync service
+3. How to get updates from the sync server, and how to apply these
+4. How to send new updates to the sync server
+5. Dealing with unknown application attributes
 
-#### Wire protocol
+## The Application Document
 
-The application uses [Firefox Sync](https://wiki.mozilla.org/Labs/Weave/Sync/1.0/API) API, as well as the [User API](https://wiki.mozilla.org/Labs/Weave/User/1.0/API) for logging in and registration.
+The document is a JSON document, aka object.
 
-The sync server we are using for development is located at https://sync.myapps.mozillalabs.com -- in this document is is referred to as `SERVER`.
+The **key** or ID of the application is its origin (protocol, domain, and port-if-not-default), and must be a normalized origin.
 
-The basic flow of connecting to the sync server is:
+**NOTE:** we should take `urlmatch.js` and polish it up.
 
-1. Get the username and password of the user
+**NOTE:** there is no definition of how to construct an origin for `file:`, `chrome:` or other non-standard protocols; and yet we may use such protocols (we *are* using such origins for F1, to handle internal applications).  On the other hand, such apps should probably never be synchronized as they are not portable between devices.
 
-2. If the username is not simple letters and numbers (e.g., it contains a `@` character) then the username made safe by lower-casing it, hashing it with SHA1, then encoded to "base32", and lower-casing again.  You may look in `/site/js/login.js` at the `emailToUsername` function to see how this is done.
+**Note:** should we filter origins on the server?  Might be a useful safety addition.
 
-3. All requests then use HTTP Basic authentication.
+The application document has these key:
 
-4. You make a request to the main Sync server to get the user's node. This request doesn't actually have to be authenticated.  This is a request to `SERVER/user/1.0/{username}/node/weave` which returns a text body of the node name (`NODE`).  During development we have one server, and so the node will always be the main `SERVER`.  In the production Sync deployment this is not the case.
+`deleted`: if present and true, then the application has been deleted. The presence of a document *asserts* that the application has been deleted.  If an application is simply not present then the sync server simply doesn't know about the application; deleting a local application because the sync server doesn't know about a service would be dangerous.
 
-5. The one and only URL you have to interact with is then `NODE/1.0/{username}/storage/openwebapps/apps`
+Note that applications may also be "hidden" but recoverable.  A deleted application has had its receipt(s) thrown away and is garbage. It is not necessary that any dashboard present UI for deleting an application, but we assume that there is some way an application can actually be eliminated (and the `navigator.mozApps.mgmt` API provides one).  If an app is deleted then only `last_modified` is required.
 
-6. Unless you want to clear the sync server, then do `DELETE NODE/1.0/{username}/storage/openwebapps/`
+`last_modified`: a numeric timestamp (seconds from the epoc, UTC). This is required even for the case of a deleted app.
 
-7. Now there's only two operations: `PUT` and `GET` -- you `GET` to get the current applications and see if there's anything new, and you `PUT` your version of applications to share.  You *may* use X-If-Modified-Since on the `GET` request to conditionally fetch changes, and X-If-Not-Modified-Since on `PUT` to conditionally send changes, but you are not required to avoid clobbering other changes.
+**NOTE:** can we reliably figure out the timezone?  Does it matter? Elsewhere we use `Date().getTime()` - we can also try to resolve differences with the server because we start with a `GET` as noted in the Protocol section.
 
-8. It is most reasonable to do a GET before a PUT.
+`manifest`: the installed manifest.  This is not double-encoded, i.e., it is an object.
 
-#### Sync document
+`manifest_url`: where the manifest was fetched from
 
-The wire protocol describes where you find the document, but now we'll discuss what you actually GET and PUT:
+`install_data`: the data given with `navigator.apps.install(manifest_url, install_data)`
 
-The object is encoded as a Weave(Sync) Basic Object.  This is simply a JSON object like:
+**NOTE:** the most common use case (maybe the only use case) for `install_data` is for receipts.  Receipts should probably be handled more carefully.
 
-    {"id": "apps", "payload": "some string"}
+`install_origin`: the origin where app was installed from; it is an error if this differs from the key.
 
-You can include other optional attributes, but we don't use any. Typically for Sync the payload is encrypted, but for our uses we don't do that.  The payload is itself a JSON document (note it's effectively stringified twice).
+**NOTE:** this may be derivative of `manifest_url`?  Maybe that's okay?  We could use `manifest_path`?
 
-The JSON document looks like:
+`install_time`: timestamp (seconds) of the app installation
+
+**NOTE:** we are ignoring `navigator.apps.mgmt.saveState()` (an API which we aren't really supporting anyway) which makes sense for most use cases at this time.  But for the HTML case specifically, without being able to save dashboard state you'll get a list of *every* application, unordered.  So it'll be a mess on a kiosk.  It would be nice to at least have a reasonable starting point.
+
+**NOTE:** it would nice to have some sense of provenance, like who or what device installed the app.  Maybe a basic category, like "mobile" (meaning the application was first installed on a mobile device); CSS defines handheld and screen (and other accessibility-related profiles), but we've discussed tablet as a separate category.  We'd need to make a guess ourselves in the HTML case, using User-Agent and the screen size.
+
+**NOTE:** Services credentials should go here.
+
+**NOTE:** Any way to indicate if the app was used?  It would be nice to be able to figure out when an app is unused across all devices.
+
+**NOTE:** we don’t have any way to add items here if clients lose them during the generation phase.  Maybe we should stuff all these extra bits under one key, and require the client to keep them.  Or, we require the client to keep *everything* they receive in this document, unmolested, unless they explicitly change something?  Or, keep unknown top-level keys aside, and expect that unknown keys may come about?
+
+**NOTE:** How do we handle version changes?  Schema updates?  Clients that feel a manifest is invalid, while another client feels it is valid?
+
+## Generating the Document
+
+To generate this document you should go through all apps, including the deleted tombstones of apps (which your repository should keep). You should generate (and remember) `last_modified` if you do not have it recorded.
+
+Because edits are relatively infrequent and based on a shared canonical representation (the manifest as served up at its URL) there is no collision detection, the latest `last_modified` simply wins (**NOTE**: this is where we could lose receipts).
+
+**NOTE:** should we recommend deleting tombstones after some period of time?  A year?  (It would not be that odd for a seldom-used device to be resync'd months later)
+
+## Authenticating with the Sync Server
+
+The sync service will live at a well known location, perhaps `https://myapps.mozillalabs.com/apps-sync`
+
+To start the sync process you must have a BrowserID assertion.  It should be an assertion from `myapps.mozillalabs.com` or another in a whitelist of domains.  Send a request to:
+
+    POST https://myapps.mozillalabs.com/apps-sync/verify
+
+    assertion={assertion}&audience={audience}
+
+The response will be a JSON document, containing the same information as a request to `https://browserid.org/verify` but also with the keys (in case of a successful login) `collection_url`  and `authentication_header`.
+
+`collection_url` will be the URL where you will access the applications.  `authentication_header` is a value you will include in `Authentication: {authentication_header}` with each request.
+
+A request may return a 401 status code.  The `WWW-Authenticate` header will not be significant in this case.  Instead you should start the login process over with a request to `https://myapps.mozillalabs.com/apps-sync/verify`
+
+## How to get updates
+
+After authenticating with the server and getting back the URL of the collection, request:
+
+    GET {collection}?since={timestamp}
+
+`since` is optional; on first sync is should be empty or left off. The server will return an object:
 
     {
-      "installed": {
-        "{base_url}": {
-          "base_url": "{base_url}",
-          "lastModified": {numeric_timestamp},
-          ... other attributes ...
-        },
-        ... other installed apps ...
-      },
-      "deleted": {
-        "{base_url}": {
-          "lastModified": {numeric_timestamp}
-        },
-        ... other deleted apps ...
-      }
+      since: timestamp,
+      until: timestamp,
+      incomplete: bool,
+      applications: {origin: {...}, ...}
     }
 
-Note that applications *are not* deleted by simply removing them from `"installed"`, they must be moved into `"deleted"`.
+The response may not be complete if there are too many applications. If this is the case then `incomplete` will be true (it may be left out if the response is complete).  Another request using `since={until}` will get further applications (this may need to be repeated many times).
 
-There are then two processes: (1) create a document from your repository, and (2) having received a document, merge it with your repository.
+The client should save the value of `until` and use it for subsequent requests.
 
-Creating a document is fairly obvious.  You should ensure each application or deleted placeholder has a `lastModified` attribute, using the current timestamp if necessary.
+In the case of no new items the response will be only `{until: timestamp}`.
 
-To merge a document with your repository you should:
+The client should always start with this GET request and only then send its own updates.  It should ensure that its local timestamp is sensible in comparison to the value of `until`.
 
-1. Take each installed application.  If it is not in your list of installed or deleted applications, then insert it as a new application.
+Applications returned may be older than the local applications, in that case then the client should ignore the server's application and use its local copy, causing an overwrite.  The same is true for deleted applications; if the local installed copy has a `last_modified` date newer than the deleted server instance then the server instance should be ignored (the user reinstalled an application).
 
-2. If the application is already installed, compare lastModified timestamps, choosing the application withe the newer timestamp.  (This conflict should be relatively uncommon, and also installed application manifests aren't intended to be particularly volatile).
+**NOTE:** there are some conflicts that may occur, specifically receipts should be merged.
 
-3. If the application is locally deleted, compare lastModified timestamps.  Throw away the deleted placeholder if the installed app is newer, ignore the installed app if the deleted placeholder is newer.
+When an application is added from the server the client should *locally* set `app.sync` to true (this is in the [application representation](https://developer.mozilla.org/en/OpenWebApps/The_JavaScript_API#Application_Representation), not the manifest).
 
-4. Take each deleted application, and repeat the same process.
+You must always retain `last_modified` as you received it from the server (unless you ignore the application in favor of a newer local version).
 
-#### HTML 5 Implementation
+## Sending new updates
 
-The HTML 5 Implementation is in `/js/sync.js` and runs directly on a TypedStorage instance (as implemented, for example, in `/js/typed-storage.js`).  It looks for applications under the type `"app"` and deleted placeholders under `"deletedapp"`.  Your repository then interacts directly with the TypedStorage, as does the Sync object.
+The client should keep track of the last time it sent updates to the server, and send updates when there are newer applications.
 
-The Sync object is instantiated like:
+**NOTE:** there is a case when an update might be lost because of an update from another device; this would be okay except that the client doesn't know it needs to re-send that update.  How do we confirm that?
 
-    sync = Sync({
-      url: NODE,
-      username: ENCODED_USERNAME,
-      password: PASSWORD,
-      storage: TYPED_STORAGE
-    });
+The updates are sent with:
 
-You can call things like `sync.pull()` and `sync.push()` to trigger the GET and PUT requests respectively.  Also `sync.getTimestamp()` will return a timestamp, and attempt to handle offsets between the sync server's timestamp and the local timestamp (though cross-domain header restrictions are currently making this unreliable).
+    POST {collection}?since={timestamp}
 
-If you simply call `sync.pollSyncServer([pollTimeMilliseconds])` it will periodically check the server (the default poll time is 5000 milliseconds).  After an initial PUT request, later PUT requests will happen when a change is detected (TypedStorage emits events which can be used to detect changes).
+    {origin: {...}, ...}
 
-Some errors may cause the polling to stop, most specifically if a failed request is received with a 0 status, which typically means the server is not available.  (The sync server can also respond with a server timeout with a retry-time, but this is currently not checked for.)
+Each object must have a `last_modified` key.  The response is only:
 
-#### Additions to sync.myapps
+    {received: timestamp}
 
-The only addition necessary was the addition of Access-Control-\* headers to the server to allow the repo domain (e.g., myapps.mozillalabs.com) to access the sync server.  This was applied in front of the Python sync server.  The code has been uploaded to [wsgi-access-control](https://github.com/ianb/wsgi-access-control) and the documentation includes the example of how it is configured in front of the sync service.  Currently it runs with an allowed origin of `*` but this should probably be changed to a whitelist that only allows production access.  Also it currently always sends the header, but to save on bandwidth it doesn't need to send the header except when it can be determined that the header is needed (which is a simple test for the `Origin` request header).
+`since` should be the time of the last GET (that the client did), and the server checks it against the time of the last POST to the collection.  If a client is issuing a POST but hasn't seen updates from another client, then this will fail like:
+
+    {status: "failure", reason: "conflict"}
+
+**NOTE:** this is like a precondition (If-Unmodified-Since or If-Match), and there is a response 412 Precondition Failed.  We could use those?  We are using float timestamps instead of HTTP dates; we could use X-If-Unmodified-Since or use ETag.  I don't believe, but am not sure, that we need to understand the timestamps as a newer/older kind of thing.  At least for this case (`last_modified` is different).
+
+## User Interface Concerns
+
+While all sync'd applications are in some sense "installed" on all applications, clients (and specifically dashboards) should not treat all applications equivalently.  Applications that were installed from elsewhere should be kept separately from applications installed on the device, unless the user has indicated they specifically want the application on the respective device.
+
+Dashboards should thus filter out applications with true `.sync` attributes, *unless* the user does something (like drag the application into the main application area).  Then the dashboard should remember (in its own local storage) that the application is desired locally despite the value of `.sync`.
+
+It is recommended that you sort remotely-installed applications by `install_time`, showing the most recent applications so they can be promoted to local apps.
+
+**NOTE:** we have to consider what the application picker for Activities looks like too; there is no "dashboard" for Activity picking, so nothing to helpfully distinguish between local and remote apps, or handle app ordering.
+
+## Implementation Notes
+
+The server implementation is hosted at https://github.com/mozilla/appsync
+
+It will be a Python server, with an implementation style similar to Firefox Sync (the `server-*` repositories located [here](http://hg.mozilla.org/services)).
+
+The client will be developed in the [feature/sync](https://github.com/mozilla/openwebapps/tree/feature/sync) branch, under `/sync/`.  The first implementation to be integrated is likely the HTML implementation (`/site/`).

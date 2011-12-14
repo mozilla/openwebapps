@@ -1,0 +1,13 @@
+{
+  "foxlauncher":
+  {
+    "rename": "$NAME_AS_FILENAME",
+    "mode": "b",
+    "isExecutable": true,
+    "substituteStrings": false
+  },
+  "specialfiles.json":
+  {
+    "ignore": true
+  }
+}

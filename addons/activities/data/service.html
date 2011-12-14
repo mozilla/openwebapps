@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <link rel="stylesheet" type="text/css" href="service.css" />
+  <script src="jquery-1.4.4.min.js" charset="utf-8" type="text/javascript"></script>
+  <script src="jquery.tmpl.min.js" charset="utf-8" type="text/javascript"></script>
+  <script src="service.js" charset="utf-8" type="text/javascript"></script>
+
+  <title></title>
+</head>
+
+<body>
+  <div id="wrapper">
+    <div class="appbox">
+      <div id="requestInfo"></div>
+
+      <div id="servicebox"></div>
+
+      <div id="confirm">
+        <div id="confirmbutton">
+          <button id="confirmclicker">Okay</button>
+        </div>
+      </div>
+    </div><!-- end appbox -->
+  </div><!-- end wrapper -->
+
+<script id="serviceTabs" type="text/x-jquery-tmpl">
+  <div id="services">
+    <ul id="services-tabs" class="tabs">
+      {{each( i, svc ) services}}
+      <li class="serviceTab" data-for="svc-tab-${i}">
+        <a href="#svc-tab-${i}">
+          <img src="${svc.getIconForSize(48)}" class="serviceIcon"/>
+          <div class="serviceTitle">${svc.app.manifest.name}</div>
+        </a>
+      </li>
+      {{/each}}
+    </ul>
+    <div class="tab_container">
+      {{each( i, svc ) services}}
+      <div id="svc-tab-${i}" class="serviceDiv tab_content"></div>
+      {{/each}}
+    </div>
+  </div>
+</script>
+
+<script id="image_send" type="text/x-jquery-tmpl">
+  <div>
+    <img class="previewImg" src="${src}" />
+    <div class="previewText">
+      <div class="previewTitle">${activity.data.title}</div>
+      <div class="previewDimensions">${dimensions}</div>
+      <div class="previewSize">${size}</div>
+    </div>
+    <div class="previewAction">${action}</div>
+  </div>
+</script>
+
+<script id="defaultAction" type="text/x-jquery-tmpl">
+  <div class="previewAction">${action}</div>
+</script>
+
+</body>
+</html>

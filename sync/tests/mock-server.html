@@ -1,0 +1,211 @@
+<html>
+<head>
+<title>Mock Server</title>
+<link rel="stylesheet" href="../../tests/doctestjs/doctest.css">
+<script src="../../tests/doctestjs/doctest.js"></script>
+<script src="../mock-server.js"></script>
+<script src="../sync.js"></script>
+</head>
+<body class="autodoctest">
+
+<h1>Mock Server</h1>
+
+<div>This is a test of the mock server, and also a kind of document of
+how the server should act.</div>
+
+<div class="test">
+<h2>Setup the server</h2>
+
+<pre class="doctest">
+$ if (doctest.params.server !== undefined) {
+>   server = new Server(doctest.params.server || "/verify");
+> } else {
+>   server = new MockServer();
+> }
+$ writeln(server);
+[...]
+$ doctest.defaultSpyOptions.wrapArgs = true;
+$ writeln(user = "test-"+(new Date().getTime())+"@example.com");
+test-?@example.com
+</pre>
+
+<div>Now we'll just do a bit of mock authentication.  We use a mock
+BrowserID assertion that indicates exactly who we want to log into.
+It also supports <code>?a={audience}</code> which indicates what
+audience the assertion is valid for.  This looks useful, but is
+actually only useful for one thing: allows us to cause an invalid
+audience ;) </div>
+
+<pre class="doctest">
+$ writeln(server.loggedIn());
+false
+$ // This login should fail:
+> server.login(
+>   {assertion: user+'?a=example.com', audience: 'localhost'},
+>   Spy('server.login', {wait: true})
+> );
+server.login({
+  error: "audience does not match"
+})
+$ writeln(server.loggedIn());
+false
+$ // This one should succeed
+> server.login(
+>   {assertion: user+'?a=localhost', audience: 'localhost'},
+>   Spy('server.login', {wait: true})
+> );
+server.login(null, {
+  audience: "localhost",
+  collection_url: "http...",
+  email: "test-?@example.com",
+  http_authorization: "...",
+  issuer: "browserid.org",
+  status: "okay",
+  "valid-until": ?
+})
+$ writeln(server.loggedIn());
+true
+$ writeln(server.userInfo());
+{email: "test-?@example.com", "valid-until": ?}
+</pre>
+
+</div>
+
+<div class="test">
+<h2>Interacting with the server</h2>
+
+<pre class="doctest">
+$ // The first argument is 'since'; we've never gotten anything...
+> server.get(null, Spy('server.get', {wait: true}));
+server.get(null, {
+  applications: [],
+  since: 0,
+  until: ?,
+  uuid: null
+})
+$ server.get('asdf', Spy('server.get-fail'));
+Error: In get(since, ...) since must be a number or null
+$ // 0 is basically the same as null...
+> server.get(0, Spy('server.get', {wait: true}));
+server.get(null, {
+  applications: [],
+  since: 0,
+  until: ?,
+  uuid: null
+})
+$ // OK, let's do it for serious now:
+> spy = Spy('server.get');
+$ server.get(0, spy);
+> spy.wait();
+server.get(null, {
+  applications: [],
+  since: 0,
+  until: ?,
+  uuid: null
+})
+$ until = spy.args[1].until;
+$ putSpy = Spy('server.put');
+$ server.put([{
+>   last_modified: until+1,
+>   manifest: {name: "a fun app"},
+>   manifest_url: "http://example.com/manifest.webapp",
+>   origin: "http://example.com",
+>   install_data: null,
+>   install_origin: "http://store.example.com",
+>   install_time: 100
+> }], putSpy);
+> putSpy.wait();
+server.put(null, {
+  received: ?
+})
+$ // Now we should see that update:
+> server.get(0, spy=Spy('server.get', {wait: true}));
+server.get(null, {
+  applications: [
+    {
+      install_data: null,
+      install_origin: "http://store.example.com",
+      install_time: 100,
+      last_modified: ?,
+      manifest: {
+        name: "a fun app"
+      },
+      manifest_url: "http://example.com/manifest.webapp",
+      origin: "http://example.com"
+    }
+  ],
+  since: 0,
+  until: ?,
+  uuid: "..."
+})
+$ until = spy.args[1].until;
+$ // But we won't see it if we have a later since time:
+> server.get(until+2, Spy('server.get', {wait: true}));
+server.get(null, {
+  applications: [],
+  since: ?,
+  until: ?,
+  uuid: "..."
+})
+</pre>
+
+</div>
+
+<div class="test">
+  Server re-login test; this only really makes sense for the actual server
+
+<pre class="doctest">
+$ if (doctest.params.server === undefined) {
+>   AbortSection();
+> }
+$ server1 = new Server(doctest.params.server || "/verify");
+$ server2 = new Server(doctest.params.server || "/verify");
+$ server1.login(
+>   {assertion: user+'?a=localhost', audience: 'localhost'},
+>   Spy('server1.login', {wait: true})
+> );
+server1.login(null, ...)
+$ writeln(server1.authData);
+{
+  audience: "localhost",
+  collection_url: "...",
+  email: "...",
+  http_authorization: "AppSync ...",
+  issuer: "browserid.org",
+  status: "okay",
+  "valid-until": ?
+}
+$ server2._processLogin(server1.authData, Spy('server2._processLogin', {wait: true}));
+server2._processLogin(null, ...)
+$ writeln(server2.authData);
+{
+  audience: "localhost",
+...}
+</pre>
+
+</div>
+
+
+
+<div class="test">
+<h2>Invalid requests</h2>
+
+<div>Not yet completed: this should test for all sorts of invalid
+requests.  Quick brainstorm:
+
+  <ol>
+    <li>Invalid .put documents</li>
+    <li>Invalid .put manifests</li>
+    <li>.put out of sync with a .get (need ?since on put)</li>
+    <li>Trying to access a server when it isn't logged in</li>
+    <li>Login that has expired</li>
+    <li>Invalid origins, missing origins</li>
+    <li>Totally invalid .puts (e.g., put an object not a list, or put null)</li>
+  </ol>
+
+</div>
+
+</div>
+
+
+</body> </html>

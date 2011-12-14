@@ -1,0 +1,12 @@
+{
+  "name": "Super Crazy Basic App",
+  "installs_allowed_from": [ "*" ],
+  "icons": {
+        "128": "/does/not/exist/yet"
+  },
+  "services": {
+    "test.basic": {
+       "path": "/basic.html"
+    }
+  }
+}

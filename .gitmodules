@@ -2,3 +2,21 @@
 	path = site/tests/doctestjs
 	url = http://github.com/ianb/doctestjs.git
 
+[submodule "site/tests/jstestnet"]
+	path = site/tests/jstestnet
+	url = git://github.com/kumar303/jstestnet.git
+
+[submodule "icongrid"]
+	path = icongrid
+    url = http://github.com/mozilla/icongrid.git
+
+[submodule "site/tests/jstestnetlib"]
+	path = site/tests/jstestnetlib
+    url = https://github.com/kumar303/jstestnetlib.git
+
+[submodule "site/tests/serverjs/djangode"]
+	path = site/tests/serverjs/djangode
+	url = https://github.com/mozilla/djangode.git
+[submodule "site/tools/apps.mozillalabs.com"]
+	path = site/tools/apps.mozillalabs.com
+	url = https://github.com/mozilla/apps.mozillalabs.com.git

@@ -13,6 +13,7 @@ import os
 HTML_COMPRESSOR = 'http://htmlcompressor.googlecode.com/files/htmlcompressor-0.9.8.jar'
 YUI_COMPRESSOR = 'http://yuilibrary.com/downloads/yuicompressor/yuicompressor-2.4.2.zip'
 here = os.path.dirname(os.path.abspath(__file__))
+compressor_dir = here
 
 parser = optparse.OptionParser(
     usage="%prog PAGE.HTML")
@@ -29,20 +30,31 @@ parser.add_option(
     '--compress',
     action='store_true',
     help='Use htmlcompressor to compress the HTML after generation')
+parser.add_option(
+    '--comment',
+    metavar="TEXT",
+    help="Include the given comment in the generated HTML")
+parser.add_option(
+    '--compressor-dir',
+    metavar="DIR",
+    help="Directory in which to find htmlcompressor and yuicompressor jar files")
 
 
 def main(args=None):
+    global compressor_dir
     if args is None:
         args = sys.argv[1:]
     options, args = parser.parse_args(args)
     if not args:
         parser.error(
             'You must give at least one page (piping not supported)')
+    if options.compressor_dir:
+        compressor_dir = options.compressor_dir
     for arg in args:
-        inline_page(arg, options.output, options.remote, options.compress)
+        inline_page(arg, options.output, options.remote, options.compress, options.comment)
 
 
-def inline_page(filename, output, remote, compress):
+def inline_page(filename, output, remote, compress, comment):
     page = html.parse(filename).getroot()
     for el in page.xpath('//link[@rel="stylesheet"]'):
         if el.get('type', '').lower() not in ('text/css', ''):
@@ -89,6 +101,8 @@ def inline_page(filename, output, remote, compress):
     after_inline_text = text
     if compress:
         text = run_compressor(text)
+    if comment:
+        text = '<!-- %s -->\n%s' % (comment, text)
     if not output or output == '-':
         sys.stdout.write(text)
     else:
@@ -131,22 +145,24 @@ def get_content(relative_to, href, remote):
 
 
 def run_compressor(text):
-    name = os.path.join(here, os.path.basename(HTML_COMPRESSOR))
+    name = os.path.join(compressor_dir, os.path.basename(HTML_COMPRESSOR))
     if not os.path.exists(name):
         log('You must download htmlcompressor to use --compress')
         log('You can use:')
-        log('  wget %s' % HTML_COMPRESSOR)
+        log('  wget %s -O %s' % (HTML_COMPRESSOR, name))
         sys.exit(1)
-    yui_name = os.path.join(here, os.path.splitext(os.path.basename(YUI_COMPRESSOR))[0] + '.jar')
+    yui_name = os.path.join(compressor_dir, os.path.splitext(os.path.basename(YUI_COMPRESSOR))[0] + '.jar')
     if not os.path.exists(yui_name):
         print yui_name
         log('You must download YUI Compressor to use --compress')
         log('You can use:')
+        log('  cd %s' % compressor_dir)
         log('  wget %s' % YUI_COMPRESSOR)
         log('  unzip -j %s %s/build/%s'
             % (os.path.basename(YUI_COMPRESSOR),
                os.path.splitext(os.path.basename(yui_name))[0],
                os.path.basename(yui_name)))
+        sys.exit(1)
     proc = subprocess.Popen(
         ['java', '-jar', name, '--type', 'html', '--remove-quotes',
          '--compress-js', '--compress-css'],

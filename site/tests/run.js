@@ -6,13 +6,15 @@ http = require("http"),
 url = require("url"),
 path = require("path"),
 fs = require("fs"),
-template = require("./serverjs/template"),
-template_loader = require("./serverjs/loader");
+template = require("./serverjs/djangode/template/template"),
+template_loader = require("./serverjs/djangode/template/loader");
 
 const SPEC_DIR = path.join(path.dirname(__dirname), "spec");
 const STATIC_DIR = path.join(path.dirname(__dirname));
 
 template_loader.set_path(STATIC_DIR);
+
+var appjson = [];
 
 // all bound webservers stored in this lil' object
 var boundServers = [ ];
@@ -44,12 +46,13 @@ function fourOhFour(resp, reason) {
   return undefined;
 }
 
-function createServer(obj) {
+function createServer(obj, callback) {
   var port = obj.port;
   var myserver = http.createServer(function(obj, request, response) {
     var hostname = request.headers['host'].toString("utf8");
     var port = parseInt(hostname.split(':')[1]);
     var host = hostname.split(':')[0];
+    template_loader.flush();
 
     // normalize 'localhost', so it just works.
     if (host === 'localhost') {
@@ -63,7 +66,9 @@ function createServer(obj) {
     var siteroot = getWebRootDir(host, port);
 
     // unknown site?  really?
-    if (!siteroot) return fourOhFour(response, "No site on this port");
+    if (!siteroot) {
+      return fourOhFour(response, "No site on this port");
+    }
 
     // hook to fetch manifests for HTML5 repos
     var parsedURI = url.parse(request.url, true);
@@ -121,7 +126,7 @@ function createServer(obj) {
     if (parsedURI.pathname == '/servers.js') {
       var serverToUrlMap = {};
       for (var i = 0; i < boundServers.length; i++) {
-        var o = boundServers[i]
+        var o = boundServers[i];
         var a = o.server.address();
         serverToUrlMap[o.name] = "http://" + a.address + ":" + a.port;
       }
@@ -131,11 +136,11 @@ function createServer(obj) {
       response.end();
       return;
     }
-    
+
     if(obj.handler) {
-        obj.handler(request, response);
-        return;
-    }   
+      obj.handler(request, response);
+      return;
+    }
 
     var filename = path.join(siteroot, url.parse(request.url).pathname);
 
@@ -153,7 +158,7 @@ function createServer(obj) {
       serveFileIndex(filename, response);
     }
   }.bind(null,obj));
-  myserver.listen(port, PRIMARY_HOST);
+  myserver.listen(port, PRIMARY_HOST, callback);
   return myserver;
 };
 
@@ -182,12 +187,27 @@ for (var i=0; i<examplesCopies; i++) {
   });
 }
 
+// Getting the folders associated with each app
+var appDirs = fs.readdirSync(path.join(__dirname, 'apps'));
+appDirs.sort();
+appDirs.forEach(function (item) {
+    dirs.push({
+      title: "Test Apps:",
+      name: item,
+      path: path.join(__dirname, 'apps', item)
+    });
+  });
+
 console.log("Starting test apps:");
 
 // bind the "primary" testing webserver to a fixed local port, it'll
 // be the place from which tests are run, and it's the repository host
 // for the purposes of testing.
-var PRIMARY_PORT = 60172;
+if (process.env.PRIMARY_PORT) {
+  var PRIMARY_PORT = parseInt(process.env.PRIMARY_PORT);
+} else {
+  var PRIMARY_PORT = 60172;
+}
 
 // The interface address to bind, and will appear in all urls
 var PRIMARY_HOST = "127.0.0.1";
@@ -201,35 +221,39 @@ for (var i = 0; i < process.argv.length; i++) {
 }
 
 function primaryHandler(req, resp) {
-    var urlpath = url.parse(req.url).pathname;
+  var urlpath = url.parse(req.url).pathname;
 
-    /* We only want to use the template_loader for HTML
-     * files, all other files use the standard serveFileIndex
-     * since all the background work for mime types is set up.
-     */
-    if(urlpath.match(/\.html$/)) {
-        var specs = getSpecs();
-        var tests = [];
-        specs.forEach( function( spec, index ) {
-            if( spec !== 'run-all.html' ) {
-                tests.push( spec );
-            }
-        } );
-        template_loader.load_and_render(urlpath, { 
-            specs: specs,
-            tests: tests 
-        }, function(err, result) {
-            resp.end(result);
-        });
-    } else {
-        urlpath = path.join(__dirname, '..', urlpath);
-        serveFileIndex(urlpath, resp);
-    }
+  /* We only want to use the template_loader for HTML
+   * files, all other files use the standard serveFileIndex
+   * since all the background work for mime types is set up.
+   */
+  var specs = getSpecs();
+  var tests = []; 
+  if(urlpath.match(/\.html$/)) {
+    specs.forEach(function (spec, index) {
+      if (spec !== 'run-all.html') {
+        tests.push( spec );
+      }
+    });
+    template_loader.load_and_render(urlpath, {
+      specs: specs,
+      tests: tests
+    }, function(err, result) {
+      resp.end(result);
+    });
+  } else if(urlpath.match(/db\/apps\.json$/)) {
+		  resp.writeHead(200, {"Content-Type": "text/plain"});
+		  resp.write(JSON.stringify(appjson));
+		  resp.end();
+  } else {
+		  urlpath = path.join(__dirname, '..', urlpath);
+		  serveFileIndex(urlpath, resp);
+  }
 }
 
 function serveFile(filename, response) {
   path.exists(filename, function(exists) {
-    if(!exists) {
+    if (!exists) {
       response.writeHead(404, {"Content-Type": "text/plain"});
       response.write("404 Not Found");
       response.end();
@@ -256,8 +280,10 @@ function serveFile(filename, response) {
       var ext = path.extname(filename);
       var mimeType = exts[ext] || "application/octet-stream";
 
-	  data = data.replace(/https?:\/\/(stage\.)?myapps\.mozillalabs\.com/ig,
-                              "http://" + PRIMARY_HOST + ":" + PRIMARY_PORT);
+      data = data.replace(/https?:\/\/(stage\.)?myapps\.mozillalabs\.com/ig,
+                          "http://" + PRIMARY_HOST + ":" + PRIMARY_PORT);
+      data = data.replace(/var TESTING_MODE = false/,
+                          "var TESTING_MODE = true");
 
       response.writeHead(200, {"Content-Type": mimeType});
       response.write(data, "binary");
@@ -269,20 +295,26 @@ function serveFile(filename, response) {
 function serveFileIndex(filename, response) {
   // automatically serve index.html if this is a directory
   fs.stat(filename, function(err, s) {
-	if (err === null && s.isDirectory()) {
-	  serveFile(path.join(filename, "index.html"), response);
-	} else {
-	  serveFile(filename, response);
-	}
+    if (err === null && s.isDirectory()) {
+      serveFile(path.join(filename, "index.html"), response);
+    } else {
+      serveFile(filename, response);
+    }
   });
 }
 
 
 boundServers.push({
   name: "_primary",
-  server: createServer({ 
+  server: createServer({
     port: PRIMARY_PORT,
     handler: primaryHandler
+  },
+  function () {
+    console.log('Primary Server:');
+    console.log('  ' + formatLink("_primary"));
+    console.log("\nTesting server started, to run tests go to: "
+                + formatLink("_primary", "/tests/index.html"));
   })
 });
 
@@ -298,10 +330,6 @@ function formatLink(nameOrServer, extraPath) {
   return url;
 }
 
-
-console.log('Primary server:');
-console.log('  ' + formatLink("_primary"));
-
 var lastTitle = null;
 dirs.forEach(function(dirObj) {
   if (!fs.statSync(dirObj.path).isDirectory()) return;
@@ -311,16 +339,46 @@ dirs.forEach(function(dirObj) {
   }
   boundServers.push({
     path: dirObj.path,
-    server: createServer({ port: 0 }),
+    server: createServer({ port: 0 },
+                         function() {
+                           serverCreated(dirObj.name);
+                           if(dirObj.path.search('/apps/') != -1) {
+                           	createJSON(dirObj.name, dirObj.path);
+                           }
+                         }),
     name: dirObj.name
   });
-  console.log("  " + dirObj.name + ": " + formatLink(dirObj.name));
+
 });
 
-console.log("\nTesting server started, to run tests go to: "
-            + formatLink("_primary", "/tests/index.html"));
+function serverCreated(name) {
+  console.log("  " + name + ": " + formatLink(name));
+}
+
+function createJSON(name, path) {
+	var url;
+  fs.readFile(path + "/manifest.webapp", "binary", function(err , data) {
+      if (err) {
+        console.log("error reading manifest " + path);
+      }
+      else {
+        try {
+		      url = formatLink(name);
+          data = JSON.parse(data);
+          var testobj = {
+            origin: url,
+            src_url: url + "/manifest.webapp",
+            manifest: data
+          }
+          appjson.push(testobj);
+        } catch(e) {
+          console.log("exception " + e);
+        }
+      }
+  });
+}
 
 function getSpecs() {
-    var dirs = fs.readdirSync(path.join(__dirname, 'spec'));
-    return dirs;
+  var dirs = fs.readdirSync(path.join(__dirname, 'spec'));
+  return dirs;
 }

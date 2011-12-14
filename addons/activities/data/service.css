@@ -1,0 +1,172 @@
+body {
+  background:url(silkscreen_logo.png) no-repeat;
+  overflow-x:hidden;
+  margin:0;
+  padding:0;
+}
+
+#requestInfo {
+  margin-left:10px;
+  margin-top:10px;
+  height:130px;
+  font-family:'Lucida Grande',Tahoma,Arial,sans-serif;
+  width:474px;
+  color:#888;
+}
+
+.serviceFrame {
+  width:484px;
+  height:177px;
+  border:0px;
+  background:none;
+}
+#servicebox {
+  height:262px;
+  width:484px;
+}
+
+.serviceIcon {
+  width:48px;
+  height:48px;
+  vertical-align:middle;
+}
+.serviceTitle {
+  max-width:76px;
+  vertical-align:middle;
+  text-align:center;
+  display:block;
+  overflow-x:hidden;
+}
+.serviceTab {
+  text-align:center;
+  max-width:76px;
+  overflow-x:hidden;
+  color:black;
+  font:0.7em 'Lucida Grande',Tahoma,Arial,sans-serif;
+}
+
+#services {
+  border-radius:0;
+  -moz-user-select:none;
+}
+#services-tabs {
+  border-radius:0;
+  padding-left:4px;
+}
+.serviceDiv {
+  height:262px;
+  background-color:#e5e5e5;
+}
+
+#confirm {
+  width:468px;
+  height:32px;
+  background-color:#e5e5e5;
+  padding-top:16px;
+  padding-right:16px;
+}
+#confirmbutton {
+  position:absolute;
+  left: 410px;
+  width:64px;
+}
+
+#confirmbutton button {
+  font:0.8em 'Lucida Grande',Tahoma,Arial,sans-serif;
+  width:64px;
+}
+#confirmoptions {
+  position:absolute;
+  left: 10px;
+  width:340px;
+}
+#siteID {
+  font-weight:bold;
+}
+
+.previewImg {
+  margin: auto;
+  border-left: 2px solid #fafafa;
+  border-top: 2px solid #fafafa;
+  border-right: 2px solid #ddd;
+  border-bottom: 2px solid #ddd;
+  max-width: 96px;
+  max-height: 96px;
+  display: inline-block;
+}
+.previewText {
+  display:inline-block;
+  vertical-align:top;
+  margin-left:8px;
+}
+.previewTitle {
+  font-weight:bold;
+  font-size:0.9em;
+}
+.previewDimensions {
+  font-size:0.7em;
+  color:#888;
+}
+.previewSize {
+  font-size:0.7em;
+  color:#888;
+}
+.previewAction {
+  margin-top:10px;
+  font-weight:bold;
+  font-size:1.1em;
+}
+
+
+ul.tabs {
+	margin: 0;
+	padding: 0;
+	float: left;
+	list-style: none;
+	height: 62px; /*--Set height of tabs--*/
+	border-bottom: 1px solid #999;
+	border-left: 1px solid #999;
+	width: 100%;
+}
+ul.tabs li {
+	float: left;
+	margin: 0;
+	padding: 0;
+	height: 61px; /*--Subtract 1px from the height of the unordered list--*/
+	line-height: 31px; /*--Vertically aligns the text within the tab--*/
+	border: 1px solid #999;
+	border-left: none;
+	margin-bottom: -1px; /*--Pull the list item down 1px--*/
+	overflow: hidden;
+	position: relative;
+	background: #e0e0e0;
+}
+ul.tabs li a {
+	text-decoration: none;
+	color: #000;
+	display: block;
+	font-size: 1.2em;
+	padding: 0 20px;
+	border: 1px solid #fff; /*--Gives the bevel look with a 1px white border inside the list item--*/
+	outline: none;
+}
+ul.tabs li a:hover {
+	background: #ccc;
+}
+html ul.tabs li.active, html ul.tabs li.active a:hover  { /*--Makes sure that the active tab does not listen to the hover properties--*/
+	background: #fff;
+	border-bottom: 1px solid #fff; /*--Makes the active tab look like it's connected with its content--*/
+}
+
+.tab_container {
+	border: 1px solid #999;
+	border-top: none;
+	overflow: hidden;
+	clear: both;
+	float: left; width: 100%;
+	background: #fff;
+}
+.tab_content {
+	padding: 20px;
+	font-size: 1.2em;
+}

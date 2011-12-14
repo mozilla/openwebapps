@@ -1,0 +1,5 @@
+{
+	"name": "Evil App",
+	"launch_path": "/index.htm\";jsInjection()",
+   "installs_allowed_from": ["*"]
+}

@@ -1,50 +1,62 @@
-<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<!doctype html public "✰">
+<!--[if lt IE 7]> <html lang="en-us" class="no-js ie6"> <![endif]-->
+<!--[if IE 7]> <html lang="en-us" class="no-js ie7"> <![endif]-->
+<!--[if IE 8]> <html lang="en-us" class="no-js ie8"> <![endif]-->
+<!--[if gt IE 8]><!--> <html lang="en-us" class="no-js"> <!--<![endif]-->
 <head>
-  <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
-  <link rel="shortcut icon" href="/favicon.ico" />
-  <title>Demo Dashboard</title>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge;chrome=1" >
+    <title dir="ltr">Developer Preview Apps Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Marvel:400,700" type="text/css">
+    <link rel="stylesheet" media="screen" href="icongrid/icongrid.css" >
+    <link rel="stylesheet" media="screen" href="css/jibe.css" >
 
-  <link rel="stylesheet" href="css/dashboard.css" type="text/css" title="screen" />
+    <script src="jquery-1.4.2.min.js" type="text/javascript"></script>
+    <script src="icongrid/base32.js" type="text/javascript"></script>
+    <script src="icongrid/icongrid.js" type="text/javascript"></script>
 
-  <link rel="stylesheet" type="text/css" href="js/jquery-ui-1.8.9.custom/css/smoothness/jquery-ui-1.8.9.custom.css"/>
-
-  <script type="text/javascript" src="js/base32.js"></script>
-  <script type="text/javascript" src="js/qs_score.js"></script>
-  <script type="text/javascript" src="js/jquery-1.4.2.min.js"></script>
-  <script type="text/javascript" src="js/jquery-ui-1.8.9.custom/js/jquery-ui-1.8.9.custom.min.js"></script>
-  <script type="text/javascript" src="jsapi/include.js"></script>
-  <script type="text/javascript" src="js/dashboard.js"></script>
+    <script src="https://myapps.mozillalabs.com/jsapi/include.js" type="text/javascript"></script>
 </head>
-
 <body>
-
-<div id="topContainer">
-
-  <div id="header"><span class="headerText glowy-blue-text">Demonstration Dashboard</span></div>
-  <div class="horiz-divider glowy-blue-frame"></div>
-
-  <div class="dashContent">
-    <div class="appDock glowy-blue-outline" id="dock"></div>
-    <div id="filterAndListBox">
-      <div class="appFilter glowy-blue-outline"><input id="filter" type="search" onKeyUp="filterAppList(event)" class="filterText glowy-blue-text" />
-      <img id="clearButton" class="clearButton" src="img/clearButton.png"/></div>
-      <div class="appList glowy-blue-outline" id="list"></div>
-    </div>
-    <div class="widgetSpace glowy-blue-outline" id="widgets"></div>
-  </div>
-</div>
-
-
-<!-- modal dialog stuff below here -->
-
-<div id="modalPage">
-    <div class="modalBackground" onclick="hideModal('modalPage')">
-    </div>
-        <div class="modal glowy-red-outline"  id="appinfo">
-                <!-- contents go here -->
+    <div id="login"></div>
+    <div id="content">
+        <div id="dashboard">
+            <p class="msg">Click to launch:</p>
+            <div id="apps" class="dashboardclipper well" style="width:800px; height:500px;">
+            <div id="help">You have no apps installed. Apps are available <a href="https://apps-preview.mozilla.org/en-US/apps/" target="_blank">here</a>.
+            </div>
         </div>
-</div>
+    </div>
+    <!-- help info -->
+    <div id="centerfield">
+        <div id="usageInfo">
+            <ul>                    
+                <li>Click Apps to launch them</li>
+                <li>Drag or swipe the page, or click the page indicator to switch pages</li>
+                <li>Press, hold and drag Apps to move them, even between pages</li>
+                <li>Press, hold, and let go without moving to delete Apps</li>
+                <li>App arrangement is saved automatically</li>
+            </ul>            
+        </div>
+    </div>
 
+    <a>
+        <img id="usage" src="img/Info.png"/>
+    </a>
+    
 </body>
+
+<script type="text/javascript">
+  $('#usage').hover( 
+    function(){
+      $('#usageInfo').css('display', 'block');
+    },
+    function(){
+      $('#usageInfo').css('display', 'none');
+    }
+  );
+</script>
+
+<script src="js/jibe.js" type="text/javascript"></script>
 </html>

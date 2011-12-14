@@ -1,1 +1,1 @@
-../../jslibs/repo.js
+../../addons/jetpack/lib/repo.js

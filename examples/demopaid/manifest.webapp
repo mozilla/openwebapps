@@ -1,0 +1,13 @@
+{
+    "name":"Demo Paid",
+    "developer": {
+        "name":"Mozilla Labs Demo",
+        "url":"http://mozillalabs.com"
+    },
+    "description":"Testing the paid app functions",
+    "icons":{
+        "128":"/icon.png"
+    },
+    "launch_path": "/examples/demopaid/index.html",
+    "installs_allowed_from": ["*"]
+}

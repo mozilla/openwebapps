@@ -1,3 +1,5 @@
+/* -*- Mode: JavaScript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* vim: set ts=2 et sw=2 tw=80: */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -34,35 +36,38 @@
  * ***** END LICENSE BLOCK ***** */
 
 /**
-   2010-07-14
-   First version of server code
-   -Michael Hanson. Mozilla
+ 2010-07-14
+ First version of server code
+ -Michael Hanson. Mozilla
 
-   2010-08-27
-   Manifest validation code broken out into a separate file.
+ 2010-08-27
+ Manifest validation code broken out into a separate file.
 
-   2010-12-04
-   Manifest validation re-written for updated specification
-**/
+ 2010-12-04
+ Manifest validation re-written for updated specification
+ **/
 
 // check if ambient TypedStorage or not
 // by looking for 'require' keyword from jetpack
 if (typeof require !== "undefined") {
-    var {URLParse} = require("./urlmatch");
+  var URLParse = require("./urlmatch").URLParse;
 }
 
-;var Manifest = (function() {
+;
+var Manifest = (function() {
 
   // initialize a manifest object from a javascript manifest representation,
   // validating as we go.
   // throws a developer readable string upon discovery of an invalid manifest.
+
+
   function validate(manf) {
     var errorThrow = function(msg, path) {
-      if (path != undefined && typeof path != 'object') path = [ path ];
+      if (path != undefined && typeof path != 'object') path = [path];
       throw {
         msg: msg,
-        path: (path ? path : [ ]),
-        toString: function () {
+        path: (path ? path : []),
+        toString: function() {
           if (this.path && this.path.length > 0) return ("(" + this.path.join("/") + ") " + this.msg);
           return this.msg;
         }
@@ -70,7 +75,7 @@ if (typeof require !== "undefined") {
     };
 
     // Validate and clean the request
-    if(!manf) {
+    if (!manf) {
       errorThrow('null');
     }
 
@@ -125,8 +130,7 @@ if (typeof require !== "undefined") {
       capabilities: {
         check: function(x) {
           function isArray(o) {
-            return (o && typeof(o) === 'object' && o instanceof Array &&
-                    o.length != undefined && typeof o.length === 'number');
+            return (o && typeof(o) === 'object' && o instanceof Array && o.length != undefined && typeof o.length === 'number');
           }
           if (!x || typeof x !== 'object') errorThrow();
           if (isArray(x)) {
@@ -149,6 +153,9 @@ if (typeof require !== "undefined") {
       experimental: {
         required: false
       },
+      services: {
+        required: false
+      },
       description: {
         may_overlay: true,
         check: nonEmptyStringWithMaxLengthCheck(1024)
@@ -159,14 +166,17 @@ if (typeof require !== "undefined") {
           if (typeof x !== 'object') errorThrow();
           for (var k in x) {
             if (!x.hasOwnProperty(k)) continue;
-            if (!(k in { name:null, url:null})) errorThrow('under developer, only "name" and "url" properties are allowed', k);
+            if (!(k in {
+              name: null,
+              url: null
+            })) errorThrow('under developer, only "name" and "url" properties are allowed', k);
             if (typeof x[k] !== 'string') errorThrow(undefined, k);
           }
         }
       },
       icons: {
         may_overlay: true,
-        check: function (x) {
+        check: function(x) {
           if (typeof x !== 'object') errorThrow();
           for (var k in x) {
             if (!x.hasOwnProperty(k)) continue;
@@ -235,8 +245,8 @@ if (typeof require !== "undefined") {
         normalize: normalizePath
       },
       locales: {
-        needs: [ "default_locale" ],
-        check: function (l) {
+        needs: ["default_locale"],
+        check: function(l) {
           // XXX: we really need a robust parser for language tags
           // to do this correctly:
           // http://www.rfc-editor.org/rfc/bcp/bcp47.txt
@@ -272,7 +282,7 @@ if (typeof require !== "undefined") {
       //widget might become more complex, and this validation code would need to become so as well
       widget: {
         // a path to an embeddable widget for display in a small iframe
-        check: function (x) {
+        check: function(x) {
           if (x.path) {
             try {
               validPathCheck(x.path);
@@ -305,6 +315,8 @@ if (typeof require !== "undefined") {
     };
 
     // a function to extract nested values given an object and array of property names
+
+
     function extractValue(obj, props) {
       return ((props.length === 0) ? obj : extractValue(obj[props[0]], props.slice(1)));
     }
@@ -313,6 +325,8 @@ if (typeof require !== "undefined") {
     // manfProps data structure above.
     // returns a normalized version of the manifest, throws upon
     // detection of invalid properties
+
+
     function validateManifestProperties(manf, onlyOverlaidFields) {
       var normalizedManf = {};
       for (var prop in manf) {
@@ -369,5 +383,4 @@ if (typeof require !== "undefined") {
 })();
 
 /* Jetpack specific export */
-if (typeof exports !== "undefined")
-    exports.Manifest = Manifest;
+if (typeof exports !== "undefined") exports.Manifest = Manifest;

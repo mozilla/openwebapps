@@ -1,0 +1,170 @@
+<html>
+<head>
+<title>Sync Scheduler</title>
+<link rel="stylesheet" href="../../tests/doctestjs/doctest.css">
+<script src="../../tests/doctestjs/doctest.js"></script>
+<script src="../mock-server.js"></script>
+<script src="../sync.js"></script>
+<script src="../../jsapi/eventmixin.js"></script>
+<script src="../../jsapi/typed-storage.js"></script>
+<script src="./mock-repo.js"></script>
+
+</head>
+<body class="autodoctest">
+
+<h1>Sync Scheduler</h1>
+
+<div>This is a test of the way the sync scheduler adapts itself.</div>
+
+<div class="test">
+<h2>Setup</h2>
+
+<div>We'll setup the scheduler, with the service and repository.  The
+server needs to be run with the client test overrides in place, so we
+can trigger various cases and make sure the scheduling works.</div>
+
+<pre class="doctest">
+$ localStorage.setItem('sync#lastSyncPut', null);
+$ localStorage.setItem('sync#lastSyncTime', null);
+$ localStorage.setItem('sync#lastSyncUUID', null);
+$ server = new Server(doctest.params.server || '/verify');
+$ repo = new MockRepo('repo');
+$ service = new SyncService({server: server, repo: repo});
+$ writeln(service);
+[SyncService server: ...]
+$ writeln(user = 'test-' + (new Date().getTime()) + '@example.com');
+test-?@example.com
+$ service.login(
+>   {assertion: user+'?a=localhost', audience: 'localhost'},
+>   Spy('service.login', {wait: true}));
+service.login(null, {
+  audience: "localhost",...
+  collection_url: "...",
+  email: "test-?@example.com",
+  http_authorization: "AppSync ...",
+  issuer: "browserid.org",
+  status: "okay",
+  "valid-until": ?
+})
+$ writeln(server._collectionURL || 'none');
+...
+$ scheduler = new Scheduler(service);
+$ function override(t, data) {
+>   var done = false;
+>   wait(function () {return done;});
+>   req = new XMLHttpRequest();
+>   if (! data) {
+>     req.open('DELETE', '/' + t);
+>   } else {
+>     req.open('POST', '/' + t);
+>   }
+>   req.onreadystatechange = function () {
+>     if (req.readyState == 4) {
+>       writeln('Completed');
+>       done = true;
+>     }
+>   };
+>   if (data) {
+>     data = JSON.stringify(data);
+>   } else {
+>     data = null;
+>   }
+>   req.send(data);
+> }
+$ scheduler.schedule = function () {
+> };
+$ function status() {
+>   console.log('sched', scheduler._period, scheduler._periodAddition);
+>   var extra = '';
+>   if (scheduler._periodAddition) {
+>     if (scheduler._periodAddition < 0) {
+>       extra = ' ' + scheduler._periodAddition;
+>     } else {
+>       extra = ' +' + scheduler._periodAddition;
+>     }
+>   }
+>   writeln('Poll: ' + scheduler._period + extra);
+> }
+$ function get() {
+>   var done = false;
+>   server.get(null, function () {
+>     done = true;
+>     status();
+>     // This gets regularly reset anyway:
+>     scheduler._periodAddition = 0;
+>   });
+>   wait(function () {return done;});
+> }
+</pre>
+
+</div>
+
+<div class="test">
+<div></div>
+
+<pre class="doctest">
+$ writeln(scheduler.settings);
+{failureIncrease: 300000, immediateUpdateDelay: 500, maxPeriod: 3600000, minPeriod: 30000, normalPeriod: 300000}
+$ // This will start out with the standard poll time
+> get();
+Poll: 300000
+$ // Immediate schedule should mean a minimal update time
+> scheduler.scheduleImmediately();
+> status();
+Poll: 300000 -299500
+$ // And undo it
+> scheduler._periodAddition = 0;
+$ override('__testing__', {status: 503});
+Completed
+$ // This should be normalPeriod + failureIncrease
+> get();
+Poll: 600000
+$ override('__testing__', {status: 503, headers: {"Retry-After": 700}});
+Completed
+$ // This should be the retry-after time (in milliseconds); note we keep the
+$ // normal period but use ad addition
+> get();
+Poll: 600000 +100000
+$ override('__testing__', {status: 200, headers: {"Retry-After": 500}});
+Completed
+$ get();
+Poll: 600000 -100000
+$ scheduler.resetSchedule();
+$ // Now it should get reset to the normal period
+> status();
+Poll: 300000
+$ override('__testing__', {status: 503, headers: {"X-Sync-Poll-Time": 2}});
+Completed
+$ // Despite everything, we should keep a certain minimum
+> get();
+Poll: 300000 -270000
+$ override('__testing__', {status: 500});
+Completed
+$ // Now a standard increase
+> get();
+Poll: 600000
+$ scheduler.resetSchedule();
+$ // Back to regular again
+> status();
+Poll: 300000
+$ override('__testing__', {status: 200, headers: {"X-Sync-Poll-Time": 400}});
+Completed
+$ get();
+Poll: 300000 +100000
+$ override('__testing__', {status: 200, headers: {"X-Sync-Poll-Time": "NaN"}});
+Completed
+$ // With an invalid time, we should ignore it
+> get();
+Poll: 300000
+$ writeln(date = (new Date(new Date().getTime() + 10000)).toString());
+...
+$ override('__testing__', {status: 503, headers: {"Retry-After": date}});
+Completed
+$ // The date should get parsed; but we'll end up with minPeriod
+> get();
+Poll: 300000 -270000
+</pre>
+
+</div>
+
+</body> </html>
