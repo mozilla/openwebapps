@@ -472,7 +472,9 @@ SyncService.prototype._processUpdates = function (apps, callback) {
           continue;
         }
         // In this case we've never seen this app before
-        appsToAdd.push(app);
+        if (! app.deleted) {
+          appsToAdd.push(app);
+        }
       }
       var expected = 0;
       // This is to ensure the callback isn't called until we go through all
