@@ -135,7 +135,10 @@ FFRepoImpl.prototype = {
             skipPostInstallDashboard: true
           })
         );
-        self._callWatchers("add", [apprec]);  
+        self._callWatchers("add", [apprec]);
+      }
+      if (cb) {
+        cb(success);
       }
     })
   },
@@ -159,12 +162,12 @@ FFRepoImpl.prototype = {
     };
 
     try {
-      xhr.send(null); 
+      xhr.send(null);
     } catch (e) {
       console.log("XHR in fetchManifest threw " + e);
       cb(null);
     }
-    
+
     let timer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
     timer.initWithCallback({
       notify: function(timer) {
@@ -208,7 +211,7 @@ FFRepoImpl.prototype = {
       noNativeButton.callback = function() {
         // Don't generate a native app
         _makeNativeApp = false;
-        installConfirmationFinishFn(true);  
+        installConfirmationFinishFn(true);
       };
 
       let ret = window.PopupNotifications.show(
