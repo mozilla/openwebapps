@@ -7,5 +7,6 @@
     "id": "openwebapps@mozillalabs.com", 
     "description": "Adds features to Firefox to manage Apps directly in your browser.",
     "dependencies": ["api-utils", "addon-kit"],
-    "main": "./main.js"
+    "main": "./main.js",
+    "unpack": "true"
 }
