@@ -104,8 +104,6 @@ exports.main = function(options, callbacks) {
     Cc["@mozilla.org/categorymanager;1"].getService(Ci.nsICategoryManager).
                 deleteCategoryEntry("JavaScript-navigator-property", "mozActivities", false);
   });
-  
-  let owa = require("openwebapps/main");
 }
 
 exports.onUnload = function(reason) {
