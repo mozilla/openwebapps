@@ -467,23 +467,40 @@ MediatorPanel.prototype = {
   }
 }
 
-let activityRegistry = {
-  _activitiesList: [],
-  register: function(activity) {
-    
+var activityRegistry = {
+  _activitiesList: {},
+  registerActivityHandler: function(activity, url, title, data) {
+    if (!this._activitiesList[activity]) this._activitiesList[activity] = [];
+    this._activitiesList[activity].push({
+      url: url,
+      service: activity,
+      title: title,
+      app: data
+    })
   },
-  unregister: function(activity) {
-    
+  unregisterActivityHandler: function(activity, url) {
+    let activities = this._activitiesList[activity];
+    for (var i=0; i < activities.length; i++) {
+      if (activities[i].url == url) {
+        activities.splice(i, 1);
+        return;
+      }
+    }
   },
   get: function(activityName, cb) {
+    let activities = this._activitiesList[activityName] ? [].concat(this._activitiesList[activityName]) : [];
     try {
-      var {FFRepoImplService} = require("openwebapps/api");
-      FFRepoImplService.findServices(activityName, function(serviceList) {
-        cb(serviceList);
-      });
+      // the owa api will need to be xpcom or something, we cannot import
+      // addon-sdk files from an external addon
+      //var {FFRepoImplService} = require("openwebapps/api");
+      //FFRepoImplService.findServices(activityName, function(serviceList) {
+      //  // make a combo list of our internal activities and installed apps
+      //  activities = activities.concat(serviceList);
+      //  cb(activities);
+      //});
     } catch (e) {
-      cb(this._activitiesList);
     }
+    cb(activities);
   }
 }
 
