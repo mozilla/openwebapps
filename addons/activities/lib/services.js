@@ -40,7 +40,6 @@
  * ***** END LICENSE BLOCK ***** */
 
 const {Cu, Ci, Cc} = require("chrome");
-var {FFRepoImplService} = require("openwebapps/api");
 let {OAuthConsumer} = require("oauthorizer/oauthconsumer");
 let tmp = {}
 Cu.import("resource://gre/modules/Services.jsm", tmp);
@@ -223,7 +222,7 @@ MediatorPanel.prototype = {
 
   onOWAReady: function(msg) {
     this._panelWindow = null;
-    FFRepoImplService.findServices(this.methodName, function(serviceList) {
+    activityRegistry.get(this.methodName, function(serviceList) {
       this.tabData.activity.data = this.updateargs(this.tabData.activity.data);
       this.panel.port.emit("owa.mediation.setup", {
               activity: this.tabData.activity,
@@ -468,6 +467,25 @@ MediatorPanel.prototype = {
   }
 }
 
+let activityRegistry = {
+  _activitiesList: [],
+  register: function(activity) {
+    
+  },
+  unregister: function(activity) {
+    
+  },
+  get: function(activityName, cb) {
+    try {
+      var {FFRepoImplService} = require("openwebapps/api");
+      FFRepoImplService.findServices(activityName, function(serviceList) {
+        cb(serviceList);
+      });
+    } catch (e) {
+      cb(this._activitiesList);
+    }
+  }
+}
 
 /**
  * serviceInvocationHandler
@@ -618,3 +636,4 @@ serviceInvocationHandler.prototype = {
 
 exports.serviceInvocationHandler = serviceInvocationHandler;
 exports.MediatorPanel = MediatorPanel;
+exports.activityRegistry = activityRegistry;
