@@ -476,13 +476,17 @@ var activityRegistry = {
       service: activity,
       title: title,
       app: data
-    })
+    });
+    Services.obs.notifyObservers(null, 'activity-handler-registered', activity);
   },
   unregisterActivityHandler: function(activity, url) {
     let activities = this._activitiesList[activity];
+    if (!activities)
+      return;
     for (var i=0; i < activities.length; i++) {
       if (activities[i].url == url) {
         activities.splice(i, 1);
+        Services.obs.notifyObservers(null, 'activity-handler-unregistered', activity);
         return;
       }
     }
@@ -520,6 +524,8 @@ function serviceInvocationHandler(win)
   this._popups = []; // save references to popups we've created already
 
   let observerService = Cc["@mozilla.org/observer-service;1"].getService(Ci.nsIObserverService);
+  observerService.addObserver(this, "activity-handler-registered", false);
+  observerService.addObserver(this, "activity-handler-unregistered", false);
   observerService.addObserver(this, "openwebapp-installed", false);
   observerService.addObserver(this, "openwebapp-uninstalled", false);
   observerService.addObserver(this, "net:clear-active-logins", false);
@@ -574,6 +580,13 @@ serviceInvocationHandler.prototype = {
    * reset our mediators if an app is installed or uninstalled
    */
   observe: function(subject, topic, data) {
+    if (topic === "activity-handler-registered" ||
+        topic === "activity-handler-unregistered") {
+      for each (let popupCheck in this._popups) {
+        if (popupCheck.methodName == data)
+          popupCheck.reconfigure();
+      }
+    } else
     if (topic === "openwebapp-installed" ||
         topic === "openwebapp-uninstalled" ||
         topic === "net:clear-active-logins")
