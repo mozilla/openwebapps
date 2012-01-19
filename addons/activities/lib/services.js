@@ -166,7 +166,7 @@ MediatorPanel.prototype = {
     });
     worker.port.on("owa.service.register.handler", function (activity) {
       //dump("register.handler "+JSON.stringify(activity)+"\n");
-      //dump("register.handler "+frame.origin+":"+activity.action+":"+activity.message+"\n");
+      //console.log("register.handler "+frame.origin+":"+activity.action+":"+activity.message);
       if (!mediator.handlers[frame.origin])
         mediator.handlers[frame.origin] = {};
       if (!mediator.handlers[frame.origin][activity.action])
@@ -470,6 +470,7 @@ MediatorPanel.prototype = {
 var activityRegistry = {
   _activitiesList: {},
   registerActivityHandler: function(activity, url, title, data) {
+    this.unregisterActivityHandler(activity, url);
     if (!this._activitiesList[activity]) this._activitiesList[activity] = [];
     this._activitiesList[activity].push({
       url: url,
