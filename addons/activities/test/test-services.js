@@ -1,4 +1,3 @@
-const FFRepoImpl = require("openwebapps/api").FFRepoImplService;
 const {getServiceInvocationHandler, installTestApp, invokeService} = require("./helpers");
 const {Cc, Ci, Cm, Cu, components} = require("chrome");
 const tabs = require("tabs");
@@ -8,7 +7,8 @@ require("activities/main").main();
 
 exports.test_invoke = function(test) {
   test.waitUntilDone();
-  installTestApp(test, "apps/basic/basic.webapp", function(options) {
+  let options = installTestApp("test.basic", "apps/basic/basic.html");
+
     // we don't yet have a "mediator" concept we can use, so we call some
     // internal methods to set things up bypassing the builtin mediator ui.
     let activity = {action:"test.basic",
@@ -34,7 +34,6 @@ exports.test_invoke = function(test) {
       });
     });
     mediator.show();
-  });
 };
 
 
@@ -43,7 +42,8 @@ exports.test_invoke_twice = function(test) {
   test.waitUntilDone();
   let services = getServiceInvocationHandler();
   let seenTab1Callback = false;
-  installTestApp(test, "apps/basic/basic.webapp", function(options) {
+  let options = installTestApp("test.basic", "apps/basic/basic.html");
+
     tabs.open({
       url: "about:blank",
       onOpen: function(tab1) {
@@ -103,14 +103,14 @@ exports.test_invoke_twice = function(test) {
         });
       }
     });
-  });
 }
 
 exports.test_panel_auto_hides_on_tab_switch = function(test) {
   test.waitUntilDone();
   let services = getServiceInvocationHandler();
   let seenTab1Callback = false;
-  installTestApp(test, "apps/basic/basic.webapp", function(options) {
+  let options = installTestApp("test.basic", "apps/basic/basic.html");
+
     tabs.open({
       url: "about:blank",
       onOpen: function(tab1) {
@@ -122,8 +122,7 @@ exports.test_panel_auto_hides_on_tab_switch = function(test) {
                           message: "echoArgs",
                           data: {hello: "world"}};
           let mediator = services.get(activity);
-          mediator.show();
-          mediator.panel.port.once("owa.mediation.ready", function() {
+          mediator.panel.once("show", function() {
             test.waitUntil(function() {return mediator.panel.isShowing}
             ).then(function() {
               // mediator is showing - create a new tab and make sure it goes away.
@@ -161,18 +160,19 @@ exports.test_panel_auto_hides_on_tab_switch = function(test) {
                 }
               });
             });
-          })
+          });
+          mediator.show();
         })
       }
     })
-  });
 }
 
 exports.test_panel_auto_hides_on_tab_close = function(test) {
   test.waitUntilDone();
   let services = getServiceInvocationHandler();
   let seenTab1Callback = false;
-  installTestApp(test, "apps/basic/basic.webapp", function(options) {
+  let options = installTestApp("test.basic", "apps/basic/basic.html");
+
     tabs.open({
       url: "about:blank",
       onOpen: function(tab) {
@@ -183,8 +183,7 @@ exports.test_panel_auto_hides_on_tab_close = function(test) {
                           message: "echoArgs",
                           data: {hello: "world"}};
           let mediator = services.get(activity);
-          mediator.show();
-          mediator.panel.port.once("owa.mediation.ready", function() {
+          mediator.panel.once("show", function() {
             test.waitUntil(function() {return mediator.panel.isShowing}
             ).then(function() {
               // mediator is showing - close the tab and make sure it goes away.
@@ -195,17 +194,18 @@ exports.test_panel_auto_hides_on_tab_close = function(test) {
                 test.done();
               });
             });
-          })
+          });
+          mediator.show();
         })
       }
     })
-  });
 }
 
 // A helper for the error tests.
 function testError(test, activity, errchecker) {
   test.waitUntilDone();
-  installTestApp(test, "apps/basic/basic.webapp", function(options) {
+  let options = installTestApp("test.basic", "apps/basic/basic.html");
+
     // we don't yet have a "mediator" concept we can use, so we call some
     // internal methods to set things up bypassing the builtin mediator ui.
     activity.origin = options.origin;
@@ -229,7 +229,6 @@ function testError(test, activity, errchecker) {
       });
     });
     mediator.show();
-  });
 }
 
 exports.test_invoke_error = function(test) {
