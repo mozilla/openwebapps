@@ -75,42 +75,44 @@ $ // We'll show all the methods we're testing
 >
 > arr = arr.sort();
 > for (var i = 0; i < arr.length; i++) writeln(arr[i]);
-navigator.mozApps.amInstalled
-navigator.mozApps.getInstalledBy
+navigator.mozApps.getInstalled
+navigator.mozApps.getSelf
 navigator.mozApps.install
-navigator.mozApps.invokeService
-navigator.mozApps.mgmt.clearWatch
-navigator.mozApps.mgmt.launch
-navigator.mozApps.mgmt.list...
-navigator.mozApps.mgmt.uninstall
-navigator.mozApps.mgmt.watchUpdates
+navigator.mozApps.mgmt.addEventListener
+navigator.mozApps.mgmt.removeEventListener
+navigator.mozApps.mgmt.getAll
 </pre>
 </section>
 
 <section class="test">
 <h3>Clear All Apps</h3>
 
-Delete all applications and then verify that list() yields no apps.
+Delete all applications and then verify that getAll() yields no apps.
 
 <pre class="doctest setup">
 $ // Out of curiosity we'll see what's installed:
-> navigator.mozApps.mgmt.list(Spy('list', {wait: true}));
-list(...)
+> var pendingGetAll = navigator.mozApps.mgmt.getAll();
+> pendingGetAll.onsuccess = Spy('getAll', {wait: true});
+getAll(...)
 $ var finished = false;
 $ function uninstallAll() {
->   navigator.mozApps.mgmt.list(function(m) {
+>   var pendingGetAll = navigator.mozApps.mgmt.getAll();
+>   pendingGetAll.onsuccess = function(m) {
 >     var total = m.length;
 >     finished = (total === 0);
 >     for (var i=0; i&lt;m.length; i++) {
->       navigator.mozApps.mgmt.uninstall(m[i].origin, function(r) {
+>       var app = m[i];
+>       var pendingUninstall = app.uninstall();
+>       pendingUninstall.onsuccess = function(r) {
 >         finished = (--total === 0);
->       }, function (e) {
+>       };
+>       pendingUninstALL.onerror = function (e) {
 >         finished = true;
 >         writeln('Error:', e);
 >         throw('Failed');
 >       });
 >     }
->   });
+>   };
 >   return function () {
 >     wait(function () {
 >       if (finished) {
@@ -121,12 +123,14 @@ $ function uninstallAll() {
 >   };
 > }
 $ uninstallAll()();
-$ navigator.mozApps.mgmt.list(Spy('apps.mgmt.list', {wait: true}));
-apps.mgmt.list([])
+$ var pendingGetAll = navigator.mozApps.mgmt.getAll();
+> pendingGetAll.onsuccess = Spy('apps.mgmt.getAll', {wait: true});
+apps.mgmt.getAll([])
 </pre>
 
 </section>
 
+<!-- Is this test relevant for the new API? Don't think so
 <section class="test">
 <h3>Uninstall non-existant app should fail</h3>
 
@@ -140,6 +144,7 @@ uninstall/failure({
 })
 </pre>
 </section>
+-->
 
 <section class="test">
 <h3>Install missing required arguments will throw</h3>
@@ -151,19 +156,21 @@ Error: install missing required url argument
 
 </section>
 
+<!-- TODO: Update the App object response in getAll([]) -->
 <section class="test">
 <h3>Install a basic application</h3>
 
 <pre class="doctest">
 $ navigator.mozApps.setMockResponse(true, Spy('setMockResponse', {wait: true}));
 setMockResponse()
-$ navigator.mozApps.install(
+$ var pendingInstall = navigator.mozApps.install(
 >   SERVERS['basic_app'] + "/manifest.webapp",
->   null,
->   Spy('apps.install', {wait: true}));
+>   null);
+>   pendingInstall.onsuccess = Spy('apps.install', {wait: true});
 apps.install()
-$ navigator.mozApps.mgmt.list(Spy('apps.mgmt.list', {wait: true, wrapArgs: true}));
-apps.mgmt.list([
+$ var pendingGetAll = navigator.mozApps.mgmt.getAll();
+> pendingGetAll.onsuccess = Spy('apps.mgmt.getAll', {wait: true, wrapArgs: true});
+apps.mgmt.getAll([
       {
         install_origin: "http://?:?",
         install_time: ?,
@@ -186,13 +193,14 @@ two manifests per origin.
 <pre class="doctest">
 $ navigator.mozApps.setMockResponse(true, Spy('setMockResponse', {wait: true}));
 setMockResponse()
-$ navigator.mozApps.install(
+$ var pendingInstall = navigator.mozApps.install(
 >   SERVERS['basic_app'] + "/manifest2.webapp",
->   null,
->   Spy('apps.install', {wait: true}));
+>   null);
+>   pendingInstall.onsuccess = Spy('apps.install', {wait: true}));
 apps.install()
-$ navigator.mozApps.mgmt.list(Spy('apps.mgmt.list', {wait: true, wrapArgs: true}));
-apps.mgmt.list([
+$ var pendingGetAll = navigator.mozApps.mgmt.getAll();
+> pendingGetAll.onsuccess = Spy('apps.mgmt.getAll', {wait: true, wrapArgs: true});
+apps.mgmt.getAll([
   {
     install_origin: "http://...:...",
     install_time: ...,
@@ -205,11 +213,12 @@ apps.mgmt.list([
 ])
 </pre>
 
-<h3>We installed it, getInstalledBy should return it.</h3>
+<h3>We installed it, getInstalled should return it.</h3>
 
 <pre class="doctest">
-$ navigator.mozApps.getInstalledBy(Spy('apps.getInstalledBy', {wait: true}));
-apps.getInstalledBy([
+$ var pendingGetInstalled = navigator.mozApps.getInstalled();
+> pendingGetInstalled.onsuccess = Spy('apps.getInstalled', {wait: true});
+apps.getInstalled([
   {
     install_origin: "http://...:...",
     install_time: ...,
@@ -219,23 +228,25 @@ apps.getInstalledBy([
 ])
 </pre>
 
-<h3>amInstalled should not.</h3>
+<h3>getSelf should not.</h3>
 
 <pre class="doctest">
-$ navigator.mozApps.amInstalled(Spy('apps.amInstalled', {wait: true}));
-apps.amInstalled(null)
+$ var pendingGetSelf = navigator.mozApps.getSelf();
+> pendingGetSelf.onsuccess = Spy('apps.getSelf', {wait: true});
+apps.getSelf(null)
 </pre>
 
-<h3>amInstalled from basic app's domain <em>should</em> show the new app</h3>
+<h3>getSelf from basic app's domain <em>should</em> show the new app</h3>
 
 <p>Note: we're talking with the other app via JSChannel so that we can
-have it call <code>amInstalled</code> instead of the test calling
-<code>amInstalled</code> (which as we showed above won't return
+have it call <code>getSelf</code> instead of the test calling
+<code>getSelf</code> (which as we showed above won't return
 anything).</p>
 
+<!-- TODO: Fixup success call -->
 <pre class="doctest">
 $ var chan = embedIFrameAndStartChannel(SERVERS['basic_app'] + "/include.html");
-> chan.call(buildJSChanArgs("amInstalled", true));
+> chan.call(buildJSChanArgs("getSelf", true));
 success({
   install_origin: "http://...:...",
   install_time: ...,
@@ -250,11 +261,11 @@ success({
 <h3>Installation of an app with a syntax error in manifest</h3>
 
 <pre class="doctest">
-$ navigator.mozApps.install(
+$ var pendingInstall = navigator.mozApps.install(
 >   SERVERS['json_syntax_error'] + "/manifest.webapp",
->   null,
->   Spy('apps.install.success', {wait: false}),
->   Spy('apps.install.error', {wait: true}));
+>   null);
+>   pendingInstall.onsuccess = Spy('apps.install.success', {wait: false});
+>   pendingInstall.onerror = Spy('apps.install.error', {wait: true});
 apps.install.error({code: "manifestParseError", message: "couldn't parse manifest JSON from http://...:.../manifest.webapp"})
 </pre>
 
@@ -264,11 +275,11 @@ apps.install.error({code: "manifestParseError", message: "couldn't parse manifes
 <h3>Installation of an app with a malformed manifest (missing key)</h3>
 
 <pre class="doctest">
-$ navigator.mozApps.install(
+$ var pendingInstall = navigator.mozApps.install(
 >   SERVERS['missing_required_field'] + "/manifest.webapp",
->   null,
->   Spy('apps.install.success', {wait: false}),
->   Spy('apps.install.error', {wait: true}));
+>   null);
+>   pendingInstall.onsuccess = Spy('apps.install.success', {wait: false});
+>   pendingInstall.onerror = Spy('apps.install.error', {wait: true});
 apps.install.error({code: "invalidManifest", message: "couldn't validate your manifest: missing \"name\" property"})
 </pre>
 
@@ -278,11 +289,11 @@ apps.install.error({code: "invalidManifest", message: "couldn't validate your ma
 <h3>Installation of an app without required HTTP Content-Type</h3>
 
 <pre class="doctest">
-$ navigator.mozApps.install(
+$ var pendingInstall = navigator.mozApps.install(
 >   SERVERS['bad_content_type'] + "/manifest.json",
->   null,
->   Spy('apps.install.success', {wait: false}),
->   Spy('apps.install.error', {wait: true}));
+>   null);
+>   pendingInstall.onsuccess = Spy('apps.install.success', {wait: false});
+>   pendingInstall.onerror = Spy('apps.install.error', {wait: true}));
 apps.install.error({
   code: "invalidManifest",
   message: "application manifests must be of Content-Type \"application/x-web-app-manifest+json\""
@@ -295,11 +306,11 @@ apps.install.error({
 <h3>Installation of an app without delegated installation permissions</h3>
 
 <pre class="doctest">
-$ navigator.mozApps.install(
+$ var pendingInstall = navigator.mozApps.install(
 >   SERVERS['no_delegated_install'] + "/manifest.webapp",
->   null,
->   Spy('apps.install.success', {wait: false}),
->   Spy('apps.install.error', {wait: true}));
+>   null);
+>   pendingInstall.onsuccess = Spy('apps.install.success', {wait: false});
+>   pendingInstall.onerror = Spy('apps.install.error', {wait: true});
 apps.install.error({code: "permissionDenied", message: "origin 'http://...:...' may not install this app"})
 </pre>
 
@@ -314,12 +325,13 @@ a non-repo origin and load web content from that origin.  The content
 to programmatically drive it running queries against the test app repo from
 off domain.</p>
 
+<!-- TODO: Update postMessage listener on other side? -->
 <pre class="doctest">
 $ var chan = embedIFrameAndStartChannel(SERVERS['no_delegated_install'] + "/include.html");
 $ chan.call(buildJSChanArgs("install", true));
 success()
 $ // now getInstalled should show that we're installed
-> chan.call(buildJSChanArgs("amInstalled", true));
+> chan.call(buildJSChanArgs("getSelf", true));
 success({
   install_origin: "http://...:...",
   install_time: ...,
@@ -327,7 +339,7 @@ success({
   origin: "http://...:..."
 })
 $ // and getInstalledBy should show that same result
-> chan.call(buildJSChanArgs("getInstalledBy", true));
+> chan.call(buildJSChanArgs("getInstalled", true));
 success([
   {
     install_origin: "http://...:...",
@@ -338,11 +350,12 @@ success([
 ])
 </pre>
 
-<h3>getInstalled by from origin shouldn't show second app</h3>
+<h3>getInstalled from origin shouldn't show second app</h3>
 
 <pre class="doctest">
-$ navigator.mozApps.getInstalledBy(Spy('apps.getInstalledBy', {wait: true}));
-apps.getInstalledBy([
+$ var pendingGetInstalled = navigator.mozApps.getInstalled();
+> pendingGetInstalled.onsuccess = Spy('apps.getInstalled', {wait: true});
+apps.getInstalled([
   {
     install_origin: "http://...:...",
     install_time: ...,
@@ -352,37 +365,35 @@ apps.getInstalledBy([
 ])
 </pre>
 
-<h3>list should now contain two apps</h3>
+<h3>getAll should now contain two apps</h3>
 
 <pre class="doctest">
 $ var spy = Spy('list');
-> navigator.mozApps.mgmt.list(function(apps) {
+> var pendingGetAll = navigator.mozApps.mgmt.getAll()l
+> pendingGetAll.onsuccess = function(apps) {
 >   for (var i=0; i&lt;apps.length; i++) {
 >     writeln('Origin: ', apps[i].origin);
 >   }
 >   spy.func(i);
->  });
+>  };
 > spy.wait();
 Origin: ...
 Origin: ...
 list(2)
 </pre>
 
-<h3>Verify mgmt permissions don't work off repo origin</h3>
+<h3>Verify mgmt.getAll don't work off repo origin</h3>
 
 <pre class="doctest">
 $ // first let's add an iframe with the child to the document */
 > var chan = embedIFrameAndStartChannel(SERVERS['no_mgmt_api_off_repo_origin'] + "/include.html");
-> chan.call(buildJSChanArgs("launch", false));
-error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repository")
-$ chan.call(buildJSChanArgs("list", false));
-error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repository")
-$ chan.call(buildJSChanArgs("uninstall", false));
+$ chan.call(buildJSChanArgs("getAll", false));
 error("permissionDenied", "to access open web apps management apis, you must be on the same domain as the application repository")
 </pre>
 
 </section>
 
+<!-- This call no longer relevant
 <section class="test">
 <h3>Verify proper errors from uninstall()</h3>
 <pre class="doctest">
@@ -394,19 +405,23 @@ error({code: "noSuchApplication", message: "no application exists with the origi
 </pre>
 
 </section>
+-->
 
 <section class="test">
 <h3>Verify no callbacks are required to uninstall()</h3>
 
 <p>All args are optional to uninstall.  To test this we'll uninstall
-an app (basic_app), wait 100ms, and then verify that list returns a
-single app.</p>
+one app, wait 200ms, and then verify that list returns a single app.</p>
 
 <pre class="doctest">
-$ navigator.mozApps.mgmt.uninstall(SERVERS['basic_app']);
-> wait(100);
-$ navigator.mozApps.mgmt.list(Spy('list', {wait: true, wrapArgs: true}));
-list([
+$ var pendingGetAll1  = navigator.mozApps.mgmt.getAll();
+> pendingGetAll1.onsuccess = function(apps) {
+>   apps[0].uninstall();
+> };
+> wait(200);
+$ var pendingGetAll2 = navigator.mozApps.mgmt.getAll();
+> pendingGetAll2.onsuccess = Spy('getAll', {wait: true, wrapArgs: true});
+getAll([
   {
     install_origin: "http://...:...",
     install_time: ...,
@@ -424,16 +439,16 @@ list([
 <h3>Install an app with a UTF-8 BOM in the manifest</h3>
 
 <pre class="doctest">
-$ navigator.mozApps.install(
+$ var pendingInstall = navigator.mozApps.install(
 >   SERVERS['manifest_with_bom'] + "/manifest.webapp",
->   null,
->   Spy('apps.install', {wait: true}),
->   Spy('apps.install.error', {wait: false}));
+>   null);
+>   pendingInstall.onsuccess = Spy('apps.install', {wait: true});
+>   pendingInstall.onerror = Spy('apps.install.error', {wait: false});
 apps.install()
 </section>
 
 
-
+<!-- TODO: Figure out what we want to do with activities
 <section class="test">
 <h3>Install an application that contains a profile provider service</h3>
 
@@ -446,7 +461,10 @@ $ navigator.mozApps.install(
 apps.install()
 </pre>
 </section>
+-->
 
+
+<!-- TODO: Update the following three tests to use addEventListener instead:
 <section class="test">
 <h3>Use <code>watchUpdates</code></h3>
 
@@ -521,7 +539,7 @@ success()
 </pre>
 
 </section>
-
+-->
 
 {% endblock %}
 
