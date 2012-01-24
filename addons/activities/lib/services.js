@@ -40,7 +40,6 @@
  * ***** END LICENSE BLOCK ***** */
 
 const {Cu, Ci, Cc} = require("chrome");
-var {FFRepoImplService} = require("openwebapps/api");
 let {OAuthConsumer} = require("oauthorizer/oauthconsumer");
 let tmp = {}
 Cu.import("resource://gre/modules/Services.jsm", tmp);
@@ -167,7 +166,7 @@ MediatorPanel.prototype = {
     });
     worker.port.on("owa.service.register.handler", function (activity) {
       //dump("register.handler "+JSON.stringify(activity)+"\n");
-      //dump("register.handler "+frame.origin+":"+activity.action+":"+activity.message+"\n");
+      //console.log("register.handler "+frame.origin+":"+activity.action+":"+activity.message);
       if (!mediator.handlers[frame.origin])
         mediator.handlers[frame.origin] = {};
       if (!mediator.handlers[frame.origin][activity.action])
@@ -223,7 +222,7 @@ MediatorPanel.prototype = {
 
   onOWAReady: function(msg) {
     this._panelWindow = null;
-    FFRepoImplService.findServices(this.methodName, function(serviceList) {
+    activityRegistry.get(this.methodName, function(serviceList) {
       this.tabData.activity.data = this.updateargs(this.tabData.activity.data);
       this.panel.port.emit("owa.mediation.setup", {
               activity: this.tabData.activity,
@@ -468,6 +467,47 @@ MediatorPanel.prototype = {
   }
 }
 
+var activityRegistry = {
+  _activitiesList: {},
+  registerActivityHandler: function(activity, url, title, data) {
+    this.unregisterActivityHandler(activity, url);
+    if (!this._activitiesList[activity]) this._activitiesList[activity] = [];
+    this._activitiesList[activity].push({
+      url: url,
+      service: activity,
+      title: title,
+      app: data
+    });
+    Services.obs.notifyObservers(null, 'activity-handler-registered', activity);
+  },
+  unregisterActivityHandler: function(activity, url) {
+    let activities = this._activitiesList[activity];
+    if (!activities)
+      return;
+    for (var i=0; i < activities.length; i++) {
+      if (activities[i].url == url) {
+        activities.splice(i, 1);
+        Services.obs.notifyObservers(null, 'activity-handler-unregistered', activity);
+        return;
+      }
+    }
+  },
+  get: function(activityName, cb) {
+    let activities = this._activitiesList[activityName] ? [].concat(this._activitiesList[activityName]) : [];
+    try {
+      // the owa api will need to be xpcom or something, we cannot import
+      // addon-sdk files from an external addon
+      //var {FFRepoImplService} = require("openwebapps/api");
+      //FFRepoImplService.findServices(activityName, function(serviceList) {
+      //  // make a combo list of our internal activities and installed apps
+      //  activities = activities.concat(serviceList);
+      //  cb(activities);
+      //});
+    } catch (e) {
+    }
+    cb(activities);
+  }
+}
 
 /**
  * serviceInvocationHandler
@@ -485,6 +525,8 @@ function serviceInvocationHandler(win)
   this._popups = []; // save references to popups we've created already
 
   let observerService = Cc["@mozilla.org/observer-service;1"].getService(Ci.nsIObserverService);
+  observerService.addObserver(this, "activity-handler-registered", false);
+  observerService.addObserver(this, "activity-handler-unregistered", false);
   observerService.addObserver(this, "openwebapp-installed", false);
   observerService.addObserver(this, "openwebapp-uninstalled", false);
   observerService.addObserver(this, "net:clear-active-logins", false);
@@ -539,6 +581,13 @@ serviceInvocationHandler.prototype = {
    * reset our mediators if an app is installed or uninstalled
    */
   observe: function(subject, topic, data) {
+    if (topic === "activity-handler-registered" ||
+        topic === "activity-handler-unregistered") {
+      for each (let popupCheck in this._popups) {
+        if (popupCheck.methodName == data)
+          popupCheck.reconfigure();
+      }
+    } else
     if (topic === "openwebapp-installed" ||
         topic === "openwebapp-uninstalled" ||
         topic === "net:clear-active-logins")
@@ -618,3 +667,4 @@ serviceInvocationHandler.prototype = {
 
 exports.serviceInvocationHandler = serviceInvocationHandler;
 exports.MediatorPanel = MediatorPanel;
+exports.activityRegistry = activityRegistry;
