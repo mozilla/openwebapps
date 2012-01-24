@@ -31,7 +31,7 @@ activities := $(TOPSRCDIR)/addons/activities
 
 ifeq ($(TARGET),activities)
   pkgdir := $(activities)
-  cfx_args :=  --pkgdir=$(pkgdir) $(binary) $(profile) --package-path=$(oauthorizer) --package-path=$(openwebapps) --binary-args="-console -purgecaches $(BINARYARGS)"
+  cfx_args :=  --pkgdir=$(pkgdir) $(binary) $(profile) --package-path=$(oauthorizer) --binary-args="-console -purgecaches $(BINARYARGS)"
 else
   pkgdir := $(openwebapps)
   cfx_args :=  --pkgdir=$(pkgdir) $(binary) $(profile) --binary-args="-console -purgecaches $(BINARYARGS)"
