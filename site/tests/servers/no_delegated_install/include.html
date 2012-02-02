@@ -34,28 +34,25 @@
         }, 100);
         return;
       }
-      navigator.mozApps.install(
+      var pending = navigator.mozApps.install(
         "/manifest.webapp",
-        null,
-        function() { trans.complete(); },
-        function(errObj) { trans.error(errObj.code, errObj.message) }
-      );
+        null);
+      pending.onsuccess = function () {trans.complete();};
+      pending.onerror = function () {trans.error(this.error);};
     });
 
-    chan.bind("amInstalled", function(trans) {
+    chan.bind("getSelf", function(trans) {
       trans.delayReturn(true);
-      navigator.mozApps.amInstalled(
-        function(v) { trans.complete(v); },
-        function(errObj) { trans.error(errObj.code, errObj.message) }
-      );
+      var pending = navigator.mozApps.getSelf();
+      pending.onsuccess = function () {trans.complete(this.result);};
+      pending.onerror = function () {trans.error(this.error);};
     });
 
-    chan.bind("getInstalledBy", function(trans) {
+    chan.bind("getInstalled", function(trans) {
       trans.delayReturn(true);
-      navigator.mozApps.getInstalledBy(
-        function(v) { trans.complete(v); },
-        function(errObj) { trans.error(errObj.code, errObj.message) }
-      );
+      var pending = navigator.mozApps.getInstalled();
+      pending.onsuccess = function () {trans.complete(this.result);};
+      pending.onerror = function () {trans.error(this.error);};
     });
   }
   </script>

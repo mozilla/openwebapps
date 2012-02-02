@@ -143,11 +143,8 @@ ClientBridge = (function () {
                       encodeURIComponent(appURL.toString()), "open_web_app_dashboard");
         }
         t.complete();
-      } else if (typeof r.error === 'object' && typeof r.error.length === 'number' &&
-                 r.error.length === 2) {
-        t.error(r.error[0], errorRepr(r.error[1]));
       } else {
-        t.error("internalError", "unknown internal error during install: " + errorRepr(r));
+        t.error(r.error);
       }
     });
   });
@@ -173,17 +170,17 @@ ClientBridge = (function () {
   });
 
   /** Determines which applications are installed *for* the origin domain */
-  chan.bind('amInstalled', function(t, args) {
+  chan.bind('getSelf', function(t, args) {
     t.delayReturn(true);
-    Repo.amInstalled(t.origin, function(v) {
+    Repo.getSelf(t.origin, function(v) {
       t.complete(v);
     });
   });
 
   /** Determines which applications were installed *by* the origin domain. */
-  chan.bind('getInstalledBy', function(t, args) {
+  chan.bind('getInstalled', function(t, args) {
     t.delayReturn(true);
-    Repo.getInstalledBy(t.origin, function(v) {
+    Repo.getInstalled(t.origin, function(v) {
       t.complete(v);
     });
   });
@@ -201,15 +198,13 @@ ClientBridge = (function () {
         ((loc.protocol + "//" + loc.host) === origin)) {
       return;
     }
-    throw [ 'permissionDenied',
-            "to access open web apps management apis, you must be on the same domain " +
-            "as the application repository" ];
+    throw Repo.errors.PERMISSION_DENIED;
   }
 
-  chan.bind('list', function(t) {
+  chan.bind('getAll', function(t) {
     verifyMgmtPermission(t.origin);
     t.delayReturn(true);
-    Repo.list(function (apps) {
+    Repo.getAll(function (apps) {
       var appList = [];
       for (var i in apps) {
         appList.push(apps[i]);
@@ -224,11 +219,8 @@ ClientBridge = (function () {
     Repo.uninstall(origin, function(r) {
       if (r === true) {
         t.complete(true);
-      } else if (typeof r.error === 'object' && typeof r.error.length === 'number' &&
-                 r.error.length === 2) {
-        t.error(r.error[0], errorRepr(r.error[1]));
       } else {
-        t.error("internalError", "unknown internal error during uninstall: " + errorRepr(r));
+        t.error(r.error);
       }
     });
   });

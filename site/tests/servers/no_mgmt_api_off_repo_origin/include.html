@@ -20,33 +20,17 @@
       scope: "test"
     });
 
-    chan.bind("launch", function(trans, p) {
+    chan.bind("getAll", function(trans) {
       trans.delayReturn(true);
-      navigator.mozApps.mgmt.launch(
-        // any ol' app id will do, we shouldn't get that far, we don't have mgmt perms
-        SERVERS['basic_app'],
-        function(v) { trans.complete(v); },
-        function(errObj) { trans.error(errObj.code, errObj.message) }
-      );
+      try {
+        var pending = navigator.mozApps.mgmt.getAll();
+        pending.onsuccess = function () {trans.complete(this.result);};
+        pending.onerror = function () {trans.error(this.error);};
+      } catch (e) {
+        trans.error(e+'');
+      }
     });
 
-    chan.bind("list", function(trans) {
-      trans.delayReturn(true);
-      navigator.mozApps.mgmt.list(
-        function(v) { trans.complete(v); },
-        function(errObj) { trans.error(errObj.code, errObj.message) }
-      );
-    });
-
-    chan.bind("uninstall", function(trans) {
-      trans.delayReturn(true);
-      navigator.mozApps.mgmt.uninstall(
-        // any ol' app id will do, we shouldn't get that far, we don't have mgmt perms
-        SERVERS['basic_app'],
-        function(v) { trans.complete(v); },
-        function(errObj) { trans.error(errObj.code, errObj.message) }
-      );
-    });
   }
   </script>
   <!-- a tricky bit here, we need to include the repo API js.  Well wait

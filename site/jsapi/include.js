@@ -633,13 +633,95 @@ if (!navigator.mozApps.install || navigator.mozApps.html5Implementation) {
     // The jschannel to the applicaiton repositiory
     var chan = null;
 
-    // Any watchUpdates() callbacks
-    var watchUpdateCallbacks = {};
-    var watchUpdateCounter = 1;
-
     /* const */
     var overlayId = "myappsOrgInstallOverlay"; /* const */
     var dialogId = "myappsTrustedIFrame";
+    
+    function hasMgmtPermission() {
+      return location.protocol + "//" + location.host == AppRepositoryOrigin;
+    }
+    
+    function Pending() {
+      this.result = null;
+      this.error = null;
+      this.onerror = null;
+      this.onsuccess = null;
+    }
+    
+    // Some helpers for Pending objects; though these look like nice candidates
+    // for methods, we don't want to leak any methods to the callers:
+    function pendingError(pending, error) {
+      pending.error = error;
+      if (pending.onerror) {
+        pending.onerror();
+      }
+    }
+    
+    function pendingSuccess(pending, result) {
+      if (result !== undefined) {
+        pending.result = result;
+      }
+      if (pending.onsuccess) {
+        pending.onsuccess();
+      }
+    }
+
+    function Application(apprec) {
+      this.manifest = apprec.manifest;
+      this.manifestURL = apprec.manifestURL;
+      if (apprec.installData) {
+        this.receipts = apprec.installData.receipts;
+        if ((! this.receipts) && apprec.installData.receipt) {
+          this.receipts = [apprec.installData.receipt];
+        }
+      } else {
+        this.receipts = null;
+      }
+      this.origin = apprec.origin;
+      this.installOrigin = apprec.installOrigin;
+      this.installTime = apprec.installTime;
+    }
+
+    Application.fromArray = function (array) {
+      var result = [];
+      for (var i=0; i<array.length; i++) {
+        result.push(new Application(array[i]));
+      }
+      return result;
+    };
+
+    Application.prototype.launch = function () {
+      // perform a quick management API check.  While this check doesn't actually
+      // enforce any security, it does offer consistent error messages.  Even with the
+      // removal of this check the rest of this function won't work, because it relies
+      // on previous invocation of list() (to discover the launchURL).
+      if (! hasMgmtPermissions()) {
+        throw "PERMISSION_DENIED";
+      }
+
+      var url = this.origin;
+      if (this.manifest.launch_path) {
+        url += this.manifest.launch_path;
+      }
+      var name = ("openwebapp_" + id).replace(/[.:]/g, "_").replace(/[^a-zA-Z0-9_]/g, "");
+      window.open(url, name);
+    };
+
+    Application.prototype.uninstall = function () {
+      setupWindow();
+      var pending = new Pending();
+      chan.call({
+        method: "uninstall",
+        params: this.origin,
+        error: function(error) {
+          pendingError(pending, error);
+        },
+        success: function() {
+          pendingSuccess(pending);
+        }
+      });
+      return pending;
+    };
 
     function showInstallDialog() {
       try {
@@ -670,8 +752,8 @@ if (!navigator.mozApps.install || navigator.mozApps.html5Implementation) {
 
 
     function isMobile() {
-      // FIXME: this doesn't detect mobile Firefox, but I'm not sure that
-      // mobile Firefox has the same issues (it could though)
+      // FIXME: this doesn't detect mobile Firefox, but I don't believe that
+      // mobile Firefox has the same issues
       var ua = navigator.userAgent;
       if (ua.search(/AppleWebKit/) == -1) {
         return false;
@@ -755,7 +837,7 @@ if (!navigator.mozApps.install || navigator.mozApps.html5Implementation) {
       }
     }
 
-    function callInstall(url, install_data, onsuccess, onerror) {
+    function callInstall(url, installData) {
       if (url === undefined) {
         throw "install missing required url argument";
       }
@@ -763,24 +845,24 @@ if (!navigator.mozApps.install || navigator.mozApps.html5Implementation) {
         throw "first (url) parameter to install() must be a string";
       }
       setupWindow();
-      if (install_data === undefined) {
-        install_data = null;
+      if (installData === undefined) {
+        installData = null;
       }
+      var pending = new Pending();
       chan.call({
         method: "install",
         params: {
           url: url,
-          install_data: install_data
+          installData: installData
         },
-        error: function(error, message) {
-          deliverError(error, message, onerror);
+        error: function(error) {
+          pendingError(pending, error);
         },
         success: function() {
-          if (onsuccess) {
-            onsuccess();
-          }
+          pendingSuccess(pending);
         }
       });
+      return pending;
     }
 
     function callInvokeService(name, args, onsuccess, onerror) {
@@ -813,30 +895,37 @@ if (!navigator.mozApps.install || navigator.mozApps.html5Implementation) {
       });
     }
 
-    function callAmInstalled(onsuccess, onerror) {
+    function callGetSelf() {
       setupWindow();
+      var pending = new Pending();
       chan.call({
-        method: "amInstalled",
-        error: function(error, message) {
-          deliverError(error, message, onerror);
+        method: "getSelf",
+        error: function(error) {
+          pendingError(pending, error);
         },
         success: function(v) {
-          if (onsuccess !== undefined) onsuccess(v);
+          if (v !== null) {
+            v = new Application(v);
+          }
+          pendingSuccess(pending, v);
         }
       });
+      return pending;
     }
 
-    function callGetInstalledBy(onsuccess, onerror) {
+    function callGetInstalled() {
       setupWindow();
+      var pending = new Pending();
       chan.call({
-        method: "getInstalledBy",
-        error: function(error, message) {
-          deliverError(error, message, onerror);
+        method: "getInstalled",
+        error: function(error) {
+          pendingError(pending, error);
         },
         success: function(v) {
-          if (onsuccess !== undefined) onsuccess(v);
+          pendingSuccess(pending, Application.fromArray(v));
         }
       });
+      return pending;
     }
 
     // specifically to avoid popup blockers, launch must be called in an event handler
@@ -847,113 +936,78 @@ if (!navigator.mozApps.install || navigator.mozApps.html5Implementation) {
     // in launch to determine launch url.
     var _lastListResults = [];
 
-    function callLaunch(id, onsuccess, onerror) {
-      // perform a quick management API check.  While this check doesn't actually
-      // enforce any security, it does offer consistent error messages.  Even with the
-      // removal of this check the rest of this function won't work, because it relies
-      // on previous invocation of list() (to discover the launchURL).
-      var loc = window.location;
-      if ((loc.protocol + "//" + loc.host) !== AppRepositoryOrigin) {
-        setTimeout(function() {
-          deliverError("permissionDenied",
-                       "to access open web apps management apis, you must be on the same domain " +
-                       "as the application repository",
-                       onerror);
-        }, 0);
-        return;
-      }
-
-      for (var i=0; i<_lastListResults.length; i++) {
-        var item = _lastListResults[i];
-        if (item.origin === id) {
-          var url = item.origin;
-          if (item.manifest.launch_path !== undefined) {
-            url += item.manifest.launch_path;
-          }
-          // generate a deterministic and portable name for the "name" of the launced window.
-          // this will prevent multiple launches of the same app from opening new windows.
-          // (NOTE: IE is fairly restrictive on what characters may occur in the window name argument)
-          var name = ("openwebapp_" + id).replace(/[.:]/g, "_").replace(/[^a-zA-Z0-9_]/g, "");
-          window.open(url, name);
-          if (onsuccess) setTimeout(function() {
-            onsuccess(true);
-          }, 0);
-          return;
-        }
-      }
-      setTimeout(function() {
-        deliverError("noSuchApp", "couldn't find application with id: " + id, onerror);
-      }, 0);
-    }
-
-    function callList(onsuccess, onerror) {
+    function callGetAll() {
       setupWindow();
+      var pending = new Pending();
       chan.call({
-        method: "list",
-        error: function(error, message) {
-          deliverError(error, message, onerror);
+        method: "getAll",
+        error: function(error) {
+          pendingError(pending, error);
         },
         success: function(v) {
-          _lastListResults = v;
-          if (onsuccess !== undefined) onsuccess(v);
+          pendingSuccess(pending, Application.fromArray(v));
         }
       });
-    }
-
-    function callUninstall(origin, onsuccess, onerror) {
-      setupWindow();
-      chan.call({
-        method: "uninstall",
-        params: origin,
-        error: function(error, message) {
-          deliverError(error, message, onerror);
-        },
-        success: function(v) {
-          if (onsuccess !== undefined) onsuccess(v);
-        }
-      });
+      return pending;
     }
 
     function callReady(args) {
     }
     
     var changeBound = false;
+    var boundEventListeners = {};
     
-    function callWatchUpdates(callback) {
-      if (! changeBound) {
-        setupWindow();
-        bindChange();
-        changeBound = true;
+    function callAddEventListener(eventName, callback) {
+      if (! boundEventListeners[eventName]) {
+        boundEventListeners[eventName] = [];
       }
-      var id = watchUpdateCounter++;
-      watchUpdateCallbacks[id] = callback;
-      return id;
+      boundEventListeners[eventName].push(callback);
     }
     
-    function callClearWatch(id) {
-      delete watchUpdateCallbacks[id];
+    function callRemoveEventListener(eventName, callback) {
+      if (! boundEventListeners[eventName]) {
+        return;
+      }
+      for (var i=0; i<boundEventListeners[eventName].length; i++) {
+        var func = boundEventListeners[eventName][i];
+        if (func == callback) {
+          boundEventListeners[eventName].splice(i, 1);
+          break;
+        }
+      }
+    }
+    
+    if (hasMgmtPermission()) {
+      window.addEventListener('load', function () {
+        setupWindow();
+        chan.call({
+          method: "trackChanges",
+          params: {},
+          success: function () {}
+        });
+        chan.bind('change', function (t, event) {
+          // FIXME: check t.origin is the repository
+          t.complete(true);
+          var callbacks = boundEventListeners[event.type];
+          var staticCallback = api['on' + event.type];
+          if (callbacks || staticCallback) {
+            for (var i=0; i<event.objects.length; i++) {
+              var object = new Application(event.objects[i]);
+              if (callbacks) {
+                for (var j=0; j<callbacks.length; j++) {
+                  var callback = callbacks[j];
+                  callback({application: object});
+                }
+              }
+              if (staticCallback) {
+                staticCallback({application: object});
+              }
+            }
+          }
+        });
+      });
     }
 
-    function bindChange() {
-      chan.bind('change', function (t, event) {
-        // FIXME: check t.origin is the repository
-        t.complete(true);
-        for (var i in watchUpdateCallbacks) {
-          if (! watchUpdateCallbacks.hasOwnProperty(i)) {
-            continue;
-          }
-          var callback = watchUpdateCallbacks[i];
-          callback(event['type'], event['objects']);
-        }
-      });
-      // Ask the remote channel to start sending changes to us:
-      chan.call({
-        method: "trackChanges",
-        params: {},
-        success: function () {}
-      });
-    }
-    
     function callRegisterHandler(activity, message, func) {
     }
 
@@ -1035,22 +1089,26 @@ if (!navigator.mozApps.install || navigator.mozApps.html5Implementation) {
     var api = {
       install: callInstall,
       invokeService: callInvokeService,
-      amInstalled: callAmInstalled,
-      getInstalledBy: callGetInstalledBy,
-      mgmt: {
-        launch: callLaunch,
-        list: callList,
-        uninstall: callUninstall,
-        syncButton: callSyncButton,
-        watchUpdates: callWatchUpdates,
-        clearWatch: callClearWatch
-      },
+      getSelf: callGetSelf,
+      getInstalled: callGetInstalled,
       services: {
         ready: callReady,
         registerHandler: callRegisterHandler
       },
       html5Implementation: true
     };
+    
+    if (hasMgmtPermission()) {
+      api.mgmt = {
+        getAll: callGetAll,
+        addEventListener: callAddEventListener,
+        removeEventListener: callRemoveEventListener,
+        oninstall: null,
+        onuninstall: null,
+        syncButton: callSyncButton
+      };
+    }
+    
     if (TESTING_MODE) {
       // a debugging routine which allows debugging or testing clients
       // to point at a repository location other than production.
