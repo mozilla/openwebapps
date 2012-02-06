@@ -858,8 +858,8 @@ if (!navigator.mozApps.install || navigator.mozApps.html5Implementation) {
         error: function(error) {
           pendingError(pending, error);
         },
-        success: function() {
-          pendingSuccess(pending);
+        success: function(result) {
+          pendingSuccess(pending, new Application(result));
         }
       });
       return pending;
@@ -988,8 +988,13 @@ if (!navigator.mozApps.install || navigator.mozApps.html5Implementation) {
         chan.bind('change', function (t, event) {
           // FIXME: check t.origin is the repository
           t.complete(true);
-          var callbacks = boundEventListeners[event.type];
-          var staticCallback = api['on' + event.type];
+          if (event.type == 'add') {
+            var type = 'install';
+          } else if (event.type == 'remove') {
+            var type = 'uninstall';
+          }
+          var callbacks = boundEventListeners[type];
+          var staticCallback = api.mgmt ? api.mgmt['on' + type] : null;
           if (callbacks || staticCallback) {
             for (var i=0; i<event.objects.length; i++) {
               var object = new Application(event.objects[i]);

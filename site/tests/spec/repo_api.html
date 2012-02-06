@@ -86,6 +86,7 @@ navigator.mozApps.mgmt.removeEventListener...
 Also a function to help us handle the pending objects:
 
 <pre class="doctest setup">
+$ var lastPending = null;
 $ function spyPending(pending, name, noWait) {
 >   var done = false;
 >   pending.onsuccess = function () {
@@ -107,6 +108,7 @@ $ function spyPending(pending, name, noWait) {
 >   if (! noWait) {
 >     wait(function () {return done;});
 >   }
+>   lastPending = pending;
 > }
 </pre>
 
@@ -177,7 +179,14 @@ setMockResponse()
 $ spyPending(navigator.mozApps.install(
 >   SERVERS['basic_app'] + "/manifest.webapp",
 >   null));
-onsuccess: null
+onsuccess: {
+  installOrigin: "http://?:?",
+  installTime: ?,
+  manifest: {installs_allowed_from: ["*"], name: "Super Crazy Basic App"},
+  manifestURL: "http://?:?/manifest.webapp",
+  origin: "http://?:?",
+  receipts: null
+}
 $ spyPending(navigator.mozApps.mgmt.getAll());
 onsuccess: [
       {
@@ -202,7 +211,7 @@ setMockResponse()
 $ spyPending(navigator.mozApps.install(
 >   SERVERS['basic_app'] + "/manifest2.webapp",
 >   null));
-onsuccess: null
+onsuccess: {...}
 $ spyPending(navigator.mozApps.mgmt.getAll());
 onsuccess: [
   {
@@ -444,7 +453,7 @@ onsuccess: [
 $ spyPending(navigator.mozApps.install(
 >   SERVERS['manifest_with_bom'] + "/manifest.webapp",
 >   null));
-onsuccess: null
+onsuccess: {...}
 </section>
 
 
@@ -464,52 +473,50 @@ apps.install()
 -->
 
 
-<!-- TODO: Update the following three tests to use addEventListener instead:
 <section class="test">
-<h3>Use <code>watchUpdates</code></h3>
+<h3>Events</h3>
 
 <p>First we'll just test that adding and removing watchers works</p>
 
 <pre class="doctest">
 $ uninstallAll()();
-$ spy = Spy('watchUpdates');
-$ spy2 = Spy('watchUpdates2');
-$ navigator.mozApps.mgmt.watchUpdates(spy);
-$ spy2id = navigator.mozApps.mgmt.watchUpdates(spy2);
-$ writeln(typeof spy2id);
-number
-$ // We'll implicitly tell this works because watchUpdates2 won't appear below:
-> navigator.mozApps.mgmt.clearWatch(spy2id);
-$ // Also, removing an id that doesn't exist should fail without a problem
-> navigator.mozApps.mgmt.clearWatch(9999);
+$ installSpy = Spy('install');
+$ uninstallSpy = Spy('uninstall');
+$ navigator.mozApps.mgmt.addEventListener('install', installSpy);
+$ navigator.mozApps.mgmt.onuninstall = uninstallSpy;
+$ deadSpy = Spy('should_not_fire');
+$ navigator.mozApps.mgmt.addEventListener('install', deadSpy);
+$ navigator.mozApps.mgmt.removeEventListener('install', deadSpy);
 </pre>
 
 <p>Next we'll install and remove apps to get the events:</p>
 
 <pre class="doctest">
-$ navigator.mozApps.install(
->   SERVERS['basic_app'] + "/manifest.webapp",
->   null,
->   Spy('apps.install', {wait: true}));
-watchUpdates("add", [
-  {
+$ spyPending(navigator.mozApps.install(
+>   SERVERS['basic_app'] + "/manifest.webapp"))
+install({
+  application: {
+    installOrigin: "http://?:?",
+    installTime: ?,
+    manifest: {installs_allowed_from: ["*"], name: "Super Crazy Basic App"},
+    manifestURL: "http://?:?/manifest.webapp",
+    origin: "http://?:?",
+    receipts: null
+  }
+})
+onsuccess: {...}
+$ spyPending(lastPending.result.uninstall());
+uninstall({
+  application: {
     installOrigin: "http://127.0.0.1:?",
     installTime: ?,
     manifest: {installs_allowed_from: ["*"], name: "Super Crazy Basic App"},
-    origin: "http://127.0.0.1:?"
+    manifestURL: "http://?:?/manifest.webapp",
+    origin: "http://127.0.0.1:?",
+    receipts: null
   }
-])
-apps.install()
-$ navigator.mozApps.mgmt.uninstall(SERVERS['basic_app'], Spy('apps.uninstall', {wait: true}));
-watchUpdates("remove", [
-  {
-    installOrigin: "http://127.0.0.1:?",
-    installTime: ?,
-    manifest: {installs_allowed_from: ["*"], name: "Super Crazy Basic App"},
-    origin: "http://127.0.0.1:?"
-  }
-])
-apps.uninstall(true)
+})
+onsuccess: null
 </pre>
 
 <p>Now we'll install an app in an iframe, and check that we detect the change
@@ -519,21 +526,23 @@ in this page:</p>
 $ var chan = embedIFrameAndStartChannel(SERVERS['no_delegated_install'] + "/include.html");
 $ chan.call(buildJSChanArgs("install", true));
 > // because the spy has been called many times, we must clear its wait flag:
-> spy.calledWait = false;
-> spy.wait();
-watchUpdates("add", [
-  {
+> installSpy.calledWait = false;
+> installSpy.wait();
+install({
+  application: {
     installOrigin: "http://127.0.0.1:?",
     installTime: ?,
     manifest: {name: "An application which does not grant permission for any other origin to install it"},
-    origin: "http://127.0.0.1:?"
+    manifestURL: "http://?:?/manifest.webapp",
+    origin: "http://127.0.0.1:?",
+    receipts: null
   }
-])
+})
 success()
 </pre>
 
 </section>
--->
+
 
 {% endblock %}
 

@@ -133,7 +133,7 @@ ClientBridge = (function () {
     Repo.install(t.origin, args,
                  (TESTING_MODE && TESTING_MODE_RESPONSE !== null) ? mockInstallPrompt : displayInstallPrompt,
                  fetchManifest, function(r) {
-      if (r === true) {
+      if (r && typeof r == 'object' && (! r.error)) {
         // installation was confirmed by the user and successful.  In the case
         // where the installer is different than the app, we'll launch the user's
         // dashboard and "emphasize" the application that was just installed.
@@ -142,7 +142,7 @@ ClientBridge = (function () {
           window.open("https://myapps.mozillalabs.com/?emphasize=" +
                       encodeURIComponent(appURL.toString()), "open_web_app_dashboard");
         }
-        t.complete();
+        t.complete(r);
       } else {
         t.error(r.error);
       }
