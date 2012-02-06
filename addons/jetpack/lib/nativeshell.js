@@ -713,74 +713,74 @@ WinNativeShell.prototype = {
   },
 
   writeRegKeys : function() {
+    let parentKey;
     let uninstallKey;
     let subKey;
 
     try {
-      uninstallKey = Cc["@mozilla.org/windows-registry-key;1"]
-                     .createInstance(Ci.nsIWindowsRegKey);
-      uninstallKey.open(uninstallKey.ROOT_KEY_CURRENT_USER,
-                        "SOFTWARE\\Microsoft\\Windows\\"
-                      + "CurrentVersion\\Uninstall",
-                        uninstallKey.ACCESS_WRITE);
-    } catch(e) {
-      throw("Failure opening uninstall key (" + e + ")");
-    }
+      parentKey = Cc["@mozilla.org/windows-registry-key;1"]
+                  .createInstance(Ci.nsIWindowsRegKey);
+      parentKey.open(parentKey.ROOT_KEY_CURRENT_USER,
+                     "SOFTWARE\\Microsoft\\Windows\\"
+                   + "CurrentVersion",
+                     parentKey.ACCESS_WRITE);
+      uninstallKey = parentKey.createChild("Uninstall",
+                                           parentKey.ACCESS_WRITE)
+      subKey = uninstallKey.createChild(this.uninstallSubkeyStr,
+                                        uninstallKey.ACCESS_WRITE);
 
-    try {
-      try {
-        subKey = uninstallKey.createChild(this.uninstallSubkeyStr,
-                                          uninstallKey.ACCESS_WRITE);
-      } catch(e) {
-        throw("Failure opening uninstall subkey (" + e + ")");
+      subKey.writeStringValue("DisplayName", this.appName);
+      subKey.writeStringValue("ShortcutName", this.appNameAsFilename);
+      if(this.iconFile) {
+        subKey.writeStringValue("DisplayIcon", this.iconFile.path);
       }
-
-      try {
-        subKey.writeStringValue("DisplayName", this.appName);
-        subKey.writeStringValue("ShortcutName", this.appNameAsFilename);
-        if(this.iconFile) {
-          subKey.writeStringValue("DisplayIcon", this.iconFile.path);
-        }
-        subKey.writeStringValue("UninstallString",
-                                this.uninstallerFile.path
-                              + " /ORIGIN_SCHEME="
-                              + " \"" + this.launchURI.scheme + "\""
-                              + " /ORIGIN_HOST="
-                              + " \"" + this.launchURI.host + "\""
-                              + " /ORIGIN_PORT="
-                              + " \"" + this.launchURI.port + "\"");
-        subKey.writeStringValue("InstallLocation", this.installDir.path);
-        subKey.writeIntValue("NoModify", 1);
-        subKey.writeIntValue("NoRepair", 1);
-        // TODO: Maybe grab info from BrowserID for this?
-        subKey.writeStringValue("RegOwner", "Your name here");
-        //subKey.writeStringValue("ProductID", "");
-        subKey.writeStringValue("UrlUpdateInfo",
-                                "http://apps.mozillalabs.com");
-        if(this.developerName) {
-          subKey.writeStringValue("Publisher",
-                                  this.developerName);
-        }
-        subKey.writeStringValue("DisplayVersion",
-                                this.versionStr);
-        // TODO: Can we figure out what store we're installing from?
-        subKey.writeStringValue("InstallSource", "");
-        subKey.writeStringValue("Comments",
-                                this.shortDescription);
-        subKey.writeStringValue("HelpLink",
-                                      "http://apps.mozillalabs.com");
-        subKey.writeStringValue("URLInfoAbout",
-                                this.launchURI.prePath);
-        subKey.writeStringValue("Contact", "http://apps.mozillalabs.com");
-        // TODO: Maybe link to the description in the store here?
-        //subKey.writeStringValue("Readme", "http://apps.mozillalabs.com");
-      } catch(e) {
-        throw("Failure writing uninstall key value (" + e + ")");
-      } finally {
+      subKey.writeStringValue("UninstallString",
+                              this.uninstallerFile.path
+                            + " /ORIGIN_SCHEME="
+                            + " \"" + this.launchURI.scheme + "\""
+                            + " /ORIGIN_HOST="
+                            + " \"" + this.launchURI.host + "\""
+                            + " /ORIGIN_PORT="
+                            + " \"" + this.launchURI.port + "\"");
+      subKey.writeStringValue("InstallLocation", this.installDir.path);
+      subKey.writeIntValue("NoModify", 1);
+      subKey.writeIntValue("NoRepair", 1);
+      // TODO: Maybe grab info from BrowserID for this?
+      subKey.writeStringValue("RegOwner", "Your name here");
+      //subKey.writeStringValue("ProductID", "");
+      subKey.writeStringValue("UrlUpdateInfo",
+                              "http://apps.mozillalabs.com");
+      if(this.developerName) {
+        subKey.writeStringValue("Publisher",
+                                this.developerName);
+      }
+      subKey.writeStringValue("DisplayVersion",
+                              this.versionStr);
+      // TODO: Can we figure out what store we're installing from?
+      subKey.writeStringValue("InstallSource", "");
+      subKey.writeStringValue("Comments",
+                              this.shortDescription);
+      subKey.writeStringValue("HelpLink",
+                                    "http://apps.mozillalabs.com");
+      subKey.writeStringValue("URLInfoAbout",
+                              this.launchURI.prePath);
+      subKey.writeStringValue("Contact", "http://apps.mozillalabs.com");
+      // TODO: Maybe link to the description in the store here?
+      //subKey.writeStringValue("Readme", "http://apps.mozillalabs.com");
+    } catch(e) {
+      throw("Failure writing uninstall key value (" + e + ")");
+    } finally {
+      if(subKey) {
         subKey.close();
       }
-    } finally {
-      uninstallKey.close();
+
+      if(uninstallKey) {
+        uninstallKey.close();
+      }
+
+      if(parentKey) {
+        parentKey.close();
+      }
     }
   },
 
@@ -793,19 +793,14 @@ WinNativeShell.prototype = {
                         "SOFTWARE\\Microsoft\\Windows\\"
                       + "CurrentVersion\\Uninstall",
                         uninstallKey.ACCESS_WRITE);
+      if(uninstallKey.hasChild(this.uninstallSubkeyStr)) {
+        uninstallKey.removeChild(this.uninstallSubkeyStr);
+      }
     } catch(e) {
-      console.log("Failed to open uninstall key (" + e + ")");
-      uninstallKey = null;
-    }
-
-    if(uninstallKey) {
-      try {
-        if(uninstallKey.hasChild(this.uninstallSubkeyStr)) {
-          uninstallKey.removeChild(this.uninstallSubkeyStr);
-        }
-      } catch(e) {
-        console.log("Failed to remove uninstall entries (" + e +")");
-      } finally {
+      // The "Uninstall" key may not exist, and this app's subkey probably
+      // doesn't exist, so let's not warn the user here.
+    } finally {
+      if(uninstallKey) {
         uninstallKey.close();
       }
     }
