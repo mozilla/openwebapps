@@ -271,7 +271,9 @@ Repo = (function() {
         if (args.installData) {
           installation.installData = args.installData;
         }
-        addApplication(appOrigin, installation, cb);
+        addApplication(appOrigin, installation, function () {
+          cb(installation);
+        });
       } else {
         if (cb) cb({error: errors.DENIED});
       }
