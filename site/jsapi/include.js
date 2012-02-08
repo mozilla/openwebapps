@@ -1049,6 +1049,7 @@ if (!navigator.mozApps.install || navigator.mozApps.html5Implementation) {
         ready: callReady,
         registerHandler: callRegisterHandler
       },
+      uninstall: callUninstall,
       html5Implementation: true
     };
     if (TESTING_MODE) {

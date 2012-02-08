@@ -84,6 +84,7 @@ navigator.mozApps.mgmt.launch
 navigator.mozApps.mgmt.list...
 navigator.mozApps.mgmt.uninstall
 navigator.mozApps.mgmt.watchUpdates
+navigator.mozApps.uninstall
 </pre>
 </section>
 
@@ -102,7 +103,7 @@ $ function uninstallAll() {
 >     var total = m.length;
 >     finished = (total === 0);
 >     for (var i=0; i&lt;m.length; i++) {
->       navigator.mozApps.mgmt.uninstall(m[i].origin, function(r) {
+>       navigator.mozApps.uninstall(m[i].origin, function(r) {
 >         finished = (--total === 0);
 >       }, function (e) {
 >         finished = true;
@@ -131,7 +132,7 @@ apps.mgmt.list([])
 <h3>Uninstall non-existant app should fail</h3>
 
 <pre class="doctest">
-$ navigator.mozApps.mgmt.uninstall("http://not.really.installed",
+$ navigator.mozApps.uninstall("http://not.really.installed",
 >      Spy('uninstall/success', {wait: false, wrapArgs: true}),
 >      Spy('uninstall/failure', {wait: true, wrapArgs: true}));
 uninstall/failure({
@@ -386,7 +387,7 @@ error("permissionDenied", "to access open web apps management apis, you must be 
 <section class="test">
 <h3>Verify proper errors from uninstall()</h3>
 <pre class="doctest">
-$ navigator.mozApps.mgmt.uninstall(
+$ navigator.mozApps.uninstall(
 >    "http://nosuch.app",
 >    Spy('success', {wait: false}),
 >    Spy('error', {wait: true}));
@@ -403,7 +404,7 @@ an app (basic_app), wait 100ms, and then verify that list returns a
 single app.</p>
 
 <pre class="doctest">
-$ navigator.mozApps.mgmt.uninstall(SERVERS['basic_app']);
+$ navigator.mozApps.uninstall(SERVERS['basic_app']);
 > wait(100);
 $ navigator.mozApps.mgmt.list(Spy('list', {wait: true, wrapArgs: true}));
 list([
@@ -484,7 +485,7 @@ watchUpdates("add", [
   }
 ])
 apps.install()
-$ navigator.mozApps.mgmt.uninstall(SERVERS['basic_app'], Spy('apps.uninstall', {wait: true}));
+$ navigator.mozApps.uninstall(SERVERS['basic_app'], Spy('apps.uninstall', {wait: true}));
 watchUpdates("remove", [
   {
     install_origin: "http://127.0.0.1:?",
