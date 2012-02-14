@@ -151,7 +151,7 @@ openwebapps.prototype = {
       "http://127.0.0.1:60172/*",
       "about:apps"
     ];
-  
+
     pageMod.PageMod({
       include: allowedOrigins,
       contentScriptWhen: 'start',
@@ -160,8 +160,8 @@ openwebapps.prototype = {
         worker.port.on("owa.mgmt.launch", function(msg) {
           repo.launch(msg.data);
         });
-        worker.port.on("owa.mgmt.list", function(msg) {
-          repo.list(function(apps) {
+        worker.port.on("owa.mgmt.getAll", function(msg) {
+          repo.getAll(function(apps) {
             worker.port.emit(msg.success, apps)
           });
         });
@@ -178,12 +178,10 @@ openwebapps.prototype = {
         });
         worker.port.on("owa.mgmt.clearWatch", function(msg) {
           repo.clearWatch(worker);
-        });
+        }); 
       }
-    });    
+    });
   }
-
-
 };
 
 //----- navigator.mozApps api implementation
@@ -227,25 +225,39 @@ MozAppsAPI.prototype = {
     let repo = tmp.FFRepoImplService;
     return {
       // window.console API
-      install: function(origin, data, onsuccess, onerror) {
+      install: function(path, data) {
         let wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
         let recentWindow = wm.getMostRecentWindow("navigator:browser");
         let args = {
-          url: origin, install_data: data,
-          onsuccess: onsuccess, onerror: onerror
+          url: path, installData: data
         };
-        repo.install(aWindow.location, args, recentWindow);
+
+        // If install is triggered from 127.0.0.1, don't show doorhanger
+        // See https://bugzilla.mozilla.org/show_bug.cgi?id=727255 for implications
+        let domain = "http://127.0.0.1";
+        let origin = aWindow.location.toString();
+        if (origin.substr(0, domain.length) == domain) {
+          args._autoInstall = true;
+        }
+
+        console.log("Install called from " + origin + " autoInstall is: " + args._autoInstall);
+        return repo.install(aWindow.location, args, recentWindow);
       },
-      amInstalled: function(callback) {
-        repo.amInstalled(aWindow.location, callback);
+      getSelf: function() {
+        return repo.getSelf(aWindow.location);
       },
-      getInstalledBy: function(callback) {
-        repo.getInstalledBy(aWindow.location, callback);
+      getInstalled: function() {
+        return repo.getInstalled(aWindow.location);
+      },
+      setMockResponse: function(response, onsuccess, onerror) {
+        // We stub this method out, check for doorhanger is done in install() instead
+        onsuccess();
       },
       __exposedProps__: {
         install: "r",
-        amInstalled: "r",
-        getInstalledBy: "r"
+        getSelf: "r",
+        getInstalled: "r",
+        setMockResponse: "r"
       }
     };
   }
@@ -543,9 +555,6 @@ function startup(getUrlCB) { /* Initialize simple storage */
 
   // Broadcast that we're done, in case anybody is listening
   Services.obs.notifyObservers(tmp.FFRepoImplService, "openwebapps-startup-complete", "");
-
-  // initialize the injector if we are <fx9
-  require("./injector").init();
 }
 
 function shutdown(why) {
