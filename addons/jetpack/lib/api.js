@@ -176,7 +176,9 @@ FFRepoImpl.prototype = {
   getSelf: function(origin) {
     let pendingGetSelf = new pendingOperation("getSelf");
     Repo.getSelf(origin, function(app) {
-      // FIXME: what's the error case?
+      // Errors are either thrown by getSelf, or notified
+      // via an empty argument to the success handler,
+      // hence we never call pendingGetSelf.onerror
       if (pendingGetSelf.onsuccess) {
         let appObj = null;
         if (app) {
@@ -263,7 +265,7 @@ FFRepoImpl.prototype = {
     }, 5000, Ci.nsITimer.TYPE_ONE_SHOT);
 
   },
-  
+
   install: function _install(location, args, window) {
     let self = this;
 

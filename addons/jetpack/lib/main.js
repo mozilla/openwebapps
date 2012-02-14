@@ -233,8 +233,7 @@ MozAppsAPI.prototype = {
         };
 
         // If install is triggered from 127.0.0.1, don't show doorhanger
-        // FIXME: how can we implement this without giving all of 127.0.0.1
-        // the privilege to bypass the doorhanger?
+        // See https://bugzilla.mozilla.org/show_bug.cgi?id=727255 for implications
         let domain = "http://127.0.0.1";
         let origin = aWindow.location.toString();
         if (origin.substr(0, domain.length) == domain) {
