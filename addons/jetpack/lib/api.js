@@ -52,6 +52,53 @@ var { URLParse } = require("./urlmatch");
 var { NativeShell } = require("./nativeshell");
 var { TypedStorage } = require("typed_storage");
 
+// Typical 'pending' object
+function pendingOperation(type) {
+  this._type = type;
+}
+pendingOperation.prototype = {
+  onsuccess: function() {
+    console.log("default onsuccess called for " + this._type);
+  },
+  onerror: function() {
+    console.log("default onerror called for " + this._type);
+  },
+  result: undefined,
+  error: undefined
+};
+
+// A helper function to make an 'app object' that implements
+// both launch() & uninstall() from an app record
+function appObject(apprec) {
+  // FIXME: Any better way to do this?
+  let props = ["manifest", "manifestURL", "origin", "installOrigin", "installTime"];
+  for (let i = 0; i < props.length; i++) {
+    this[props[i]] = apprec[props[i]];
+  }
+  this.receipts = null;
+  if ('installData' in apprec && 'receipts' in apprec.installData) {
+    this.receipts = apprec.installData.receipts;
+  }
+}
+appObject.prototype.launch = function() {
+  FFRepoImplService.launch(this.origin);
+};
+appObject.prototype.uninstall = function() {
+  let pendingUninstall = new pendingOperation("uninstall");
+  FFRepoImplService.uninstall(
+    this.origin,
+    function(e) {
+      pendingUninstall.result = e;
+      if (pendingUninstall.onsuccess) pendingUninstall.onsuccess(e);
+    },
+    function(e) {
+      pendingUninstall.error = e;
+      if (pendingUninstall.onerror) pendingUninstall.onerror(e);
+    }
+  );
+  return pendingUninstall;
+};
+
 // We want to use as much from the cross-platform repo implementation
 // as possible, but we do need to override a few methods.
 var { Repo } = require("repo");
@@ -121,6 +168,42 @@ FFRepoImpl.prototype = {
     }
   },
 
+  // Implement getSelf, getInstalled to use repo.js;
+  // *but* wrap them in an appobject (which exposes launch & uninstall)
+  // Can't do this for getAll since mgmt functions are implement using
+  // worker.emit and pageMods. The equivalent logic for the following two
+  // functions for getAll lives in mgmtapi.js
+  getSelf: function(origin) {
+    let pendingGetSelf = new pendingOperation("getSelf");
+    Repo.getSelf(origin, function(app) {
+      // FIXME: what's the error case?
+      if (pendingGetSelf.onsuccess) {
+        let appObj = null;
+        if (app) {
+          appObj = new appObject(app);
+        }
+        pendingGetSelf.result = appObj;
+        pendingGetSelf.onsuccess(appObj);
+      }
+    });
+    return pendingGetSelf;
+  },
+
+  getInstalled: function(origin) {
+    let pendingGetInstalled = new pendingOperation("getInstalled");
+    Repo.getInstalled(origin, function(apps) {
+      if (pendingGetInstalled.onsuccess) {
+        let appObjs = [];
+        for (let i = 0; i < apps.length; i++) {
+          appObjs.push(new appObject(apps[i]));
+        }
+        pendingGetInstalled.result = appObjs;
+        pendingGetInstalled.onsuccess(appObjs);
+      }
+    });
+    return pendingGetInstalled;
+  },
+
   // An application added to the local repo *without*
   // user prompt. Used by sync, could be used by tests
   // Do not expose to navigator.mozApps!
@@ -181,8 +264,14 @@ FFRepoImpl.prototype = {
 
   },
 
+  // FIXME: return pendingAppInstall object, remove onsuccess, onerror
   install: function _install(location, args, window) {
     let self = this;
+
+    // Check if manifest is provided
+    if (!args.url) {
+      throw "install missing required url argument";
+    }
 
     // added a quick hack to forgo the prompt if a special argument is
     // sent in, to make it easy to install app straight from the lower-right prompt.
@@ -290,11 +379,13 @@ FFRepoImpl.prototype = {
       args.url = args.origin;
     }
 
-    return Repo.install(location, args, displayPrompt, fetcher, function(result) {
+    let pendingAppInstall = new pendingOperation("appInstall");
+
+    Repo.install(location, args, displayPrompt, fetcher, function(result) {
       //dump("        APPS | jetpack.install | Repo install returned to callback; result is " + result + "\n");
       // install is complete
-      if (result !== true) {
-        if (args.onerror) {
+      if (result.error !== undefined) {
+        if (pendingAppInstall.onerror) {
           let errorResult;
           if (result.error.length == 2) {
             // Then it's [code, error]
@@ -305,35 +396,36 @@ FFRepoImpl.prototype = {
           } else {
             errorResult = result.error;
           }
-          // Note, here and below we use (1,...) to force this to be
-          // window (instead of args):
-          (1, args.onerror)(errorResult);
+          pendingAppInstall.error = errorResult;
+          pendingAppInstall.onerror(errorResult);
         }
       } else {
         let origin = URLParse(args.url).normalize().originOnly().toString();
-        Repo.getAppById(origin, function(app) {
-          self._observer.notifyObservers(
-            null, "openwebapp-installed", JSON.stringify({
-            origin: origin,
-            skipPostInstallDashboard: args.skipPostInstallDashboard ? args.skipPostInstallDashboard : false
-          }));
-          self._callWatchers("add", [app]);
+        self._observer.notifyObservers(
+          null, "openwebapp-installed", JSON.stringify({
+          origin: origin,
+          skipPostInstallDashboard: args.skipPostInstallDashboard ? args.skipPostInstallDashboard : false
+        }));
+        self._callWatchers("add", [result]);
 
-          // create OS-local application
-          if (_makeNativeApp) {
-            try {
-              NativeShell.CreateNativeShell(app);
-            } catch (e) {
-              console.log("APPS | NativeShell | Aborted: " + e);
-            }
+        // create OS-local application
+        if (_makeNativeApp) {
+          try {
+            NativeShell.CreateNativeShell(app);
+          } catch (e) {
+            console.log("APPS | NativeShell | Aborted: " + e);
           }
-        });
+        }
 
-        if (args.onsuccess) {
-          (1, args.onsuccess)();
+        if (pendingAppInstall.onsuccess) {
+          let appObj = new appObject(result);
+          pendingAppInstall.result = appObj;
+          pendingAppInstall.onsuccess(appObj);
         }
       }
     });
+
+    return pendingAppInstall;
   },
 
   uninstall: function(key, onsuccess, onerror) {

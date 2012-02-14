@@ -160,8 +160,8 @@ openwebapps.prototype = {
         worker.port.on("owa.mgmt.launch", function(msg) {
           repo.launch(msg.data);
         });
-        worker.port.on("owa.mgmt.list", function(msg) {
-          repo.list(function(apps) {
+        worker.port.on("owa.mgmt.getAll", function(msg) {
+          repo.getAll(function(apps) {
             worker.port.emit(msg.success, apps)
           });
         });
@@ -178,12 +178,10 @@ openwebapps.prototype = {
         });
         worker.port.on("owa.mgmt.clearWatch", function(msg) {
           repo.clearWatch(worker);
-        });
+        }); 
       }
-    });    
+    });
   }
-
-
 };
 
 //----- navigator.mozApps api implementation
@@ -227,25 +225,24 @@ MozAppsAPI.prototype = {
     let repo = tmp.FFRepoImplService;
     return {
       // window.console API
-      install: function(origin, data, onsuccess, onerror) {
+      install: function(origin, data) {
         let wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
         let recentWindow = wm.getMostRecentWindow("navigator:browser");
         let args = {
-          url: origin, install_data: data,
-          onsuccess: onsuccess, onerror: onerror
+          url: origin, installData: data
         };
-        repo.install(aWindow.location, args, recentWindow);
+        return repo.install(aWindow.location, args, recentWindow);
       },
-      amInstalled: function(callback) {
-        repo.amInstalled(aWindow.location, callback);
+      getSelf: function() {
+        return repo.getSelf(aWindow.location);
       },
-      getInstalledBy: function(callback) {
-        repo.getInstalledBy(aWindow.location, callback);
+      getInstalled: function() {
+        return repo.getInstalled(aWindow.location);
       },
       __exposedProps__: {
         install: "r",
-        amInstalled: "r",
-        getInstalledBy: "r"
+        getSelf: "r",
+        getInstalled: "r"
       }
     };
   }
@@ -545,7 +542,8 @@ function startup(getUrlCB) { /* Initialize simple storage */
   Services.obs.notifyObservers(tmp.FFRepoImplService, "openwebapps-startup-complete", "");
 
   // initialize the injector if we are <fx9
-  require("./injector").init();
+  // we don't need to support fx<9 anymore, TODO: remove injector.js
+  // require("./injector").init();
 }
 
 function shutdown(why) {
