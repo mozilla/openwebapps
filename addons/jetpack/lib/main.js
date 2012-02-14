@@ -46,6 +46,7 @@ const { Cc, Ci, Cm, Cu, Cr, components } = require("chrome");
 
 const TOOLBAR_ID = "openwebapps-toolbar-button";
 const APP_SYNC_URL = "https://myapps.mozillalabs.com";
+const TESTING_SERVER = "http://127.0.0.1:60172/";
 
 var tmp = {};
 Cu.import("resource://gre/modules/Services.jsm", tmp);
@@ -148,8 +149,8 @@ openwebapps.prototype = {
       "*.myapps.mozillalabs.com",
       "https?://apps.mozillalabs.com",
       "https?://localhost",
-      "http://127.0.0.1:60172/*",
-      "about:apps"
+      "about:apps",
+      TESTING_SERVER + "*"
     ];
   
     pageMod.PageMod({
@@ -225,12 +226,19 @@ MozAppsAPI.prototype = {
     let repo = tmp.FFRepoImplService;
     return {
       // window.console API
-      install: function(origin, data) {
+      install: function(path, data) {
         let wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
         let recentWindow = wm.getMostRecentWindow("navigator:browser");
         let args = {
-          url: origin, installData: data
+          url: path, installData: data
         };
+
+        // If install is triggered from TESTING_SERVER, don't show doorhanger
+        let origin = aWindow.location.toString();
+        if (origin.substr(0, TESTING_SERVER.length) == TESTING_SERVER) {
+          args._autoInstall = true;
+        }
+
         return repo.install(aWindow.location, args, recentWindow);
       },
       getSelf: function() {
@@ -239,10 +247,16 @@ MozAppsAPI.prototype = {
       getInstalled: function() {
         return repo.getInstalled(aWindow.location);
       },
+      setMockResponse: function(response, onsuccess) {
+        // For test compatibility reasons, we don't actually do anything
+        // install() checks the origin and disables doorhanger
+        onsuccess();
+      },
       __exposedProps__: {
         install: "r",
         getSelf: "r",
-        getInstalled: "r"
+        getInstalled: "r",
+        setMockResponse: "r"
       }
     };
   }

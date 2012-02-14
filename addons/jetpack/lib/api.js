@@ -275,10 +275,12 @@ FFRepoImpl.prototype = {
 
     // added a quick hack to forgo the prompt if a special argument is
     // sent in, to make it easy to install app straight from the lower-right prompt.
-    var autoInstall = args._autoInstall;
+    let autoInstall = args._autoInstall;
 
     // We default to installing a native app, but allow the user to override
+    // If autoInstall is enabled, don't create a native app
     let _makeNativeApp = true;
+    if (autoInstall) _makeNativeApp = false;
 
     function displayPrompt(installOrigin, appOrigin, manifestToInstall, isUpdate, installConfirmationFinishFn) {
       dump("APPS | api.install.displayPrompt | Checking for prompt\n");
@@ -411,7 +413,7 @@ FFRepoImpl.prototype = {
         // create OS-local application
         if (_makeNativeApp) {
           try {
-            NativeShell.CreateNativeShell(app);
+            NativeShell.CreateNativeShell(result);
           } catch (e) {
             console.log("APPS | NativeShell | Aborted: " + e);
           }
