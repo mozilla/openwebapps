@@ -556,10 +556,6 @@ function startup(getUrlCB) { /* Initialize simple storage */
 
   // Broadcast that we're done, in case anybody is listening
   Services.obs.notifyObservers(tmp.FFRepoImplService, "openwebapps-startup-complete", "");
-
-  // initialize the injector if we are <fx9
-  // we don't need to support fx<9 anymore, TODO: remove injector.js
-  // require("./injector").init();
 }
 
 function shutdown(why) {
