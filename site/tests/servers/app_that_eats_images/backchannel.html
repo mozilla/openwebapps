@@ -11,7 +11,9 @@
 
   function myonload() {
     // update repo origin for the test environment
-    navigator.mozApps.setRepoOrigin(SERVERS['_primary']);
+    if (navigator.mozApps.setRepoOrigin) {
+      navigator.mozApps.setRepoOrigin(SERVERS['_primary']);
+    }
 
     var chan = Channel.build({
       window: window.parent,

@@ -1,7 +1,7 @@
 //
 // a little node webserver designed to run the unit tests herein
 
-var sys = require("sys"),
+var util = require("util"),
 http = require("http"),
 url = require("url"),
 path = require("path"),
@@ -87,7 +87,7 @@ function createServer(obj, callback) {
               && siteResponse.statusCode > 300
               && siteResponse.statusCode < 400) {
             getURI = siteResponse.headers['location'];
-            sys.puts('Proxy redirect to: ' + getURI);
+            util.puts('Proxy redirect to: ' + getURI);
             makeRequest(getURI);
             return;
           }
@@ -102,19 +102,19 @@ function createServer(obj, callback) {
         });
         siteRequest.addListener('error', function(socketException){
           if (socketException.errno === process.ECONNREFUSED) {
-            sys.log('ECONNREFUSED: connection refused to '
+            util.log('ECONNREFUSED: connection refused to '
                     +request.socket.host
                     +':'
                     +request.socket.port);
           } else {
-            sys.log(socketException);
+            util.log(socketException);
           }
           fourOhFour(response);
         });
         siteRequest.end();
       };
       makeRequest(parsedURI.query.url);
-      sys.puts("Proxy URL " + parsedURI.query.url);
+      util.puts("Proxy URL " + parsedURI.query.url);
       return;
     }
 

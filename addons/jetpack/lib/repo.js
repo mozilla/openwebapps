@@ -46,8 +46,8 @@
  * The value of each entry is a serialized structure like this:
  * {
  *     manifest: { <app manifest> },
- *     install_time: <install timestamp, UTC milliseconds>,
- *     install_origin: <the URL that invoked the install function>
+ *     installTime: <install timestamp, UTC milliseconds>,
+ *     installOrigin: <the URL that invoked the install function>
  *     origin: <the origin of the app>
  * }
  *
@@ -86,6 +86,17 @@ Repo = (function() {
   var appStorage = typedStorage.open("app");
   var stateStorage = typedStorage.open("state");
   var deletedStorage = typedStorage.open("deleted");
+
+  // An enumeration of all the error messages we have:
+  var errors = {
+    DENIED: "DENIED",
+    PERMISSION_DENIED: "PERMISSION_DENIED",
+    MANIFEST_URL_ERROR: "MANIFEST_URL_ERROR",
+    NETWORK_ERROR: "NETWORK_ERROR",
+    MANIFEST_PARSE_ERROR: "MANIFEST_PARSE_ERROR",
+    INVALID_MANIFEST: "INVALID_MANIFEST",
+    NOT_INSTALLED: "NOT_INSTALLED"
+  };
 
   function invalidateCaches() {
     installedServices = undefined;
@@ -251,19 +262,20 @@ Repo = (function() {
         // Create installation data structure
         var installation = {
           manifest: manifestToInstall,
+          manifestURL: args.url,
           origin: appOrigin,
-          install_time: new Date().getTime(),
-          install_origin: installOrigin
+          installTime: new Date().getTime(),
+          installOrigin: installOrigin
         };
 
-        if (args.install_data) {
-          installation.install_data = args.install_data;
+        if (args.installData) {
+          installation.installData = args.installData;
         }
-        addApplication(appOrigin, installation, cb);
-      } else {
-        if (cb) cb({
-          error: ["denied", "User denied installation request"]
+        addApplication(appOrigin, installation, function () {
+          cb(installation);
         });
+      } else {
+        if (cb) cb({error: errors.DENIED});
       }
     }
 
@@ -285,9 +297,7 @@ Repo = (function() {
       try {
         appOrigin = normalizeOrigin(args.url);
       } catch (e) {
-        cb({
-          error: ["manifestURLError", e.toString()]
-        });
+        cb({error: errors.MANIFEST_URL_ERROR});
         return;
       }
 
@@ -295,23 +305,18 @@ Repo = (function() {
       fetchManifestFunc(args.url, function(fetchedManifest, contentType) {
         if (!fetchedManifest) {
           //dump("APPS | repo.install | Unable to fetch application manifest\n");
-          cb({
-            error: ["networkError", "couldn't retrieve application manifest from network"]
-          });
+          cb({error: errors.NETWORK_ERROR});
         } else if (!contentType || contentType.indexOf("application/x-web-app-manifest+json") != 0) {
           //dump("APPS | repo.install | Application manifest had incorrect contentType\n");
-          cb({
-            error: ["invalidManifest", "application manifests must be of Content-Type \"application/x-web-app-manifest+json\""]
-          });
+          // FIXME: wish there was a clearer error here
+          cb({error: errors.INVALID_MANIFEST});
         } else {
           //dump("APPS | repo.install | Fetched application manifest\n");
           try {
             fetchedManifest = JSON.parse(fetchedManifest);
           } catch (e) {
             //dump(e + "\n");
-            cb({
-              error: ["manifestParseError", "couldn't parse manifest JSON from " + args.url]
-            });
+            cb({error: errors.MANIFEST_PARSE_ERROR});
             return;
           }
           try {
@@ -321,41 +326,31 @@ Repo = (function() {
 
             if (!mayInstall(installOrigin, appOrigin, manifestToInstall)) {
               //dump("APPS | repo.install | Failed mayInstall check\n");
-              cb({
-                error: ["permissionDenied", "origin '" + installOrigin + "' may not install this app"]
-              });
+              cb({error: errors.PERMISSION_DENIED});
               return;
             }
             //dump("APPS | repo.install | Passed mayInstall check\n");
 
-            // if this origin is whitelisted we can proceed without a confirmation
-            if (installOrigin == "http://localhost:8420") {
-              installConfirmationFinish(true);
-            } else {
-              // if an app with the same origin is currently installed, this is an update
-              appStorage.has(appOrigin, function(isUpdate) {
-                promptDisplayFunc(
-                installOrigin, appOrigin, manifestToInstall, isUpdate, installConfirmationFinish);
-              });
-            }
-          } catch (e) {
-            cb({
-              error: ["invalidManifest", "couldn't validate your manifest: " + e]
+            // if an app with the same origin is currently installed, this is an update
+            appStorage.has(appOrigin, function(isUpdate) {
+              promptDisplayFunc(
+              installOrigin, appOrigin, manifestToInstall, isUpdate, installConfirmationFinish);
             });
+          } catch (e) {
+            cb({error: errors.INVALID_MANIFEST});
           }
         }
       });
     } else {
       // neither a manifest nor a URL means we cannot proceed.
-      cb({
-        error: ["missingManifest", "install requires a url argument"]
-      });
+      // this probably shouldn't happen, as this error should be caught earlier
+      cb({error: errors.MANIFEST_URL_ERROR});
     }
   }
 
   /** Determines if an application is installed for the calling site */
 
-  function amInstalled(origin, cb) {
+  function getSelf(origin, cb) {
     var done = false;
     origin = normalizeOrigin(origin);
 
@@ -376,13 +371,13 @@ Repo = (function() {
 
   /** Determines which applications were installed by the origin domain. */
 
-  function getInstalledBy(origin, cb) {
+  function getInstalled(origin, cb) {
     var result = [];
     origin = normalizeOrigin(origin);
 
     iterateApps(function(items) {
       for (var key in items) {
-        if (urlMatchesDomain(items[key].install_origin, origin)) {
+        if (urlMatchesDomain(items[key].installOrigin, origin)) {
           result.push(items[key]);
         }
       }
@@ -483,7 +478,7 @@ Repo = (function() {
     return item;
   }
 
-  function list(cb) {
+  function getAll(cb) {
     if (cb && typeof cb == 'function') {
       // list() returns an array not an object
       iterateApps(function(apps) {
@@ -503,9 +498,7 @@ Repo = (function() {
     origin = normalizeOrigin(origin);
     appStorage.get(origin, function(item) {
       if (!item) {
-        cb({
-          error: ["noSuchApplication", "no application exists with the origin: " + origin]
-        });
+        cb({error: errors.NOT_INSTALLED});
       } else {
         appStorage.remove(origin, function() {
           deletedStorage.put(origin, {origin: origin, last_modified: new Date().getTime()}, function() {
@@ -578,11 +571,11 @@ Repo = (function() {
   }
 
   return {
-    list: list,
+    getAll: getAll,
     install: install,
     uninstall: uninstall,
-    amInstalled: amInstalled,
-    getInstalledBy: getInstalledBy,
+    getSelf: getSelf,
+    getInstalled: getInstalled,
     findServices: findServices,
     renderChooser: renderChooser,
     iterateApps: iterateApps,
@@ -593,7 +586,8 @@ Repo = (function() {
     addApplication: addApplication,
     listUninstalled: listUninstalled,
     removeDeletion: removeDeletion,
-    watchUpdates: watchUpdates
+    watchUpdates: watchUpdates,
+    errors: errors
   };
 })();
 
