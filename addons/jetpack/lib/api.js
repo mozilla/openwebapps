@@ -263,8 +263,7 @@ FFRepoImpl.prototype = {
     }, 5000, Ci.nsITimer.TYPE_ONE_SHOT);
 
   },
-
-  // FIXME: return pendingAppInstall object, remove onsuccess, onerror
+  
   install: function _install(location, args, window) {
     let self = this;
 
