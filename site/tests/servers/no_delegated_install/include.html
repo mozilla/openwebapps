@@ -13,7 +13,9 @@
 
   function myonload() {
     // update repo origin for the test environment
-    navigator.mozApps.setRepoOrigin(SERVERS['_primary']);
+    if (navigator.mozApps.setRepoOrigin) {
+      navigator.mozApps.setRepoOrigin(SERVERS['_primary']);
+    }
     navigator.mozApps.setMockResponse(true, function () {
       responseMocked = true;
     });

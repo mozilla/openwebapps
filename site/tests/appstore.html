@@ -6,16 +6,18 @@
     <meta name="viewport" content="initial-scale=1.0; maximum-scale=1.0; width=device-width;">
 
     <link rel="stylesheet" type="text/css" href="../css/appdir.css" media="screen">
-    <link rel="stylesheet" type="text/css" href="../css/960.css" media="screen"> 
+    <link rel="stylesheet" type="text/css" href="../css/960.css" media="screen">
     <script type="text/javascript" src="../jsapi/include.js"></script>
     <script type="text/javascript" src="js/jquery-1.6.1.min.js"></script>
-    <script type="text/javascript" src="js/appdir.js"></script> 
+    <script type="text/javascript" src="js/appdir.js"></script>
     <script type="text/javascript">
         document.createElement("section");
-        document.createElement("article");        
-        document.createElement("hgroup");  
-        document.createElement("nav");  
-	      navigator.mozApps.setRepoOrigin(SERVERS['_primary']);
+        document.createElement("article");
+        document.createElement("hgroup");
+        document.createElement("nav");
+        if (navigator.mozApps.setRepoOrigin) {
+          navigator.mozApps.setRepoOrigin(SERVERS['_primary']);
+        }
     </script>
 </head>
 <body class="apps">

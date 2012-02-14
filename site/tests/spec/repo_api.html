@@ -548,7 +548,9 @@ success()
 
 {% block extrajs %}
 <script type="text/javascript">
-  navigator.mozApps.setRepoOrigin(SERVERS['_primary']);
+  if (navigator.mozApps.setRepoOrigin) {
+    navigator.mozApps.setRepoOrigin(SERVERS['_primary']);
+  }
 
   // a utility function to make it quick to attach iframes and establish jschannels to them:
   // this serves as the basis for several different types of cross-origin tests
