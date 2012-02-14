@@ -46,7 +46,6 @@ const { Cc, Ci, Cm, Cu, Cr, components } = require("chrome");
 
 const TOOLBAR_ID = "openwebapps-toolbar-button";
 const APP_SYNC_URL = "https://myapps.mozillalabs.com";
-const TESTING_SERVER = "http://127.0.0.1:60172/";
 
 var tmp = {};
 Cu.import("resource://gre/modules/Services.jsm", tmp);
@@ -149,10 +148,10 @@ openwebapps.prototype = {
       "*.myapps.mozillalabs.com",
       "https?://apps.mozillalabs.com",
       "https?://localhost",
-      "about:apps",
-      TESTING_SERVER + "*"
+      "http://127.0.0.1:60172/*",
+      "about:apps"
     ];
-  
+
     pageMod.PageMod({
       include: allowedOrigins,
       contentScriptWhen: 'start',
@@ -233,12 +232,16 @@ MozAppsAPI.prototype = {
           url: path, installData: data
         };
 
-        // If install is triggered from TESTING_SERVER, don't show doorhanger
+        // If install is triggered from 127.0.0.1, don't show doorhanger
+        // FIXME: how can we implement this without giving all of 127.0.0.1
+        // the privilege to bypass the doorhanger?
+        let domain = "http://127.0.0.1";
         let origin = aWindow.location.toString();
-        if (origin.substr(0, TESTING_SERVER.length) == TESTING_SERVER) {
+        if (origin.substr(0, domain.length) == domain) {
           args._autoInstall = true;
         }
 
+        console.log("Install called from " + origin + " autoInstall is: " + args._autoInstall);
         return repo.install(aWindow.location, args, recentWindow);
       },
       getSelf: function() {
@@ -247,9 +250,8 @@ MozAppsAPI.prototype = {
       getInstalled: function() {
         return repo.getInstalled(aWindow.location);
       },
-      setMockResponse: function(response, onsuccess) {
-        // For test compatibility reasons, we don't actually do anything
-        // install() checks the origin and disables doorhanger
+      setMockResponse: function(response, onsuccess, onerror) {
+        // We stub this method out, check for doorhanger is done in install() instead
         onsuccess();
       },
       __exposedProps__: {

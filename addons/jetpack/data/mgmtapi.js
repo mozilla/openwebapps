@@ -35,11 +35,27 @@ let _watches = {
 
 function _updateWatchers(args) {
   let _watchers = null;
-  if (args[0] == "add") _watchers = _watches["install"];
-  else if (args[0] == "remove") _watchers = _watches["uninstall"];
+
+  // both install/uninstall are only for 1 app at a time,
+  // the first in the array for add/remove notifications
+  let result = args[1][0];
+
+  // If oninstall/onuninstall handlers exist, invoke them
+  let mgmt = unsafeWindow.navigator.wrappedJSObject.mozApps.mgmt;
+  if (args[0] == "add") {
+    _watchers = _watches["install"];
+    if (mgmt.oninstall) {
+      mgmt.oninstall(result);
+    }
+  } else if (args[0] == "remove") {
+    _watchers = _watches["uninstall"];
+    if (mgmt.onuninstall) {
+      mgmt.onuninstall(result);
+    }
+  }
 
   for (var i=0; i < _watches.length; i++) {
-    _watches[i]({applicaton: args[1][0]});
+    _watches[i]({applicaton: result});
   }
 }
 
@@ -117,18 +133,19 @@ unsafeWindow.navigator.wrappedJSObject.mozApps.mgmt = {
   },
   addEventListener: function(type, callback) {
     _watches[type].push(callback);
-    let idx = _watches[type].indexOf(callback);
-    if (idx == 0) {
-      self.port.on("owa.mgmt.update", _updateWatchers);
-      _makeCall('owa.mgmt.watchUpdates');
-    }
   },
   removeEventListener: function(type, callback) {
     _clearWatcher(type, callback);
-    if (_watches["install"].length < 1 &&
-        _watches["uninstall"].length < 1) {
-      _makeCall('owa.mgmt.clearWatch');
-      self.port.removeListener("owa.mgmt.update", _updateWatchers);
-    }
-  }
+    // We never actually call removeListener because oninstall/onuninstall
+    // might be set
+    //_makeCall('owa.mgmt.clearWatch');
+    //self.port.removeListener("owa.mgmt.update", _updateWatchers);
+  },
+  oninstall: null,
+  onuninstall: null
 };
+
+// Immediately register for updates, even if there are no listeners
+// The array _watches will simply be empty and nothing bad should happen
+self.port.on("owa.mgmt.update", _updateWatchers);
+_makeCall('owa.mgmt.watchUpdates');

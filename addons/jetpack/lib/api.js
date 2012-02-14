@@ -227,7 +227,7 @@ FFRepoImpl.prototype = {
   },
 
   _fetchManifest: function(url, cb) {
-    dump("APPS | api.install.fetchManifest | Fetching manifest from " + url + "\n");
+    //dump("APPS | api.install.fetchManifest | Fetching manifest from " + url + "\n");
     // contact our server to retrieve the URL
     let xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"].
     createInstance(Ci.nsIXMLHttpRequest);
@@ -235,7 +235,7 @@ FFRepoImpl.prototype = {
     xhr.onreadystatechange = function(aEvt) {
       if (xhr.readyState == 4) {
         if (xhr.status == 200) {
-          dump("APPS | api.install.fetchManifest | Got manifest (200) " + xhr.responseText.length + " bytes\n");
+          //dump("APPS | api.install.fetchManifest | Got manifest (200) " + xhr.responseText.length + " bytes\n");
           cb(xhr.responseText, xhr.getResponseHeader('Content-Type'));
         } else {
           dump("Failed to get manifest (" + xhr.status + ")\n");
@@ -283,7 +283,7 @@ FFRepoImpl.prototype = {
     if (autoInstall) _makeNativeApp = false;
 
     function displayPrompt(installOrigin, appOrigin, manifestToInstall, isUpdate, installConfirmationFinishFn) {
-      dump("APPS | api.install.displayPrompt | Checking for prompt\n");
+      //dump("APPS | api.install.displayPrompt | Checking for prompt\n");
       if (autoInstall) return installConfirmationFinishFn(true);
 
       let acceptButton = new Object();
