@@ -33,12 +33,6 @@ function newWindow()
 }
 
 // Inject APIs
-//----- navigator.mozApps api implementation
-// FIXME: Fallback doesn't actually work on Fx<9, debug why
-var injector = {};
-Cu.import("chrome://webapp/content/injector.js", injector);
-injector.init();
-
 function NavigatorAPI() {};
 NavigatorAPI.prototype = {
   QueryInterface: XPCOMUtils.generateQI([Ci.nsIDOMGlobalPropertyInitializer]),

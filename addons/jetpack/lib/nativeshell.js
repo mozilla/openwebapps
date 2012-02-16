@@ -277,30 +277,6 @@ function embedInstallRecord(app, destination) {
   }
 }
 
-
-//used to copy in the necessary js files to include so we can call the
-//MozApps api to do browserID stuff.
-// turns out that we only really need injector.js for now
-//FUTURE: might it be possible to get a nice reference to /lib/injector.js
-//using the same scheme as self.data?
-function embedMozAppsAPIFiles(destDir)
-{
-  //this is slightly sketchy, going up out of the data dir and into the lib dir to fetch a file...
-  let dataURL = self.data.url(".");
-  let dataPath = url.toFilename(dataURL);
-  let injectorSrc = Cc['@mozilla.org/file/local;1']
-                    .createInstance(Ci.nsILocalFile);
-  injectorSrc.initWithPath(dataPath);
-  injectorSrc = injectorSrc.parent;
-  injectorSrc.append("lib");
-  injectorSrc.append("injector.js");
-
-  var injectorDest = destDir.clone();
-  injectorDest.append("injector.js");
-
-  copyFile(injectorSrc.path, injectorDest.path);
-}
-
 function copyFile(srcFile, destFile, fileProperties, substitutions) {
   try {
     //open the source file and read in the contents
@@ -611,15 +587,8 @@ function createAppNativeLauncher(app, nativeShell) {
 
   try {
     nativeShell.copyInstallationFiles();
-
     //add the install record to the native app bundle
     embedInstallRecord(app, nativeShell.XULDir);
-
-    //add injector.js, which we need to inject some apis
-    //into the webapp content page
-    let contentDir = nativeShell.XULDir.clone();
-    contentDir.append("content");
-    embedMozAppsAPIFiles(contentDir);
   } catch(e) {
     abortInstallation(nativeShell);
     throw("createAppNativeLauncher - "
