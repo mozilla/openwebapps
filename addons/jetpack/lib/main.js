@@ -45,13 +45,27 @@ const simple = require("simple-storage");
 const { Cc, Ci, Cm, Cu, Cr, components } = require("chrome");
 
 const TOOLBAR_ID = "openwebapps-toolbar-button";
-const APP_SYNC_URL = "https://myapps.mozillalabs.com";
+var APP_SYNC_URL = "https://myapps.mozillalabs.com";
 
 var tmp = {};
 Cu.import("resource://gre/modules/Services.jsm", tmp);
 Cu.import("resource://gre/modules/AddonManager.jsm", tmp);
 Cu.import("resource://gre/modules/XPCOMUtils.jsm", tmp);
 var { XPCOMUtils, AddonManager, Services } = tmp;
+
+var DASHBOARD_URL = "https://myapps.mozillalabs.com";
+var DASHBOARD_HOST = "myapps.mozillalabs.com";
+
+exports.main = function(options, callbacks) {
+  
+  if(options.staticArgs.dashboard) {
+    DASHBOARD_HOST = options.staticArgs.dashboard;
+    DASHBOARD_URL = "https://" + DASHBOARD_HOST;
+  }
+  if(options.staticArgs.appsyncurl) {
+    APP_SYNC_URL = options.staticArgs.appsyncurl;
+  }
+}
 
 /**
  * openwebapps
@@ -144,8 +158,8 @@ openwebapps.prototype = {
     // XXX TODO if a manager app is installed,
     // we need to add it to the allowedOrigins
     let allowedOrigins = [
-      "https?://myapps.mozillalabs.com",
-      "*.myapps.mozillalabs.com",
+      "https?://" + DASHBOARD_HOST,
+      "*." + DASHBOARD_HOST,
       "https?://apps.mozillalabs.com",
       "https?://localhost",
       "http://127.0.0.1:60172/*",
@@ -371,7 +385,7 @@ function setupLogin(service, scheduler) {
 
   /* Only show panel when on dashbord page and not loggedIn */
   function showPanel(tab) {
-    let dboard = "https://myapps.mozillalabs.com";
+    let dboard = DASHBOARD_URL;
     if (tab.url.slice(0, dboard.length) == dboard) {
       if (loggingIn) return;
       if (!service.loggedIn()) {
@@ -394,7 +408,7 @@ function migrateApps() {
   try {
     console.log("Creating page worker");
     var worker = pageWorkers.Page({
-      contentURL: "https://myapps.mozillalabs.com",
+      contentURL: DASHBOARD_URL,
       contentScript: "var apps = [];" +
         "for (var i = 0; i < localStorage.length; i++) {" +
         " var key = localStorage.key(i);" +
@@ -506,11 +520,11 @@ function startup(getUrlCB) { /* Initialize simple storage */
       let found = false;
       for each (let tab in tabs) {
         let origin = url.URLParse(tab.url).originOnly().toString();
-        if (origin == "https://myapps.mozillalabs.com") {
+        if (origin == DASHBOARD_URL) {
           tab.activate(); found = true; break;
         }
       }
-      if (!found) tabs.open("https://myapps.mozillalabs.com");
+      if (!found) tabs.open(DASHBOARD_URL);
     }
   });
 
