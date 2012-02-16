@@ -57,11 +57,11 @@ function pendingOperation(type) {
   this._type = type;
 }
 pendingOperation.prototype = {
-  onsuccess: function() {
-    console.log("default onsuccess called for " + this._type);
+  onsuccess: function(e) {
+    console.log("default onsuccess called for " + this._type + " " + e);
   },
-  onerror: function() {
-    console.log("default onerror called for " + this._type);
+  onerror: function(e) {
+    console.log("default onerror called for " + this._type + " " + e);
   },
   result: undefined,
   error: undefined
@@ -330,7 +330,6 @@ FFRepoImpl.prototype = {
 
     // Fetch from local file:// or resource:// URI (eg. for faker apps)
     let originalOrigin = {};
-
     function fetchLocalManifest(url, cb) {
       function LocalReader(callback) {
         this._callback = callback;
@@ -370,8 +369,23 @@ FFRepoImpl.prototype = {
       channel.asyncOpen(new LocalReader(cb), null);
     }
 
+    // Fetch from local testdb.json (for fake apps not on resource://)
+    let fakeApps = JSON.parse(require("self").data.load("testdb.json"));
+    function fetchFakeManifest(url, cb) {
+      for (let i = 0; i < fakeApps.length; i++) {
+        if (fakeApps[i].origin == url) {
+          cb(JSON.stringify(fakeApps[i].manifest), "application/x-web-app-manifest+json");
+          return;
+        }
+      }
+      cb(null);
+    }
+
     // Choose appropriate fetcher depending on where the manifest lives
+    // First, set the default XHR fetcher
     let fetcher = self._fetchManifest;
+
+    // If manifest is at a resource of file URI use fetchLocalManifest
     if (args.url.indexOf("resource://") === 0 || args.url.indexOf("file://") === 0) {
       fetcher = fetchLocalManifest;
       if (!args.origin) throw "Local manifest specified without origin!";
@@ -382,8 +396,18 @@ FFRepoImpl.prototype = {
       args.url = args.origin;
     }
 
-    let pendingAppInstall = new pendingOperation("appInstall");
+    // If manifest is one of our fake apps in testdb.json, use fetchFakeManifest
+    let normalizedUrl = URLParse(args.url).normalize().originOnly().toString();
+    for (let i = 0; i < fakeApps.length; i++) {
+      let toCheck = URLParse(fakeApps[i].origin).normalize().originOnly().toString();
+      if (normalizedUrl == toCheck) {
+        fetcher = fetchFakeManifest;
+        originalOrigin[normalizedUrl] = args.url;
+        args.url = normalizedUrl;
+      }
+    }
 
+    let pendingAppInstall = new pendingOperation("appInstall");
     Repo.install(location, args, displayPrompt, fetcher, function(result) {
       //dump("        APPS | jetpack.install | Repo install returned to callback; result is " + result + "\n");
       // install is complete
