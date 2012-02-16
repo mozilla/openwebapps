@@ -37,6 +37,13 @@ else
   cfx_args :=  --pkgdir=$(pkgdir) $(binary) $(profile) --binary-args="-console -purgecaches $(BINARYARGS)"
 endif
 
+ifeq ($(DASHBOARD),)
+  cfx_args += --static-args="{ \"dashboard\": \"myapps.mozillalabs.com\" }"
+else
+  dashboard := $(DASHBOARD)
+  cfx_args += --static-args="{ \"dashboard\": \"$(dashboard)\" }"
+endif
+
 test_args :=
 ifneq ($(TEST),)
     test_args := -f $(TEST)
