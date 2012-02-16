@@ -13,7 +13,7 @@
             "description": "The Vault is a place where you can view whats hip at atlantic records.. Don't pirate or you will be sued"
         }
  },
-{ "origin": "http://studio1290.com/?theme=Studio%201290%20on%20Foundation", 
+{ "origin": "http://studio1290.com", 
    "src_url": "/manifest.webapp", 
    "manifest": { 
        "icons": 
@@ -23,11 +23,12 @@
                 "url": "http://studio1290.com/",
                 "name": "Atlantic Records"
             },
+            "launch_path": "/?theme=Studio%201290%20on%20Foundation",
             "name": "Studio1290",
             "description": "More Music - doo doo dee dee wahhh baba duwap wap dahh.. "
         }
  },
-{ "origin": "http://bostonglobe.com/", 
+{ "origin": "http://bostonglobe.com", 
    "src_url": "/manifest.webapp", 
    "manifest": { 
        "icons": 
@@ -41,7 +42,7 @@
             "description": "News from Boston: If reporters aren't walking out the news it's time to stretch the news further"
         }
  },
-{ "origin": "http://www.ebay.com/?clk_rvr_id=310026957630", 
+{ "origin": "http://www.ebay.com", 
    "src_url": "/manifest.webapp", 
    "manifest": { 
        "icons": 
@@ -51,6 +52,7 @@
                 "url": "http://ebay.com",
                 "name": "eBay"
             },
+            "launch_path": "/?clk_rvr_id=310026957630",
             "name": "eBay",
             "description": "A Great place to buy new and used stuff"
         }
@@ -97,7 +99,7 @@
             "description": "It's time to tweet ... tweet"
         }
  }, 
-{ "origin": "http://cdn.onescreen.net/wsj/boxee/v1.5.3/", 
+{ "origin": "http://cdn.onescreen.net", 
    "src_url": "/manifest.webapp", 
    "manifest": { 
        "icons": 
@@ -107,8 +109,9 @@
                 "url": "http://cdn.onescreen.net/wsj/boxee/v1.5.3/",
                 "name": "Wall Street Journal"
             },
+            "launch_path": "/wsj/boxee/v1.5.3/",
             "name": "Wall Street Journal",
-            "description": "News, video , boxee "
+            "description": "News, video, boxee"
         }
  }
 ]
