@@ -50,7 +50,8 @@ var appDict;
 function refresh() {
   if (!pending) {
     pending = true;
-    mozApps.mgmt.list(function(aList) {
+    var pendingGetAll = mozApps.mgmt.getAll();
+    pendingGetAll.onsuccess = function(aList) {
       let aDict = {};
       for (let i = 0; i < aList.length; i++) {
         aDict[aList[i].origin] = aList[i];
@@ -58,7 +59,7 @@ function refresh() {
       appDict = aDict;
       pending = false;
       render();
-    });
+    };
   }
 }
 
@@ -182,27 +183,29 @@ function render() {
     for (let appID in appDict) {
       empty = false;
 
-      function makeLaunchFn(appID) {
+      function makeLaunchFn(app) {
         return function() {
-          mozApps.mgmt.launch(appID);
+          app.launch();
         }
       }
 
-      function makeDeleteFn(appID, container) {
+      function makeDeleteFn(app, container) {
         return function() {
-          mozApps.mgmt.uninstall(appID, function() {});
-          container.style.minHeight = "0px";
-          container.style.height = container.clientHeight + "px";
-          window.setTimeout(function() {
-            container.style.height = "0px";
-            container.style.paddingTop = 0;
-            container.style.paddingBottom = 0;
-            container.style.marginBottom = 0;
-          }, 0);
-          window.setTimeout(function() {
-            appListContainer.removeChild(container)
-          }, 500);
-          return false;
+          var pendingUninstall = app.uninstall();
+          pendingUninstall.onsuccess = function() {
+            container.style.minHeight = "0px";
+            container.style.height = container.clientHeight + "px";
+            window.setTimeout(function() {
+              container.style.height = "0px";
+              container.style.paddingTop = 0;
+              container.style.paddingBottom = 0;
+              container.style.marginBottom = 0;
+            }, 0);
+            window.setTimeout(function() {
+              appListContainer.removeChild(container)
+            }, 500);
+            return false;
+          };
         }
       }
 
@@ -232,7 +235,7 @@ function render() {
       appCfg.appendChild(viewSrcLink);
       var deleteLink = elem("a");
       deleteLink.href = "#";
-      deleteLink.onclick = makeDeleteFn(appID, appRow);
+      deleteLink.onclick = makeDeleteFn(theApp, appRow);
       deleteLink.appendChild(document.createTextNode("Delete"));
       appCfg.appendChild(deleteLink);
 
@@ -248,10 +251,10 @@ function render() {
         }
         appIcon.setAttribute("style", "background-image:url(\"" + iconUrl + "\")");
       }
-      appIcon.onclick = makeLaunchFn(appID);
+      appIcon.onclick = makeLaunchFn(theApp);
 
       appName.appendChild(document.createTextNode(theApp.manifest.name));
-      appReceipt.appendChild(document.createTextNode("Installed " + formatDate(theApp.install_time) + ", "));
+      appReceipt.appendChild(document.createTextNode("Installed " + formatDate(theApp.installTime) + ", "));
 
       if (theApp.install_origin == "chrome://openwebapps") {
         appReceipt.appendChild(document.createTextNode("directly from the site"));
@@ -259,7 +262,7 @@ function render() {
         var domainLink = elem("a");
         domainLink.href = theApp.install_origin;
         domainLink.target = "_blank";
-        domainLink.appendChild(document.createTextNode(theApp.install_origin));
+        domainLink.appendChild(document.createTextNode(theApp.installOrigin));
         appReceipt.appendChild(document.createTextNode("from "));
         appReceipt.appendChild(domainLink);
       }

@@ -149,7 +149,7 @@ openwebapps.prototype = {
       "https?://apps.mozillalabs.com",
       "https?://localhost",
       "http://127.0.0.1:60172/*",
-      "about:apps"
+      "about:apps*"
     ];
 
     pageMod.PageMod({
