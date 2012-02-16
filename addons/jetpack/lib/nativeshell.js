@@ -169,13 +169,13 @@ function getIconFromURI(nativeShell) {
   }
 
   let mimeService = Cc["@mozilla.org/mime;1"]
-                    .getService(Ci.nsIMIMEService)
+                    .getService(Ci.nsIMIMEService);
 
   let mimeType;
   try {
     if("data" === nativeShell.iconURI.scheme) {
       let tIndex = nativeShell.iconURI.path.indexOf(";");
-      mimeType = nativeShell.iconURI.path.substring(tIndex);
+      mimeType = nativeShell.iconURI.path.substring(0, tIndex);
     } else {
       mimeType = mimeService.getTypeFromURI(nativeShell.iconURI);
     }
