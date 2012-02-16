@@ -40,8 +40,7 @@ endif
 ifeq ($(DASHBOARD),)
   cfx_args += --static-args="{ \"dashboard\": \"myapps.mozillalabs.com\" }"
 else
-  dashboard := $(DASHBOARD)
-  cfx_args += --static-args="{ \"dashboard\": \"$(dashboard)\" }"
+  cfx_args += --static-args="{ \"dashboard\": \"$(DASHBOARD)\" }"
 endif
 
 test_args :=
