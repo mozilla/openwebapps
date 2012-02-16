@@ -58,7 +58,7 @@ var DASHBOARD_HOST;
 
 exports.main = function(options, callbacks) {
   DASHBOARD_HOST = options.staticArgs.dashboard;
-  DASHBOARD_URL = "http://" + tmp.dashboard;
+  DASHBOARD_URL = "http://" + DASHBOARD_HOST;
 }
 
 /**
