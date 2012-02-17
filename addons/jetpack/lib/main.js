@@ -53,8 +53,8 @@ Cu.import("resource://gre/modules/AddonManager.jsm", tmp);
 Cu.import("resource://gre/modules/XPCOMUtils.jsm", tmp);
 var { XPCOMUtils, AddonManager, Services } = tmp;
 
-var DASHBOARD_URL = "myapps.mozillalabs.com";
-var DASHBOARD_HOST = "https://myapps.mozillalabs.com";
+var DASHBOARD_URL = "https://myapps.mozillalabs.com";
+var DASHBOARD_HOST = "myapps.mozillalabs.com";
 
 exports.main = function(options, callbacks) {
   
