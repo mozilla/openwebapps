@@ -37,6 +37,13 @@ else
   cfx_args :=  --pkgdir=$(pkgdir) $(binary) $(profile) --binary-args="-console -purgecaches $(BINARYARGS)"
 endif
 
+# Ability to pass in a list of static args in json format
+# Ex: export STATIC_ARGS='\"dashboard\":\"myapps.mozillalabs.com\", \"appsyncurl\":\"https://myapps.mozillalabs.com\"' 
+
+ifneq ($(STATIC_ARGS),)
+  cfx_args += --static-args="{$(STATIC_ARGS)}"
+endif
+
 test_args :=
 ifneq ($(TEST),)
     test_args := -f $(TEST)
