@@ -45,7 +45,7 @@ const simple = require("simple-storage");
 const { Cc, Ci, Cm, Cu, Cr, components } = require("chrome");
 
 const TOOLBAR_ID = "openwebapps-toolbar-button";
-const APP_SYNC_URL = "https://myapps.mozillalabs.com";
+var APP_SYNC_URL = "https://myapps.mozillalabs.com";
 
 var tmp = {};
 Cu.import("resource://gre/modules/Services.jsm", tmp);
@@ -53,12 +53,18 @@ Cu.import("resource://gre/modules/AddonManager.jsm", tmp);
 Cu.import("resource://gre/modules/XPCOMUtils.jsm", tmp);
 var { XPCOMUtils, AddonManager, Services } = tmp;
 
-var DASHBOARD_URL;
-var DASHBOARD_HOST;
+var DASHBOARD_URL = "myapps.mozillalabs.com";
+var DASHBOARD_HOST = "https://myapps.mozillalabs.com";
 
 exports.main = function(options, callbacks) {
-  DASHBOARD_HOST = options.staticArgs.dashboard;
-  DASHBOARD_URL = "http://" + DASHBOARD_HOST;
+  
+  if(options.staticArgs.dashboard) {
+    DASHBOARD_HOST = options.staticArgs.dashboard;
+    DASHBOARD_URL = "https://" + DASHBOARD_HOST;
+  }
+  if(options.staticArgs.appsyncurl) {
+    APP_SYNC_URL = options.staticArgs.appsyncurl;
+  }
 }
 
 /**
