@@ -7,12 +7,15 @@ function empty(o)
     return true;
 }
 
-function getIconForSize(targetSize, minifest)
+var DEFAULT_ICON = "https://apps.mozillalabs.com/i/openbox.png";
+
+function getIconForSize(targetSize, app)
 {
-    if (minifest && minifest.icons) {
+    var manifest = app.manifest;
+    if (manifest && manifest.icons) {
         var bestFit = 0;
         var biggestFallback = 0;
-        for (var z in minifest.icons) {
+        for (var z in manifest.icons) {
             var size = parseInt(z, 10);
             if (bestFit == 0 || size >= targetSize) {
                 bestFit = size;
@@ -21,9 +24,15 @@ function getIconForSize(targetSize, minifest)
                 biggestFallback = size;
             }
         }
-        if (bestFit !== 0) return minifest.icons[bestFit];
-        if (biggestFallback !== 0) return minifest.icons[biggestFallback];
+        if (bestFit !== 0 || biggestFallback !== 0) {
+            var icon = manifest.icons[bestFit || biggestFallback];
+            if (icon.substr(0, 5).toLowerCase() != "data:") {
+                icon = app.origin + icon;
+            }
+            return icon;
+        }
     }
+    return DEFAULT_ICON;
 }
 
 $(document).ready(function() {
@@ -42,7 +51,7 @@ $(document).ready(function() {
                     var app = apps[i];
                     list[app.origin] = {
                         itemTitle: app.manifest.name,
-                        itemImgURL: app.origin + getIconForSize(48, app.manifest),
+                        itemImgURL: getIconForSize(48, app),
                         appObject: app
                     };
                 }
@@ -99,12 +108,12 @@ $(document).ready(function() {
           var app = itemArray[i];
 
           var wasAdded = gridDash.addItemToGrid(
-              app.origin, {itemTitle: app.manifest.name, itemImgURL: app.origin + getIconForSize(48, app.manifest)}
+              app.origin, {itemTitle: app.manifest.name, itemImgURL: getIconForSize(48, app), appObject: app}
               );
-
           if (wasAdded) {
             appCount++;
             if (appCount > 0) $("#help").css({display: 'none'});
+            appData[app.origin] = {itemTitle: app.manifest.name, itemImgURL: getIconForSize(48, app), appObject: app};
           }
 
         }
@@ -123,10 +132,10 @@ $(document).ready(function() {
     }
     var eventListenerBound = false;
     function eventInstall(ev) {
-      doUpdate("install", ev.application);
+      doUpdate("install", [ev.application]);
     }
     function eventUninstall(ev) {
-      doUpdate("uninstall", ev.application);
+      doUpdate("uninstall", [ev.application]);
     }
     if (navigator.mozApps.mgmt.addEventListener) {
       navigator.mozApps.mgmt.addEventListener('install', eventInstall);
