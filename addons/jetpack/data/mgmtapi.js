@@ -39,7 +39,6 @@ function _updateWatchers(args) {
   // both install/uninstall are only for 1 app at a time,
   // the first in the array for add/remove notifications
   let result = args[1][0];
-
   // If oninstall/onuninstall handlers exist, invoke them
   let mgmt = unsafeWindow.navigator.wrappedJSObject.mozApps.mgmt;
   if (args[0] == "add") {
@@ -53,9 +52,11 @@ function _updateWatchers(args) {
       mgmt.onuninstall(result);
     }
   }
-
-  for (var i=0; i < _watches.length; i++) {
-    _watches[i]({applicaton: result});
+  if (_watchers) {
+    for (var i=0; i < _watchers.length; i++) {
+      var _watcher = _watchers[i];
+      _watcher({application: result});
+    }
   }
 }
 
