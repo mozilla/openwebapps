@@ -128,7 +128,7 @@
         }
     },
     {
-        "origin": "https://air.mixmatchmusic.com/",
+        "origin": "https://air.mixmatchmusic.com",
         "src_url": "/manifest.webapp",
         "manifest": {
             "icons": {
@@ -147,7 +147,7 @@
         }
     },
     {
-        "origin": "https://beta.teambox.com/",
+        "origin": "https://beta.teambox.com",
         "src_url": "/manifest.webapp",
         "manifest": {
             "icons": {
@@ -166,7 +166,7 @@
         }
     },
     {
-        "origin": "http://www.biodigitalhuman.com/",
+        "origin": "http://www.biodigitalhuman.com",
         "src_url": "/manifest.webapp",
         "manifest": {
             "icons": {
@@ -252,7 +252,7 @@
         }
     },
 	{
-        "origin": "https://www.lordofultima.com/", 
+        "origin": "http://www.lordofultima.com", 
         "src_url": "/manifest.webapp",
         "manifest": {
             "icons": { 
@@ -260,16 +260,16 @@
             },
             "installs_allowed_from": ["*"],
             "developer": {
-			    "url": "https://www.lordofultima.com/",
+                "url": "http://www.lordofultima.com/",
                 "name": "Lord of Ultima"
              },
-                "launch_path": "en/",
+                "launch_path": "/",
                 "name": "Lord of Ultima",
                 "description": "Awesome HTML5 game: Time to conquer and pillage "
             }
     },
     { 
-        "origin": "https://alliances.commandandconquer.com", 
+        "origin": "http://alliances.commandandconquer.com", 
         "src_url": "/manifest.webapp", 
         "manifest": { 
         "icons": {
@@ -277,7 +277,7 @@
             },
             "installs_allowed_from": ["*"],
             "developer": {
-                "url": "https://alliances.commandandconquer.com",
+                "url": "http://alliances.commandandconquer.com",
                 "name": "Command and Conquer"
              },
             "launch_path": "/",
