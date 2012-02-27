@@ -695,7 +695,7 @@ if (!navigator.mozApps.install || navigator.mozApps.html5Implementation) {
       // enforce any security, it does offer consistent error messages.  Even with the
       // removal of this check the rest of this function won't work, because it relies
       // on previous invocation of list() (to discover the launchURL).
-      if (! hasMgmtPermissions()) {
+      if (! hasMgmtPermission()) {
         throw "PERMISSION_DENIED";
       }
 
