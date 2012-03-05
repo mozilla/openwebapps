@@ -441,7 +441,7 @@ SyncService.prototype._processUpdates = function (apps, callback) {
     for (var i=0; i<deleted.length; i++) {
       deletedByOrigin[deleted[i].origin] = deleted[i];
     }
-    self.repo.list(function (existing) {
+    self.repo.getAll(function (existing) {
       // FIXME: this coercion is due to some inconsistencies in list()
       // implementations; should be removed once everyone is
       // consistent:
@@ -521,7 +521,7 @@ SyncService.prototype._processUpdates = function (apps, callback) {
 SyncService.prototype._putUpdates = function (callback) {
   var lastUpdate = this._lastSyncPut;
   var self = this;
-  this.repo.list(function (appList) {
+  this.repo.getAll(function (appList) {
     self.repo.listUninstalled(function (uninstalled) {
       self._putUpdatesFromApps(appList, uninstalled, callback);
     }, function (error) {
