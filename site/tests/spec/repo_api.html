@@ -198,6 +198,12 @@ onsuccess: [
         receipts: null
       }
     ]
+$ writeln(lastPending.result[0].installOrigin, SERVERS['_primary']);
+> writeln(lastPending.result[0].installOrigin == SERVERS['_primary']);
+> writeln(lastPending.result[0].installOrigin == SERVERS['basic_app']);
+...
+true
+false
 </pre>
 
 <h3>Re-install that application with a different manifest</h3>
