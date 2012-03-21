@@ -1016,80 +1016,6 @@ if (!navigator.mozApps.install || navigator.mozApps.html5Implementation) {
     function callRegisterHandler(activity, message, func) {
     }
 
-    function callSyncButton(options) {
-      return new SyncButton(options);
-    }
-
-    function SyncButton(options) {
-      options = options || {};
-      setupWindow();
-      var iframe = document.createElement('iframe');
-      iframe.style.height = '22px';
-      iframe.style.width = '150px';
-      iframe.scrolling = "no";
-      iframe.setAttribute('frameborder', '0');
-      iframe.setAttribute('marginwidth', '0');
-      iframe.setAttribute('marginheight', '0');
-      iframe.setAttribute('id', 'syncbutton-frame');
-      var url = AppRepositoryOrigin + "/jsapi/syncbutton.html";
-      var params = [];
-      if (options.buttonColor) {
-        params.push('buttonColor=' + encodeURIComponent(options.buttonColor));
-      }
-      if (options.backgroundColor) {
-        params.push('backgroundColor=' + encodeURIComponent(options.backgroundColor));
-      }
-      if (options.foregroundColor) {
-        params.push('foregroundColor=' + encodeURIComponent(options.foregroundColor));
-      }
-      if (params.length) {
-        url += '#';
-        for (var i=0; i<params.length; i++) {
-          if (i) {
-            url += '&';
-          }
-          url += params[i];
-        }
-      }
-      iframe.src = url;
-      this.iframe = iframe;
-      iframe.addEventListener('load', function () {
-        window.addEventListener("message", function (event) {
-          if (event.origin != AppRepositoryOrigin) {
-            // FIXME: signal an error?
-            return;
-          }
-          var message = JSON.parse(event.data);
-          if (message.size == 'expanded') {
-            iframe.style.height = '150px';
-          } else if (message.size == 'compact') {
-            iframe.style.height = '22px';
-          }
-        }, false);
-        iframe.contentWindow.postMessage('hello', AppRepositoryOrigin);
-      }, false);
-    };
-    
-    SyncButton.prototype.makeCompact = function () {
-      if (this.iframe.style.height == '22px') {
-        return;
-      }
-      this.iframe.contentWindow.postMessage(JSON.stringify({size: "compact"}), AppRepositoryOrigin);
-      this.iframe.style.height = '22px';
-    };
-
-    SyncButton.prototype.appendTo = function (elOrId) {
-      if (typeof elOrId == 'string') {
-        var el = document.getElementById(elOrId);
-      } else {
-        var el = elOrId;
-      }
-      if (! el) {
-        throw 'No element found ' + elOrId;
-      }
-      el.appendChild(this.iframe);
-    };
-
     // Return AppClient object with exposed API calls
     var api = {
       install: callInstall,
@@ -1109,8 +1035,7 @@ if (!navigator.mozApps.install || navigator.mozApps.html5Implementation) {
         addEventListener: callAddEventListener,
         removeEventListener: callRemoveEventListener,
         oninstall: null,
-        onuninstall: null,
-        syncButton: callSyncButton
+        onuninstall: null
       };
     }
     

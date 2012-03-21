@@ -154,12 +154,4 @@ $(document).ready(function() {
         }      
     });
 
-    if (navigator.mozApps.mgmt.syncButton) {
-        var syncButton = navigator.mozApps.mgmt.syncButton();
-        syncButton.appendTo('login');
-        $(document).click(function () {
-          syncButton.makeCompact();
-        });
-    }
-
 });
