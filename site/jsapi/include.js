@@ -703,7 +703,7 @@ if (!navigator.mozApps.install || navigator.mozApps.html5Implementation) {
       if (this.manifest.launch_path) {
         url += this.manifest.launch_path;
       }
-      var name = ("openwebapp_" + id).replace(/[.:]/g, "_").replace(/[^a-zA-Z0-9_]/g, "");
+      var name = ("openwebapp_" + url).replace(/[.:]/g, "_").replace(/[^a-zA-Z0-9_]/g, "");
       window.open(url, name);
     };
 
