@@ -137,9 +137,9 @@ $(document).ready(function() {
     function eventUninstall(ev) {
       doUpdate("uninstall", [ev.application]);
     }
-    if (navigator.mozApps.mgmt.addEventListener) {
-      navigator.mozApps.mgmt.addEventListener('install', eventInstall);
-      navigator.mozApps.mgmt.addEventListener('uninstall', eventUninstall);
+    if (navigator.mozApps.getInstalled) {
+      navigator.mozApps.mgmt.oninstall = eventInstall;
+      navigator.mozApps.mgmt.onuninstall = eventUninstall;
       eventListenerBound = true;
     }
       
@@ -149,17 +149,9 @@ $(document).ready(function() {
             navigator.mozApps.mgmt.clearWatch(watcherID);
         }
         if (eventListenerBound) {
-          navigator.mozApps.mgmt.removeEventListener('install', eventInstall);
-          navigator.mozApps.mgmt.removeEventListener('uninstall', eventUninstall);
+	  navigator.mozApps.mgmt.oninstall = null;
+	  navigator.mozApps.mgmt.onuninstall = null;
         }      
     });
-
-    if (navigator.mozApps.mgmt.syncButton) {
-        var syncButton = navigator.mozApps.mgmt.syncButton();
-        syncButton.appendTo('login');
-        $(document).click(function () {
-          syncButton.makeCompact();
-        });
-    }
 
 });
