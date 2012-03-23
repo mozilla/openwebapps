@@ -1,0 +1,11 @@
+{
+  "name":"OWA ゲゴケ゚セニツ゚ヅヂチ",
+  "developer": {
+    "name": " ゲゴケ゚セニツ゚ヅヂチ"
+  },
+  "icons": {
+    "128": "/icon128.png"
+  },
+  "installs_allowed_from": [ "*" ],
+  "launch_path": "/great_success.html"
+}
