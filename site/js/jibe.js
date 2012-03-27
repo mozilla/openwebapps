@@ -65,6 +65,14 @@ $(document).ready(function() {
               pending.onsuccess = function () {
                 gotApps(this.result);
               };
+              pending.onerror = function () {
+                $('#help').hide();
+                if (this.error == 'DENIED' || this.error.name == 'DENIED') {
+                  // Permission error
+                  $('#help-hostname').text(location.protocol + '//' + location.host);
+                  $('#help-permissions').show();
+                }
+              };
             }
         },
 

@@ -27,29 +27,45 @@
             <div id="help">You have no apps installed. Apps are available
               <a href="https://marketplace.mozilla.org/" target="_blank">in the Marketplace</a>.
             </div>
-        </div>
+
+            <div id="help-permissions" style="display: none">
+              It appears that this site does not have permission to access your applications.
+              To grant permissions to this site you must follow these instructions:
+
+              <ol>
+                <li>Enter <code>about:config</code> in your URL bar.  There will be a warning, but
+                  we swear it's okay</li>
+                <li>Right click (or Control-Click on a Mac) and go to <strong>New &gt; String</strong></li>
+                <li>The preference name should be <strong><code>dom.mozApps.whitelist</code></strong></li>
+                <li>The preference value should be
+                  <strong><code id="help-hostname">https://myapps.mozillalabs.com</code></strong></li>
+                <li>For testing purposes you may want multiple sites, you can have multiple sites with commas</li>
+              </ol>
+
+            </div>
+
     </div>
     <!-- help info -->
     <div id="centerfield">
         <div id="usageInfo">
-            <ul>                    
+            <ul>
                 <li>Click Apps to launch them</li>
                 <li>Drag or swipe the page, or click the page indicator to switch pages</li>
                 <li>Press, hold and drag Apps to move them, even between pages</li>
                 <li>Press, hold, and let go without moving to delete Apps</li>
                 <li>App arrangement is saved automatically</li>
-            </ul>            
+            </ul>
         </div>
     </div>
 
     <a>
         <img id="usage" src="img/Info.png"/>
     </a>
-    
+
 </body>
 
 <script type="text/javascript">
-  $('#usage').hover( 
+  $('#usage').hover(
     function(){
       $('#usageInfo').css('display', 'block');
     },
