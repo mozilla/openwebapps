@@ -1,7 +1,7 @@
 
 function empty(o)
 {
-    for (var i in o) 
+    for (var i in o)
         if (o.hasOwnProperty(i))
             return false;
     return true;
@@ -113,7 +113,7 @@ $(document).ready(function() {
           if (wasAdded) {
             appCount++;
             if (appCount > 0) $("#help").css({display: 'none'});
-            appData[app.origin] = {itemTitle: app.manifest.name, itemImgURL: getIconForSize(48, app), appObject: app};
+            appData.itemList[app.origin] = {itemTitle: app.manifest.name, itemImgURL: getIconForSize(48, app), appObject: app};
           }
 
         }
@@ -138,11 +138,15 @@ $(document).ready(function() {
       doUpdate("uninstall", [ev.application]);
     }
     if (navigator.mozApps.getInstalled) {
-      navigator.mozApps.mgmt.oninstall = eventInstall;
-      navigator.mozApps.mgmt.onuninstall = eventUninstall;
-      eventListenerBound = true;
+      try {
+        navigator.mozApps.mgmt.oninstall = eventInstall;
+        navigator.mozApps.mgmt.onuninstall = eventUninstall;
+        eventListenerBound = true;
+      } catch (e) {
+        console.log('Could not bind oninstall and onuninstall events:', e);
+      }
     }
-      
+
 
     $(document).unload(function() {
         if (watcherID) {
@@ -151,7 +155,7 @@ $(document).ready(function() {
         if (eventListenerBound) {
 	  navigator.mozApps.mgmt.oninstall = null;
 	  navigator.mozApps.mgmt.onuninstall = null;
-        }      
+        }
     });
 
 });
