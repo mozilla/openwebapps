@@ -190,6 +190,8 @@ Repo = (function() {
           return true;
         }
       }
+    } else {
+      return true;
     }
 
     return false;
