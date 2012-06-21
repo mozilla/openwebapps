@@ -1,5 +1,19 @@
 @charset "UTF-8";
 
+@font-face {
+    font-family: 'Marvel';
+    font-style: normal;
+    font-weight: 700;
+    src: local('Marvel Bold'), local('Marvel-Bold'), url('../fonts/marvel_bold.woff') format('woff');
+}
+
+@font-face {
+    font-family: 'Marvel';
+    font-style: normal;
+    font-weight: 400;
+    src: local('Marvel'), local('Marvel-Regular'), url('../fonts/marvel.woff') format('woff');
+}
+
 body {
     font-family: 'Marvel', sans-serif;
     margin-left: auto;

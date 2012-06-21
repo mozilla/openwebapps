@@ -1,0 +1,21 @@
+CACHE MANIFEST
+
+# Cache Manifest Version: 0.0.1
+
+CACHE:
+icongrid/icongrid.css
+css/jibe.css
+jquery-1.4.2.min.js
+icongrid/base32.js
+icongrid/icongrid.js
+js/jibe.js
+
+# External assets can be cached, but we have to manually bump the cache
+# manifest's version, or users with stale cache's will never see the updated
+# assets
+https://myapps.mozillalabs.com/jsapi/include.js
+https://browserid.org/include.js
+
+NETWORK:
+cache.manifest
+*
