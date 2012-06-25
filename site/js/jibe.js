@@ -35,6 +35,20 @@ function getIconForSize(targetSize, app)
     return DEFAULT_ICON;
 }
 
+function cacheIcons () {
+    if (typeof window.applicationCache.mozAdd === 'function') {
+        Array.prototype.slice.call(document.getElementsByClassName('icon')).forEach(
+            function (icon_div) {
+                try {
+                    window.applicationCache.mozAdd(icon_div.firstElementChild.src);
+                } catch (err) {
+                    console.log(err);
+                }
+            }
+        );
+    }
+}
+
 $(document).ready(function() {
     /* IconGrid */
     var appCount = 0;
@@ -64,6 +78,7 @@ $(document).ready(function() {
               var pending = navigator.mozApps.mgmt.getAll();
               pending.onsuccess = function () {
                 gotApps(this.result);
+                cacheIcons();
               };
               pending.onerror = function () {
                 $('#help').hide();
