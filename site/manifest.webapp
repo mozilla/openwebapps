@@ -3,7 +3,7 @@
   "name": "Developer Preview Apps Dashboard",
   "description": "Manage Installed Open Web Apps",
   "installs_allowed_from": [
-    "https://myapps.mozillalabs.com/"
+    "https://marketplace.mozilla.org"
   ],
   "appcache_path": "/cache.manifest",
   "icons": {
