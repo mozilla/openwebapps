@@ -1,0 +1,13 @@
+{
+  "version": "0.1",
+  "name": "Developer Preview Apps Dashboard",
+  "description": "Manage Installed Open Web Apps",
+  "installs_allowed_from": [
+    "https://myapps.mozillalabs.com/"
+  ],
+  "appcache_path": "/cache.manifest",
+  "icons": {
+    "16": "/icons/16px.png",
+    "256": "/icons/256px.png"
+  }
+}
