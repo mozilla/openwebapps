@@ -15,7 +15,3 @@ js/jibe.js
 # assets
 https://myapps.mozillalabs.com/jsapi/include.js
 https://browserid.org/include.js
-
-NETWORK:
-cache.manifest
-*
