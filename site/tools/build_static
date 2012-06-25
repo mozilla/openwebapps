@@ -65,7 +65,10 @@ if [ ! -e "$DEST" ] ; then
     mkdir -p "$DEST"
 fi
 
-cp --recursive --dereference ${SITE}/*.html ${SITE}/*.js ${SITE}/icongrid ${SITE}/css ${SITE}/fonts ${SITE}/img ${SITE}/js ${SITE}/jsapi $DEST
+cp --recursive --dereference ${SITE}/*.html ${SITE}/*.webapp ${SITE}/*.js ${SITE}/*.manifest \
+   ${SITE}/icongrid ${SITE}/css ${SITE}/fonts ${SITE}/img ${SITE}/js ${SITE}/jsapi \
+   ${SITE}/icons ${SITE}/fonts \
+   $DEST
 
 if [ ! -z "$APPDIR" ] ; then
     mkdir -p ${DEST}/apps
