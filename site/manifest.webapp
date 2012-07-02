@@ -3,6 +3,7 @@
   "description": "Manage Installed Open Web Apps",
   "installs_allowed_from": [
     "https://marketplace.mozilla.org",
+    "https://marketplace-dev.allizom.org",
     "https://myapps.mozillalabs.com/"
   ],
   "appcache_path": "/cache.manifest",
