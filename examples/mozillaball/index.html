@@ -98,26 +98,28 @@ be wrapped up as an Open Web App.<br><br>
 var gManifestName = "/manifest.webapp";
 
 $(document).ready(function() {
-    navigator.apps.amInstalled(function(result) {
-        if (!result) {
-            $("#install_button").show();
+  var request = navigator.mozApps.getSelf();
+	request.onsuccess = function() {
+	  if (request.result) {
+	    // we're installed
+	    $("#install_button").text("INSTALLED!").show();
+	  } else {
+	    // not installed
+	    $("#install_button").show();
             $("#install_button").click(function() {
-                navigator.apps.install({
-                  url: gManifestName,
-                  onsuccess: function() {
+		var req = navigator.mozApps.install(gManifestName);
+		req.onsuccess = function() {
                     $("#install_button").text("INSTALLED!").unbind('click');
-                  },
-                  onerror: function(errObj) {
+                }
+		req.onerror = function(errObj) {
                     alert("Couldn't install (" + errObj.code + ") " + errObj.message);
-                  }
-                });
+                }
             });
-        } else {
-            $("#install_button").text("INSTALLED!").show();
-
-        }
-    });
-
+	  }
+	}
+	request.onerror = function() {
+	  alert('Error checking installation status: ' + this.error.message);
+	}
 });
 
 </script>
